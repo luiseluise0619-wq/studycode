@@ -296,6 +296,46 @@ javascript:{name:"JavaScript",em:"🟨",color:"#caa200",g:"linear-gradient(135de
  ]}
 ]},
 
+web:{name:"HTML/CSS",em:"🌐",color:"#e05a2b",g:"linear-gradient(135deg,#e05a2b,#f0a020)",units:[
+ {title:"HTML 기초",guide:"🧱",lessons:[
+  {title:"태그와 문서 구조",xp:10,q:[
+   {t:"choice",k:"개념",q:"웹 페이지의 구조를 만드는 언어는?",o:["CSS","HTML","JS","SQL"],a:1,ex:"HTML 은 페이지의 뼈대(구조)를 만듭니다."},
+   {t:"choice",k:"태그",q:"HTML 요소를 감싸는 기호는?",o:["{ }","&lt; &gt;","[ ]","( )"],a:1,ex:"태그는 꺾쇠 &lt;태그&gt; 로 씁니다."},
+   {t:"choice",k:"닫는 태그",q:"&lt;p&gt; 를 닫는 태그는?",o:["&lt;/p&gt;","&lt;p/&gt;","&lt;close&gt;","&lt;\\p&gt;"],a:0,ex:"닫는 태그는 슬래시를 붙여 &lt;/p&gt;."},
+   {t:"choice",k:"제목",q:"가장 큰 제목을 나타내는 태그는?",o:["&lt;h1&gt;","&lt;title&gt;","&lt;head&gt;","&lt;big&gt;"],a:0,ex:"&lt;h1&gt;~&lt;h6&gt; 중 h1 이 가장 큰 제목."},
+   {t:"input",k:"빈칸",q:"문단(문장 덩어리)을 나타내는 태그 이름은? (알파벳만)",code:'&lt;_&gt;안녕하세요&lt;/_&gt;',a:["p"],ex:"&lt;p&gt; 는 문단(paragraph)입니다."}
+  ]},
+  {title:"링크·이미지·텍스트",xp:15,q:[
+   {t:"choice",k:"링크",q:"다른 페이지로 이동하는 링크 태그는?",o:["&lt;a&gt;","&lt;link&gt;","&lt;url&gt;","&lt;href&gt;"],a:0,ex:"&lt;a href=\"...\"&gt; 로 링크를 만듭니다."},
+   {t:"choice",k:"속성",q:"&lt;a&gt; 에서 이동할 주소를 지정하는 속성은?",o:["src","href","link","to"],a:1,ex:"href 속성에 주소를 넣습니다."},
+   {t:"choice",k:"이미지",q:"이미지를 넣는 태그는?",o:["&lt;img&gt;","&lt;image&gt;","&lt;pic&gt;","&lt;photo&gt;"],a:0,ex:"&lt;img src=\"...\"&gt; 로 이미지를 넣습니다."},
+   {t:"choice",k:"강조",q:"글자를 굵게 강조하는 태그는?",o:["&lt;b&gt; 또는 &lt;strong&gt;","&lt;big&gt;","&lt;bold&gt;","&lt;hard&gt;"],a:0,ex:"&lt;strong&gt; 또는 &lt;b&gt; 로 굵게 표시."},
+   {t:"input",k:"빈칸",q:"이미지 태그에서 이미지 파일 경로를 지정하는 속성은?",code:'&lt;img ___="cat.png"&gt;',a:["src"],ex:"src 속성에 이미지 경로를 씁니다."}
+  ]},
+  {title:"목록과 표",xp:15,q:[
+   {t:"choice",k:"목록",q:"순서 없는(점) 목록을 만드는 태그는?",o:["&lt;ol&gt;","&lt;ul&gt;","&lt;list&gt;","&lt;dot&gt;"],a:1,ex:"&lt;ul&gt; 은 순서없는 목록, &lt;ol&gt; 은 번호 목록."},
+   {t:"choice",k:"항목",q:"목록의 각 항목을 나타내는 태그는?",o:["&lt;li&gt;","&lt;item&gt;","&lt;el&gt;","&lt;p&gt;"],a:0,ex:"&lt;li&gt; (list item) 로 각 항목을 씁니다."},
+   {t:"choice",k:"표",q:"표(테이블)를 만드는 태그는?",o:["&lt;grid&gt;","&lt;table&gt;","&lt;tab&gt;","&lt;box&gt;"],a:1,ex:"&lt;table&gt; 안에 행/칸을 넣습니다."},
+   {t:"choice",k:"주석",q:"HTML 에서 주석(메모)을 쓰는 방법은?",o:["// 메모","/* 메모 */","&lt;!-- 메모 --&gt;","# 메모"],a:2,ex:"&lt;!-- 내용 --&gt; 이 HTML 주석입니다."}
+  ]}
+ ]},
+ {title:"CSS 기초",guide:"🎨",lessons:[
+  {title:"CSS 적용하기",xp:15,q:[
+   {t:"choice",k:"개념",q:"페이지를 꾸미는(색·크기·배치) 언어는?",o:["HTML","CSS","JS","JSON"],a:1,ex:"CSS 는 스타일(디자인)을 담당합니다."},
+   {t:"choice",k:"문법",q:"CSS 규칙의 올바른 형태는?",o:["color: red;","color = red","color(red)","red -> color"],a:0,ex:"속성: 값; 형태로 씁니다."},
+   {t:"choice",k:"선택자",q:"class 이름 'box' 를 고르는 선택자는?",o:["#box",".box","box","*box"],a:1,ex:". 은 class, # 은 id 선택자입니다."},
+   {t:"choice",k:"아이디",q:"id 가 'main' 인 요소를 고르는 선택자는?",o:[".main","#main","main","@main"],a:1,ex:"# 은 id 선택자입니다."},
+   {t:"input",k:"빈칸",q:"글자 색을 파랑으로 지정하세요.",code:'_____: blue;',a:["color"],ex:"color 속성이 글자색입니다."}
+  ]},
+  {title:"색·글꼴·박스",xp:15,q:[
+   {t:"choice",k:"배경",q:"배경색을 지정하는 속성은?",o:["bgcolor","background-color","back","fill"],a:1,ex:"background-color 로 배경색을 정합니다."},
+   {t:"choice",k:"글자 크기",q:"글자 크기를 정하는 속성은?",o:["text-size","font-size","size","font-weight"],a:1,ex:"font-size 로 크기를 정합니다."},
+   {t:"choice",k:"박스모델",q:"요소 '바깥' 여백을 뜻하는 속성은?",o:["padding","margin","border","gap"],a:1,ex:"margin 은 바깥 여백, padding 은 안쪽 여백."},
+   {t:"choice",k:"레이아웃",q:"요소를 가로/세로로 유연하게 배치하는 현대적 방법은?",o:["float","flexbox(display:flex)","table","align"],a:1,ex:"display:flex (플렉스박스) 가 대표적입니다."}
+  ]}
+ ]}
+]},
+
 sql:{name:"SQL",em:"🗄️",color:"#1aa38a",g:"linear-gradient(135deg,#1aa38a,#2fbf71)",units:[
  {title:"데이터 조회 기초",guide:"🔎",lessons:[
   {title:"SELECT 로 가져오기",xp:10,q:[
@@ -408,6 +448,40 @@ cpp:{name:"C++",em:"➕",color:"#d6488f",g:"linear-gradient(135deg,#d6488f,#8a6b
    {t:"choice",k:"반환",q:"함수가 값을 돌려줄 때 쓰는 키워드는?",o:["return","give","out","yield"],a:0,ex:"return 값; 으로 결과를 돌려줍니다."},
    {t:"choice",k:"클래스",q:"데이터와 기능을 하나로 묶는 설계도는?",o:["struct?","class","object","module"],a:1,ex:"class 로 객체의 틀을 정의합니다."},
    {t:"choice",k:"객체지향",q:"클래스로 실제로 만든 하나하나를 뭐라 하나요?",o:["함수","객체(인스턴스)","변수","포인터"],a:1,ex:"클래스로 만든 실체가 객체입니다."}
+  ]}
+ ]}
+]},
+
+go:{name:"Go",em:"🐹",color:"#00a0c4",g:"linear-gradient(135deg,#00a0c4,#5b6cff)",units:[
+ {title:"Go 첫걸음",guide:"🐹",lessons:[
+  {title:"출력과 기본 구조",xp:10,q:[
+   {t:"choice",k:"개념",q:"Go 프로그램이 시작되는 함수는?",o:["start()","main()","init()","run()"],a:1,ex:"func main() 에서 실행이 시작됩니다."},
+   {t:"choice",k:"출력",q:"화면에 한 줄 출력하는 함수는?",o:["print()","fmt.Println()","console.log()","echo()"],a:1,ex:"fmt.Println() 으로 출력합니다."},
+   {t:"input",k:"빈칸",q:"Println 을 쓰려면 임포트하는 패키지는?",code:'import "___"',a:["fmt"],ex:'fmt 패키지가 입출력을 담당합니다.'},
+   {t:"choice",k:"함수 정의",q:"Go 에서 함수를 정의하는 키워드는?",o:["def","function","func","fn"],a:2,ex:"func 로 함수를 정의합니다."}
+  ]},
+  {title:"변수와 반복",xp:15,q:[
+   {t:"choice",k:"짧은 선언",q:"타입 없이 변수를 만들고 값을 넣는 기호는?",o:[":=","=","::","<-"],a:0,ex:"x := 10 처럼 := 로 짧게 선언합니다."},
+   {t:"choice",k:"명시 선언",q:"변수를 선언하는 키워드는?",o:["let","var","val","dim"],a:1,ex:"var x int = 10 형태도 가능합니다."},
+   {t:"choice",k:"반복",q:"Go 의 유일한 반복문 키워드는?",o:["while","loop","for","repeat"],a:2,ex:"Go 는 for 하나로 모든 반복을 표현합니다."},
+   {t:"choice",k:"특징",q:"Go 의 대표적인 특징은?",o:["동시성(goroutine)","클래스 상속","포인터 없음","인터프리터"],a:0,ex:"goroutine 으로 쉬운 동시성 처리가 강점입니다."}
+  ]}
+ ]}
+]},
+
+java:{name:"Java",em:"☕",color:"#4a7196",g:"linear-gradient(135deg,#4a7196,#5b6cff)",units:[
+ {title:"Java 첫걸음",guide:"☕",lessons:[
+  {title:"출력과 기본 구조",xp:10,q:[
+   {t:"choice",k:"출력",q:"Java 에서 한 줄 출력하는 명령은?",o:["print()","System.out.println()","cout","printf()"],a:1,ex:"System.out.println() 으로 출력합니다."},
+   {t:"choice",k:"시작점",q:"Java 프로그램이 시작되는 메서드는?",o:["main","start","run","init"],a:0,ex:"public static void main(String[] args) 에서 시작합니다."},
+   {t:"choice",k:"문장 끝",q:"Java 에서 문장 끝에 붙이는 기호는?",o:[".",";",":","}"],a:1,ex:"세미콜론(;) 으로 문장을 끝냅니다."},
+   {t:"choice",k:"특징",q:"Java 코드의 기본 단위는?",o:["함수","클래스","모듈","패키지"],a:1,ex:"모든 코드는 클래스 안에 들어갑니다."}
+  ]},
+  {title:"변수와 흐름 제어",xp:15,q:[
+   {t:"choice",k:"자료형",q:"정수를 저장하는 자료형은?",o:["int","str","num","integer"],a:0,ex:"int 는 정수형입니다."},
+   {t:"input",k:"빈칸",q:"정수 변수 x 에 5를 저장하세요.",code:'___ x = <span class="nu">5</span>;',a:["int"],ex:"int x = 5; 형태로 선언합니다."},
+   {t:"choice",k:"문자열",q:"Java 의 문자열 타입은?",o:["string","String","str","text"],a:1,ex:"대문자로 시작하는 String 을 씁니다."},
+   {t:"choice",k:"조건",q:"조건 분기 키워드는?",o:["if","when","case","cond"],a:0,ex:"if / else 로 분기합니다."}
   ]}
  ]}
 ]}
