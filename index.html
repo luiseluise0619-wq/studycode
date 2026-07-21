@@ -1,0 +1,565 @@
+<title>코드런 · CodeRun</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --bg:#f6f5f2; --bg-soft:#eeece6; --card:#ffffff; --ink:#181b24; --ink-soft:#5c6070;
+    --line:#e2ddd3; --line-strong:#cfc9bc;
+    --brand:#5b6cff; --brand-ink:#3f4ee0;
+    --good:#2fbf71; --good-soft:#e4f7ec; --bad:#ff5d5d; --bad-soft:#ffe9e9;
+    --gold:#ffb020; --flame:#ff7a3d;
+    --py:#3b7dd8; --sql:#1aa38a; --c:#6d7ba8; --cpp:#d6488f;
+    --shadow:0 2px 0 var(--line-strong);
+    --radius:18px;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,"Cascadia Code",Menlo,Consolas,monospace;
+    --sans:"Pretendard",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12131a; --bg-soft:#1b1d27; --card:#20222e; --ink:#f2f1ee; --ink-soft:#a6a9ba;
+      --line:#2b2e3c; --line-strong:#3a3e50;
+      --good-soft:#12321f; --bad-soft:#3a1616;
+      --shadow:0 2px 0 rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f5f2; --bg-soft:#eeece6; --card:#ffffff; --ink:#181b24; --ink-soft:#5c6070;
+    --line:#e2ddd3; --line-strong:#cfc9bc; --good-soft:#e4f7ec; --bad-soft:#ffe9e9;
+    --shadow:0 2px 0 var(--line-strong);
+  }
+  :root[data-theme="dark"]{
+    --bg:#12131a; --bg-soft:#1b1d27; --card:#20222e; --ink:#f2f1ee; --ink-soft:#a6a9ba;
+    --line:#2b2e3c; --line-strong:#3a3e50; --good-soft:#12321f; --bad-soft:#3a1616;
+    --shadow:0 2px 0 rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    min-height:100vh;
+  }
+  button{font-family:inherit; cursor:pointer}
+  .app{max-width:560px; margin:0 auto; padding:0 16px 120px; position:relative}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:20; background:var(--bg);
+    display:flex; align-items:center; gap:10px; padding:14px 2px 12px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex; align-items:center; gap:9px; font-weight:800; font-size:19px; letter-spacing:-.02em; margin-right:auto}
+  .brand .logo{width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,var(--brand),#8a6bff);
+    display:grid; place-items:center; color:#fff; font-family:var(--mono); font-weight:700; font-size:15px}
+  .stat{display:flex; align-items:center; gap:5px; font-weight:800; font-size:15px; padding:5px 10px;
+    border-radius:999px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow)}
+  .stat .ic{font-size:16px; line-height:1}
+  .stat.flame{color:var(--flame)} .stat.xp{color:var(--gold)}
+  .heart-ic{color:var(--bad)}
+  .icon-btn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--card);
+    box-shadow:var(--shadow); font-size:17px; display:grid; place-items:center; color:var(--ink)}
+
+  /* ---------- language switch ---------- */
+  .langbar{display:flex; gap:8px; overflow-x:auto; padding:14px 0 6px; scrollbar-width:none}
+  .langbar::-webkit-scrollbar{display:none}
+  .langchip{flex:0 0 auto; display:flex; align-items:center; gap:7px; padding:8px 14px; border-radius:999px;
+    border:2px solid var(--line); background:var(--card); font-weight:800; font-size:14px; color:var(--ink-soft);
+    transition:transform .1s}
+  .langchip .em{font-size:16px}
+  .langchip[aria-selected="true"]{color:#fff; border-color:transparent}
+  .langchip:active{transform:scale(.96)}
+
+  /* ---------- unit header ---------- */
+  .unit-head{margin:22px 0 4px; padding:16px 18px; border-radius:var(--radius); color:#fff;
+    box-shadow:var(--shadow); display:flex; justify-content:space-between; align-items:center; gap:12px}
+  .unit-head .k{font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; opacity:.85}
+  .unit-head h2{margin:2px 0 0; font-size:19px; font-weight:800; letter-spacing:-.01em}
+  .unit-head .guide{font-size:22px}
+
+  /* ---------- path ---------- */
+  .path{display:flex; flex-direction:column; align-items:center; gap:10px; padding:20px 0 8px; position:relative}
+  .node-wrap{position:relative; display:flex; flex-direction:column; align-items:center; gap:6px}
+  .node{
+    width:74px; height:66px; border-radius:50%/58%; border:none; position:relative;
+    background:var(--line-strong); box-shadow:0 6px 0 rgba(0,0,0,.14); color:#fff; font-size:26px;
+    display:grid; place-items:center; transition:transform .12s, box-shadow .12s;
+  }
+  .node:active{transform:translateY(3px); box-shadow:0 3px 0 rgba(0,0,0,.14)}
+  .node.locked{background:var(--bg-soft); color:var(--line-strong); box-shadow:0 5px 0 var(--line)}
+  .node.done{}
+  .node .crown{position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:15px;
+    filter:drop-shadow(0 1px 0 rgba(0,0,0,.2))}
+  .node.current::after{content:"시작"; position:absolute; top:-34px; left:50%; transform:translateX(-50%);
+    background:var(--card); color:var(--brand); font-weight:800; font-size:11px; padding:4px 10px; border-radius:9px;
+    border:1px solid var(--line); box-shadow:var(--shadow); white-space:nowrap; animation:bob 1.2s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-3px)}}
+  .node-label{font-size:12px; font-weight:700; color:var(--ink-soft); max-width:120px; text-align:center}
+  .n0{transform:translateX(0)} .n1{transform:translateX(64px)} .n2{transform:translateX(96px)}
+  .n3{transform:translateX(64px)} .n4{transform:translateX(0)} .n5{transform:translateX(-64px)}
+  .n6{transform:translateX(-96px)} .n7{transform:translateX(-64px)}
+  @media (max-width:400px){
+    .n1,.n3{transform:translateX(44px)} .n2{transform:translateX(66px)}
+    .n5,.n7{transform:translateX(-44px)} .n6{transform:translateX(-66px)}
+  }
+
+  /* ---------- lesson view ---------- */
+  .lesson{position:fixed; inset:0; background:var(--bg); z-index:50; display:none; flex-direction:column}
+  .lesson.on{display:flex}
+  .lesson-top{max-width:560px; width:100%; margin:0 auto; padding:16px 16px 8px; display:flex; align-items:center; gap:12px}
+  .close-x{background:none; border:none; font-size:26px; color:var(--ink-soft); line-height:1; padding:0 4px}
+  .pbar{flex:1; height:16px; border-radius:999px; background:var(--bg-soft); overflow:hidden; border:1px solid var(--line)}
+  .pbar > i{display:block; height:100%; width:0; background:var(--good); border-radius:999px; transition:width .3s;
+    box-shadow:inset 0 -4px 0 rgba(0,0,0,.08)}
+  .hearts{display:flex; align-items:center; gap:3px; font-weight:800; color:var(--bad)}
+  .lesson-body{flex:1; overflow-y:auto; width:100%; max-width:560px; margin:0 auto; padding:18px 16px 24px}
+  .q-kind{font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft)}
+  .q-title{font-size:23px; font-weight:800; letter-spacing:-.01em; margin:8px 0 18px; text-wrap:balance; line-height:1.3}
+  pre.code{font-family:var(--mono); font-size:14.5px; background:#0f1117; color:#e6e9f2; border-radius:14px;
+    padding:16px 16px; overflow-x:auto; line-height:1.6; margin:0 0 20px; border:1px solid #22252f}
+  pre.code .cm{color:#7f8aa3} pre.code .kw{color:#ff9ecb} pre.code .st{color:#a8e6a1} pre.code .nu{color:#ffc773}
+  .options{display:flex; flex-direction:column; gap:10px}
+  .opt{display:flex; align-items:center; gap:12px; text-align:left; padding:15px 16px; border-radius:14px;
+    border:2px solid var(--line); background:var(--card); box-shadow:var(--shadow); font-size:16px; font-weight:600; color:var(--ink);
+    transition:transform .08s}
+  .opt:active{transform:scale(.99)}
+  .opt .key{width:26px;height:26px;border-radius:7px;border:2px solid var(--line);display:grid;place-items:center;
+    font-size:13px;font-weight:800;color:var(--ink-soft); flex:0 0 auto}
+  .opt.sel{border-color:var(--brand); background:color-mix(in srgb,var(--brand) 10%,var(--card))}
+  .opt.sel .key{border-color:var(--brand); color:var(--brand)}
+  .opt.ok{border-color:var(--good); background:var(--good-soft)}
+  .opt.no{border-color:var(--bad); background:var(--bad-soft)}
+  .opt.mono{font-family:var(--mono); font-size:15px}
+  .fill-in{width:100%; padding:15px 16px; border-radius:14px; border:2px solid var(--line); background:var(--card);
+    font-family:var(--mono); font-size:16px; color:var(--ink); box-shadow:var(--shadow)}
+  .fill-in:focus{outline:none; border-color:var(--brand)}
+
+  /* ---------- footer check ---------- */
+  .foot{position:fixed; left:0; right:0; bottom:0; border-top:2px solid var(--line); background:var(--bg);
+    transition:background .2s, border-color .2s}
+  .foot-in{max-width:560px; margin:0 auto; padding:16px; display:flex; align-items:center; gap:14px}
+  .foot .msg{flex:1; display:flex; align-items:center; gap:10px; font-weight:800; font-size:15px}
+  .foot .msg .em{font-size:26px}
+  .foot .msg small{display:block; font-weight:600; font-size:13px; color:var(--ink-soft); margin-top:2px}
+  .foot.good{background:var(--good-soft); border-color:var(--good)} .foot.good .msg{color:var(--good)}
+  .foot.bad{background:var(--bad-soft); border-color:var(--bad)} .foot.bad .msg{color:var(--bad)}
+  .btn{border:none; border-radius:14px; padding:15px 26px; font-weight:800; font-size:16px; color:#fff;
+    background:var(--brand); box-shadow:0 4px 0 var(--brand-ink); transition:transform .08s, box-shadow .08s; letter-spacing:.01em}
+  .btn:active{transform:translateY(3px); box-shadow:0 1px 0 var(--brand-ink)}
+  .btn:disabled{background:var(--line-strong); box-shadow:0 4px 0 var(--line); color:var(--bg); cursor:not-allowed}
+  .btn.good{background:var(--good); box-shadow:0 4px 0 #229e5a}
+  .btn.bad{background:var(--bad); box-shadow:0 4px 0 #d94747}
+  .btn.wide{width:100%}
+
+  /* ---------- complete ---------- */
+  .done-view{position:fixed; inset:0; z-index:60; background:var(--bg); display:none; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; padding:24px}
+  .done-view.on{display:flex}
+  .done-view .big{font-size:64px; animation:pop .5s ease}
+  @keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+  .done-view h1{font-size:28px; font-weight:800; margin:10px 0 6px}
+  .done-view p{color:var(--ink-soft); font-weight:600; margin:0 0 26px}
+  .rewards{display:flex; gap:14px; margin-bottom:30px}
+  .reward{background:var(--card); border:2px solid var(--line); border-radius:16px; padding:14px 22px; box-shadow:var(--shadow)}
+  .reward .rv{font-size:22px; font-weight:800} .reward .rl{font-size:12px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--ink-soft); margin-top:2px}
+  .reward.xp .rv{color:var(--gold)} .reward.flame .rv{color:var(--flame)}
+
+  .empty{color:var(--ink-soft); text-align:center; padding:30px; font-weight:600}
+  .foot-hint{position:fixed;left:0;right:0;bottom:0;padding:14px 16px;text-align:center;color:var(--ink-soft);
+    font-size:12.5px;font-weight:600; background:var(--bg); border-top:1px solid var(--line)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+
+<!-- ================= HOME ================= -->
+<div class="app" id="home">
+  <div class="topbar">
+    <div class="brand"><span class="logo">&lt;/&gt;</span> 코드런</div>
+    <div class="stat flame"><span class="ic">🔥</span><span id="s-streak">0</span></div>
+    <div class="stat xp"><span class="ic">⭐</span><span id="s-xp">0</span></div>
+    <div class="stat"><span class="ic heart-ic">❤</span><span id="s-hearts">5</span></div>
+    <button class="icon-btn" id="theme-btn" title="테마 전환" aria-label="테마 전환">◐</button>
+  </div>
+
+  <div class="langbar" id="langbar" role="tablist"></div>
+  <div id="course"></div>
+  <div class="foot-hint" id="reset-hint">진행상황은 이 브라우저에 자동 저장돼요 · <a href="#" id="reset-link" style="color:var(--brand)">전체 초기화</a></div>
+</div>
+
+<!-- ================= LESSON ================= -->
+<div class="lesson" id="lesson">
+  <div class="lesson-top">
+    <button class="close-x" id="quit" aria-label="나가기">✕</button>
+    <div class="pbar"><i id="prog"></i></div>
+    <div class="hearts"><span class="heart-ic">❤</span><span id="l-hearts">5</span></div>
+  </div>
+  <div class="lesson-body" id="qbody"></div>
+  <div class="foot" id="foot">
+    <div class="foot-in">
+      <div class="msg" id="foot-msg"></div>
+      <button class="btn" id="check" disabled>확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= COMPLETE ================= -->
+<div class="done-view" id="done">
+  <div class="big" id="done-emoji">🎉</div>
+  <h1 id="done-title">레슨 완료!</h1>
+  <p id="done-sub">잘했어요, 계속 이어가 봐요.</p>
+  <div class="rewards">
+    <div class="reward xp"><div class="rv" id="done-xp">+0</div><div class="rl">획득 XP</div></div>
+    <div class="reward flame"><div class="rv" id="done-acc">0%</div><div class="rl">정답률</div></div>
+  </div>
+  <button class="btn wide" id="done-next" style="max-width:320px">계속하기</button>
+</div>
+
+<script>
+"use strict";
+/* ================= 콘텐츠 데이터 ================= */
+const C = s => `<pre class="code">${s}</pre>`;
+const COURSES = {
+python:{name:"Python",em:"🐍",color:"#3b7dd8",g:"linear-gradient(135deg,#3b7dd8,#5b6cff)",units:[
+ {title:"파이썬 첫걸음",guide:"🐍",lessons:[
+  {title:"화면에 출력하기",xp:10,q:[
+   {t:"choice",k:"개념",q:"파이썬에서 화면에 글자를 출력하는 함수는?",o:["echo()","print()","printf()","cout"],a:1,ex:"파이썬은 print() 로 출력합니다."},
+   {t:"choice",k:"출력 결과",q:"이 코드의 실행 결과는?",code:'<span class="kw">print</span>(<span class="st">"Hello"</span>)',o:['"Hello"',"Hello","print Hello","오류"],a:1,ex:"따옴표는 문자열을 감쌀 뿐 화면엔 나오지 않아요."},
+   {t:"input",k:"빈칸 채우기",q:"화면에 world 를 출력하도록 빈칸을 채우세요.",code:'_____(<span class="st">"world"</span>)',a:["print"],ex:"print(\"world\") 가 정답입니다."},
+   {t:"choice",k:"문자열",q:"문자열(글자)을 나타낼 때 올바른 것은?",o:["Hello","(Hello)","\"Hello\"","[Hello]"],a:2,ex:"문자열은 따옴표로 감쌉니다."},
+   {t:"input",k:"직접 입력",q:"숫자 7을 출력하는 코드를 적으세요. (괄호 포함)",a:["print(7)"],ex:"숫자는 따옴표 없이 print(7)."}
+  ]},
+  {title:"변수와 자료형",xp:10,q:[
+   {t:"choice",k:"개념",q:"값을 담아 이름 붙여 저장하는 것을 무엇이라 하나요?",o:["함수","변수","반복","조건"],a:1,ex:"변수(variable)에 값을 저장합니다."},
+   {t:"input",k:"빈칸",q:"age 라는 변수에 20을 저장하세요.",code:'age _ <span class="nu">20</span>',a:["=","= 20","age = 20"],ex:"= 는 대입(저장) 연산자입니다."},
+   {t:"choice",k:"자료형",q:"3.14 의 자료형은?",o:["int(정수)","str(문자열)","float(실수)","bool"],a:2,ex:"소수점이 있으면 float(실수)입니다."},
+   {t:"choice",k:"출력 결과",q:"결과는?",code:'x = <span class="nu">5</span>\ny = <span class="nu">3</span>\n<span class="kw">print</span>(x + y)',o:["53","8","x+y","오류"],a:1,ex:"숫자끼리 더하면 8."},
+   {t:"choice",k:"문자열 덧셈",q:'print("2" + "3") 의 결과는?',o:["5","23","2+3","오류"],a:1,ex:"문자열 + 는 이어붙이기라 '23'."}
+  ]},
+  {title:"조건문 if",xp:15,q:[
+   {t:"choice",k:"개념",q:"조건이 참일 때만 실행하는 키워드는?",o:["for","if","def","print"],a:1,ex:"if 는 조건 분기입니다."},
+   {t:"choice",k:"비교",q:"'같다'를 비교하는 연산자는?",o:["=","==","=>","equals"],a:1,ex:"== 는 비교, = 는 대입입니다."},
+   {t:"choice",k:"출력 결과",q:"결과는?",code:'x = <span class="nu">10</span>\n<span class="kw">if</span> x > <span class="nu">5</span>:\n    <span class="kw">print</span>(<span class="st">"큼"</span>)',o:["큼","작음","아무것도","오류"],a:0,ex:"10 > 5 는 참이라 '큼' 출력."},
+   {t:"input",k:"빈칸",q:"조건이 거짓일 때 실행할 블록의 키워드는?",code:'<span class="kw">if</span> a > b:\n    ...\n____:\n    ...',a:["else"],ex:"else 는 그 외의 경우입니다."},
+   {t:"choice",k:"들여쓰기",q:"파이썬에서 블록(범위)을 나누는 방법은?",o:["중괄호 {}","들여쓰기(공백)","세미콜론 ;","괄호 ()"],a:1,ex:"파이썬은 들여쓰기로 블록을 구분합니다."}
+  ]}
+ ]},
+ {title:"반복과 데이터",guide:"🔁",lessons:[
+  {title:"반복문 for",xp:15,q:[
+   {t:"choice",k:"개념",q:"0,1,2,3,4 를 순서대로 만드는 것은?",o:["range(5)","loop(5)","for(5)","count(5)"],a:0,ex:"range(5) 는 0~4."},
+   {t:"choice",k:"출력 결과",q:"몇 번 출력될까요?",code:'<span class="kw">for</span> i <span class="kw">in</span> <span class="kw">range</span>(<span class="nu">3</span>):\n    <span class="kw">print</span>(<span class="st">"hi"</span>)',o:["1번","3번","4번","무한"],a:1,ex:"range(3) 은 3번 반복."},
+   {t:"choice",k:"while",q:"조건이 참인 동안 계속 도는 반복문은?",o:["for","while","if","do"],a:1,ex:"while 은 조건 기반 반복입니다."},
+   {t:"input",k:"빈칸",q:"리스트의 각 값을 꺼내 도는 반복문 키워드는?",code:'____ x <span class="kw">in</span> [<span class="nu">1</span>,<span class="nu">2</span>,<span class="nu">3</span>]:',a:["for"],ex:"for x in ... 형태입니다."}
+  ]},
+  {title:"리스트 다루기",xp:15,q:[
+   {t:"choice",k:"개념",q:"여러 값을 순서대로 담는 자료형은?",o:["리스트 []","정수","문자열","불리언"],a:0,ex:"리스트는 [1,2,3] 처럼 대괄호로."},
+   {t:"choice",k:"인덱스",q:"nums=[10,20,30] 일 때 nums[0] 은?",o:["0","10","20","30"],a:1,ex:"인덱스는 0부터 시작, 첫 값 10."},
+   {t:"choice",k:"길이",q:"리스트의 개수를 구하는 함수는?",o:["size()","count()","len()","length()"],a:2,ex:"len(리스트) 로 개수를 셉니다."},
+   {t:"input",k:"빈칸",q:"리스트 arr 끝에 5를 추가하세요.",code:'arr._____(<span class="nu">5</span>)',a:["append","append(5)"],ex:"append() 로 끝에 추가합니다."}
+  ]}
+ ]}
+]},
+
+sql:{name:"SQL",em:"🗄️",color:"#1aa38a",g:"linear-gradient(135deg,#1aa38a,#2fbf71)",units:[
+ {title:"데이터 조회 기초",guide:"🔎",lessons:[
+  {title:"SELECT 로 가져오기",xp:10,q:[
+   {t:"choice",k:"개념",q:"테이블에서 데이터를 조회하는 명령어는?",o:["GET","SELECT","FETCH","SHOW"],a:1,ex:"SELECT 로 데이터를 조회합니다."},
+   {t:"choice",k:"전체 선택",q:"모든 컬럼(열)을 뜻하는 기호는?",o:["#","%","*","@"],a:2,ex:"SELECT * 는 모든 열."},
+   {t:"input",k:"빈칸",q:"users 테이블의 모든 데이터를 조회하세요.",code:'SELECT * ____ users;',a:["FROM","from"],ex:"FROM 다음에 테이블 이름을 씁니다."},
+   {t:"choice",k:"특정 열",q:"name 열만 조회하는 문장은?",o:["SELECT name FROM users","SELECT * FROM name","GET name","FROM users name"],a:0,ex:"필요한 열 이름을 SELECT 뒤에 나열합니다."},
+   {t:"choice",k:"문장 끝",q:"SQL 한 문장의 끝에 보통 붙이는 기호는?",o:[".",";",":",","],a:1,ex:"세미콜론(;) 으로 문장을 끝냅니다."}
+  ]},
+  {title:"WHERE 로 걸러내기",xp:15,q:[
+   {t:"choice",k:"개념",q:"조건에 맞는 행만 고르는 절은?",o:["IF","WHERE","FILTER","ONLY"],a:1,ex:"WHERE 로 조건을 지정합니다."},
+   {t:"input",k:"빈칸",q:"age 가 20인 행만 조회하세요.",code:'SELECT * FROM users WHERE age _ <span class="nu">20</span>;',a:["=","= 20"],ex:"SQL에서 '같다'는 = 하나입니다."},
+   {t:"choice",k:"문자열 조건",q:"city 가 'Seoul' 인 조건으로 맞는 것은?",o:["city = Seoul","city == 'Seoul'","city = 'Seoul'","city is Seoul"],a:2,ex:"문자열은 작은따옴표로 감싸고 = 로 비교."},
+   {t:"choice",k:"여러 조건",q:"두 조건을 모두 만족시키는 키워드는?",o:["AND","ALSO","PLUS","WITH"],a:0,ex:"AND 는 둘 다 참, OR 은 하나만 참."},
+   {t:"choice",k:"크기 비교",q:"'가격이 100 초과' 를 뜻하는 조건은?",o:["price > 100","price >= 100","price < 100","price = 100"],a:0,ex:"> 는 초과(같은 값 미포함)."}
+  ]},
+  {title:"정렬과 개수 제한",xp:15,q:[
+   {t:"choice",k:"개념",q:"결과를 정렬하는 절은?",o:["SORT","ORDER BY","GROUP","RANK"],a:1,ex:"ORDER BY 열이름 으로 정렬합니다."},
+   {t:"choice",k:"내림차순",q:"큰 값부터 정렬하는 키워드는?",o:["ASC","DESC","DOWN","HIGH"],a:1,ex:"DESC 는 내림차순, ASC 는 오름차순(기본)."},
+   {t:"input",k:"빈칸",q:"결과를 5개만 가져오세요. (MySQL 기준)",code:'SELECT * FROM users _____ <span class="nu">5</span>;',a:["LIMIT","limit"],ex:"LIMIT n 으로 개수를 제한합니다."},
+   {t:"choice",k:"조합",q:"'점수 높은 순 3명'에 필요한 조합은?",o:["WHERE + LIMIT","ORDER BY DESC + LIMIT","GROUP BY","SORT + TOP"],a:1,ex:"정렬 후 LIMIT 로 상위 N개."}
+  ]}
+ ]},
+ {title:"집계와 그룹",guide:"📊",lessons:[
+  {title:"개수·합계 구하기",xp:15,q:[
+   {t:"choice",k:"개념",q:"행의 개수를 세는 함수는?",o:["SUM()","COUNT()","NUM()","TOTAL()"],a:1,ex:"COUNT(*) 로 행 수를 셉니다."},
+   {t:"choice",k:"합계",q:"price 열의 합을 구하는 것은?",o:["SUM(price)","ADD(price)","TOTAL(price)","COUNT(price)"],a:0,ex:"SUM() 은 합계."},
+   {t:"choice",k:"평균",q:"평균을 구하는 함수는?",o:["MEAN()","MID()","AVG()","MEDIAN()"],a:2,ex:"AVG() 는 평균값."},
+   {t:"input",k:"빈칸",q:"가장 큰 값을 구하는 함수 이름은?",code:'SELECT ___(price) FROM items;',a:["MAX","max"],ex:"MAX() 는 최댓값, MIN() 은 최솟값."}
+  ]},
+  {title:"GROUP BY 로 묶기",xp:20,q:[
+   {t:"choice",k:"개념",q:"같은 값끼리 묶어서 집계하는 절은?",o:["ORDER BY","GROUP BY","JOIN","UNION"],a:1,ex:"GROUP BY 로 묶은 뒤 집계합니다."},
+   {t:"choice",k:"활용",q:"'도시별 인원 수'를 구할 때 함께 쓰는 것은?",o:["GROUP BY city + COUNT(*)","WHERE city","ORDER BY city","LIMIT city"],a:0,ex:"city 로 묶고 COUNT 로 셉니다."},
+   {t:"choice",k:"JOIN",q:"두 테이블을 연결해 조회하는 것은?",o:["MERGE","LINK","JOIN","CONNECT"],a:2,ex:"JOIN 으로 테이블을 결합합니다."},
+   {t:"choice",k:"연결 조건",q:"JOIN 에서 연결 기준을 정하는 키워드는?",o:["ON","AT","BY","IF"],a:0,ex:"JOIN ... ON 조건 형태입니다."}
+  ]}
+ ]}
+]},
+
+c:{name:"C",em:"🔧",color:"#6d7ba8",g:"linear-gradient(135deg,#6d7ba8,#5b6cff)",units:[
+ {title:"C 언어 첫걸음",guide:"🔧",lessons:[
+  {title:"기본 구조와 출력",xp:10,q:[
+   {t:"choice",k:"개념",q:"C 프로그램이 시작되는 함수는?",o:["start()","main()","run()","begin()"],a:1,ex:"main() 함수에서 실행이 시작됩니다."},
+   {t:"choice",k:"출력",q:"화면에 출력하는 표준 함수는?",o:["print()","printf()","cout","echo()"],a:1,ex:"C 는 printf() 를 씁니다."},
+   {t:"input",k:"빈칸",q:"printf 를 쓰려면 포함해야 하는 헤더는?",code:'#include &lt;______.h&gt;',a:["stdio","stdio.h"],ex:"stdio.h (표준 입출력) 가 필요합니다."},
+   {t:"choice",k:"줄바꿈",q:"printf 에서 줄바꿈을 뜻하는 것은?",o:["\\t","\\n","\\r","/n"],a:1,ex:"\\n 은 줄바꿈(newline)."},
+   {t:"choice",k:"문장 끝",q:"C 에서 문장 끝에 반드시 붙이는 기호는?",o:[";",".",":","}"],a:0,ex:"세미콜론(;) 으로 문장을 끝냅니다."}
+  ]},
+  {title:"변수와 자료형",xp:15,q:[
+   {t:"choice",k:"개념",q:"정수를 저장하는 자료형은?",o:["char","int","float","str"],a:1,ex:"int 는 정수형입니다."},
+   {t:"choice",k:"실수",q:"실수(소수)를 저장하는 대표 자료형은?",o:["int","double","bool","long"],a:1,ex:"double(또는 float)은 실수형."},
+   {t:"input",k:"빈칸",q:"정수 변수 x 를 선언하고 10을 넣으세요.",code:'___ x = <span class="nu">10</span>;',a:["int"],ex:"int x = 10; 형태로 선언합니다."},
+   {t:"choice",k:"형식 지정자",q:"printf 에서 정수를 출력할 때 쓰는 것은?",o:["%s","%d","%f","%c"],a:1,ex:"%d 는 정수, %f 는 실수, %s 는 문자열."},
+   {t:"choice",k:"문자",q:"문자 하나 'A' 를 저장하는 자료형은?",o:["char","int","string","text"],a:0,ex:"char 는 문자 1개를 저장합니다."}
+  ]},
+  {title:"연산자",xp:15,q:[
+   {t:"choice",k:"출력 결과",q:"7 % 2 의 결과는?",o:["3","3.5","1","0"],a:2,ex:"% 는 나머지 연산, 7을 2로 나눈 나머지 1."},
+   {t:"choice",k:"나눗셈",q:"C 에서 int 끼리 7 / 2 의 결과는?",o:["3.5","3","4","2"],a:1,ex:"정수끼리 나누면 소수점은 버려져 3."},
+   {t:"choice",k:"증가",q:"변수 값을 1 늘리는 연산자는?",o:["x++","x--","x**","x//"],a:0,ex:"++ 는 1 증가, -- 는 1 감소."},
+   {t:"choice",k:"비교",q:"'같다'를 비교하는 연산자는?",o:["=","==","!=","=>"],a:1,ex:"== 는 비교, = 는 대입입니다."}
+  ]}
+ ]},
+ {title:"흐름 제어",guide:"🔀",lessons:[
+  {title:"조건문",xp:15,q:[
+   {t:"choice",k:"개념",q:"조건 분기에 쓰는 키워드는?",o:["when","if","case","check"],a:1,ex:"if (조건) { ... } 형태."},
+   {t:"choice",k:"블록",q:"C 에서 코드 블록을 감싸는 기호는?",o:["( )","{ }","[ ]","< >"],a:1,ex:"중괄호 { } 로 블록을 감쌉니다."},
+   {t:"choice",k:"여러 갈래",q:"값에 따라 여러 경우로 나누는 문장은?",o:["switch","split","branch","fork"],a:0,ex:"switch-case 로 여러 경우를 처리."},
+   {t:"input",k:"빈칸",q:"조건이 거짓일 때 실행하는 키워드는?",code:'if (a>b) { } ____ { }',a:["else"],ex:"else 는 그 외의 경우입니다."}
+  ]},
+  {title:"반복문과 배열",xp:20,q:[
+   {t:"choice",k:"개념",q:"정해진 횟수만큼 도는 반복문은?",o:["for","goto","if","switch"],a:0,ex:"for(초기;조건;증감) 형태로 반복."},
+   {t:"choice",k:"배열",q:"같은 자료형 여러 개를 담는 것은?",o:["구조체","배열","포인터","함수"],a:1,ex:"배열 int a[5]; 는 정수 5칸."},
+   {t:"choice",k:"인덱스",q:"배열 a 의 첫 번째 원소는?",o:["a[1]","a[0]","a(0)","a.first"],a:1,ex:"배열 인덱스는 0부터 시작합니다."},
+   {t:"choice",k:"포인터",q:"변수의 '주소'를 얻는 연산자는?",o:["*","&","#","@"],a:1,ex:"& 는 주소, * 는 그 주소의 값(역참조)."}
+  ]}
+ ]}
+]},
+
+cpp:{name:"C++",em:"➕",color:"#d6488f",g:"linear-gradient(135deg,#d6488f,#8a6bff)",units:[
+ {title:"C++ 첫걸음",guide:"➕",lessons:[
+  {title:"입출력 cout / cin",xp:10,q:[
+   {t:"choice",k:"개념",q:"C++ 에서 화면에 출력할 때 쓰는 것은?",o:["printf","cout","print","echo"],a:1,ex:"std::cout << 로 출력합니다."},
+   {t:"input",k:"빈칸",q:"cout 을 쓰려면 포함하는 헤더는?",code:'#include &lt;________&gt;',a:["iostream"],ex:"<iostream> 이 필요합니다."},
+   {t:"choice",k:"연산자",q:"cout 뒤에 출력할 값을 붙일 때 쓰는 기호는?",o:["<<",">>","->","::"],a:0,ex:"cout << 값 (스트림 삽입 연산자)."},
+   {t:"choice",k:"입력",q:"키보드 입력을 받을 때 쓰는 것은?",o:["cin >>","cout <<","scan()","input()"],a:0,ex:"cin >> 변수 로 입력받습니다."},
+   {t:"choice",k:"줄바꿈",q:"C++ 에서 줄바꿈으로 자주 쓰는 것은?",o:["endl","newline","\\r","break"],a:0,ex:"std::endl 또는 \\n 을 씁니다."}
+  ]},
+  {title:"변수와 자료형",xp:15,q:[
+   {t:"choice",k:"개념",q:"C++ 에서 타입을 자동 추론하게 하는 키워드는?",o:["var","auto","let","type"],a:1,ex:"auto x = 3; 이면 int 로 추론됩니다."},
+   {t:"choice",k:"문자열",q:"C++ 표준 문자열 타입은?",o:["char*","string","text","String"],a:1,ex:"<string> 의 std::string 을 씁니다."},
+   {t:"choice",k:"불리언",q:"참/거짓을 담는 타입은?",o:["bit","bool","flag","binary"],a:1,ex:"bool 은 true / false 를 담습니다."},
+   {t:"input",k:"빈칸",q:"정수 변수 n 을 선언하고 5를 넣으세요.",code:'___ n = <span class="nu">5</span>;',a:["int"],ex:"int n = 5; 형태입니다."}
+  ]},
+  {title:"조건과 반복",xp:15,q:[
+   {t:"choice",k:"개념",q:"조건 분기 키워드는?",o:["if","when","cond","test"],a:0,ex:"C 와 동일하게 if / else 를 씁니다."},
+   {t:"choice",k:"반복",q:"정해진 횟수 반복에 쓰는 문장은?",o:["for","repeat","loop","each"],a:0,ex:"for(int i=0;i<n;i++) 형태."},
+   {t:"choice",k:"범위 기반",q:"C++11 의 범위 기반 for 문 형태는?",o:["for(x : arr)","for x in arr","foreach x","for(x of arr)"],a:0,ex:"for (auto x : arr) 처럼 씁니다."},
+   {t:"choice",k:"비교",q:"'같지 않다'를 뜻하는 연산자는?",o:["<>","!=","=/=","not="],a:1,ex:"!= 는 같지 않음."}
+  ]}
+ ]},
+ {title:"컨테이너와 클래스",guide:"📦",lessons:[
+  {title:"vector 다루기",xp:20,q:[
+   {t:"choice",k:"개념",q:"크기가 자동으로 늘어나는 배열 같은 컨테이너는?",o:["array","vector","list?","set"],a:1,ex:"std::vector 는 동적 배열입니다."},
+   {t:"choice",k:"추가",q:"vector 끝에 값을 넣는 함수는?",o:["add()","append()","push_back()","insert_end()"],a:2,ex:"push_back() 으로 뒤에 추가합니다."},
+   {t:"choice",k:"크기",q:"vector 의 원소 개수를 구하는 함수는?",o:["len()","size()","count()","length()"],a:1,ex:"v.size() 로 개수를 얻습니다."},
+   {t:"input",k:"빈칸",q:"정수 vector v 를 선언하세요.",code:'std::______&lt;int&gt; v;',a:["vector"],ex:"std::vector<int> v; 형태입니다."}
+  ]},
+  {title:"함수와 클래스 맛보기",xp:20,q:[
+   {t:"choice",k:"개념",q:"기능을 묶어 재사용하는 단위는?",o:["변수","함수","반복","조건"],a:1,ex:"함수는 입력을 받아 결과를 돌려줍니다."},
+   {t:"choice",k:"반환",q:"함수가 값을 돌려줄 때 쓰는 키워드는?",o:["return","give","out","yield"],a:0,ex:"return 값; 으로 결과를 돌려줍니다."},
+   {t:"choice",k:"클래스",q:"데이터와 기능을 하나로 묶는 설계도는?",o:["struct?","class","object","module"],a:1,ex:"class 로 객체의 틀을 정의합니다."},
+   {t:"choice",k:"객체지향",q:"클래스로 실제로 만든 하나하나를 뭐라 하나요?",o:["함수","객체(인스턴스)","변수","포인터"],a:1,ex:"클래스로 만든 실체가 객체입니다."}
+  ]}
+ ]}
+]}
+};
+
+/* ================= 상태 ================= */
+const MAX_HEARTS=5;
+const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null};
+let S=load();
+function load(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("coderun")||"{}"))}catch(e){return Object.assign({},DEF)}}
+function save(){localStorage.setItem("coderun",JSON.stringify(S))}
+function today(){return new Date().toISOString().slice(0,10)}
+function refillHearts(){ if(S.heartsDay!==today()){S.hearts=MAX_HEARTS;S.heartsDay=today();save();} }
+
+let curLang="python", run=null;
+
+/* ================= 렌더: 홈 ================= */
+const $=id=>document.getElementById(id);
+function fmt(n){return n>=1000?(n/1000).toFixed(1).replace(/\.0$/,'')+"k":n}
+function paintStats(){ $("s-streak").textContent=S.streak; $("s-xp").textContent=fmt(S.xp); $("s-hearts").textContent=S.hearts; }
+
+function renderLangs(){
+  const bar=$("langbar"); bar.innerHTML="";
+  for(const key in COURSES){const c=COURSES[key];
+    const b=document.createElement("button");
+    b.className="langchip"; b.setAttribute("role","tab");
+    b.setAttribute("aria-selected", key===curLang);
+    if(key===curLang) b.style.background=c.color;
+    b.innerHTML=`<span class="em">${c.em}</span>${c.name}`;
+    b.onclick=()=>{curLang=key; renderLangs(); renderCourse();};
+    bar.appendChild(b);
+  }
+}
+function lessonState(gi){ // returns 'done' | 'current' | 'locked'
+  return null;
+}
+function renderCourse(){
+  const c=COURSES[curLang]; const wrap=$("course"); wrap.innerHTML="";
+  let globalIdx=0; let prevAllDone=true;
+  c.units.forEach((u,ui)=>{
+    const head=document.createElement("div");
+    head.className="unit-head"; head.style.background=c.g;
+    head.innerHTML=`<div><div class="k">유닛 ${ui+1}</div><h2>${u.title}</h2></div><div class="guide">${u.guide}</div>`;
+    wrap.appendChild(head);
+    const path=document.createElement("div"); path.className="path";
+    u.lessons.forEach((les,li)=>{
+      const id=`${curLang}-${ui}-${li}`;
+      const done=!!S.done[id];
+      const unlocked=prevAllDone||done;
+      const nodeWrap=document.createElement("div"); nodeWrap.className="node-wrap";
+      const btn=document.createElement("button");
+      const pos = globalIdx%8;
+      let cls="node n"+pos;
+      let inner="";
+      if(done){ cls+=" done"; btn.style.background=c.g; inner=`<span class="crown">👑</span>✓`; }
+      else if(unlocked){ cls+=" current"; btn.style.background=c.color; inner="★"; }
+      else { cls+=" locked"; inner="🔒"; }
+      btn.className=cls; btn.innerHTML=inner;
+      btn.disabled=!unlocked && !done;
+      btn.setAttribute("aria-label", les.title+(done?" 완료":unlocked?" 시작하기":" 잠김"));
+      if(unlocked||done) btn.onclick=()=>startLesson(curLang,ui,li);
+      const lbl=document.createElement("div"); lbl.className="node-label"; lbl.textContent=les.title;
+      nodeWrap.appendChild(btn); nodeWrap.appendChild(lbl);
+      path.appendChild(nodeWrap);
+      if(!done) prevAllDone=false;
+      globalIdx++;
+    });
+    wrap.appendChild(path);
+  });
+  paintStats();
+}
+
+/* ================= 레슨 진행 ================= */
+function startLesson(lang,ui,li){
+  refillHearts();
+  if(S.hearts<=0){ alert("하트를 모두 썼어요! 내일 다시 채워지거나, 초기화 후 연습할 수 있어요. 오늘은 이미 푼 레슨을 복습해 보세요 💪"); return; }
+  const les=COURSES[lang].units[ui].lessons[li];
+  run={lang,ui,li,les,i:0,correct:0,total:les.q.length,hearts:S.hearts,id:`${lang}-${ui}-${li}`,color:COURSES[lang].color};
+  $("lesson").classList.add("on");
+  document.body.style.overflow="hidden";
+  showQ();
+}
+function showQ(){
+  const q=run.les.q[run.i];
+  $("prog").style.width=(run.i/run.total*100)+"%";
+  $("l-hearts").textContent=run.hearts;
+  run.answered=false; run.picked=null;
+  const foot=$("foot"); foot.className="foot"; $("foot-msg").innerHTML="";
+  const chk=$("check"); chk.className="btn"; chk.textContent="확인"; chk.disabled=true;
+  chk.onclick=onCheck;
+  let html=`<div class="q-kind">${q.k||"문제"}</div><div class="q-title">${q.q}</div>`;
+  if(q.code) html+=C(q.code);
+  const body=$("qbody");
+  if(q.t==="input"){
+    html+=`<input class="fill-in" id="fill" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답 입력..." />`;
+    body.innerHTML=html; body.scrollTop=0;
+    const f=$("fill");
+    f.oninput=()=>{ chk.disabled=f.value.trim()===""; };
+    f.onkeydown=e=>{ if(e.key==="Enter"&&!chk.disabled){ if(!run.answered) onCheck(); else chk.onclick(); } };
+    setTimeout(()=>f.focus(),50);
+  } else {
+    const mono = q.o.some(o=>/[(){}=<>;*]|print|SELECT|cout|int /.test(o));
+    html+=`<div class="options" id="opts">`+q.o.map((o,idx)=>
+      `<button class="opt${mono?' mono':''}" data-i="${idx}"><span class="key">${String.fromCharCode(65+idx)}</span><span>${o}</span></button>`
+    ).join("")+`</div>`;
+    body.innerHTML=html; body.scrollTop=0;
+    body.querySelectorAll(".opt").forEach(el=>{
+      el.onclick=()=>{ if(run.answered)return;
+        body.querySelectorAll(".opt").forEach(x=>x.classList.remove("sel"));
+        el.classList.add("sel"); run.picked=+el.dataset.i; chk.disabled=false;
+      };
+    });
+  }
+}
+function norm(s){return s.toLowerCase().replace(/\s+/g,'').replace(/;$/,'')}
+function onCheck(){
+  const q=run.les.q[run.i]; let ok=false;
+  if(q.t==="input"){
+    const v=norm($("fill").value); ok=q.a.some(a=>norm(a)===v);
+    $("fill").disabled=true;
+  } else {
+    ok=run.picked===q.a;
+    const opts=$("opts").children;
+    opts[q.a].classList.add("ok");
+    if(!ok && run.picked!=null) opts[run.picked].classList.add("no");
+    [...opts].forEach(o=>o.onclick=null);
+  }
+  run.answered=true;
+  const foot=$("foot"), msg=$("foot-msg"), chk=$("check");
+  if(ok){ run.correct++; foot.className="foot good";
+    msg.innerHTML=`<span class="em">🎉</span><div>정답이에요!</div>`;
+    chk.className="btn good";
+  } else {
+    run.hearts--; foot.className="foot bad";
+    const correctText = q.t==="input"? q.a[0] : q.o[q.a];
+    msg.innerHTML=`<span class="em">💡</span><div>정답: <span style="font-family:var(--mono)">${correctText}</span><small>${q.ex||""}</small></div>`;
+    chk.className="btn bad";
+    $("l-hearts").textContent=run.hearts;
+  }
+  chk.textContent="계속"; chk.disabled=false;
+  chk.onclick=()=>{
+    if(run.hearts<=0){ endLesson(false); return; }
+    run.i++;
+    if(run.i>=run.total) endLesson(true); else showQ();
+  };
+}
+function endLesson(passed){
+  $("lesson").classList.remove("on");
+  const acc=Math.round(run.correct/run.total*100);
+  S.hearts=run.hearts;
+  if(passed){
+    const gained=run.les.xp + (run.correct===run.total?5:0);
+    if(!S.done[run.id]){ S.done[run.id]=true; }
+    S.xp+=gained;
+    // streak
+    const t=today();
+    if(S.lastDay!==t){
+      const y=new Date(Date.now()-86400000).toISOString().slice(0,10);
+      S.streak = (S.lastDay===y)? S.streak+1 : 1;
+      S.lastDay=t;
+    }
+    save();
+    $("done-emoji").textContent=run.correct===run.total?"🏆":"🎉";
+    $("done-title").textContent=run.correct===run.total?"완벽해요!":"레슨 완료!";
+    $("done-sub").textContent=run.correct===run.total?"만점이에요! 보너스 XP 획득 🎁":"잘했어요, 계속 이어가 봐요.";
+    $("done-xp").textContent="+"+gained;
+    $("done-acc").textContent=acc+"%";
+    $("done").classList.add("on");
+    $("done-next").onclick=()=>{ $("done").classList.remove("on"); document.body.style.overflow=""; renderLangs(); renderCourse(); };
+  } else {
+    save();
+    document.body.style.overflow="";
+    alert("하트를 다 썼어요 😢 잠시 쉬었다가 다시 도전해요! (하트는 매일 새로 채워집니다)");
+    renderCourse();
+  }
+}
+
+/* ================= 컨트롤 ================= */
+$("quit").onclick=()=>{ if(confirm("레슨을 나갈까요? 진행 중인 문제는 저장되지 않아요.")){ $("lesson").classList.remove("on"); document.body.style.overflow=""; S.hearts=run.hearts; save(); renderCourse(); } };
+$("reset-link").onclick=e=>{ e.preventDefault(); if(confirm("모든 진행상황(XP·연속학습·완료 레슨)을 초기화할까요?")){ S=Object.assign({},DEF); save(); location.reload(); } };
+
+/* 테마 */
+function applyTheme(t){ if(t) document.documentElement.setAttribute("data-theme",t); else document.documentElement.removeAttribute("data-theme"); }
+$("theme-btn").onclick=()=>{
+  const cur=document.documentElement.getAttribute("data-theme");
+  const dark=window.matchMedia("(prefers-color-scheme:dark)").matches;
+  const isDark = cur? cur==="dark" : dark;
+  const next=isDark?"light":"dark";
+  S.theme=next; save(); applyTheme(next);
+};
+
+/* ================= 시작 ================= */
+refillHearts(); applyTheme(S.theme); renderLangs(); renderCourse();
+</script>
