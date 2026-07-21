@@ -68,6 +68,14 @@
   .langchip[aria-selected="true"]{color:#fff; border-color:transparent}
   .langchip:active{transform:scale(.96)}
 
+  /* ---------- practice bar ---------- */
+  .practice-bar{display:flex; gap:8px; padding:12px 0 2px}
+  .pbtn{flex:1; padding:12px 14px; border-radius:13px; border:2px solid var(--line); background:var(--card);
+    font-weight:800; font-size:14px; color:var(--ink); box-shadow:var(--shadow); transition:transform .08s}
+  .pbtn:active{transform:scale(.98)}
+  #random-btn{background:var(--brand); border-color:transparent; color:#fff; box-shadow:0 3px 0 var(--brand-ink)}
+  .pbtn.ghost[aria-pressed="true"]{background:var(--good); border-color:transparent; color:#fff; box-shadow:0 3px 0 #229e5a}
+
   /* ---------- unit header ---------- */
   .unit-head{margin:22px 0 4px; padding:16px 18px; border-radius:var(--radius); color:#fff;
     box-shadow:var(--shadow); display:flex; justify-content:space-between; align-items:center; gap:12px}
@@ -180,6 +188,10 @@
   </div>
 
   <div class="langbar" id="langbar" role="tablist"></div>
+  <div class="practice-bar">
+    <button class="pbtn" id="random-btn">🎲 랜덤 문제 풀기</button>
+    <button class="pbtn ghost" id="free-btn" aria-pressed="false">🔓 자유 모드</button>
+  </div>
   <div id="course"></div>
   <div class="foot-hint" id="reset-hint">진행상황은 이 브라우저에 자동 저장돼요 · <a href="#" id="reset-link" style="color:var(--brand)">전체 초기화</a></div>
 </div>
@@ -484,12 +496,97 @@ java:{name:"Java",em:"☕",color:"#4a7196",g:"linear-gradient(135deg,#4a7196,#5b
    {t:"choice",k:"조건",q:"조건 분기 키워드는?",o:["if","when","case","cond"],a:0,ex:"if / else 로 분기합니다."}
   ]}
  ]}
+]},
+
+react:{name:"React",em:"⚛️",color:"#2b9fc4",g:"linear-gradient(135deg,#2b9fc4,#5b6cff)",units:[
+ {title:"React 기초",guide:"⚛️",lessons:[
+  {title:"컴포넌트와 JSX",xp:15,q:[
+   {t:"choice",k:"개념",q:"React 에서 화면을 이루는 재사용 가능한 조각을 뭐라 하나요?",o:["모듈","컴포넌트","함수","태그"],a:1,ex:"UI 를 컴포넌트 단위로 나눠 조립합니다."},
+   {t:"choice",k:"JSX",q:"자바스크립트 안에 HTML 처럼 쓰는 문법은?",o:["JSON","JSX","HTML5","TSX만"],a:1,ex:"JSX 로 UI 를 선언적으로 작성합니다."},
+   {t:"choice",k:"규칙",q:"React 컴포넌트 이름의 규칙은?",o:["소문자로 시작","대문자로 시작","숫자로 시작","상관없음"],a:1,ex:"컴포넌트는 대문자로 시작해야 합니다 (예: App)."},
+   {t:"choice",k:"상식",q:"React 를 만든 회사는?",o:["구글","Meta(페이스북)","마이크로소프트","애플"],a:1,ex:"React 는 Meta 에서 개발했습니다."}
+  ]},
+  {title:"props 와 state",xp:20,q:[
+   {t:"choice",k:"개념",q:"부모가 자식 컴포넌트에 값을 넘겨줄 때 쓰는 것은?",o:["state","props","hook","ref"],a:1,ex:"props 로 컴포넌트에 데이터를 전달합니다."},
+   {t:"choice",k:"상태",q:"컴포넌트 내부에서 바뀌는 데이터를 다루는 것은?",o:["props","state","const","css"],a:1,ex:"state 는 컴포넌트의 변하는 값입니다."},
+   {t:"choice",k:"훅",q:"함수형 컴포넌트에서 상태를 쓰는 훅은?",o:["useState","useBox","setState","useVar"],a:0,ex:"const [n,setN]=useState(0) 형태로 씁니다."},
+   {t:"choice",k:"동작",q:"state 값이 바뀌면 컴포넌트는?",o:["아무 일 없음","다시 렌더링됨","삭제됨","새로고침됨"],a:1,ex:"state 가 바뀌면 화면이 다시 그려집니다."}
+  ]}
+ ]}
+]},
+
+backend:{name:"백엔드/서버",em:"🖥️",color:"#7d5bd0",g:"linear-gradient(135deg,#7d5bd0,#5b6cff)",units:[
+ {title:"웹의 작동 원리",guide:"🌐",lessons:[
+  {title:"HTTP 요청과 응답",xp:15,q:[
+   {t:"choice",k:"개념",q:"브라우저(클라이언트)가 서버에 보내는 것은?",o:["응답(Response)","요청(Request)","패킷만","쿠키만"],a:1,ex:"클라이언트가 요청하면 서버가 응답합니다."},
+   {t:"choice",k:"메서드",q:"데이터를 '가져올 때' 주로 쓰는 HTTP 메서드는?",o:["GET","POST","DELETE","PUT"],a:0,ex:"GET 은 조회, POST 는 전송에 씁니다."},
+   {t:"choice",k:"메서드",q:"새 데이터를 '보내서 만들 때' 쓰는 메서드는?",o:["GET","POST","READ","FIND"],a:1,ex:"POST 로 서버에 데이터를 보냅니다."},
+   {t:"choice",k:"상태 코드",q:"요청이 성공했을 때의 상태 코드는?",o:["404","500","200","301"],a:2,ex:"200 은 성공, 404 는 없음, 500 은 서버 오류."}
+  ]},
+  {title:"API·서버·DB",xp:15,q:[
+   {t:"choice",k:"개념",q:"프로그램끼리 정보를 주고받는 규약(창구)은?",o:["API","URL","HTML","IP"],a:0,ex:"API 로 다른 프로그램의 기능을 사용합니다."},
+   {t:"choice",k:"형식",q:"웹 API 가 데이터를 주고받을 때 흔히 쓰는 형식은?",o:["JSON","MP3","PNG","EXE"],a:0,ex:"JSON 은 가볍고 읽기 쉬운 데이터 형식입니다."},
+   {t:"choice",k:"프레임워크",q:"파이썬의 대표적인 경량 웹 프레임워크는?",o:["React","Flask","Vue","jQuery"],a:1,ex:"Flask/Django 는 파이썬 백엔드 프레임워크입니다."},
+   {t:"choice",k:"저장",q:"데이터를 영구적으로 저장하는 곳은?",o:["데이터베이스","브라우저 탭","CPU","캐시만"],a:0,ex:"데이터베이스(DB)에 데이터를 저장합니다."}
+  ]}
+ ]}
+]},
+
+cs:{name:"CS 기초",em:"🧮",color:"#5f6b7a",g:"linear-gradient(135deg,#5f6b7a,#5b6cff)",units:[
+ {title:"컴퓨터의 기초",guide:"🧮",lessons:[
+  {title:"2진수와 데이터",xp:10,q:[
+   {t:"choice",k:"개념",q:"컴퓨터가 내부에서 사용하는 수 체계는?",o:["10진수","2진수(0과 1)","16진수만","문자"],a:1,ex:"컴퓨터는 0과 1, 즉 2진수로 동작합니다."},
+   {t:"choice",k:"단위",q:"0 또는 1 하나를 나타내는 가장 작은 단위는?",o:["바이트","비트(bit)","헤르츠","픽셀"],a:1,ex:"비트(bit)가 정보의 최소 단위입니다."},
+   {t:"choice",k:"단위",q:"8비트(bit)는 1 무엇인가요?",o:["킬로바이트","바이트(byte)","메가바이트","워드"],a:1,ex:"8비트 = 1바이트입니다."},
+   {t:"choice",k:"부품",q:"계산을 처리하는 컴퓨터의 '두뇌'는?",o:["RAM","CPU","GPU만","HDD"],a:1,ex:"CPU 가 연산을 담당하는 핵심 장치입니다."}
+  ]},
+  {title:"메모리와 운영체제",xp:15,q:[
+   {t:"choice",k:"저장",q:"실행 중인 데이터를 임시로 담는 빠른 저장장치는?",o:["RAM(메모리)","하드디스크","USB","CD"],a:0,ex:"RAM 은 빠르지만 전원이 꺼지면 사라집니다."},
+   {t:"choice",k:"저장",q:"전원을 꺼도 데이터가 남는 저장장치는?",o:["RAM","캐시","SSD/하드디스크","레지스터"],a:2,ex:"SSD·HDD 는 영구 저장장치입니다."},
+   {t:"choice",k:"개념",q:"하드웨어와 프로그램을 관리하는 기본 소프트웨어는?",o:["운영체제(OS)","브라우저","컴파일러","백신"],a:0,ex:"Windows, macOS, Linux 가 운영체제입니다."},
+   {t:"choice",k:"구분",q:"다음 중 운영체제가 아닌 것은?",o:["Windows","Linux","macOS","Python"],a:3,ex:"Python 은 프로그래밍 언어입니다."}
+  ]}
+ ]}
+]},
+
+algo:{name:"알고리즘/자료구조",em:"📊",color:"#c77d3a",g:"linear-gradient(135deg,#c77d3a,#eab308)",units:[
+ {title:"자료구조와 복잡도",guide:"📊",lessons:[
+  {title:"기본 자료구조",xp:15,q:[
+   {t:"choice",k:"개념",q:"먼저 넣은 것이 나중에 나오는(LIFO) 구조는?",o:["큐","스택","배열","트리"],a:1,ex:"스택은 쌓기(접시)처럼 마지막 것이 먼저 나옵니다."},
+   {t:"choice",k:"개념",q:"먼저 넣은 것이 먼저 나오는(FIFO) 구조는?",o:["스택","큐","해시","힙"],a:1,ex:"큐는 줄서기처럼 먼저 온 것이 먼저 처리됩니다."},
+   {t:"choice",k:"개념",q:"값을 순서대로 담고 인덱스로 바로 접근하는 구조는?",o:["배열","스택","큐","링크드리스트"],a:0,ex:"배열은 인덱스로 O(1) 접근이 가능합니다."},
+   {t:"choice",k:"개념",q:"키(key)로 값을 빠르게 찾는 구조는?",o:["배열","해시(맵/딕셔너리)","스택","큐"],a:1,ex:"해시맵은 키로 값을 매우 빠르게 찾습니다."}
+  ]},
+  {title:"복잡도와 탐색·정렬",xp:20,q:[
+   {t:"choice",k:"개념",q:"알고리즘의 효율(속도)을 나타내는 표기법은?",o:["빅오(Big-O)","IP","API","ASCII"],a:0,ex:"O(n), O(1) 처럼 빅오 표기를 씁니다."},
+   {t:"choice",k:"복잡도",q:"크기 n 인 배열을 처음부터 끝까지 한 번 훑으면?",o:["O(1)","O(n)","O(n²)","O(log n)"],a:1,ex:"전체를 한 번 보면 O(n) 입니다."},
+   {t:"choice",k:"개념",q:"값들을 크기 순서대로 나열하는 것은?",o:["탐색","정렬","해싱","재귀"],a:1,ex:"정렬(sort)은 값을 순서대로 배열합니다."},
+   {t:"choice",k:"개념",q:"정렬된 배열에서 범위를 반씩 줄이며 찾는 탐색은?",o:["순차 탐색","이진 탐색","완전 탐색","DFS"],a:1,ex:"이진 탐색은 O(log n) 으로 매우 빠릅니다."}
+  ]}
+ ]}
+]},
+
+ai:{name:"AI/머신러닝",em:"🤖",color:"#c14d86",g:"linear-gradient(135deg,#c14d86,#8a6bff)",units:[
+ {title:"AI 첫걸음",guide:"🤖",lessons:[
+  {title:"머신러닝이란?",xp:15,q:[
+   {t:"choice",k:"개념",q:"데이터로부터 규칙을 스스로 학습하는 기술은?",o:["머신러닝","엑셀","HTML","데이터베이스"],a:0,ex:"머신러닝은 데이터로 패턴을 학습합니다."},
+   {t:"choice",k:"개념",q:"신경망을 여러 층으로 쌓아 학습하는 머신러닝 분야는?",o:["딥러닝","웹러닝","클라우드","블록체인"],a:0,ex:"딥러닝은 심층 신경망을 사용합니다."},
+   {t:"choice",k:"핵심",q:"머신러닝 학습에서 가장 중요한 재료는?",o:["데이터","색깔","폰트","마우스"],a:0,ex:"좋은 데이터가 좋은 모델을 만듭니다."},
+   {t:"choice",k:"상식",q:"ChatGPT 같은 거대 언어 모델을 뜻하는 약자는?",o:["CSS","LLM","SQL","CPU"],a:1,ex:"LLM = Large Language Model(거대 언어 모델)."}
+  ]},
+  {title:"학습 방법과 용어",xp:15,q:[
+   {t:"choice",k:"개념",q:"정답(라벨)이 있는 데이터로 배우는 방식은?",o:["지도학습","비지도학습","강화학습","무학습"],a:0,ex:"지도학습은 정답이 붙은 데이터로 학습합니다."},
+   {t:"choice",k:"개념",q:"정답 없이 데이터의 패턴·군집을 찾는 방식은?",o:["지도학습","비지도학습","암기학습","복사"],a:1,ex:"비지도학습은 라벨 없이 구조를 찾습니다."},
+   {t:"choice",k:"개념",q:"모델이 잘 학습됐는지 확인하려고 따로 떼어둔 데이터는?",o:["학습 데이터","테스트 데이터","쓰레기 데이터","백업"],a:1,ex:"테스트 데이터로 성능을 평가합니다."},
+   {t:"choice",k:"도구",q:"다음 중 파이썬 딥러닝 라이브러리가 아닌 것은?",o:["PyTorch","TensorFlow","Keras","Django"],a:3,ex:"Django 는 웹 프레임워크입니다."}
+  ]}
+ ]}
 ]}
 };
 
 /* ================= 상태 ================= */
 const MAX_HEARTS=5;
-const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null};
+const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true};
 let S=load();
 function load(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("coderun")||"{}"))}catch(e){return Object.assign({},DEF)}}
 function save(){localStorage.setItem("coderun",JSON.stringify(S))}
@@ -530,7 +627,7 @@ function renderCourse(){
     u.lessons.forEach((les,li)=>{
       const id=`${curLang}-${ui}-${li}`;
       const done=!!S.done[id];
-      const unlocked=prevAllDone||done;
+      const unlocked=S.freeMode||prevAllDone||done;
       const nodeWrap=document.createElement("div"); nodeWrap.className="node-wrap";
       const btn=document.createElement("button");
       const pos = globalIdx%8;
@@ -557,9 +654,20 @@ function renderCourse(){
 /* ================= 레슨 진행 ================= */
 function startLesson(lang,ui,li){
   refillHearts();
-  if(S.hearts<=0){ alert("하트를 모두 썼어요! 내일 다시 채워지거나, 초기화 후 연습할 수 있어요. 오늘은 이미 푼 레슨을 복습해 보세요 💪"); return; }
+  if(!S.freeMode && S.hearts<=0){ alert("하트를 모두 썼어요! 내일 다시 채워지거나, 자유 모드를 켜면 하트 없이 연습할 수 있어요 💪"); return; }
   const les=COURSES[lang].units[ui].lessons[li];
-  run={lang,ui,li,les,i:0,correct:0,total:les.q.length,hearts:S.hearts,id:`${lang}-${ui}-${li}`,color:COURSES[lang].color};
+  run={lang,ui,li,les,i:0,correct:0,total:les.q.length,hearts:S.hearts,id:`${lang}-${ui}-${li}`,color:COURSES[lang].color,free:S.freeMode};
+  $("lesson").classList.add("on");
+  document.body.style.overflow="hidden";
+  showQ();
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function startRandom(lang){
+  const c=COURSES[lang]; const pool=[];
+  c.units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>pool.push(q))));
+  const picked=shuffle(pool.slice()).slice(0,8);
+  const les={title:c.name+" 랜덤 연습",xp:15,q:picked};
+  run={lang,les,i:0,correct:0,total:picked.length,hearts:S.hearts,id:null,color:c.color,free:S.freeMode};
   $("lesson").classList.add("on");
   document.body.style.overflow="hidden";
   showQ();
@@ -567,7 +675,7 @@ function startLesson(lang,ui,li){
 function showQ(){
   const q=run.les.q[run.i];
   $("prog").style.width=(run.i/run.total*100)+"%";
-  $("l-hearts").textContent=run.hearts;
+  $("l-hearts").textContent=run.free?"∞":run.hearts;
   run.answered=false; run.picked=null;
   const foot=$("foot"); foot.className="foot"; $("foot-msg").innerHTML="";
   const chk=$("check"); chk.className="btn"; chk.textContent="확인"; chk.disabled=true;
@@ -615,15 +723,16 @@ function onCheck(){
     msg.innerHTML=`<span class="em">🎉</span><div>정답이에요!</div>`;
     chk.className="btn good";
   } else {
-    run.hearts--; foot.className="foot bad";
+    if(!run.free) run.hearts--;
+    foot.className="foot bad";
     const correctText = q.t==="input"? q.a[0] : q.o[q.a];
     msg.innerHTML=`<span class="em">💡</span><div>정답: <span style="font-family:var(--mono)">${correctText}</span><small>${q.ex||""}</small></div>`;
     chk.className="btn bad";
-    $("l-hearts").textContent=run.hearts;
+    $("l-hearts").textContent=run.free?"∞":run.hearts;
   }
   chk.textContent="계속"; chk.disabled=false;
   chk.onclick=()=>{
-    if(run.hearts<=0){ endLesson(false); return; }
+    if(!run.free && run.hearts<=0){ endLesson(false); return; }
     run.i++;
     if(run.i>=run.total) endLesson(true); else showQ();
   };
@@ -634,7 +743,7 @@ function endLesson(passed){
   S.hearts=run.hearts;
   if(passed){
     const gained=run.les.xp + (run.correct===run.total?5:0);
-    if(!S.done[run.id]){ S.done[run.id]=true; }
+    if(run.id && !S.done[run.id]){ S.done[run.id]=true; }
     S.xp+=gained;
     // streak
     const t=today();
@@ -673,6 +782,12 @@ $("theme-btn").onclick=()=>{
   S.theme=next; save(); applyTheme(next);
 };
 
+/* 자유 모드 · 랜덤 */
+$("random-btn").onclick=()=>startRandom(curLang);
+function paintFree(){ const b=$("free-btn"); b.setAttribute("aria-pressed",S.freeMode?"true":"false");
+  b.textContent=S.freeMode?"✅ 자유 모드 켜짐":"🔓 자유 모드"; }
+$("free-btn").onclick=()=>{ S.freeMode=!S.freeMode; save(); paintFree(); renderCourse(); };
+
 /* ================= 시작 ================= */
-refillHearts(); applyTheme(S.theme); renderLangs(); renderCourse();
+refillHearts(); applyTheme(S.theme); paintFree(); renderLangs(); renderCourse();
 </script>
