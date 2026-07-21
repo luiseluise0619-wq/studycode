@@ -257,6 +257,45 @@ python:{name:"Python",em:"🐍",color:"#3b7dd8",g:"linear-gradient(135deg,#3b7dd
  ]}
 ]},
 
+javascript:{name:"JavaScript",em:"🟨",color:"#caa200",g:"linear-gradient(135deg,#caa200,#eab308)",units:[
+ {title:"자바스크립트 첫걸음",guide:"🟨",lessons:[
+  {title:"출력 console.log",xp:10,q:[
+   {t:"choice",k:"개념",q:"자바스크립트에서 콘솔에 값을 출력하는 것은?",o:["print()","console.log()","printf()","echo()"],a:1,ex:"console.log() 로 콘솔에 출력합니다."},
+   {t:"choice",k:"출력 결과",q:"결과는?",code:'<span class="kw">console</span>.log(<span class="nu">1</span> + <span class="nu">2</span>);',o:["12","3","1+2","오류"],a:1,ex:"숫자끼리 더하면 3."},
+   {t:"input",k:"빈칸",q:'콘솔에 "hi" 를 출력하도록 채우세요.',code:'console.___(<span class="st">"hi"</span>);',a:["log"],ex:"console.log(\"hi\") 입니다."},
+   {t:"choice",k:"문장 끝",q:"자바스크립트 문장 끝에 관례적으로 붙이는 기호는?",o:[".",";",":","#"],a:1,ex:"세미콜론(;) 을 붙이는 것이 관례입니다."},
+   {t:"choice",k:"문자열 합치기",q:'"a" + "b" 의 결과는?',o:["ab","a b","2","오류"],a:0,ex:"문자열 + 는 이어붙이기라 'ab'."}
+  ]},
+  {title:"변수 let 과 const",xp:15,q:[
+   {t:"choice",k:"개념",q:"값을 바꿀 수 있는 변수를 선언하는 키워드는?",o:["let","const","fix","val"],a:0,ex:"let 은 재할당 가능한 변수입니다."},
+   {t:"choice",k:"상수",q:"한 번 정하면 바꾸지 않을 값에 쓰는 키워드는?",o:["let","var","const","static"],a:2,ex:"const 는 재할당 불가한 상수."},
+   {t:"input",k:"빈칸",q:"age 라는 변수를 만들고 20을 넣으세요. (let 사용)",code:'___ age = <span class="nu">20</span>;',a:["let"],ex:"let age = 20; 형태입니다."},
+   {t:"choice",k:"자료형",q:"true / false 를 담는 자료형은?",o:["number","boolean","string","null"],a:1,ex:"boolean 은 참/거짓."},
+   {t:"choice",k:"타입 확인",q:"값의 자료형을 알아내는 연산자는?",o:["typeof","type()","kind","class"],a:0,ex:"typeof x 로 자료형을 확인합니다."}
+  ]},
+  {title:"비교와 조건문",xp:15,q:[
+   {t:"choice",k:"개념",q:"조건 분기에 쓰는 키워드는?",o:["when","if","case","cond"],a:1,ex:"if (조건) { ... } 형태입니다."},
+   {t:"choice",k:"엄격한 비교",q:"값과 타입을 모두 비교하는 권장 연산자는?",o:["=","==","===","!="],a:2,ex:"=== 는 값+타입을 엄격히 비교(권장)."},
+   {t:"choice",k:"출력 결과",q:"결과는?",code:'<span class="kw">console</span>.log(<span class="nu">2</span> === <span class="st">"2"</span>);',o:["true","false","2","오류"],a:1,ex:"=== 는 타입도 비교, 숫자2와 문자'2'는 달라 false."},
+   {t:"choice",k:"논리 연산",q:"'그리고'(둘 다 참)를 뜻하는 연산자는?",o:["&&","||","!","and"],a:0,ex:"&& 는 AND, || 는 OR, ! 는 NOT."}
+  ]}
+ ]},
+ {title:"함수와 데이터",guide:"⚙️",lessons:[
+  {title:"함수 만들기",xp:15,q:[
+   {t:"choice",k:"개념",q:"함수를 정의하는 키워드는?",o:["func","function","def","fn"],a:1,ex:"function 이름() { } 로 정의합니다."},
+   {t:"choice",k:"반환",q:"함수가 값을 돌려줄 때 쓰는 키워드는?",o:["return","give","out","yield"],a:0,ex:"return 값; 으로 결과를 돌려줍니다."},
+   {t:"choice",k:"화살표 함수",q:"ES6 의 화살표 함수 기호는?",o:["->","=>",">>","::"],a:1,ex:"const f = () => { } 형태입니다."},
+   {t:"input",k:"빈칸",q:"함수가 결과 x 를 돌려주도록 채우세요.",code:'______ x;',a:["return"],ex:"return x; 입니다."}
+  ]},
+  {title:"배열 다루기",xp:15,q:[
+   {t:"choice",k:"개념",q:"여러 값을 순서대로 담는 자료형은?",o:["배열 []","객체 {}","문자열","숫자"],a:0,ex:"배열은 [1,2,3] 처럼 대괄호로."},
+   {t:"choice",k:"인덱스",q:"arr=[10,20,30] 에서 arr[1] 은?",o:["10","20","30","1"],a:1,ex:"인덱스는 0부터라 arr[1] 은 20."},
+   {t:"choice",k:"추가",q:"배열 끝에 값을 추가하는 함수는?",o:["add()","push()","append()","insert()"],a:1,ex:"arr.push(값) 으로 끝에 추가합니다."},
+   {t:"choice",k:"길이",q:"배열의 개수를 알아내는 것은?",o:["arr.size","arr.length","len(arr)","arr.count"],a:1,ex:"arr.length 로 개수를 얻습니다."}
+  ]}
+ ]}
+]},
+
 sql:{name:"SQL",em:"🗄️",color:"#1aa38a",g:"linear-gradient(135deg,#1aa38a,#2fbf71)",units:[
  {title:"데이터 조회 기초",guide:"🔎",lessons:[
   {title:"SELECT 로 가져오기",xp:10,q:[
