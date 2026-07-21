@@ -949,6 +949,37 @@ fp:{name:"함수형",em:"λ",color:"#4d7ea8",g:"linear-gradient(135deg,#4d7ea8,#
    {t:"choice",k:"개념",q:"함수형 프로그래밍이 최대한 피하려는 것은?",o:["부작용(side effect)","순수 함수","불변성","재사용"],a:0,ex:"외부 상태를 바꾸는 부작용을 줄이는 게 핵심입니다."}
   ]}
  ]}
+]},
+
+arduino:{name:"아두이노",em:"🔌",color:"#0a8f95",g:"linear-gradient(135deg,#0a8f95,#1aa38a)",units:[
+ {title:"아두이노 첫걸음",guide:"🔌",lessons:[
+  {title:"아두이노란?",xp:20,q:[
+   {t:"choice",k:"개념",q:"아두이노는 기본적으로 무엇인가요?",o:["전자 회로를 제어하는 마이크로컨트롤러 보드","웹 브라우저","데이터베이스","운영체제"],a:0,ex:"아두이노는 센서·모터·LED 등을 제어하는 작은 컴퓨터 보드입니다."},
+   {t:"choice",k:"언어",q:"아두이노 프로그래밍 언어는 무엇을 기반으로 하나요?",o:["Python","C/C++","JavaScript","SQL"],a:1,ex:"아두이노 스케치는 C/C++ 문법을 사용합니다."},
+   {t:"choice",k:"구조",q:"아두이노 코드에서 처음에 딱 한 번만 실행되는 함수는?",o:["setup()","loop()","main()","start()"],a:0,ex:"setup() 에서 초기 설정(핀 모드 등)을 합니다."},
+   {t:"choice",k:"구조",q:"setup() 이후 계속 반복해서 실행되는 함수는?",o:["setup()","loop()","repeat()","again()"],a:1,ex:"loop() 안의 코드가 무한 반복됩니다."}
+  ]},
+  {title:"핀과 제어",xp:25,q:[
+   {t:"choice",k:"함수",q:"핀을 입력(INPUT) 또는 출력(OUTPUT)으로 설정하는 함수는?",o:["pinMode()","setPin()","digitalWrite()","begin()"],a:0,ex:"pinMode(13, OUTPUT) 처럼 핀의 역할을 정합니다."},
+   {t:"choice",k:"함수",q:"디지털 핀에 HIGH/LOW(켜기/끄기) 를 출력하는 함수는?",o:["analogRead()","digitalWrite()","delay()","print()"],a:1,ex:"digitalWrite(13, HIGH) 로 LED 를 켭니다."},
+   {t:"choice",k:"제어",q:"LED 를 켜려면 핀에 어떤 값을 줘야 하나요?",o:["HIGH","LOW","OFF","0"],a:0,ex:"HIGH 는 전압을 걸어 켜고, LOW 는 끕니다."},
+   {t:"choice",k:"함수",q:"프로그램을 잠시(밀리초 단위) 멈추게 하는 함수는?",o:["stop()","wait()","delay()","sleep()"],a:2,ex:"delay(1000) 은 1초 동안 멈춥니다."}
+  ]}
+ ]},
+ {title:"입력과 통신",guide:"📟",lessons:[
+  {title:"센서 읽기",xp:25,q:[
+   {t:"choice",k:"함수",q:"온도·빛 같은 아날로그 센서 값을 읽는 함수는?",o:["analogRead()","digitalWrite()","pinMode()","delay()"],a:0,ex:"analogRead(A0) 은 0~1023 범위 값을 읽습니다."},
+   {t:"choice",k:"함수",q:"버튼처럼 켜짐/꺼짐만 있는 디지털 입력을 읽는 함수는?",o:["digitalRead()","analogWrite()","print()","loop()"],a:0,ex:"digitalRead(핀) 은 HIGH 또는 LOW 를 돌려줍니다."},
+   {t:"choice",k:"개념",q:"analogRead() 가 돌려주는 값의 범위는? (10비트)",o:["0~1","0~255","0~1023","0~65535"],a:2,ex:"10비트라 0부터 1023까지입니다."},
+   {t:"choice",k:"부품",q:"빛의 밝기를 감지하는 대표적인 센서는?",o:["조도 센서(CDS)","LED","저항","버저"],a:0,ex:"조도(빛) 센서로 밝기를 읽어 제어할 수 있습니다."}
+  ]},
+  {title:"통신과 업로드",xp:20,q:[
+   {t:"choice",k:"통신",q:"아두이노가 PC 와 값을 주고받거나 디버깅 출력에 쓰는 것은?",o:["Serial","WiFi만","HDMI","USB 마우스"],a:0,ex:"Serial.print() 로 PC 화면에 값을 출력해 확인합니다."},
+   {t:"choice",k:"함수",q:"Serial 통신을 시작하며 속도를 정하는 함수는?",o:["Serial.begin()","Serial.on()","Serial.start()","Serial.open()"],a:0,ex:"setup() 에서 Serial.begin(9600) 처럼 시작합니다."},
+   {t:"choice",k:"과정",q:"작성한 코드를 아두이노 보드로 옮기는 과정을 뭐라 하나요?",o:["업로드","다운로드","컴파일만","백업"],a:0,ex:"아두이노 IDE 에서 업로드하면 보드에서 실행됩니다."},
+   {t:"choice",k:"개념",q:"소리를 내는 데 쓰는 부품은?",o:["버저(피에조)","저항","점퍼선","브레드보드"],a:0,ex:"버저로 소리(알람·멜로디)를 낼 수 있습니다."}
+  ]}
+ ]}
 ]}
 };
 
