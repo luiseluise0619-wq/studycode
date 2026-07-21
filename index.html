@@ -171,6 +171,47 @@
     letter-spacing:.06em; color:var(--ink-soft); margin-top:2px}
   .reward.xp .rv{color:var(--gold)} .reward.flame .rv{color:var(--flame)}
 
+  /* ---------- playground / lab ---------- */
+  .lab-cta{width:100%; margin:4px 0 2px; padding:14px; border-radius:14px; border:none; color:#fff; font-weight:800;
+    font-size:15px; background:linear-gradient(135deg,#5b6cff,#8a6bff); box-shadow:0 4px 0 var(--brand-ink); transition:transform .08s}
+  .lab-cta:active{transform:translateY(2px); box-shadow:0 2px 0 var(--brand-ink)}
+  .lab{position:fixed; inset:0; z-index:55; background:var(--bg); display:none; flex-direction:column}
+  .lab.on{display:flex}
+  .lab-top{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line)}
+  .lab-top b{font-size:16px}
+  .lab-tabs{display:flex; gap:8px; margin-left:auto}
+  .labtab{padding:8px 14px; border-radius:999px; border:2px solid var(--line); background:var(--card); font-weight:800;
+    font-size:13px; color:var(--ink-soft)}
+  .labtab[aria-selected="true"]{background:var(--brand); border-color:transparent; color:#fff}
+  .lab-examples{display:flex; gap:8px; overflow-x:auto; padding:10px 14px; border-bottom:1px solid var(--line); scrollbar-width:none}
+  .lab-examples::-webkit-scrollbar{display:none}
+  .exchip{flex:0 0 auto; padding:7px 12px; border-radius:9px; border:1px solid var(--line); background:var(--card);
+    font-weight:700; font-size:12.5px; color:var(--ink); white-space:nowrap}
+  .exchip[aria-selected="true"]{background:var(--good); border-color:transparent; color:#fff}
+  .lab-hint{padding:7px 14px; font-size:12px; color:var(--ink-soft); font-weight:700; text-align:center; background:var(--bg-soft)}
+  .lab-split{flex:1; display:grid; grid-template-rows:1fr 1fr; min-height:0}
+  #lab-code{border:none; resize:none; padding:14px; font-family:var(--mono); font-size:14px; line-height:1.6;
+    background:#0f1117; color:#e6e9f2; outline:none; border-bottom:3px solid var(--brand); tab-size:2}
+  .lab-pane{position:relative; background:#fff; min-height:0; overflow:hidden}
+  .lab-pane b.tag{position:absolute; top:6px; right:8px; z-index:2; font-size:10px; font-weight:800; letter-spacing:.05em;
+    color:#8a8f9c; background:rgba(255,255,255,.85); padding:2px 6px; border-radius:5px}
+  #lab-view{border:none; width:100%; height:100%; background:#fff; display:block}
+  @media (min-width:720px){ .lab-split{grid-template-rows:none; grid-template-columns:1fr 1fr}
+    #lab-code{border-bottom:none; border-right:3px solid var(--brand)} }
+
+  /* ---------- in-lesson live editor ---------- */
+  .live-wrap{border-radius:14px; overflow:hidden; border:2px solid var(--line); margin:0 0 20px; box-shadow:var(--shadow)}
+  .live-bar{display:flex; align-items:center; gap:6px; padding:7px 12px; background:#0b0d13; color:#7f8aa3;
+    font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.04em}
+  .live-bar .dot{width:9px; height:9px; border-radius:50%; background:#3a3e50}
+  .live-bar .hint{margin-left:auto; color:#5b6cff}
+  .live-code{display:block; width:100%; border:none; resize:vertical; padding:12px; font-family:var(--mono);
+    font-size:13.5px; line-height:1.55; background:#0f1117; color:#e6e9f2; outline:none; min-height:88px; tab-size:2}
+  .live-pane{position:relative; background:#fff; border-top:3px solid var(--brand)}
+  .live-pane .tag{position:absolute; top:5px; right:8px; z-index:2; font-size:10px; font-weight:800; color:#8a8f9c;
+    background:rgba(255,255,255,.85); padding:2px 6px; border-radius:5px; pointer-events:none}
+  .live-view{width:100%; height:150px; border:none; display:block; background:#fff}
+
   .empty{color:var(--ink-soft); text-align:center; padding:30px; font-weight:600}
   .foot-hint{position:fixed;left:0;right:0;bottom:0;padding:14px 16px;text-align:center;color:var(--ink-soft);
     font-size:12.5px;font-weight:600; background:var(--bg); border-top:1px solid var(--line)}
@@ -266,6 +307,26 @@ python:{name:"Python",em:"🐍",color:"#3b7dd8",g:"linear-gradient(135deg,#3b7dd
    {t:"choice",k:"길이",q:"리스트의 개수를 구하는 함수는?",o:["size()","count()","len()","length()"],a:2,ex:"len(리스트) 로 개수를 셉니다."},
    {t:"input",k:"빈칸",q:"리스트 arr 끝에 5를 추가하세요.",code:'arr._____(<span class="nu">5</span>)',a:["append","append(5)"],ex:"append() 로 끝에 추가합니다."}
   ]}
+ ]},
+ {title:"파이썬 중급",guide:"🚀",lessons:[
+  {title:"함수 만들기",xp:20,q:[
+   {t:"choice",k:"개념",q:"함수를 정의하는 키워드는?",o:["func","def","function","fn"],a:1,ex:"def 이름(): 형태로 정의합니다."},
+   {t:"input",k:"빈칸",q:"함수가 결과 x 를 돌려주도록 채우세요.",code:'______ x',a:["return"],ex:"return x 로 결과를 돌려줍니다."},
+   {t:"choice",k:"용어",q:"함수에 전달하는 입력값을 뭐라 하나요?",o:["변수","매개변수(인자)","반환값","키"],a:1,ex:"함수가 받는 값을 매개변수(파라미터)라 합니다."},
+   {t:"choice",k:"출력 결과",q:"결과는?",code:'<span class="kw">def</span> add(a, b):\n    <span class="kw">return</span> a + b\n<span class="kw">print</span>(add(<span class="nu">2</span>, <span class="nu">3</span>))',o:["23","5","ab","오류"],a:1,ex:"2+3 을 돌려줘 5 가 출력됩니다."}
+  ]},
+  {title:"딕셔너리",xp:20,q:[
+   {t:"choice",k:"개념",q:"key 와 value 쌍으로 저장하는 자료형은?",o:["리스트","딕셔너리 {}","튜플","집합"],a:1,ex:'딕셔너리는 {"a":1} 처럼 키:값 으로 저장합니다.'},
+   {t:"choice",k:"접근",q:'d = {"a":1} 일 때 d["a"] 는?',o:["a","1","key","오류"],a:1,ex:"키 'a' 에 해당하는 값 1 을 꺼냅니다."},
+   {t:"choice",k:"안전 접근",q:"없을 수도 있는 키를 안전하게 꺼내는 메서드는?",o:["get()","find()","pick()","key()"],a:0,ex:"d.get('x') 는 없으면 None 을 돌려줘 오류가 안 납니다."},
+   {t:"choice",k:"메서드",q:"딕셔너리의 모든 키를 얻는 메서드는?",o:["values()","keys()","items()만","all()"],a:1,ex:"keys() 는 키 목록, values() 는 값 목록입니다."}
+  ]},
+  {title:"예외 처리와 컴프리헨션",xp:25,q:[
+   {t:"choice",k:"개념",q:"오류가 날 수 있는 코드를 감싸는 키워드는?",o:["try","catch","test","safe"],a:0,ex:"try: 블록으로 위험한 코드를 감쌉니다."},
+   {t:"choice",k:"개념",q:"try 에서 발생한 오류를 처리하는 블록은?",o:["catch","except","error","finally"],a:1,ex:"파이썬은 except 로 오류를 잡습니다."},
+   {t:"choice",k:"출력 결과",q:"[x*2 for x in range(3)] 의 결과는?",o:["[0,1,2]","[0,2,4]","[2,4,6]","[1,2,3]"],a:1,ex:"range(3)=0,1,2 각각 ×2 → [0,2,4]."},
+   {t:"choice",k:"용어",q:"위처럼 간결하게 리스트를 만드는 문법을 뭐라 하나요?",o:["람다","리스트 컴프리헨션","제너레이터","데코레이터"],a:1,ex:"리스트 컴프리헨션(list comprehension)입니다."}
+  ]}
  ]}
 ]},
 
@@ -304,6 +365,15 @@ javascript:{name:"JavaScript",em:"🟨",color:"#caa200",g:"linear-gradient(135de
    {t:"choice",k:"인덱스",q:"arr=[10,20,30] 에서 arr[1] 은?",o:["10","20","30","1"],a:1,ex:"인덱스는 0부터라 arr[1] 은 20."},
    {t:"choice",k:"추가",q:"배열 끝에 값을 추가하는 함수는?",o:["add()","push()","append()","insert()"],a:1,ex:"arr.push(값) 으로 끝에 추가합니다."},
    {t:"choice",k:"길이",q:"배열의 개수를 알아내는 것은?",o:["arr.size","arr.length","len(arr)","arr.count"],a:1,ex:"arr.length 로 개수를 얻습니다."}
+  ]}
+ ]},
+ {title:"직접 실행해 보기 🧪",guide:"⚡",lessons:[
+  {title:"코드를 돌려 결과를 보자",xp:25,q:[
+   {t:"choice",k:"라이브",live:true,run:"js",src:`console.log("Hello!");`,q:"코드를 고쳐서 다른 글자를 출력해 보세요. console.log 는 무엇을 하나요?",o:["콘솔에 값을 출력","파일 저장","화면 삭제","계산만 하고 숨김"],a:0,ex:'따옴표 안 글자를 바꾸면 결과가 바로 바뀌어요.'},
+   {t:"choice",k:"라이브",live:true,run:"js",src:`let name = "코딩";\nconsole.log(name + " 최고!");`,q:"name 값을 본인 이름으로 바꿔보세요. 결과 화면에 무엇이 보이나요?",o:["코딩 최고!","name 최고!","오류","아무것도"],a:0,ex:"변수 name 과 글자가 이어붙어 출력됩니다."},
+   {t:"choice",k:"라이브",live:true,run:"js",src:`for (let i = 1; i <= 5; i++) {\n  console.log(i + "번째 줄");\n}`,q:"5를 10으로 바꿔보세요. 지금은 몇 줄이 출력되나요?",o:["5줄","1줄","무한","0줄"],a:0,ex:"반복 횟수만큼 줄이 출력돼요. 숫자를 바꾸면 줄 수가 변합니다."},
+   {t:"choice",k:"라이브",live:true,run:"js",src:`function double(n) {\n  return n * 2;\n}\nconsole.log(double(10));\nconsole.log(double(25));`,q:"함수 double 을 호출했어요. 두 번째 출력값은?",o:["50","20","10","250"],a:0,ex:"double(25) 는 25×2 = 50 입니다. 숫자를 바꿔 실험해 보세요!"},
+   {t:"choice",k:"라이브",live:true,run:"js",src:`const nums = [1, 2, 3, 4];\nconst squared = nums.map(function(x) {\n  return x * x;\n});\nconsole.log(squared);`,q:"map 으로 각 수를 제곱했어요. 출력 결과는?",o:["[1, 4, 9, 16]","[1, 2, 3, 4]","[2, 4, 6, 8]","오류"],a:0,ex:"각 원소를 제곱한 새 배열이 나옵니다. 배열 값을 바꿔 실험해 보세요."}
   ]}
  ]}
 ]},
@@ -344,6 +414,15 @@ web:{name:"HTML/CSS",em:"🌐",color:"#e05a2b",g:"linear-gradient(135deg,#e05a2b
    {t:"choice",k:"글자 크기",q:"글자 크기를 정하는 속성은?",o:["text-size","font-size","size","font-weight"],a:1,ex:"font-size 로 크기를 정합니다."},
    {t:"choice",k:"박스모델",q:"요소 '바깥' 여백을 뜻하는 속성은?",o:["padding","margin","border","gap"],a:1,ex:"margin 은 바깥 여백, padding 은 안쪽 여백."},
    {t:"choice",k:"레이아웃",q:"요소를 가로/세로로 유연하게 배치하는 현대적 방법은?",o:["float","flexbox(display:flex)","table","align"],a:1,ex:"display:flex (플렉스박스) 가 대표적입니다."}
+  ]}
+ ]},
+ {title:"직접 만들며 배우기 🧪",guide:"⚡",lessons:[
+  {title:"코드를 고치면 바로 바뀐다",xp:25,q:[
+   {t:"choice",k:"라이브",live:true,run:"web",src:`<h1>안녕하세요!</h1>`,q:"아래 코드를 고쳐서 화면을 바꿔보세요. h1 태그는 무엇을 나타낼까요?",o:["큰 제목","작은 글씨","이미지","버튼"],a:0,ex:"h1 은 가장 큰 제목입니다. 글자를 바꾸면 화면도 바로 바뀌어요!"},
+   {t:"choice",k:"라이브",live:true,run:"web",src:`<h1>내 첫 사이트</h1>\n<p>HTML 로 글을 씁니다.</p>\n<p>줄을 더 추가해 보세요!</p>`,q:"p 태그는 무엇을 나타내나요? (코드에 p 를 하나 더 추가해 보세요)",o:["문단(글 덩어리)","제목","링크","표"],a:0,ex:"p 는 문단입니다. p 를 추가할수록 화면에 줄이 늘어나요."},
+   {t:"choice",k:"라이브",live:true,run:"web",src:`<h1 style="color:tomato">빨간 제목</h1>\n<p style="color:gray">회색 문단이에요.</p>`,q:"style 의 color 값을 바꿔보세요. color 는 무엇을 바꾸나요?",o:["글자 색","글자 크기","배경","위치"],a:0,ex:"color 는 글자 색입니다. tomato 를 blue, green 등으로 바꿔보세요!"},
+   {t:"choice",k:"라이브",live:true,run:"web",src:`<style>\n  button {\n    background: #5b6cff;\n    color: white;\n    border: none;\n    padding: 10px 18px;\n    border-radius: 8px;\n    font-size: 15px;\n  }\n</style>\n<h2>버튼 꾸미기</h2>\n<button>눌러봐</button>`,q:"background 값을 바꿔보세요. 버튼의 무엇이 바뀌나요?",o:["배경색","글자 내용","화면 크기","페이지 제목"],a:0,ex:"background 는 배경색입니다. 숫자·색 이름을 바꾸면 버튼이 바로 변해요."},
+   {t:"choice",k:"라이브",live:true,run:"web",src:`<style>\n  #box {\n    width: 90px; height: 90px;\n    background: tomato;\n    border-radius: 14px;\n    transition: .3s;\n  }\n</style>\n<div id="box"></div>\n<br>\n<button onclick="document.getElementById('box').style.background='royalblue'">색 바꾸기</button>`,q:"미리보기의 '색 바꾸기' 버튼을 눌러보세요. 어떤 일이 일어나나요?",o:["상자 색이 파랑으로 바뀜","글자가 사라짐","페이지 새로고침","아무 일 없음"],a:0,ex:"JS(onclick)로 상자의 배경색을 바꿨어요. 실제로 눌러서 확인해 보세요!"}
   ]}
  ]}
 ]},
@@ -511,6 +590,26 @@ react:{name:"React",em:"⚛️",color:"#2b9fc4",g:"linear-gradient(135deg,#2b9fc
    {t:"choice",k:"상태",q:"컴포넌트 내부에서 바뀌는 데이터를 다루는 것은?",o:["props","state","const","css"],a:1,ex:"state 는 컴포넌트의 변하는 값입니다."},
    {t:"choice",k:"훅",q:"함수형 컴포넌트에서 상태를 쓰는 훅은?",o:["useState","useBox","setState","useVar"],a:0,ex:"const [n,setN]=useState(0) 형태로 씁니다."},
    {t:"choice",k:"동작",q:"state 값이 바뀌면 컴포넌트는?",o:["아무 일 없음","다시 렌더링됨","삭제됨","새로고침됨"],a:1,ex:"state 가 바뀌면 화면이 다시 그려집니다."}
+  ]}
+ ]},
+ {title:"React 더 배우기",guide:"🚀",lessons:[
+  {title:"리스트 렌더링",xp:20,q:[
+   {t:"choice",k:"개념",q:"배열을 여러 개의 컴포넌트로 그릴 때 쓰는 배열 메서드는?",o:["forEach()","map()","filter()","push()"],a:1,ex:"map() 으로 배열을 JSX 목록으로 변환합니다."},
+   {t:"choice",k:"핵심",q:"리스트의 각 항목에 꼭 넣어야 하는 특별한 속성은?",o:["id","key","name","ref"],a:1,ex:"React 는 key 로 각 항목을 구분합니다."},
+   {t:"choice",k:"규칙",q:"key 값으로 가장 적합한 것은?",o:["배열 인덱스","고유한 id","랜덤 숫자","항상 0"],a:1,ex:"변하지 않는 고유 id 가 가장 좋은 key 입니다."},
+   {t:"choice",k:"동작",q:"map() 은 무엇을 돌려주나요?",o:["새 배열","숫자","문자열","아무것도"],a:0,ex:"map() 은 변환된 새 배열을 반환합니다."}
+  ]},
+  {title:"이벤트와 폼",xp:20,q:[
+   {t:"choice",k:"개념",q:"버튼 클릭을 처리하는 JSX 속성은?",o:["onClick","onPress","click","onTap"],a:0,ex:"onClick={함수} 로 클릭을 처리합니다."},
+   {t:"choice",k:"입력",q:"입력창의 값 변화를 감지하는 이벤트 속성은?",o:["onType","onChange","onInput만","onEdit"],a:1,ex:"onChange 로 입력 변화를 감지합니다."},
+   {t:"choice",k:"문법",q:"클릭 시 handleClick 을 실행하는 올바른 형태는?",o:['onClick="handleClick"',"onClick={handleClick}","onClick(handleClick)","click:handleClick"],a:1,ex:"중괄호 {} 안에 함수를 전달합니다."},
+   {t:"choice",k:"개념",q:"입력값을 state 로 관리하는 입력 방식을 뭐라 하나요?",o:["제어 컴포넌트(controlled)","자유 입력","정적 입력","숨김 입력"],a:0,ex:"값을 state 로 관리하면 제어 컴포넌트입니다."}
+  ]},
+  {title:"Hooks 맛보기",xp:25,q:[
+   {t:"choice",k:"개념",q:"훅(Hook) 이름의 공통 접두어는?",o:["get","use","on","set"],a:1,ex:"useState, useEffect 처럼 use 로 시작합니다."},
+   {t:"choice",k:"핵심",q:"렌더링 후 데이터 가져오기 같은 '부수 효과'를 실행하는 훅은?",o:["useState","useEffect","useMemo","useRef"],a:1,ex:"useEffect 로 렌더링 후 작업을 처리합니다."},
+   {t:"choice",k:"문법",q:"useState 가 돌려주는 것은?",o:["[값, 변경함수]","값 하나","함수 하나","객체"],a:0,ex:"const [n, setN] = useState(0) 형태입니다."},
+   {t:"choice",k:"데이터",q:"서버에서 데이터를 가져올 때 브라우저가 제공하는 함수는?",o:["fetch()","load()","get()","import()"],a:0,ex:"fetch() 로 API 데이터를 불러옵니다."}
   ]}
  ]}
 ]},
@@ -682,6 +781,7 @@ function showQ(){
   chk.onclick=onCheck;
   let html=`<div class="q-kind">${q.k||"문제"}</div><div class="q-title">${q.q}</div>`;
   if(q.code) html+=C(q.code);
+  if(q.live) html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;${q.run==="js"?"script.js":"index.html"}<span class="hint">✏️ 코드를 고쳐보세요</span></div><textarea class="live-code" id="livecode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">실행 결과 ▶</span><iframe class="live-view" id="liveview" sandbox="allow-scripts" title="실행 결과"></iframe></div></div>`;
   const body=$("qbody");
   if(q.t==="input"){
     html+=`<input class="fill-in" id="fill" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답 입력..." />`;
@@ -703,7 +803,11 @@ function showQ(){
       };
     });
   }
+  if(q.live) setupLive(q);
 }
+function jsDoc(code){return '<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#e6e9f2;white-space:pre-wrap;word-break:break-word"><scr'+'ipt>var O=document.body;function W(c,a){var d=document.createElement("div");if(c)d.style.color=c;d.textContent=[].map.call(a,function(x){return (typeof x==="object"&&x!==null)?JSON.stringify(x):String(x)}).join(" ");O.appendChild(d);}console.log=function(){W("",arguments)};console.error=function(){W("#ff6b6b",arguments)};console.warn=function(){W("#ffc773",arguments)};try{'+code+'\n}catch(e){W("#ff6b6b",[e])}</scr'+'ipt></body>';}
+function renderLive(mode,code){const f=$("liveview");if(!f)return;f.srcdoc=(mode==="js")?jsDoc(code):code;}
+function setupLive(q){const ta=$("livecode");if(!ta)return;ta.value=q.src||"";const go=()=>renderLive(q.run,ta.value);let tmr;ta.oninput=()=>{clearTimeout(tmr);tmr=setTimeout(go,250);};go();}
 function norm(s){return s.toLowerCase().replace(/\s+/g,'').replace(/;$/,'')}
 function onCheck(){
   const q=run.les.q[run.i]; let ok=false;
