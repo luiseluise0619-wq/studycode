@@ -725,6 +725,79 @@ security:{name:"보안 기초",em:"🔐",color:"#b03a3a",g:"linear-gradient(135d
    {t:"choice",k:"태도",q:"보안은 언제부터 신경 써야 하나요?",o:["설계·개발 처음부터","다 만든 뒤에만","해킹당한 뒤","전혀 필요 없음"],a:0,ex:"보안은 처음부터 설계에 녹여야(Security by Design) 효과적입니다."}
   ]}
  ]}
+]},
+
+os:{name:"운영체제",em:"🖥️",color:"#4b6584",g:"linear-gradient(135deg,#4b6584,#5b6cff)",units:[
+ {title:"운영체제 기초",guide:"🖥️",lessons:[
+  {title:"프로세스와 스레드",xp:20,q:[
+   {t:"choice",k:"개념",q:"실행 중인 프로그램을 무엇이라 하나요?",o:["프로세스","파일","코드","폴더"],a:0,ex:"디스크의 프로그램이 실행되면 프로세스가 됩니다."},
+   {t:"choice",k:"개념",q:"한 프로세스 안에서 일을 나눠 처리하는 더 작은 실행 단위는?",o:["스레드","파일","패키지","비트"],a:0,ex:"스레드는 프로세스 내부의 실행 흐름입니다."},
+   {t:"choice",k:"개념",q:"CPU 가 어떤 작업을 먼저 실행할지 정하는 일을 무엇이라 하나요?",o:["스케줄링","컴파일","렌더링","캐싱"],a:0,ex:"스케줄러가 실행 순서를 결정합니다."},
+   {t:"choice",k:"개념",q:"CPU 가 작업을 번갈아 처리하려고 상태를 저장/복원하는 것은?",o:["문맥 교환(context switch)","백업","포맷","부팅"],a:0,ex:"문맥 교환으로 여러 작업이 동시에 도는 것처럼 보입니다."}
+  ]},
+  {title:"메모리 관리",xp:20,q:[
+   {t:"choice",k:"개념",q:"실제 메모리보다 큰 공간을 쓰는 것처럼 해주는 기법은?",o:["가상 메모리","캐시","레지스터","버퍼"],a:0,ex:"가상 메모리는 디스크를 메모리처럼 확장해 씁니다."},
+   {t:"choice",k:"개념",q:"메모리를 일정 크기로 나눈 관리 단위는?",o:["페이지","비트","토큰","섹터만"],a:0,ex:"페이징에서는 메모리를 페이지 단위로 관리합니다."},
+   {t:"choice",k:"문제",q:"프로그램이 메모리를 쓰고 반납하지 않아 계속 쌓이는 문제는?",o:["메모리 누수(leak)","오버클럭","캐시 히트","정렬"],a:0,ex:"메모리 누수는 성능 저하·다운의 원인이 됩니다."},
+   {t:"choice",k:"속도",q:"CPU 에 가장 가깝고 가장 빠른 저장 공간은?",o:["레지스터","하드디스크","USB","클라우드"],a:0,ex:"레지스터 > 캐시 > RAM > 디스크 순으로 느려집니다."}
+  ]}
+ ]},
+ {title:"동시성과 저장",guide:"🔗",lessons:[
+  {title:"동시성 문제",xp:25,q:[
+   {t:"choice",k:"개념",q:"여러 스레드가 동시에 같은 자원을 바꿔 결과가 꼬이는 문제는?",o:["경쟁 상태(race condition)","정렬 오류","캐시 미스","오타"],a:0,ex:"경쟁 상태는 실행 순서에 따라 결과가 달라지는 버그입니다."},
+   {t:"choice",k:"개념",q:"서로 상대가 가진 자원을 기다리며 둘 다 멈춰버리는 상황은?",o:["교착 상태(deadlock)","부팅","컴파일","페이징"],a:0,ex:"deadlock 은 서로 무한정 대기하는 상태입니다."},
+   {t:"choice",k:"개념",q:"한 번에 하나의 스레드만 자원에 들어가게 막는 장치는?",o:["락(lock)/뮤텍스","캐시","버퍼","포인터"],a:0,ex:"락으로 임계 구역을 보호해 충돌을 막습니다."},
+   {t:"choice",k:"이유",q:"임계 구역을 보호하는 이유는?",o:["데이터 일관성 유지","화면 꾸미기","속도만 올리기","용량 절약"],a:0,ex:"동시 접근으로 데이터가 깨지는 것을 막기 위함입니다."}
+  ]},
+  {title:"파일과 커널",xp:20,q:[
+   {t:"choice",k:"개념",q:"데이터를 파일 단위로 저장·관리하는 구조는?",o:["파일 시스템","레지스터","캐시만","스택"],a:0,ex:"파일 시스템이 저장장치의 파일을 조직합니다."},
+   {t:"choice",k:"개념",q:"프로그램이 OS 의 기능(파일 읽기 등)을 요청하는 통로는?",o:["시스템 콜","마우스","URL","쿠키"],a:0,ex:"시스템 콜로 사용자 프로그램이 커널 기능을 씁니다."},
+   {t:"choice",k:"개념",q:"운영체제의 핵심으로 하드웨어를 직접 관리하는 부분은?",o:["커널(kernel)","브라우저","셸 테마","아이콘"],a:0,ex:"커널은 OS 의 심장부입니다."},
+   {t:"choice",k:"개념",q:"속도가 다른 두 장치 사이에서 데이터를 잠시 담아두는 것은?",o:["버퍼/캐시","방화벽","컴파일러","링커"],a:0,ex:"버퍼는 속도 차이를 완충해 줍니다."}
+  ]}
+ ]}
+]},
+
+code:{name:"코딩 실습",em:"⌨️",color:"#2f9e6f",g:"linear-gradient(135deg,#2f9e6f,#5b6cff)",units:[
+ {title:"출력과 변수 (직접 짜기)",guide:"⌨️",lessons:[
+  {title:"출력해보기",xp:25,q:[
+   {t:"code",k:"코딩 과제",run:"js",q:'console.log 로 Hello World 를 출력하세요.',src:`// 괄호 안에 "Hello World" 를 넣어보세요\nconsole.log();`,expect:"Hello World",ex:'console.log("Hello World"); — 따옴표로 감싸요.'},
+   {t:"code",k:"코딩 과제",run:"js",q:'숫자 42 를 출력하세요. (따옴표 없이)',src:`console.log();`,expect:"42",ex:"숫자는 따옴표 없이 console.log(42);"},
+   {t:"code",k:"코딩 과제",run:"js",q:'10 + 5 를 계산해서 결과(15)를 출력하세요.',src:`console.log(10 + );`,expect:"15",ex:"console.log(10 + 5);"},
+   {t:"code",k:"코딩 과제",run:"js",q:'변수 city 에 "Seoul" 을 저장하고 출력하세요.',src:`let city = ;\nconsole.log(city);`,expect:"Seoul",ex:'let city = "Seoul";'}
+  ]},
+  {title:"변수로 계산하기",xp:25,q:[
+   {t:"code",k:"코딩 과제",run:"js",q:'a=7, b=3 일 때 a 곱하기 b (21) 를 출력하세요.',src:`let a = 7;\nlet b = 3;\nconsole.log();`,expect:"21",ex:"console.log(a * b);"},
+   {t:"code",k:"코딩 과제",run:"js",q:'"안녕" 과 "코딩" 을 이어붙여 안녕코딩 을 출력하세요.',src:`console.log("안녕" + );`,expect:"안녕코딩",ex:'문자열 + 로 이어붙여요: "안녕" + "코딩".'},
+   {t:"code",k:"코딩 과제",run:"js",q:'가격 1000원짜리 3개의 총액(3000)을 출력하세요.',src:`let price = 1000;\nlet count = 3;\nconsole.log();`,expect:"3000",ex:"console.log(price * count);"}
+  ]}
+ ]},
+ {title:"조건과 반복 (직접 짜기)",guide:"🔁",lessons:[
+  {title:"조건문 완성하기",xp:25,q:[
+   {t:"code",k:"코딩 과제",run:"js",q:'x 가 10 이상이면 "크다" 를 출력하도록 조건을 완성하세요.',src:`let x = 10;\nif (x >= ) {\n  console.log("크다");\n}`,expect:"크다",ex:"if (x >= 10) 으로 비교하세요."},
+   {t:"code",k:"코딩 과제",run:"js",q:'점수 45 가 60 미만이면 "불합격" 을 출력하세요.',src:`let score = 45;\nif ( ) {\n  console.log("불합격");\n}`,expect:"불합격",ex:"if (score < 60) 로 비교하세요."},
+   {t:"code",k:"코딩 과제",run:"js",q:'n=4 가 짝수이면 "짝수" 를 출력하세요.',src:`let n = 4;\nif (n % 2 === 0) {\n  console.log();\n}`,expect:"짝수",ex:'console.log("짝수");'}
+  ]},
+  {title:"반복문 완성하기",xp:30,q:[
+   {t:"code",k:"코딩 과제",run:"js",q:'1부터 5까지 한 줄씩 출력하세요.',src:`for (let i = 1; i <= ; i++) {\n  console.log(i);\n}`,expect:"12345",ex:"i <= 5 까지 반복하세요."},
+   {t:"code",k:"코딩 과제",run:"js",q:'"별" 을 4번 출력하세요.',src:`for (let i = 0; i < 4; i++) {\n  console.log();\n}`,expect:"별별별별",ex:'console.log("별");'},
+   {t:"code",k:"코딩 과제",run:"js",q:'1부터 10까지 더한 합(55)을 출력하세요.',src:`let sum = 0;\nfor (let i = 1; i <= 10; i++) {\n  sum = sum + i;\n}\nconsole.log();`,expect:"55",ex:"console.log(sum);"},
+   {t:"code",k:"코딩 과제",run:"js",q:'2, 4, 6, 8, 10 (짝수)만 출력하세요.',src:`for (let i = 2; i <= 10; i = i + ) {\n  console.log(i);\n}`,expect:"246810",ex:"i = i + 2 로 2씩 증가시켜요."}
+  ]}
+ ]},
+ {title:"함수와 배열 (직접 짜기)",guide:"⚙️",lessons:[
+  {title:"함수 완성하기",xp:30,q:[
+   {t:"code",k:"코딩 과제",run:"js",q:'두 수를 더해 돌려주는 함수 add 를 완성하고 add(3,4) 를 출력하세요.',src:`function add(a, b) {\n  return ;\n}\nconsole.log(add(3, 4));`,expect:"7",ex:"return a + b;"},
+   {t:"code",k:"코딩 과제",run:"js",q:'숫자를 제곱해 돌려주는 함수 square 를 완성하고 square(6) 을 출력하세요.',src:`function square(n) {\n  return ;\n}\nconsole.log(square(6));`,expect:"36",ex:"return n * n;"},
+   {t:"code",k:"코딩 과제",run:"js",q:'아래 greet 함수를 실행해서 결과를 확인하세요. (그대로 실행!)',src:`function greet(name) {\n  return "안녕, " + name + "!";\n}\nconsole.log(greet("민수"));`,expect:"안녕, 민수!",ex:"함수가 인사말을 만들어 돌려줘요."}
+  ]},
+  {title:"배열 다루기",xp:30,q:[
+   {t:"code",k:"코딩 과제",run:"js",q:'배열 [10, 20, 30] 의 첫 번째 값(10)을 출력하세요.',src:`let arr = [10, 20, 30];\nconsole.log(arr[]);`,expect:"10",ex:"인덱스는 0부터! arr[0]."},
+   {t:"code",k:"코딩 과제",run:"js",q:'배열 [5, 10, 15] 의 합(30)을 반복문으로 구해 출력하세요. (그대로 실행!)',src:`let arr = [5, 10, 15];\nlet sum = 0;\nfor (let i = 0; i < arr.length; i++) {\n  sum = sum + arr[i];\n}\nconsole.log(sum);`,expect:"30",ex:"각 원소를 더하면 30이에요."},
+   {t:"code",k:"코딩 과제",run:"js",q:'배열 [1,2,3,4,5] 에서 3보다 큰 수만 걸러 출력하세요. (결과 [4,5])',src:`let arr = [1, 2, 3, 4, 5];\nlet big = arr.filter(function(x) {\n  return x > ;\n});\nconsole.log(big);`,expect:"[4,5]",ex:"return x > 3;"},
+   {t:"code",k:"코딩 과제",run:"js",q:'배열 [3, 1, 2] 의 길이(3)를 출력하세요.',src:`let arr = [3, 1, 2];\nconsole.log(arr.);`,expect:"3",ex:"arr.length 로 개수를 구해요."}
+  ]}
+ ]}
 ]}
 };
 
@@ -741,6 +814,8 @@ let curLang="python", run=null;
 
 /* ================= 렌더: 홈 ================= */
 const $=id=>document.getElementById(id);
+let liveOut="";
+window.addEventListener("message",function(e){ if(e&&e.data&&e.data.__cr==="out") liveOut=String(e.data.text||""); });
 function fmt(n){return n>=1000?(n/1000).toFixed(1).replace(/\.0$/,'')+"k":n}
 function paintStats(){ $("s-streak").textContent=S.streak; $("s-xp").textContent=fmt(S.xp); $("s-hearts").textContent=S.hearts; }
 
@@ -826,7 +901,7 @@ function showQ(){
   chk.onclick=onCheck;
   let html=`<div class="q-kind">${q.k||"문제"}</div><div class="q-title">${q.q}</div>`;
   if(q.code) html+=C(q.code);
-  if(q.live) html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;${q.run==="js"?"script.js":"index.html"}<span class="hint">✏️ 코드를 고쳐보세요</span></div><textarea class="live-code" id="livecode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">실행 결과 ▶</span><iframe class="live-view" id="liveview" sandbox="allow-scripts" title="실행 결과"></iframe></div></div>`;
+  if(q.live||q.t==="code") html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;${q.run==="js"?"script.js":"index.html"}<span class="hint">${q.t==="code"?"⌨️ 직접 코드를 완성하세요":"✏️ 코드를 고쳐보세요"}</span></div><textarea class="live-code" id="livecode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">실행 결과 ▶</span><iframe class="live-view" id="liveview" sandbox="allow-scripts" title="실행 결과"></iframe></div></div>`;
   const body=$("qbody");
   if(q.t==="input"){
     html+=`<input class="fill-in" id="fill" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답 입력..." />`;
@@ -835,6 +910,8 @@ function showQ(){
     f.oninput=()=>{ chk.disabled=f.value.trim()===""; };
     f.onkeydown=e=>{ if(e.key==="Enter"&&!chk.disabled){ if(!run.answered) onCheck(); else chk.onclick(); } };
     setTimeout(()=>f.focus(),50);
+  } else if(q.t==="code"){
+    body.innerHTML=html; body.scrollTop=0;
   } else {
     const mono = q.o.some(o=>/[(){}=<>;*]|print|SELECT|cout|int /.test(o));
     html+=`<div class="options" id="opts">`+q.o.map((o,idx)=>
@@ -848,24 +925,40 @@ function showQ(){
       };
     });
   }
-  if(q.live) setupLive(q);
+  if(q.live||q.t==="code"){ setupLive(q); }
+  if(q.t==="code"){ chk.disabled=false; }
 }
-function jsDoc(code){return '<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#e6e9f2;white-space:pre-wrap;word-break:break-word"><scr'+'ipt>var O=document.body;function W(c,a){var d=document.createElement("div");if(c)d.style.color=c;d.textContent=[].map.call(a,function(x){return (typeof x==="object"&&x!==null)?JSON.stringify(x):String(x)}).join(" ");O.appendChild(d);}console.log=function(){W("",arguments)};console.error=function(){W("#ff6b6b",arguments)};console.warn=function(){W("#ffc773",arguments)};try{'+code+'\n}catch(e){W("#ff6b6b",[e])}</scr'+'ipt></body>';}
+function jsDoc(code){return '<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#e6e9f2;white-space:pre-wrap;word-break:break-word"><scr'+'ipt>var O=document.body,LOG="";function W(c,a){var t=[].map.call(a,function(x){return (typeof x==="object"&&x!==null)?JSON.stringify(x):String(x)}).join(" ");LOG+=t+"\\n";var d=document.createElement("div");if(c)d.style.color=c;d.textContent=t;O.appendChild(d);}console.log=function(){W("",arguments)};console.error=function(){W("#ff6b6b",arguments)};console.warn=function(){W("#ffc773",arguments)};try{'+code+'\n}catch(e){W("#ff6b6b",[e]);}try{parent.postMessage({__cr:"out",text:LOG},"*")}catch(e){}</scr'+'ipt></body>';}
 function renderLive(mode,code){const f=$("liveview");if(!f)return;f.srcdoc=(mode==="js")?jsDoc(code):code;}
 function setupLive(q){const ta=$("livecode");if(!ta)return;ta.value=q.src||"";const go=()=>renderLive(q.run,ta.value);let tmr;ta.oninput=()=>{clearTimeout(tmr);tmr=setTimeout(go,250);};go();}
 function norm(s){return s.toLowerCase().replace(/\s+/g,'').replace(/;$/,'')}
 function onCheck(){
-  const q=run.les.q[run.i]; let ok=false;
+  const q=run.les.q[run.i];
+  if(q.t==="code"){
+    const chk=$("check"); chk.disabled=true; chk.textContent="실행 중…";
+    renderLive(q.run,$("livecode").value);
+    setTimeout(()=>{
+      const got=norm(liveOut), exp=norm(q.expect||"");
+      const ok = exp.length>0 && got.indexOf(exp)>=0;
+      applyResult(ok, "출력에 "+q.expect+" 가 나와야 해요", q);
+    },300);
+    return;
+  }
+  let ok=false, correctText="";
   if(q.t==="input"){
     const v=norm($("fill").value); ok=q.a.some(a=>norm(a)===v);
-    $("fill").disabled=true;
+    $("fill").disabled=true; correctText=q.a[0];
   } else {
     ok=run.picked===q.a;
     const opts=$("opts").children;
     opts[q.a].classList.add("ok");
     if(!ok && run.picked!=null) opts[run.picked].classList.add("no");
     [...opts].forEach(o=>o.onclick=null);
+    correctText=q.o[q.a];
   }
+  applyResult(ok, correctText, q);
+}
+function applyResult(ok, correctText, q){
   run.answered=true;
   const foot=$("foot"), msg=$("foot-msg"), chk=$("check");
   if(ok){ run.correct++; foot.className="foot good";
@@ -874,8 +967,7 @@ function onCheck(){
   } else {
     if(!run.free) run.hearts--;
     foot.className="foot bad";
-    const correctText = q.t==="input"? q.a[0] : q.o[q.a];
-    msg.innerHTML=`<span class="em">💡</span><div>정답: <span style="font-family:var(--mono)">${correctText}</span><small>${q.ex||""}</small></div>`;
+    msg.innerHTML=`<span class="em">💡</span><div>${correctText}<small>${q.ex||""}</small></div>`;
     chk.className="btn bad";
     $("l-hearts").textContent=run.free?"∞":run.hearts;
   }
