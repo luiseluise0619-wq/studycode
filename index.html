@@ -603,7 +603,7 @@
   .toast.on{opacity:1; transform:translate(-50%,0)}
   @media (prefers-reduced-motion:reduce){ .toast{transition:opacity .2s} }
   /* ---------- designed confirm modal (replaces confirm()) ---------- */
-  .confirm-ovl{align-items:center; justify-content:center; padding:24px}
+  .confirm-ovl{align-items:center; justify-content:center; padding:24px; z-index:140}
   .confirm-card{background:var(--card); border:1px solid var(--line); border-radius:16px;
     padding:24px 22px 18px; width:100%; max-width:360px; box-shadow:0 20px 60px rgba(0,0,0,.28)}
   .confirm-msg{font-size:15px; font-weight:600; line-height:1.6; color:var(--ink); white-space:pre-line}
