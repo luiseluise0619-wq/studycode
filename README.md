@@ -16,8 +16,8 @@
 | 영역 | 규모 | 설명 |
 |---|---|---|
 | **지식 엔진** | 32트랙 · 3,168문항 | Python 705 / SQL 572 중심. choice·input·code(라이브 실행·테스트 통과) 문제 |
-| **Real Work 시뮬레이션** | 101개 | 장애·리뷰·기술선택·이해관계자·프로덕트·윤리 분기형 의사결정 |
-| **원인 추적(진단)** | 12개 | 불완전한 정보 + 단서(일부 red herring)로 근본원인 규명 |
+| **Real Work 시뮬레이션** | 125개 | 장애·리뷰·기술선택·이해관계자·프로덕트·윤리 분기형 의사결정 |
+| **원인 추적(진단)** | 26개 | 불완전한 정보 + 단서(일부 red herring)로 근본원인 규명 |
 | **프로젝트 워크스페이스** | 30개 | 8단계 라이프사이클(요구사항→설계→개발→테스트→배포→운영→장애→Postmortem), 연쇄 장애 시나리오 |
 | **9축 평가 엔진** | — | coding·debugging·algorithms·database·system_design·performance·security·communication·leadership |
 | **Developer Passport** | — | SVG 레이더 차트 + 역할 티어(Beginner→Principal) |
