@@ -636,6 +636,11 @@
   .ai-spin{width:14px; height:14px; border:2px solid var(--line); border-top-color:var(--brand); border-radius:50%; display:inline-block; animation:aispin .7s linear infinite}
   @keyframes aispin{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){ .ai-spin{animation-duration:1.6s} }
+
+  /* ---------- Monaco editor host (VS Code) — falls back to textarea if CDN blocked ---------- */
+  .mon-host{height:200px; border:1px solid var(--line); border-radius:0 0 12px 12px; overflow:hidden; background:#1e1e1e}
+  .mon-host .monaco-editor, .mon-host .monaco-editor .margin, .mon-host .monaco-editor-background{background-color:transparent}
+  @media (max-width:430px){ .mon-host{height:168px} }
 </style>
 
 <!-- ================= HOME ================= -->
@@ -1999,6 +2004,49 @@ function aiReviewInto(host, q, code, lang){
     host.innerHTML='<div class="ai-review"><div class="ai-head">AI 리뷰 실패</div><p>'+escHtml(String(e.message||e))+'</p><p class="ai-note">키가 올바른지, 로컬 파일에서 실행 중인지 확인해 주세요.</p></div>';
   });
 }
+/* ---- Monaco (VS Code) 에디터 · CDN 로드, 차단 시 textarea 폴백 ---- */
+const MON_BASE="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/";
+let __monReady=null, __monFailed=false, __monEditor=null;
+function ensureMonaco(){
+  if(__monFailed) return Promise.resolve(null);
+  if(__monReady) return __monReady;
+  if(location.protocol==="file:"){ __monFailed=true; return Promise.resolve(null); } // 로컬 파일은 CDN·워커 불안정 → 폴백
+  __monReady=new Promise(function(resolve){
+    var done=false, to=setTimeout(function(){ if(!done){done=true;__monFailed=true;resolve(null);} }, 9000);
+    var s=document.createElement("script"); s.src=MON_BASE+"vs/loader.js";
+    s.onerror=function(){ if(!done){done=true;clearTimeout(to);__monFailed=true;resolve(null);} };
+    s.onload=function(){ try{
+      window.MonacoEnvironment={getWorkerUrl:function(){ return "data:text/javascript;charset=utf-8,"+encodeURIComponent(
+        "self.MonacoEnvironment={baseUrl:'"+MON_BASE+"'};importScripts('"+MON_BASE+"vs/base/worker/workerMain.js');"); }};
+      require.config({paths:{vs:MON_BASE+"vs"}});
+      require(["vs/editor/editor.main"],function(){ if(!done){done=true;clearTimeout(to);resolve(window.monaco);} },
+        function(){ if(!done){done=true;clearTimeout(to);__monFailed=true;resolve(null);} });
+    }catch(e){ if(!done){done=true;clearTimeout(to);__monFailed=true;resolve(null);} } };
+    document.head.appendChild(s);
+  });
+  return __monReady;
+}
+function disposeMon(){ if(__monEditor){ try{__monEditor.dispose();}catch(_){} __monEditor=null; } }
+function monTheme(){ return ((S.theme==="dark")||(!S.theme&&window.matchMedia&&matchMedia("(prefers-color-scheme:dark)").matches))?"vs-dark":"vs"; }
+function mountMonaco(taId, lang){
+  var ta=$(taId); if(!ta) return;
+  ensureMonaco().then(function(monaco){
+    if(!monaco) return;                    // 로드 실패 → textarea 그대로
+    if($(taId)!==ta || ta.__mon) return;   // 문제가 바뀌었거나 이미 마운트됨
+    try{
+      var host=document.createElement("div"); host.className="mon-host";
+      ta.style.display="none"; ta.__mon=true;
+      ta.parentNode.insertBefore(host, ta);
+      var ed=monaco.editor.create(host,{value:ta.value,language:lang,theme:monTheme(),
+        minimap:{enabled:false},fontSize:13,lineNumbers:"on",scrollBeyondLastLine:false,automaticLayout:true,
+        tabSize:2,insertSpaces:true,wordWrap:"on",padding:{top:8,bottom:8},fontFamily:"ui-monospace,SFMono-Regular,Menlo,monospace",
+        renderLineHighlight:"line",smoothScrolling:true,cursorBlinking:"smooth"});
+      __monEditor=ed;
+      ed.onDidChangeModelContent(function(){ ta.value=ed.getValue(); ta.dispatchEvent(new Event("input")); });
+      setTimeout(function(){ try{ed.layout();}catch(_){}} ,60);
+    }catch(e){ ta.style.display=""; ta.__mon=false; } // 마운트 실패 → 폴백
+  });
+}
 /* 백업 / 복원 */
 function backupState(){ try{ const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob), a=document.createElement("a");
@@ -2015,7 +2063,7 @@ let liveTest=null;
 window.addEventListener("message",function(e){ if(e&&e.data){ if(e.data.__cr==="out") liveOut=String(e.data.text||""); else if(e.data.__cr==="test") liveTest={pass:e.data.pass|0,total:e.data.total|0,impl:(e.data.impl==null?null:e.data.impl|0),gate:!!e.data.gate,parts:e.data.parts||null}; } });
 window.addEventListener("popstate",function(){
   if($("done").classList.contains("on")){ $("done").classList.remove("on"); document.body.style.overflow=""; renderCats(); renderLangs(); renderCourse(); return; }
-  if($("lesson").classList.contains("on")){ $("lesson").classList.remove("on"); document.body.style.overflow=""; if(run) S.hearts=run.hearts; save(); renderCourse(); return; }
+  if($("lesson").classList.contains("on")){ disposeMon(); $("lesson").classList.remove("on"); document.body.style.overflow=""; if(run) S.hearts=run.hearts; save(); renderCourse(); return; }
 });
 function fmt(n){return n>=1000?(n/1000).toFixed(1).replace(/\.0$/,'')+"k":n}
 function paintStats(){ const a=$("s-streak"),b=$("s-xp"),c=$("s-hearts"); if(a)a.textContent=S.streak; if(b)b.textContent=fmt(S.xp); if(c)c.textContent=S.hearts; }
@@ -2204,6 +2252,7 @@ function startReview(){
 }
 function showQ(){
   const q=run.les.q[run.i];
+  disposeMon();
   $("prog").style.width=(run.i/run.total*100)+"%";
   $("l-hearts").textContent=run.free?"∞":run.hearts;
   run.answered=false; run.picked=null;
@@ -2251,9 +2300,9 @@ function showQ(){
       };
     });
   }
-  if(q.live||q.t==="code"){ setupLive(q); }
+  if(q.live||q.t==="code"){ setupLive(q); mountMonaco("livecode","javascript"); }
   if(q.t==="code"){ chk.disabled=false; }
-  if(q.t==="sql"){ setupSql(q); chk.disabled=false; }
+  if(q.t==="sql"){ setupSql(q); chk.disabled=false; mountMonaco("sqlcode","sql"); }
 }
 function jsDoc(code){return '<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#e6e9f2;white-space:pre-wrap;word-break:break-word"><scr'+'ipt>var O=document.body,LOG="";function W(c,a){var t=[].map.call(a,function(x){return (typeof x==="object"&&x!==null)?JSON.stringify(x):String(x)}).join(" ");LOG+=t+"\\n";var d=document.createElement("div");if(c)d.style.color=c;d.textContent=t;O.appendChild(d);}console.log=function(){W("",arguments)};console.error=function(){W("#ff6b6b",arguments)};console.warn=function(){W("#ffc773",arguments)};try{'+code+'\n}catch(e){W("#ff6b6b",[e]);}try{parent.postMessage({__cr:"out",text:LOG},"*")}catch(e){}</scr'+'ipt></body>';}
 function renderLive(mode,code){const f=$("liveview");if(!f)return;f.srcdoc=(mode==="js")?jsDoc(code):code;}
@@ -2418,6 +2467,7 @@ function addAiReview(q){
   $("ai-req").onclick=()=>{ const ta=$(q.t==="sql"?"sqlcode":"livecode"); aiReviewInto($("ai-host"), q, ta?ta.value:"", lang); };
 }
 function endLesson(passed){
+  disposeMon();
   if(run&&run.diag){ finishDiagnostic(); return; }
   $("lesson").classList.remove("on");
   const acc=Math.round(run.correct/run.total*100);
@@ -2462,14 +2512,15 @@ function endLesson(passed){
 }
 
 /* ================= 컨트롤 ================= */
-$("quit").onclick=()=>{ confirmModal("레슨을 나갈까요? 진행 중인 문제는 저장되지 않아요.", ()=>{ $("lesson").classList.remove("on"); document.body.style.overflow=""; S.hearts=run.hearts; save(); renderCourse(); }, {yes:"나가기"}); };
+$("quit").onclick=()=>{ confirmModal("레슨을 나갈까요? 진행 중인 문제는 저장되지 않아요.", ()=>{ disposeMon(); $("lesson").classList.remove("on"); document.body.style.overflow=""; S.hearts=run.hearts; save(); renderCourse(); }, {yes:"나가기"}); };
 $("reset-link").onclick=e=>{ e.preventDefault(); confirmModal("모든 진행상황(XP·연속학습·완료 레슨)을 초기화할까요? 되돌릴 수 없어요.", ()=>{ S=Object.assign({},DEF); save(); location.reload(); }, {yes:"초기화", danger:true}); };
 $("backup-link").onclick=e=>{ e.preventDefault(); backupState(); };
 $("restore-link").onclick=e=>{ e.preventDefault(); $("restore-file").click(); };
 $("restore-file").onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) restoreState(f); e.target.value=""; };
 
 /* 테마 */
-function applyTheme(t){ if(t) document.documentElement.setAttribute("data-theme",t); else document.documentElement.removeAttribute("data-theme"); }
+function applyTheme(t){ if(t) document.documentElement.setAttribute("data-theme",t); else document.documentElement.removeAttribute("data-theme");
+  if(window.monaco&&window.monaco.editor){ try{ monaco.editor.setTheme(monTheme()); }catch(_){} } }
 $("theme-btn").onclick=()=>{
   const cur=document.documentElement.getAttribute("data-theme");
   const dark=window.matchMedia("(prefers-color-scheme:dark)").matches;
