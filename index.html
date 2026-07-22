@@ -603,7 +603,7 @@
   .toast.on{opacity:1; transform:translate(-50%,0)}
   @media (prefers-reduced-motion:reduce){ .toast{transition:opacity .2s} }
   /* ---------- designed confirm modal (replaces confirm()) ---------- */
-  .confirm-ovl{align-items:center; justify-content:center; padding:24px}
+  .confirm-ovl{align-items:center; justify-content:center; padding:24px; z-index:140}
   .confirm-card{background:var(--card); border:1px solid var(--line); border-radius:16px;
     padding:24px 22px 18px; width:100%; max-width:360px; box-shadow:0 20px 60px rgba(0,0,0,.28)}
   .confirm-msg{font-size:15px; font-weight:600; line-height:1.6; color:var(--ink); white-space:pre-line}
@@ -1876,7 +1876,7 @@ dl:{name:"딥러닝",em:"🧠",color:"#d6336c",g:"linear-gradient(135deg,#d6336c
 
 /* ================= 상태 ================= */
 const MAX_HEARTS=5;
-const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10,proj:{},skills:{},sims:{},diags:{},implByK:{},ai:{provider:"gemini",model:"gemini-2.0-flash",key:""}};
+const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10,proj:{},skills:{},sims:{},diags:{},implByK:{},ai:{provider:"proxy",model:"gemini-2.0-flash",key:""}};
 let S=load();
 function load(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("coderun")||"{}"))}catch(e){return Object.assign({},DEF)}}
 function save(){localStorage.setItem("coderun",JSON.stringify(S))}
@@ -1913,14 +1913,21 @@ function confirmModal(msg, onYes, opts){ opts=opts||{};
 }
 /* ---- V4: AI 코드 멘토 (BYOK · 모델 무관, 브라우저에서 직접 호출) ---- */
 const AI_PROVIDERS={
-  anthropic:{name:"Claude (Anthropic)", models:["claude-opus-4-8","claude-sonnet-5","claude-haiku-4-5"], keyHint:"sk-ant-...", url:"https://console.anthropic.com/settings/keys"},
-  openai:{name:"OpenAI", models:["gpt-4o","gpt-4o-mini","o4-mini"], keyHint:"sk-...", url:"https://platform.openai.com/api-keys"},
-  gemini:{name:"Google Gemini", models:["gemini-2.0-flash","gemini-1.5-pro"], keyHint:"AIza...", url:"https://aistudio.google.com/app/apikey"}
+  proxy:{name:"서버 (Vercel · 키 불필요)", models:["gemini-2.0-flash","gemini-1.5-pro"], keyHint:"", url:"", noKey:true},
+  gemini:{name:"Google Gemini (내 키)", models:["gemini-2.0-flash","gemini-1.5-pro"], keyHint:"AIza...", url:"https://aistudio.google.com/app/apikey"},
+  openai:{name:"OpenAI (내 키)", models:["gpt-4o","gpt-4o-mini","o4-mini"], keyHint:"sk-...", url:"https://platform.openai.com/api-keys"},
+  anthropic:{name:"Claude (내 키)", models:["claude-opus-4-8","claude-sonnet-5","claude-haiku-4-5"], keyHint:"sk-ant-...", url:"https://console.anthropic.com/settings/keys"}
 };
-function aiCfg(){ if(!S.ai)S.ai={provider:"gemini",model:"gemini-2.0-flash",key:""}; return S.ai; }
-function aiReady(){ const c=aiCfg(); return !!(c.key&&c.provider&&c.model); }
+function aiCfg(){ if(!S.ai)S.ai={provider:"proxy",model:"gemini-2.0-flash",key:""}; return S.ai; }
+function aiReady(){ const c=aiCfg(); const p=AI_PROVIDERS[c.provider]; if(p&&p.noKey) return !!(c.provider&&c.model); return !!(c.key&&c.provider&&c.model); }
 function aiCall(system, user, maxTokens){
   const c=aiCfg(); maxTokens=maxTokens||1400;
+  if(c.provider==="proxy"){
+    return fetch("/api/review",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({system:system,user:user,model:c.model,maxTokens:maxTokens})})
+      .then(r=>r.json().catch(()=>{throw new Error("서버 응답을 읽지 못했어요 (프록시 미배포?)");}))
+      .then(j=>{ if(j.error) throw new Error(j.error); return (j.text||"").trim(); });
+  }
   if(c.provider==="anthropic"){
     return fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{
       "content-type":"application/json","x-api-key":c.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
@@ -1963,14 +1970,17 @@ function openAiSetup(){ const o=$("aiov"), body=$("aiov-body"); const c=aiCfg();
     <p class="sub">직접 코딩·SQL 문제를 푼 뒤, 당신의 코드를 시니어 기준으로 리뷰받으세요. 정확성·엣지·성능·가독성·프로덕션 관점의 피드백을 제공합니다.</p>
     <div class="ai-field"><label>제공자</label><select id="ai-prov">${provOpts}</select></div>
     <div class="ai-field"><label>모델</label><select id="ai-model">${modelOpts}</select></div>
-    <div class="ai-field"><label>API 키 (BYOK)</label><input id="ai-key" type="password" placeholder="${p.keyHint}" value="${escHtml(c.key||"")}"></div>
-    <p class="ai-note">🔒 키는 <b>이 브라우저에만</b> 저장되며 서버로 전송되지 않습니다. 리뷰 요청 시에만 선택한 제공자로 직접 전송됩니다. 키 발급: <a href="${p.url}" target="_blank" rel="noopener" style="color:var(--brand)">${p.url}</a></p>
-    <p class="ai-note">※ 로컬에서 <code>index.html</code>을 직접 열었을 때 동작합니다. 일부 미리보기 환경은 외부 네트워크를 차단할 수 있어요.</p>
+    <div class="ai-field" id="ai-keyfield"${p.noKey?' style="display:none"':''}><label>API 키 (BYOK)</label><input id="ai-key" type="password" placeholder="${p.keyHint}" value="${escHtml(c.key||"")}"></div>
+    <p class="ai-note" id="ai-note-key"${p.noKey?' style="display:none"':''}>🔒 키는 <b>이 브라우저에만</b> 저장되며 서버로 전송되지 않습니다. 리뷰 요청 시에만 선택한 제공자로 직접 전송됩니다. 키 발급: <a id="ai-keylink" href="${p.url}" target="_blank" rel="noopener" style="color:var(--brand)">${p.url}</a></p>
+    <p class="ai-note" id="ai-note-proxy"${p.noKey?'':' style="display:none"'}>✅ 서버(<code>/api/review</code>)가 <code>GEMINI_API_KEY</code>로 대신 호출합니다 — <b>키 입력 불필요</b>. Vercel에 함수가 배포돼 있어야 동작해요. (이 공개 엔드포인트는 방문자가 사용량을 소비할 수 있으니 무료 한도 프로젝트를 권장)</p>
     <button class="ovclose" id="ai-save" style="margin-top:12px">저장</button>
     <button class="ovclose alt" id="ai-close">닫기</button>`;
-  const provSel=$("ai-prov"), modelSel=$("ai-model"), keyIn=$("ai-key");
-  provSel.onchange=()=>{ const np=AI_PROVIDERS[provSel.value]; modelSel.innerHTML=np.models.map(m=>`<option>${m}</option>`).join(""); keyIn.placeholder=np.keyHint; };
-  $("ai-save").onclick=()=>{ S.ai={provider:provSel.value,model:modelSel.value,key:keyIn.value.trim()}; save();
+  const provSel=$("ai-prov"), modelSel=$("ai-model");
+  provSel.onchange=()=>{ const np=AI_PROVIDERS[provSel.value]; modelSel.innerHTML=np.models.map(m=>`<option>${m}</option>`).join("");
+    const kf=$("ai-keyfield"), nk=$("ai-note-key"), npx=$("ai-note-proxy"), ki=$("ai-key"), kl=$("ai-keylink");
+    if(np.noKey){ kf.style.display="none"; nk.style.display="none"; npx.style.display=""; }
+    else { kf.style.display=""; nk.style.display=""; npx.style.display="none"; if(ki)ki.placeholder=np.keyHint; if(kl){kl.href=np.url;kl.textContent=np.url;} } };
+  $("ai-save").onclick=()=>{ const ki=$("ai-key"); S.ai={provider:provSel.value,model:modelSel.value,key:ki?ki.value.trim():""}; save();
     o.classList.remove("on"); document.body.style.overflow=""; toast(aiReady()?"AI 멘토가 연결됐어요.":"키를 입력하면 리뷰를 받을 수 있어요."); };
   $("ai-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
   o.onclick=e=>{ if(e.target===o){ o.classList.remove("on"); document.body.style.overflow=""; } };
