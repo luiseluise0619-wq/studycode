@@ -982,7 +982,7 @@ cs:{name:"CS 기초",em:"🧮",color:"#5f6b7a",g:"linear-gradient(135deg,#5f6b7a
 algo:{name:"알고리즘/자료구조",em:"📊",color:"#c77d3a",g:"linear-gradient(135deg,#c77d3a,#eab308)",units:[
  {title:"직접 구현 — 알고리즘 (테스트 통과)",guide:"🧪",lessons:[
   {title:"탐색·수학 구현",xp:45,q:[
-   {t:"code",k:"직접 구현",run:"js",q:'정렬된 배열에서 target의 인덱스를 이진 탐색으로 찾아 반환(없으면 -1)하는 binarySearch(arr, target) 를 구현하세요.',src:`function binarySearch(arr, target){\n  // 정렬된 배열을 이진 탐색하세요\n  \n}`,tests:[{in:"binarySearch([1,3,5,7,9],7)",out:"3"},{in:"binarySearch([1,3,5,7,9],4)",out:"-1"},{in:"binarySearch([1,3,5,7,9],1)",out:"0"},{in:"binarySearch([2],2)",out:"0"},{in:"binarySearch([],5)",out:"-1"}],ex:'lo=0, hi=arr.length-1; 중앙값과 비교해 절반씩 좁힙니다. arr[mid]===target이면 mid 반환.\n💡 개념: 매 단계 탐색 범위가 절반 → O(log n). 반드시 정렬된 배열에서만 유효합니다.\n🛠 실무: mid=(lo+hi)>>>1 로 오버플로를 피하고, 경계(lo<=hi)와 빈 배열을 반드시 테스트합니다.'},
+   {t:"code",k:"직접 구현",run:"js",q:'정렬된 배열에서 target의 인덱스를 이진 탐색으로 찾아 반환(없으면 -1)하는 binarySearch(arr, target) 를 구현하세요.',src:`function binarySearch(arr, target){\n  // 정렬된 배열을 이진 탐색하세요\n  \n}`,tests:[{in:"binarySearch([1,3,5,7,9],7)",out:"3"},{in:"binarySearch([1,3,5,7,9],4)",out:"-1"},{in:"binarySearch([1,3,5,7,9],1)",out:"0"}],edge:[{in:"binarySearch([2],2)",out:"0"},{in:"binarySearch([],5)",out:"-1"},{in:"binarySearch([1,3,5,7,9],9)",out:"4"}],ex:'lo=0, hi=arr.length-1; 중앙값과 비교해 절반씩 좁힙니다. arr[mid]===target이면 mid 반환.\n💡 개념: 매 단계 탐색 범위가 절반 → O(log n). 반드시 정렬된 배열에서만 유효합니다.\n🛠 실무: mid=(lo+hi)>>>1 로 오버플로를 피하고, 경계(lo<=hi)와 빈 배열을 반드시 테스트합니다.'},
    {t:"code",k:"직접 구현",run:"js",q:'n이 소수이면 true를 반환하는 isPrime(n) 을 구현하세요. (1 이하는 false)',src:`function isPrime(n){\n  // 소수면 true 를 반환하세요\n  \n}`,tests:[{in:"isPrime(7)",out:"true"},{in:"isPrime(1)",out:"false"},{in:"isPrime(2)",out:"true"},{in:"isPrime(9)",out:"false"},{in:"isPrime(97)",out:"true"}],ex:'2부터 √n까지 나눠떨어지는 수가 있으면 소수가 아닙니다.\n💡 개념: 약수는 √n을 기준으로 쌍을 이루므로 √n까지만 검사하면 됩니다 → O(√n).\n🛠 실무: i*i<=n 조건으로 √ 계산을 피하고, 2와 짝수를 먼저 걸러 속도를 높입니다.'},
    {t:"code",k:"직접 구현",run:"js",q:'두 수의 최대공약수를 반환하는 gcd(a, b) 를 구현하세요. (유클리드 호제법)',src:`function gcd(a, b){\n  // 최대공약수를 반환하세요\n  \n}`,tests:[{in:"gcd(12,8)",out:"4"},{in:"gcd(17,5)",out:"1"},{in:"gcd(100,10)",out:"10"},{in:"gcd(0,7)",out:"7"}],ex:'gcd(a,b)=gcd(b, a%b), b가 0이면 a가 답입니다.\n💡 개념: 유클리드 호제법은 나머지로 문제를 줄여 O(log(min)) 만에 수렴합니다.\n🛠 실무: 최소공배수는 a*b/gcd(a,b)로 구하되, 오버플로를 피해 a/gcd*b 순서로 계산합니다.'},
    {t:"code",k:"직접 구현",run:"js",q:'0-인덱스 피보나치 수를 반환하는 fib(n) 을 구현하세요. fib(0)=0, fib(1)=1.',src:`function fib(n){\n  // n번째 피보나치 수 (반복문 권장)\n  \n}`,tests:[{in:"fib(0)",out:"0"},{in:"fib(1)",out:"1"},{in:"fib(7)",out:"13"},{in:"fib(10)",out:"55"}],ex:'a=0,b=1 에서 시작해 n번 [a,b]=[b,a+b] 로 갱신합니다.\n💡 개념: 반복문 O(n)·O(1) 공간. 순수 재귀는 O(2^n)으로 폭발하니 피합니다.\n🛠 실무: 반복 또는 메모이제이션으로 지수 재귀를 선형으로 바꾸는 것이 대표적 DP 입문입니다.'}
@@ -991,7 +991,7 @@ algo:{name:"알고리즘/자료구조",em:"📊",color:"#c77d3a",g:"linear-gradi
    {t:"code",k:"직접 구현",run:"js",q:'배열을 뒤집은 새 배열을 반환하는 reverseArr(arr) 를 구현하세요. (내장 reverse 없이)',src:`function reverseArr(arr){\n  // 뒤집힌 배열을 반환하세요\n  \n}`,tests:[{in:"reverseArr([1,2,3])",out:"[3,2,1]"},{in:"reverseArr([])",out:"[]"},{in:"reverseArr([5])",out:"[5]"},{in:"reverseArr([1,2,3,4])",out:"[4,3,2,1]"}],ex:'뒤에서부터 새 배열에 push 하거나, 양끝 투포인터로 swap 합니다.\n💡 개념: 투포인터(i=0, j=len-1)로 마주 오며 교환하면 O(n)·제자리(in-place)로 가능합니다.\n🛠 실무: 원본을 바꾸면 안 되는 경우 새 배열을 만들고, 가능하면 제자리로 메모리를 아낍니다.'},
    {t:"code",k:"직접 구현",run:"js",q:'배열에서 값 x의 등장 횟수를 반환하는 countOccur(arr, x) 를 구현하세요.',src:`function countOccur(arr, x){\n  // x의 개수를 반환하세요\n  \n}`,tests:[{in:"countOccur([1,2,2,3,2],2)",out:"3"},{in:"countOccur([1,2,3],9)",out:"0"},{in:"countOccur([],1)",out:"0"},{in:"countOccur([7,7],7)",out:"2"}],ex:'순회하며 arr[i]===x 일 때 카운트를 올립니다.\n💡 개념: 단일 순회 O(n). 여러 값의 빈도가 필요하면 Map으로 한 번에 집계합니다.\n🛠 실무: 반복 조회가 많으면 빈도 Map을 미리 만들어 매번 O(n) 순회를 피합니다.'},
    {t:"code",k:"직접 구현",run:"js",q:'순서를 유지하며 중복을 제거한 배열을 반환하는 removeDup(arr) 를 구현하세요.',src:`function removeDup(arr){\n  // 중복 제거(순서 유지)\n  \n}`,tests:[{in:"removeDup([1,1,2,3,3])",out:"[1,2,3]"},{in:"removeDup([5,5,5])",out:"[5]"},{in:"removeDup([])",out:"[]"},{in:"removeDup([3,1,3,2,1])",out:"[3,1,2]"}],ex:'Set으로 본 적 있는지 확인하며 처음 보는 값만 결과에 담습니다.\n💡 개념: Set 조회는 평균 O(1)이라 전체 O(n)으로 순서를 유지하며 제거할 수 있습니다.\n🛠 실무: [...new Set(arr)]는 간단하지만 순서 유지·객체 비교가 필요하면 직접 순회가 안전합니다.'},
-   {t:"code",k:"직접 구현",run:"js",q:'배열 안에 합이 target인 두 원소가 있으면 true를 반환하는 hasPairSum(arr, target) 를 구현하세요.',src:`function hasPairSum(arr, target){\n  // 합이 target인 두 수가 있으면 true\n  \n}`,tests:[{in:"hasPairSum([1,2,3,4],7)",out:"true"},{in:"hasPairSum([1,2,3],10)",out:"false"},{in:"hasPairSum([5,5],10)",out:"true"},{in:"hasPairSum([3],3)",out:"false"}],ex:'Set에 target-현재값이 있으면 짝을 찾은 것입니다. 없으면 현재값을 Set에 추가.\n💡 개념: 여집합(target-x)을 해시로 조회하면 이중 반복 O(n²)을 O(n)으로 줄입니다.\n🛠 실무: 정렬돼 있으면 투포인터로도 O(n)에 풀 수 있어 상황에 맞게 선택합니다.'}
+   {t:"code",k:"직접 구현",run:"js",q:'배열 안에 합이 target인 두 원소가 있으면 true를 반환하는 hasPairSum(arr, target) 를 구현하세요.',src:`function hasPairSum(arr, target){\n  // 합이 target인 두 수가 있으면 true\n  \n}`,tests:[{in:"hasPairSum([1,2,3,4],7)",out:"true"},{in:"hasPairSum([1,2,3],10)",out:"false"},{in:"hasPairSum([5,5],10)",out:"true"}],edge:[{in:"hasPairSum([3],3)",out:"false"},{in:"hasPairSum([],5)",out:"false"},{in:"hasPairSum([0,0],0)",out:"true"}],perf:{setup:"var BIGH=Array.from({length:100000},function(_,i){return i;})",in:"hasPairSum(BIGH,199997)",out:"true",ms:60},ex:'Set에 target-현재값이 있으면 짝을 찾은 것입니다. 없으면 현재값을 Set에 추가.\n💡 개념: 여집합(target-x)을 해시로 조회하면 이중 반복 O(n²)을 O(n)으로 줄입니다.\n🛠 실무: 정렬돼 있으면 투포인터로도 O(n)에 풀 수 있어 상황에 맞게 선택합니다.'}
   ]}
  ]},{"title":"시간·공간 복잡도","guide":"📊","lessons":[{"title":"Big-O로 병목 판단하기","xp":30,"q":[{"t":"choice","k":"algo2-bigo-worst-vs-avg","cat":"perf","q":"해시맵 조회는 평균 O(1)이지만 최악 O(n)이다. 실무에서 '최악'을 반드시 고려해야 하는 대표 상황은?","o":["데이터가 항상 정렬되어 있을 때","외부 입력으로 키가 채워져 해시 충돌을 유발할 수 있을 때(해시 DoS)","메모리가 충분할 때","키가 모두 정수일 때"],"a":1,"ex":"공격자가 같은 버킷으로 몰리는 키를 넣으면 O(n) 조회가 반복돼 해시 DoS가 된다.\n💡 개념: 평균 복잡도는 입력 분포 가정에 의존하며, 적대적 입력에서는 최악이 현실이 된다.\n🛠 실무: 외부 입력을 키로 쓰는 맵은 시드 랜덤화된 해시(SipHash 등)나 트리 기반 fallback을 쓰는 구현을 택한다."},{"t":"choice","k":"algo2-bigo-constant-trap","cat":"perf","q":"O(n)이 O(n log n)보다 이론적으로 우수한데도 실측에서 더 느릴 수 있는 이유로 가장 적절한 것은?","o":["log n이 사실 상수라서","숨은 상수·캐시 미스·메모리 할당 등 상수 요인이 커서 작은 n에서 역전되기 때문","O(n)이 항상 재귀라서","빅오가 틀렸기 때문"],"a":1,"ex":"빅오는 상수를 버리므로, 상수가 큰 O(n)이 상수가 작은 O(n log n)보다 실측에서 느릴 수 있다.\n💡 개념: 빅오는 점근적 증가율만 말하며 실제 성능은 상수·캐시·분기예측에 좌우된다.\n🛠 실무: 최적화 전 프로파일링으로 실제 병목을 확인하고, 복잡도만 보고 성급히 자료구조를 바꾸지 않는다."},{"t":"input","k":"algo2-bigo-nested-loop","cat":"perf","q":"배열을 이중 for로 모든 쌍을 비교하는 코드의 시간복잡도를 빅오로 쓰시오.","a":["O(n^2)","O(n²)","n^2","n squared"],"ex":"n개 원소의 모든 쌍은 n(n-1)/2 ≈ n²/2 이므로 O(n²)이다.\n💡 개념: 상수 계수 1/2는 빅오에서 무시된다.\n🛠 실무: n이 수만을 넘으면 O(n²)는 초 단위로 느려지므로 해시/정렬로 O(n) 또는 O(n log n)으로 낮출 방법을 찾는다."},{"t":"choice","k":"algo2-bigo-small-n","cat":"perf","q":"n이 작을 것이 확실한(예: n &lt; 16) 내부 루틴에서 실무적으로 합리적인 선택은?","o":["무조건 O(n log n) 자료구조로 교체","단순한 O(n²) 선형 스캔이 상수가 작아 오히려 빠를 수 있으니 그대로 둔다","항상 해시맵으로 바꾼다","재귀로 바꾼다"],"a":1,"ex":"작은 n에서는 자료구조 오버헤드가 커서 단순 배열 선형 탐색이 더 빠른 경우가 흔하다.\n💡 개념: 점근 복잡도의 우위는 n이 충분히 커야 나타난다.\n🛠 실무: 표준 라이브러리 정렬도 작은 구간은 삽입정렬로 전환한다(introsort). 규모를 알면 단순함을 택한다."},{"t":"input","k":"algo2-bigo-space-recursion","cat":"perf","q":"깊이 n까지 내려가는 단순 재귀의 호출 스택이 차지하는 공간복잡도를 빅오로 쓰시오.","a":["O(n)","n"],"ex":"재귀 호출마다 스택 프레임이 쌓이므로 깊이 n에서 O(n) 공간을 쓴다.\n💡 개념: 시간뿐 아니라 공간복잡도, 특히 스택 깊이도 자원이다.\n🛠 실무: 깊은 재귀는 스택 오버플로 위험이 있어 반복문+명시적 스택이나 꼬리재귀 최적화로 바꾼다."},{"t":"choice","k":"algo2-bigo-amortized","cat":"perf","q":"동적 배열(vector/ArrayList) push의 amortized(분할상환) O(1)이 의미하는 바로 옳은 것은?","o":["모든 push가 정확히 O(1)이다","가끔 재할당으로 O(n)이 발생하지만 여러 연산에 평균 내면 O(1)이다","push는 항상 O(n)이다","재할당이 절대 없다"],"a":1,"ex":"용량이 찰 때 2배 재할당으로 O(n)이 발생하지만, 전체 push 횟수로 나누면 평균 O(1)이다.\n💡 개념: 분할상환은 개별 최악이 아닌 연산 시퀀스 전체의 평균 비용을 본다.\n🛠 실무: 최종 크기를 알면 reserve/미리 capacity 지정으로 재할당(복사)을 없애 성능과 지연 스파이크를 줄인다."},{"t":"choice","k":"algo2-bigo-log-base","cat":"perf","q":"O(log₂ n)과 O(log₁₀ n)을 빅오 표기에서 구분하지 않는 이유는?","o":["로그가 모두 상수라서","밑 변환은 상수배 차이일 뿐이라 빅오에서 흡수되기 때문","밑이 항상 2라서","log는 O(1)이라서"],"a":1,"ex":"log_a n = log_b n / log_b a 로 밑 차이는 상수 배수이므로 빅오에서 사라진다.\n💡 개념: 빅오는 상수 계수를 무시하므로 로그의 밑은 표기에 나타나지 않는다.\n🛠 실무: 이분탐색·균형트리처럼 log n이 나오면 밑보다 '지수적으로 줄어든다'는 성질에 주목한다."}]}]},
 {"title":"배열·해시","guide":"📊","lessons":[{"title":"언제 배열, 언제 해시","xp":30,"q":[{"t":"choice","k":"algo2-hash-o1-condition","cat":"internals","q":"해시맵 조회가 평균 O(1)이 성립하기 위한 전제로 가장 핵심적인 것은?","o":["키가 정수여야 한다","좋은 해시 함수로 충돌이 적고 부하율(load factor)이 낮게 유지되어야 한다","값이 문자열이어야 한다","삽입 순서가 정렬되어야 한다"],"a":1,"ex":"해시가 고르게 분산되고 부하율이 낮아 버킷당 원소 수가 상수여야 O(1)이 유지된다.\n💡 개념: 충돌이 많거나 부하율이 높으면 조회가 O(n)에 근접한다.\n🛠 실무: 대량 삽입 전 예상 크기로 초기 용량을 지정해 rehash와 충돌을 줄인다."},{"t":"choice","k":"algo2-hash-vs-array-access","cat":"internals","q":"인덱스로 순차 접근하며 반복 순회가 대부분인 워크로드에서 해시맵보다 배열이 유리한 핵심 이유는?","o":["해시맵은 삭제가 불가능해서","배열은 연속 메모리라 캐시 지역성이 좋아 순회가 빠르기 때문","배열은 항상 정렬돼 있어서","해시맵은 인덱스가 없어서"],"a":1,"ex":"배열은 원소가 연속 배치되어 프리페치·캐시 라인 활용으로 순회가 빠르다.\n💡 개념: 해시맵은 임의 키 조회에 강하지만 포인터 추적으로 캐시 지역성이 나쁘다.\n🛠 실무: 키가 조밀한 정수 인덱스면 해시맵 대신 배열을 써 캐시 미스를 줄인다."},{"t":"input","k":"algo2-hash-dup-detect","cat":"perf","q":"정렬 없이 배열에서 중복 존재 여부를 판별할 때, 해시 집합을 쓰면 평균 시간복잡도는? 빅오로 쓰시오.","a":["O(n)","n"],"ex":"각 원소를 집합에 넣으며 존재 확인하면 원소당 평균 O(1), 전체 O(n)이다.\n💡 개념: 정렬 후 인접 비교는 O(n log n)이지만 해시 집합은 평균 O(n)으로 낮춘다.\n🛠 실무: 순서가 필요 없고 메모리 여유가 있으면 해시 집합이 중복·교집합 계산에 가장 간결하고 빠르다."},{"t":"choice","k":"algo2-hash-counting","cat":"internals","q":"문자열들의 등장 빈도를 세는 카운팅 문제에서 가장 적합한 자료구조는?","o":["스택","키→카운트 해시맵","우선순위 큐만","연결 리스트"],"a":1,"ex":"값별 카운트는 해시맵(키=값, 값=횟수)으로 평균 O(1) 갱신이 자연스럽다.\n💡 개념: 빈도·그룹핑 패턴의 기본 도구는 해시맵이다.\n🛠 실무: 이후 top-k가 필요하면 카운트 후 힙이나 부분 정렬을 결합한다."},{"t":"choice","k":"algo2-hash-collision-resolve","cat":"internals","q":"해시 충돌 해결 방식 중 open addressing(개방 주소법)의 특징으로 옳은 것은?","o":["버킷마다 연결 리스트를 둔다","빈 슬롯을 탐사해 저장하며 캐시 지역성이 좋지만 부하율에 민감하다","충돌이 발생하지 않는다","삭제가 불가능하다"],"a":1,"ex":"개방 주소법은 배열 내 다른 슬롯을 탐사하므로 연속 메모리라 캐시 친화적이지만 부하율이 높으면 성능이 급락한다.\n💡 개념: 체이닝은 포인터 추적, 개방 주소법은 탐사(probing)로 충돌을 해결한다.\n🛠 실무: 개방 주소법은 부하율을 낮게(예: 0.7 이하) 유지하고 삭제 시 tombstone 처리에 주의한다."},{"t":"choice","k":"algo2-hash-order-need","cat":"design","q":"키를 정렬된 순서로 순회하거나 범위 질의(range query)가 필요하다면 해시맵 대신 무엇을 고려해야 하나?","o":["스택","정렬된 맵(균형 이진 탐색 트리 기반, 예: TreeMap/std::map)","일반 배열만","비트셋"],"a":1,"ex":"해시맵은 순서를 보장하지 않으므로 범위·정렬 순회에는 트리 기반 정렬맵이 적합하다.\n💡 개념: 해시맵 O(1) vs 트리맵 O(log n)의 트레이드오프는 '순서가 필요한가'로 갈린다.\n🛠 실무: 순서·범위 질의가 없으면 해시맵이, 있으면 정렬맵이 유리하다."},{"t":"choice","k":"algo2-array-insert-cost","cat":"perf","q":"배열 중간에 삽입/삭제가 빈번한 워크로드에서 배열의 단점과 대안으로 옳은 것은?","o":["삽입이 O(1)이라 문제없다","중간 삽입은 뒤 원소를 밀어야 해 O(n)이며, 잦으면 연결 리스트나 다른 구조를 고려","배열은 삭제가 불가능하다","해시맵으로 바꾸면 순서가 유지된다"],"a":1,"ex":"배열 중간 삽입은 이후 원소를 모두 이동시켜 O(n)이 든다.\n💡 개념: 배열은 임의 접근 O(1)·중간 삽입 O(n), 연결 리스트는 그 반대다.\n🛠 실무: 실제로는 캐시 지역성 때문에 연결 리스트가 느린 경우도 많으니, 삽입 위치를 알고 이동량이 적으면 배열이 여전히 낫다. 측정으로 결정한다."}]}]},
@@ -1399,7 +1399,7 @@ dl:{name:"딥러닝",em:"🧠",color:"#d6336c",g:"linear-gradient(135deg,#d6336c
 
 /* ================= 상태 ================= */
 const MAX_HEARTS=5;
-const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10,proj:{},skills:{},sims:{},diags:{}};
+const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10,proj:{},skills:{},sims:{},diags:{},implByK:{}};
 let S=load();
 function load(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("coderun")||"{}"))}catch(e){return Object.assign({},DEF)}}
 function save(){localStorage.setItem("coderun",JSON.stringify(S))}
@@ -1421,7 +1421,7 @@ let curCat="lang";
 const $=id=>document.getElementById(id);
 let liveOut="";
 let liveTest=null;
-window.addEventListener("message",function(e){ if(e&&e.data){ if(e.data.__cr==="out") liveOut=String(e.data.text||""); else if(e.data.__cr==="test") liveTest={pass:e.data.pass|0,total:e.data.total|0}; } });
+window.addEventListener("message",function(e){ if(e&&e.data){ if(e.data.__cr==="out") liveOut=String(e.data.text||""); else if(e.data.__cr==="test") liveTest={pass:e.data.pass|0,total:e.data.total|0,impl:(e.data.impl==null?null:e.data.impl|0),gate:!!e.data.gate,parts:e.data.parts||null}; } });
 window.addEventListener("popstate",function(){
   if($("done").classList.contains("on")){ $("done").classList.remove("on"); document.body.style.overflow=""; renderCats(); renderLangs(); renderCourse(); return; }
   if($("lesson").classList.contains("on")){ $("lesson").classList.remove("on"); document.body.style.overflow=""; if(run) S.hearts=run.hearts; save(); renderCourse(); return; }
@@ -1627,24 +1627,43 @@ function showQ(){
 }
 function jsDoc(code){return '<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#e6e9f2;white-space:pre-wrap;word-break:break-word"><scr'+'ipt>var O=document.body,LOG="";function W(c,a){var t=[].map.call(a,function(x){return (typeof x==="object"&&x!==null)?JSON.stringify(x):String(x)}).join(" ");LOG+=t+"\\n";var d=document.createElement("div");if(c)d.style.color=c;d.textContent=t;O.appendChild(d);}console.log=function(){W("",arguments)};console.error=function(){W("#ff6b6b",arguments)};console.warn=function(){W("#ffc773",arguments)};try{'+code+'\n}catch(e){W("#ff6b6b",[e]);}try{parent.postMessage({__cr:"out",text:LOG},"*")}catch(e){}</scr'+'ipt></body>';}
 function renderLive(mode,code){const f=$("liveview");if(!f)return;f.srcdoc=(mode==="js")?jsDoc(code):code;}
-function testDoc(code,tests){
+function testDoc(code,spec){
+  spec=spec||{};
   return '<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#e6e9f2;white-space:pre-wrap;word-break:break-word"><scr'+'ipt>'
-  +'var TS='+JSON.stringify(tests||[])+';var pass=0,out="";'
+  +'var SRC='+JSON.stringify(code)+';'
+  +'var TS='+JSON.stringify(spec.tests||[])+';'
+  +'var EG='+JSON.stringify(spec.edge||[])+';'
+  +'var PF='+JSON.stringify(spec.perf||null)+';'
   +'function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}'
   +'function sh(v){try{return typeof v==="undefined"?"undefined":JSON.stringify(v);}catch(e){return String(v);}}'
   +'function eq(a,b){try{return JSON.stringify(a)===JSON.stringify(b);}catch(e){return String(a)===String(b);}}'
+  +'function P(r){return Math.round(r*100);}'
+  +'function row(okc,inp,got,exp){return "<div style=\\"padding:2px 0;color:"+(okc?"#4ade80":"#ff6b6b")+"\\">"+(okc?"✓":"✗")+" "+esc(inp)+" \\u2192 "+esc(sh(got))+(okc?"":" <span style=\\"opacity:.7\\">(\\uae30\\ub300 "+esc(exp)+")</span>")+"</div>";}'
   +'try{'+code+'\n'
-  +'for(var i=0;i<TS.length;i++){var t=TS[i],okc=false,got;'
-  +'try{got=eval(t.in);var exp=eval("("+t.out+")");okc=eq(got,exp);}catch(e){got="[에러] "+e.message;}'
-  +'if(okc)pass++;'
-  +'out+="<div style=\\"padding:2px 0;color:"+(okc?"#4ade80":"#ff6b6b")+"\\">"+(okc?"✓":"✗")+" "+esc(t.in)+" → "+esc(sh(got))+(okc?"":" <span style=\\"opacity:.7\\">(기대 "+esc(t.out)+")</span>")+"</div>";}'
-  +'}catch(e){out="<div style=\\"color:#ff6b6b\\">[코드 에러] "+esc(e.message)+"</div>";}'
-  +'var pct=TS.length?Math.round(pass/TS.length*100):0;'
-  +'document.body.innerHTML="<div style=\\"margin-bottom:8px;font-weight:700\\">테스트 "+pass+"/"+TS.length+" 통과 ("+pct+"%)</div>"+out;'
-  +'try{parent.postMessage({__cr:"test",pass:pass,total:TS.length},"*");}catch(e){}'
+  +'var Cp=0,Ch="";for(var i=0;i<TS.length;i++){var t=TS[i],okc=false,got;try{got=eval(t.in);var exp=eval("("+t.out+")");okc=eq(got,exp);}catch(e){got="[\\uc5d0\\ub7ec] "+e.message;}if(okc)Cp++;Ch+=row(okc,t.in,got,t.out);}'
+  +'var Ep=0,Eh="";for(var i2=0;i2<EG.length;i2++){var t2=EG[i2],ok2=false,g2;try{g2=eval(t2.in);var ex2=eval("("+t2.out+")");ok2=eq(g2,ex2);}catch(e){g2="[\\uc5d0\\ub7ec] "+e.message;}if(ok2)Ep++;Eh+=row(ok2,t2.in,g2,t2.out);}'
+  +'var perfScore=null,perfMs=null,perfOk=false;'
+  +'if(PF){var gp;if(PF.setup){try{eval(PF.setup);}catch(e){}}var t0=performance.now();try{gp=eval(PF.in);perfMs=performance.now()-t0;var epv=eval("("+PF.out+")");perfOk=eq(gp,epv);}catch(e){perfMs=null;}var bud=PF.ms||60;if(!perfOk)perfScore=0;else if(perfMs<=bud)perfScore=1;else if(perfMs<=bud*4)perfScore=0.5;else perfScore=0.2;}'
+  +'var qr=[];qr.push({ok:!/\\bvar\\s/.test(SRC),t:"var \\ub300\\uc2e0 let/const \\uc0ac\\uc6a9"});'
+  +'var ln=SRC.split("\\n").filter(function(l){return l.trim()&&!/^\\s*\\/\\//.test(l);}).length;qr.push({ok:ln<=28,t:"\\uac04\\uacb0\\ud55c \\uad6c\\ud604(\\u226428\\uc904, \\ud604\\uc7ac "+ln+")"});'
+  +'qr.push({ok:!/console\\.(log|debug)/.test(SRC),t:"\\ub514\\ubc84\\uadf8 \\ub85c\\uadf8 \\uc81c\\uac70"});'
+  +'var qp=0;for(var j=0;j<qr.length;j++)if(qr[j].ok)qp++;var qScore=qr.length?qp/qr.length:1;'
+  +'var comps=[{r:TS.length?Cp/TS.length:0,w:40}];if(EG.length)comps.push({r:Ep/EG.length,w:20});if(perfScore!=null)comps.push({r:perfScore,w:20});comps.push({r:qScore,w:20});'
+  +'var sw=0,sv=0;for(var k=0;k<comps.length;k++){sw+=comps[k].w;sv+=comps[k].r*comps[k].w;}var impl=Math.round(sv/sw*100);'
+  +'var gate=(TS.length?Cp===TS.length:false)&&(EG.length?Ep===EG.length:true);'
+  +'var gcol=gate?"#4ade80":"#ff6b6b",gtxt=gate?"\\u2713 \\ud1b5\\uacfc":"\\ubbf8\\ud1b5\\uacfc";'
+  +'var bar="<div style=\\"margin-bottom:5px;font-weight:700\\">\\uad6c\\ud604 \\uc810\\uc218 "+impl+"/100 <span style=\\"color:"+gcol+"\\">"+gtxt+"</span></div>";'
+  +'var parts="<div style=\\"font-size:12px;opacity:.85;margin-bottom:8px\\">\\uc815\\ud655\\uc131 "+P(TS.length?Cp/TS.length:0)+(EG.length?" \\u00b7 \\uc5e3\\uc9c0 "+P(Ep/EG.length):"")+(perfScore!=null?" \\u00b7 \\uc131\\ub2a5 "+P(perfScore):"")+" \\u00b7 \\ud488\\uc9c8 "+P(qScore)+"</div>";'
+  +'var eh=EG.length?"<div style=\\"margin-top:6px;opacity:.7;font-size:12px\\">\\uc5e3\\uc9c0 \\ucf00\\uc774\\uc2a4</div>"+Eh:"";'
+  +'var ph=(PF&&perfScore!=null)?"<div style=\\"margin-top:6px;font-size:12px;color:"+(perfScore>=1?"#4ade80":perfScore>0?"#ffc773":"#ff6b6b")+"\\">\\uc131\\ub2a5: "+(perfOk?("\\uc815\\ub2f5 \\u00b7 "+Math.round(perfMs)+"ms / \\uc608\\uc0b0 "+(PF.ms||60)+"ms"):"\\uacb0\\uacfc \\ubd88\\uc77c\\uce58")+"</div>":"";'
+  +'var qn="";for(var m=0;m<qr.length;m++){if(!qr[m].ok)qn+="<div style=\\"color:#ffc773;font-size:12px\\">\\u2022 "+esc(qr[m].t)+"</div>";}'
+  +'document.body.innerHTML=bar+parts+Ch+eh+ph+qn;'
+  +'parent.postMessage({__cr:"test",pass:Cp+Ep,total:TS.length+EG.length,impl:impl,gate:gate,parts:{c:P(TS.length?Cp/TS.length:0),e:EG.length?P(Ep/EG.length):null,p:perfScore!=null?P(perfScore):null,q:P(qScore)}},"*");'
+  +'}catch(e){document.body.innerHTML="<div style=\\"color:#ff6b6b\\">[\\ucf54\\ub4dc \\uc5d0\\ub7ec] "+esc(String(e&&e.message||e))+"</div>";try{parent.postMessage({__cr:"test",pass:0,total:(TS.length||0),impl:0,gate:false},"*");}catch(_){}}'
   +'</scr'+'ipt></body>';
 }
-function renderTest(q,code){const f=$("liveview");if(!f)return;liveTest=null;f.srcdoc=testDoc(code,q.tests||[]);}
+function renderTest(q,code){const f=$("liveview");if(!f)return;liveTest=null;f.srcdoc=testDoc(code,{tests:q.tests,edge:q.edge,perf:q.perf});}
+function recordImpl(k,v){ if(v==null)return; if(!S.implByK)S.implByK={}; if(!(k in S.implByK)||v>S.implByK[k]){ S.implByK[k]=v; save(); } }
 function setupLive(q){const ta=$("livecode");if(!ta)return;ta.value=q.src||"";const go=()=>{ if(q.tests) renderTest(q,ta.value); else renderLive(q.run,ta.value); };let tmr;ta.oninput=()=>{clearTimeout(tmr);tmr=setTimeout(go,250);};go();}
 function norm(s){return s.toLowerCase().replace(/\s+/g,'').replace(/;$/,'')}
 function onCheck(){
@@ -1654,11 +1673,12 @@ function onCheck(){
     if(q.tests){
       renderTest(q,$("livecode").value);
       setTimeout(()=>{
-        const r=liveTest||{pass:0,total:(q.tests||[]).length};
-        const pct=r.total?Math.round(r.pass/r.total*100):0;
-        const ok = r.total>0 && r.pass===r.total;
-        applyResult(ok, "테스트 "+r.pass+"/"+r.total+" 통과 ("+pct+"%) — 전부 통과해야 정답이에요", q);
-      },340);
+        const r=liveTest||{pass:0,total:(q.tests||[]).length,impl:0,gate:false};
+        const ok = !!r.gate;
+        if(r.impl!=null && q.k) recordImpl(q.k, r.impl);
+        const msg = "구현 점수 "+(r.impl==null?"-":r.impl)+"/100 · 테스트 "+r.pass+"/"+r.total+(ok?" 통과":" — 전부 통과해야 정답이에요");
+        applyResult(ok, msg, q);
+      },360);
     } else {
       renderLive(q.run,$("livecode").value);
       setTimeout(()=>{
@@ -1899,14 +1919,27 @@ function axisWeaknessHtml(){
   }).join("");
   return `<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:rgba(255,150,90,.07);border:1px solid rgba(255,150,90,.3)"><div style="font-weight:800;margin-bottom:2px">🎯 지금 키울 역량</div>${blocks}</div>`;
 }
+function codingBreakdownHtml(){
+  if(typeof ensureSkills!=="function") return ""; ensureSkills();
+  const impls=S.implByK?Object.values(S.implByK):[];
+  const implAvg=impls.length?Math.round(impls.reduce((a,b)=>a+b,0)/impls.length):null;
+  const ps=[]; if(S.proj)for(const k in S.proj){ if(/:score$/.test(k)&&S.proj[k]&&typeof S.proj[k].pct==="number") ps.push(S.proj[k].pct); }
+  const prod=ps.length?Math.round(ps.reduce((a,b)=>a+b,0)/ps.length):null;
+  const items=[["Knowledge (아는가)","🧠",Math.round(S.skills.coding||0)],["Implementation (만드는가)","🛠️",implAvg],["Debugging (고치는가)","🐛",Math.round(S.skills.debugging||0)],["Production (운영하는가)","🚀",prod]];
+  const bars=items.map(it=>{ const n=it[0],e=it[1],v=it[2]; const val=v==null?0:v, show=v==null?"—":(v+"/100");
+    return `<div style="margin:5px 0"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span>${e} ${n}</span><span>${show}</span></div><div style="height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:2px"><i style="display:block;height:100%;width:${val}%;background:linear-gradient(90deg,#3b7dd8,#5b6cff)"></i></div></div>`;
+  }).join("");
+  return `<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line)"><div style="font-weight:800;margin-bottom:2px">💻 코딩 능력 분해</div><div style="font-size:12px;opacity:.7;margin-bottom:6px">"얼마나 아는가"와 "얼마나 만들 수 있는가"는 다릅니다. 직접 코딩(테스트 통과)이 Implementation을 올립니다.</div>${bars}</div>`;
+}
 function openProfile(){ const o=$("profile"), body=$("profile-body");
   const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const keys=(g!=="free"&&COURSE_PATHS[g].tracks.length)?COURSE_PATHS[g].tracks.filter(k=>COURSES[k]):["python","sql","javascript","pandas","ml"].filter(k=>COURSES[k]);
   const rows=keys.map(k=>{ const c=COURSES[k],pg=trackProg(k); return `<div class="skill"><div class="sh"><span>${c.em} ${c.name}</span><span>${pg.pct}% · ${pg.d}/${pg.t}</span></div><div class="sb"><i style="width:${pg.pct}%;background:${c.color}"></i></div></div>`; }).join("");
   const wk=weaknessText();
   const wkBox=wk?`<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:13.5px;font-weight:600;color:var(--ink)">${wk}</div>`:"";
   const axBox=axisWeaknessHtml();
+  const cbBox=codingBreakdownHtml();
   const dg=S.diag?`종합 진단 완료 · `:``;
-  body.innerHTML=`<h2>📈 내 성장</h2><p class="sub">완료 레슨 ${Object.keys(S.done).length}개 · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>${rows}${wkBox}${axBox}<button class="ovclose" id="prof-diag" style="background:#5b6cff;margin-bottom:8px">🩺 실력 진단 받기</button><button class="ovclose" id="prof-proj" style="background:#e0533d;margin-bottom:8px">🚀 프로젝트 미션</button><button class="ovclose" id="prof-close">닫기</button>`;
+  body.innerHTML=`<h2>📈 내 성장</h2><p class="sub">완료 레슨 ${Object.keys(S.done).length}개 · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>${rows}${cbBox}${wkBox}${axBox}<button class="ovclose" id="prof-diag" style="background:#5b6cff;margin-bottom:8px">🩺 실력 진단 받기</button><button class="ovclose" id="prof-proj" style="background:#e0533d;margin-bottom:8px">🚀 프로젝트 미션</button><button class="ovclose" id="prof-close">닫기</button>`;
   $("prof-diag").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; startDiagnostic(); };
   $("prof-proj").onclick=()=>{ o.classList.remove("on"); openProjects(); };
   $("prof-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
