@@ -56,7 +56,25 @@
   .stat.flame{color:var(--flame)} .stat.xp{color:var(--gold)}
   .heart-ic{color:var(--bad)}
   .icon-btn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--card);
-    box-shadow:var(--shadow); font-size:17px; display:grid; place-items:center; color:var(--ink)}
+    box-shadow:var(--shadow); font-size:17px; display:grid; place-items:center; color:var(--ink); flex:0 0 auto}
+  .stat{flex:0 0 auto} .rolechip .role-em{line-height:1}
+  /* 좁은 화면: 상단바가 넘쳐 요소가 밀리는(탭 시 도망가는) 문제 방지 */
+  @media (max-width:440px){
+    .topbar{gap:6px; padding:12px 2px 10px}
+    .brand{font-size:0; gap:0; margin-right:auto}
+    .brand .logo{width:28px; height:28px; font-size:13px}
+    .stat{padding:4px 8px; font-size:13px; gap:3px}
+    .stat .ic{font-size:14px}
+    .icon-btn{width:34px; height:34px; font-size:15px; border-radius:10px}
+    .rolechip{padding:4px 8px; font-size:11px; gap:2px}
+    .rolechip .rolename{display:none}
+  }
+  @media (max-width:340px){
+    .rolechip{display:none}
+    .brand{display:none}
+    .topbar{gap:5px; justify-content:flex-end}
+    .stat{padding:4px 7px}
+  }
 
   /* ---------- language switch ---------- */
   .catbar{display:flex; flex-wrap:wrap; gap:6px; padding:12px 0 2px}
@@ -358,7 +376,7 @@
     <div class="stat flame"><span class="ic">🔥</span><span id="s-streak">0</span></div>
     <div class="stat xp"><span class="ic">⭐</span><span id="s-xp">0</span></div>
     <div class="stat"><span class="ic heart-ic">❤</span><span id="s-hearts">5</span></div>
-    <button class="rolechip" id="rolechip" title="Developer Passport">🌱 Beginner</button>
+    <button class="rolechip" id="rolechip" title="Developer Passport"><span class="role-em">🌱</span><span class="rolename">Beginner</span></button>
     <button class="icon-btn" id="profile-btn" title="내 성장" aria-label="내 성장">📈</button>
     <button class="icon-btn" id="theme-btn" title="테마 전환" aria-label="테마 전환">◐</button>
   </div>
@@ -2282,7 +2300,7 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
  $("p2-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
  o.classList.add("on"); document.body.style.overflow="hidden";
 }
-function renderRole(){ const el=$("rolechip"); if(!el)return; const r=roleOf(skillAvg()); el.textContent=`${r.em} ${r.name}`; }
+function renderRole(){ const el=$("rolechip"); if(!el)return; const r=roleOf(skillAvg()); el.innerHTML=`<span class="role-em">${r.em}</span><span class="rolename">${r.name}</span>`; }
 $("profile-btn").onclick=openProfile2;
 $("rolechip").onclick=openProfile2;
 
