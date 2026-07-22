@@ -276,6 +276,19 @@
   .mod .mlv{margin-left:auto; font-size:11px; color:var(--ink-soft); font-weight:700; white-space:nowrap}
   .mod.mdone .mt{opacity:.5; text-decoration:line-through}
   .mstart{width:100%; padding:12px; border-radius:12px; border:none; background:var(--brand); color:#fff; font-weight:800; font-size:14px; margin-top:8px}
+  .pjcard{border:2px solid var(--line); border-radius:14px; padding:14px; margin-bottom:11px; background:var(--card); box-shadow:var(--shadow)}
+  .pjcard.pjdone{border-color:var(--good)}
+  .pjcard .ph{display:flex; align-items:center; gap:9px; margin-bottom:6px}
+  .pjcard .pe{font-size:22px}
+  .pjcard .pt{font-weight:900; font-size:15px; color:var(--ink)}
+  .pjcard .plv{margin-left:auto; font-size:11px; font-weight:800; color:#fff; background:var(--brand); padding:2px 8px; border-radius:8px}
+  .pjcard .pd{font-size:13px; color:var(--ink-soft); font-weight:600; margin-bottom:8px}
+  .pjcard .psk{display:flex; flex-wrap:wrap; gap:5px; margin-bottom:9px}
+  .pjcard .pk{font-size:11px; font-weight:700; color:var(--ink-soft); background:var(--bg); border:1px solid var(--line); border-radius:7px; padding:2px 7px}
+  .pjcard .pstep{font-size:12.5px; color:var(--ink); padding:3px 0 3px 18px; position:relative}
+  .pjcard .pstep::before{content:"○"; position:absolute; left:0; color:var(--ink-soft)}
+  .pjcard .ptog{width:100%; margin-top:9px; padding:10px; border-radius:10px; border:none; font-weight:800; font-size:13px; background:var(--line); color:var(--ink)}
+  .pjcard.pjdone .ptog{background:var(--good); color:#fff}
 </style>
 
 <!-- ================= HOME ================= -->
@@ -306,6 +319,7 @@
 <div class="ovl" id="onboard"><div class="ovcard"></div></div>
 <div class="ovl" id="profile"><div class="ovcard" id="profile-body"></div></div>
 <div class="ovl" id="curr"><div class="ovcard" id="curr-body"></div></div>
+<div class="ovl" id="proj"><div class="ovcard" id="proj-body"></div></div>
 
 <!-- ================= LESSON ================= -->
 <div class="lesson" id="lesson">
@@ -1177,7 +1191,7 @@ dl:{name:"딥러닝",em:"🧠",color:"#d6336c",g:"linear-gradient(135deg,#d6336c
 
 /* ================= 상태 ================= */
 const MAX_HEARTS=5;
-const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10};
+const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10,proj:{}};
 let S=load();
 function load(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("coderun")||"{}"))}catch(e){return Object.assign({},DEF)}}
 function save(){localStorage.setItem("coderun",JSON.stringify(S))}
@@ -1620,10 +1634,47 @@ function openProfile(){ const o=$("profile"), body=$("profile-body");
   const wk=weaknessText();
   const wkBox=wk?`<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:13.5px;font-weight:600;color:var(--ink)">${wk}</div>`:"";
   const dg=S.diag?`종합 진단 완료 · `:``;
-  body.innerHTML=`<h2>📈 내 성장</h2><p class="sub">완료 레슨 ${Object.keys(S.done).length}개 · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>${rows}${wkBox}<button class="ovclose" id="prof-diag" style="background:#5b6cff;margin-bottom:8px">🩺 실력 진단 받기</button><button class="ovclose" id="prof-close">닫기</button>`;
+  body.innerHTML=`<h2>📈 내 성장</h2><p class="sub">완료 레슨 ${Object.keys(S.done).length}개 · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>${rows}${wkBox}<button class="ovclose" id="prof-diag" style="background:#5b6cff;margin-bottom:8px">🩺 실력 진단 받기</button><button class="ovclose" id="prof-proj" style="background:#e0533d;margin-bottom:8px">🚀 프로젝트 미션</button><button class="ovclose" id="prof-close">닫기</button>`;
   $("prof-diag").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; startDiagnostic(); };
+  $("prof-proj").onclick=()=>{ o.classList.remove("on"); openProjects(); };
   $("prof-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
   o.classList.add("on"); document.body.style.overflow="hidden"; }
+/* ---- 프로젝트 엔진 (학습 루프 종착점) ---- */
+const PROJECTS={
+ ai:[
+  {lv:1,em:"🧮",title:"통계 계산기 (CLI)",desc:"리스트를 받아 평균·중앙값·표준편차를 출력하는 파이썬 스크립트",skills:["python","stat"],steps:["입력 파싱","statistics 모듈로 계산","결과 포맷 출력","예외 처리"]},
+  {lv:2,em:"📄",title:"CSV 데이터 분석기",desc:"CSV를 읽어 그룹별 집계·필터·요약 리포트 생성",skills:["python","pandas"],steps:["CSV 로드(DictReader)","결측치 처리","groupby 집계","요약 출력"]},
+  {lv:3,em:"📊",title:"데이터 EDA 리포트",desc:"Pandas·NumPy로 탐색적 분석 + 통계 요약",skills:["pandas","numpy","stat"],steps:["데이터 클린징","기술통계·분포","상관분석","인사이트 정리"]},
+  {lv:4,em:"🤖",title:"당뇨 예측 모델",desc:"scikit-learn으로 분류 모델 학습·평가",skills:["ml","mleval"],steps:["train/test 분할","전처리·스케일링","모델 학습","정밀도·재현율·F1 평가"]},
+  {lv:5,em:"🚀",title:"ML 추론 API 설계",desc:"모델 서빙 API + 성능·확장 설계 문서 작성",skills:["python","sql"],steps:["엔드포인트 설계","입력 검증","비동기 처리","캐시·스케일 전략"]}
+ ],
+ backend:[
+  {lv:1,em:"🧮",title:"CLI 유틸리티",desc:"인자를 받아 처리하는 파이썬 커맨드라인 도구",skills:["python"],steps:["argparse 파싱","핵심 로직","파일 입출력","예외 처리"]},
+  {lv:2,em:"🗄️",title:"SQL 리포트 스크립트",desc:"DB에서 집계 쿼리로 일일 리포트 생성",skills:["sql","python"],steps:["스키마 이해","GROUP BY 집계","윈도우 함수","결과 저장"]},
+  {lv:3,em:"🔌",title:"REST API 서버",desc:"CRUD API + 입력 검증 + 페이지네이션",skills:["python","backend"],steps:["라우팅 설계","검증","키셋 페이지네이션","에러 응답 표준화"]},
+  {lv:4,em:"🔐",title:"인증·권한 시스템",desc:"비밀번호 해시·토큰·최소권한 설계",skills:["security","sql"],steps:["bcrypt 해시+salt","토큰 발급/검증","GRANT 최소권한","injection 방어"]},
+  {lv:5,em:"🌐",title:"대규모 서비스 설계",desc:"읽기 복제·캐시·파티셔닝 아키텍처 문서",skills:["sql","backend","devops"],steps:["읽기/쓰기 분리","캐시 계층","파티셔닝/샤딩","모니터링"]}
+ ],
+ fullstack:[
+  {lv:1,em:"🎨",title:"랜딩 페이지",desc:"시맨틱 HTML + CSS 반응형 페이지",skills:["web"],steps:["시맨틱 구조","Flexbox/Grid","반응형","접근성"]},
+  {lv:2,em:"✅",title:"Todo 앱 (바닐라 JS)",desc:"DOM·이벤트·localStorage로 상태 관리",skills:["javascript","web"],steps:["DOM 조작","이벤트 위임","localStorage","필터/정렬"]},
+  {lv:3,em:"⚛️",title:"React 대시보드",desc:"컴포넌트·상태·API 연동 SPA",skills:["react","javascript"],steps:["컴포넌트 분리","상태 관리","fetch 연동","라우팅"]},
+  {lv:4,em:"🔌",title:"풀스택 CRUD",desc:"프론트+백엔드+DB를 잇는 서비스",skills:["react","backend","sql"],steps:["API 설계","DB 스키마","프론트 연동","배포"]},
+  {lv:5,em:"🚀",title:"배포·운영",desc:"CI/CD·모니터링·성능 최적화",skills:["devops","backend"],steps:["빌드 파이프라인","무중단 배포","로깅·모니터링","성능 튜닝"]}
+ ]
+};
+function openProjects(){
+  const g=(S.goal&&PROJECTS[S.goal])?S.goal:"ai"; const list=PROJECTS[g];
+  if(!S.proj)S.proj={};
+  const o=$("proj"), body=$("proj-body");
+  const cards=list.map((p,i)=>{ const id=g+"-p"+i; const done=!!S.proj[id];
+    return `<div class="pjcard${done?" pjdone":""}"><div class="ph"><span class="pe">${p.em}</span><span class="pt">${p.title}</span><span class="plv">Lv${p.lv} ${LV_LABEL[p.lv]}</span></div><div class="pd">${p.desc}</div><div class="psk">${p.skills.map(s=>`<span class="pk">${(COURSES[s]&&COURSES[s].name)||s}</span>`).join("")}</div>${p.steps.map(s=>`<div class="pstep">${s}</div>`).join("")}<button class="ptog" data-id="${id}">${done?"✓ 완료함":"완료 표시"}</button></div>`;
+  }).join("");
+  body.innerHTML=`<h2>🚀 프로젝트 미션</h2><p class="sub">배운 걸 실제로 만들어보세요. 레벨이 오를수록 실무에 가까워져요. (직접 IDE에서 구현 → 체크)</p>${cards}<button class="ovclose" id="proj-close">닫기</button>`;
+  body.querySelectorAll(".ptog").forEach(b=>b.onclick=()=>{ const id=b.dataset.id; S.proj[id]=!S.proj[id]; save(); openProjects(); });
+  $("proj-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
+  o.classList.add("on"); document.body.style.overflow="hidden";
+}
 $("profile-btn").onclick=openProfile;
 
 refillHearts(); applyTheme(S.theme); paintFree(); renderCats(); renderLangs(); renderCourse();
