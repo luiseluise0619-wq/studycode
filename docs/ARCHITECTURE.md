@@ -110,6 +110,9 @@ phase.type: note | decide | build | web
 ```
 구버전 프로젝트는 `steps[]` → `projPhases(p)`가 phases로 합성. 완료 시 **스코어카드**(`SCORECARD`) → 등급 S/A/B/C + Senior Readiness % → `finishProject()`가 축 보상 지급. 프로젝트는 난이도 티어(`PROJ_TIER`: Beginner→Principal)를 가짐.
 
+### (e) 성장 루프 (프로젝트 → 약점 → 추천 → 재도전)
+플랫폼의 핵심 순환. 프로젝트 완료 시 `projReview(p, 스코어카드축, pct)`가 **프로젝트 요구 역량**(`projReqAxes` = skills→9축 + 티어별 기대치 `TIER_TARGET[lv]`)과 실제 점수를 비교해 **병목 축**을 뽑는다. 병목 축마다 `AXIS_REMEDY`가 구체적 **맞춤 학습**(트랙·원인추적·실무 시뮬)을 클릭 가능한 버튼으로 제시하고, 클릭하면 `gotoTrack`/`openSims`/`openDiags`로 이동 → 해당 트랙 상단 배너(`projectForTrack`)가 다시 그 프로젝트를 권해 루프가 닫힌다. 같은 엔진이 Developer Passport에도 `axisWeaknessHtml()`로 상시 노출(9축 최저 역량 기준).
+
 ---
 
 ## 6. 렌더링·화면 흐름

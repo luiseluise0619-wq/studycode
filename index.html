@@ -1886,16 +1886,31 @@ function weaknessText(){
   const nm=(COURSES[top.k]&&COURSES[top.k].name)||top.k;
   return `🔍 <b>${nm}</b>에서 오답이 가장 많아요(${top.n}개). 📓 오답노트로 집중 복습을 추천해요.`;
 }
+function axisWeaknessHtml(){
+  if(typeof ensureSkills!=="function") return "";
+  ensureSkills(); const avg=skillAvg();
+  const low=AXES.map(a=>({ax:a.k,v:S.skills[a.k]})).sort((a,b)=>a.v-b.v).filter(x=>x.v<Math.max(avg-6,30)).slice(0,2);
+  if(!low.length) return "";
+  const chip='display:inline-block;margin:3px 5px 0 0;padding:6px 11px;border:1px solid rgba(120,140,255,.4);border-radius:20px;background:rgba(91,108,255,.12);color:inherit;font:inherit;font-size:13px;cursor:pointer';
+  const blocks=low.map(x=>{ const a=AXNAME[x.ax], rm=AXIS_REMEDY[x.ax]||{tracks:[]};
+    const tb=(rm.tracks||[]).filter(t=>COURSES[t]).slice(0,2).map(t=>`<button style="${chip}" data-reco="track" data-val="${t}">${COURSES[t].em||"📘"} ${COURSES[t].name}</button>`).join("");
+    const ab=rm.action==="diag"?`<button style="${chip}" data-reco="diag" data-val="1">🔎 원인 추적</button>`:rm.action==="sim"?`<button style="${chip}" data-reco="sim" data-val="1">🏢 실무 시뮬</button>`:"";
+    return `<div style="margin-top:8px"><div style="font-weight:700">${a.e} ${a.n} <span style="color:#ff9d5c">${Math.round(x.v)}/100</span></div><div style="font-size:12.5px;opacity:.82;margin:1px 0 3px">${rm.tip||""}</div><div>${tb}${ab}</div></div>`;
+  }).join("");
+  return `<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:rgba(255,150,90,.07);border:1px solid rgba(255,150,90,.3)"><div style="font-weight:800;margin-bottom:2px">🎯 지금 키울 역량</div>${blocks}</div>`;
+}
 function openProfile(){ const o=$("profile"), body=$("profile-body");
   const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const keys=(g!=="free"&&COURSE_PATHS[g].tracks.length)?COURSE_PATHS[g].tracks.filter(k=>COURSES[k]):["python","sql","javascript","pandas","ml"].filter(k=>COURSES[k]);
   const rows=keys.map(k=>{ const c=COURSES[k],pg=trackProg(k); return `<div class="skill"><div class="sh"><span>${c.em} ${c.name}</span><span>${pg.pct}% · ${pg.d}/${pg.t}</span></div><div class="sb"><i style="width:${pg.pct}%;background:${c.color}"></i></div></div>`; }).join("");
   const wk=weaknessText();
   const wkBox=wk?`<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:13.5px;font-weight:600;color:var(--ink)">${wk}</div>`:"";
+  const axBox=axisWeaknessHtml();
   const dg=S.diag?`종합 진단 완료 · `:``;
-  body.innerHTML=`<h2>📈 내 성장</h2><p class="sub">완료 레슨 ${Object.keys(S.done).length}개 · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>${rows}${wkBox}<button class="ovclose" id="prof-diag" style="background:#5b6cff;margin-bottom:8px">🩺 실력 진단 받기</button><button class="ovclose" id="prof-proj" style="background:#e0533d;margin-bottom:8px">🚀 프로젝트 미션</button><button class="ovclose" id="prof-close">닫기</button>`;
+  body.innerHTML=`<h2>📈 내 성장</h2><p class="sub">완료 레슨 ${Object.keys(S.done).length}개 · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>${rows}${wkBox}${axBox}<button class="ovclose" id="prof-diag" style="background:#5b6cff;margin-bottom:8px">🩺 실력 진단 받기</button><button class="ovclose" id="prof-proj" style="background:#e0533d;margin-bottom:8px">🚀 프로젝트 미션</button><button class="ovclose" id="prof-close">닫기</button>`;
   $("prof-diag").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; startDiagnostic(); };
   $("prof-proj").onclick=()=>{ o.classList.remove("on"); openProjects(); };
   $("prof-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
+  body.querySelectorAll("[data-reco]").forEach(b=>b.onclick=()=>{ const k=b.dataset.reco,v=b.dataset.val; o.classList.remove("on"); document.body.style.overflow=""; if(k==="track")gotoTrack(v); else if(k==="sim")openSims(); else if(k==="diag")openDiags(); });
   o.classList.add("on"); document.body.style.overflow="hidden"; }
 /* ---- 프로젝트 엔진 (학습 루프 종착점) ---- */
 const PROJECTS={
@@ -2145,16 +2160,62 @@ function submitScorecard(){
   save(); renderRole();
   finishProject(grade,pct,gains);
 }
+/* ===== 성장 루프: 프로젝트 → 약점 분석 → 맞춤 추천 → 재도전 ===== */
+const TIER_TARGET=[0,25,40,55,68,80,90]; // lv 1..6 기대 역량
+const AXIS_REMEDY={
+ coding:       {tracks:["python","javascript","code"],action:null,tip:"직접 코딩(테스트 통과) 챌린지로 구현력을 끌어올리세요."},
+ debugging:    {tracks:["code","algo"],action:"diag",tip:"원인 추적(진단)과 장애 시뮬로 디버깅 감각을 훈련하세요."},
+ algorithms:   {tracks:["algo","cs"],action:null,tip:"알고리즘 직접 구현 챌린지로 복잡도 판단을 기르세요."},
+ database:     {tracks:["sql","dbt"],action:null,tip:"SQL 최적화·인덱스·트랜잭션 문제로 DB 병목을 잡으세요."},
+ system_design:{tracks:["sysd","backend"],action:"sim",tip:"시스템 설계 시나리오로 확장·장애 대비 판단을 훈련하세요."},
+ performance:  {tracks:["backend","sysd"],action:"sim",tip:"성능·용량 문제와 장애 시뮬로 병목 진단력을 올리세요."},
+ security:     {tracks:["security","backend"],action:null,tip:"보안 트랙으로 인증·주입·시크릿 관리를 다지세요."},
+ communication:{tracks:[],action:"sim",tip:"이해관계자 시뮬로 트레이드오프 설명·설득을 연습하세요."},
+ leadership:   {tracks:[],action:"sim",tip:"코드리뷰·이해관계자 시뮬로 판단과 리딩을 훈련하세요."}
+};
+function scAxisScores(scores){ const agg={},cnt={};
+  SCORECARD.forEach((it,i)=>{ const v=((scores&&scores[i])||0)/3*100; agg[it.ax]=(agg[it.ax]||0)+v; cnt[it.ax]=(cnt[it.ax]||0)+1; });
+  const out={}; for(const ax in agg) out[ax]=Math.round(agg[ax]/cnt[ax]); return out; }
+function projReqAxes(p){ const s=new Set();
+  (p.skills||[]).forEach(sk=>{ const ax=AXNAME[sk]?sk:(TRACK_AXIS[sk]||null); if(ax)s.add(ax); });
+  s.add("coding"); s.add("system_design"); return [...s]; }
+function projReview(p,scAx,pct){
+  const lv=p.lv||3, target=TIER_TARGET[lv]||55;
+  const rows=projReqAxes(p).map(ax=>{ const score=(ax in scAx)?scAx[ax]:pct; return {ax,score,gap:target-score}; });
+  rows.sort((a,b)=>b.gap-a.gap);
+  return {target,lv,rows,weak:rows.filter(r=>r.gap>=12),strong:rows.filter(r=>r.gap<=0).sort((a,b)=>b.score-a.score)};
+}
+function remedyHtml(weak){
+  return weak.slice(0,2).map(w=>{ const a=AXNAME[w.ax], rm=AXIS_REMEDY[w.ax]||{tracks:[]};
+    const chip='display:inline-block;margin:3px 5px 0 0;padding:6px 11px;border:1px solid rgba(120,140,255,.4);border-radius:20px;background:rgba(91,108,255,.12);color:inherit;font:inherit;font-size:13px;cursor:pointer';
+    const tb=(rm.tracks||[]).filter(t=>COURSES[t]).slice(0,3).map(t=>`<button style="${chip}" data-reco="track" data-val="${t}">${COURSES[t].em||"📘"} ${COURSES[t].name}</button>`).join("");
+    const ab=rm.action==="diag"?`<button style="${chip}" data-reco="diag" data-val="1">🔎 원인 추적(진단)</button>`:rm.action==="sim"?`<button style="${chip}" data-reco="sim" data-val="1">🏢 실무 시뮬</button>`:"";
+    return `<div style="margin:8px 0;padding:10px 12px;border:1px solid rgba(255,150,90,.3);border-radius:12px;background:rgba(255,150,90,.07)">
+      <div style="font-weight:700">${a.e} ${a.n} 병목 <span style="color:#ff9d5c">${w.score}/${w.score+w.gap}</span></div>
+      <div style="font-size:13px;opacity:.85;margin:2px 0 4px">${rm.tip||""}</div><div>${tb}${ab}</div></div>`;
+  }).join("");
+}
 function finishProject(grade,pct,gains){
   const r=roleOf(skillAvg());
   const gr=Object.keys(gains||{}).filter(k=>gains[k]>=0.5).map(k=>{const a=AXNAME[k];return a?`<span class="fxchip" style="border-color:${a.c}">${a.e} ${a.n} +${Math.round(gains[k])}</span>`:"";}).join(" ");
+  const rev=projReview(lab.p, scAxisScores(lab.scores), pct);
+  const strongHtml=rev.strong.slice(0,3).map(x=>`<span style="display:inline-block;margin:2px 4px 0 0;padding:3px 9px;border-radius:14px;background:rgba(74,222,128,.15);font-size:13px">${AXNAME[x.ax].e} ${AXNAME[x.ax].n} ${x.score}</span>`).join("")||`<span style="opacity:.6">—</span>`;
+  const weakHtml=rev.weak.length?rev.weak.slice(0,3).map(x=>`<span style="display:inline-block;margin:2px 4px 0 0;padding:3px 9px;border-radius:14px;background:rgba(255,150,90,.16);font-size:13px">⚠️ ${AXNAME[x.ax].e} ${AXNAME[x.ax].n} ${x.score}/${rev.target}</span>`).join(""):`<span style="display:inline-block;padding:3px 9px;border-radius:14px;background:rgba(74,222,128,.15);font-size:13px">요구 역량 기준 충족 👍</span>`;
+  const nr=nextRole(skillAvg());
+  const recoSection=rev.weak.length?`<div style="margin-top:12px"><div style="font-weight:700;margin-bottom:2px">🎯 다음에 무엇을 할까 <span style="font-size:12px;opacity:.7">— 병목을 메우고 재도전하세요</span></div>${remedyHtml(rev.weak)}</div>`:"";
   $("lab-body").innerHTML=`<div class="labtop"><span class="labttl">${lab.p.em} ${lab.p.title}</span><button class="labx" id="lab-x">✕</button></div>
     <h2 style="text-align:center;margin:10px 0">${grade==="S"?"🏆":grade==="A"?"🎉":"📋"} 프로젝트 완료 · ${grade}등급</h2>
-    <p class="sub" style="text-align:center">성과 점수 ${pct}점 · ${lab.phases.length}단계(요구사항→회고) 완주. 이게 실무 한 사이클입니다.</p>
-    <div class="rolebox"><div class="rolebig">${r.em} ${r.name}</div><div class="rolesub">종합 역량 ${r.avg}/100</div></div>
-    <div class="fxrow" style="justify-content:center;margin-bottom:10px">${gr}</div>
-    <button class="ovclose" id="lab-again" style="background:#5b6cff;margin-bottom:8px">🔁 처음부터 다시</button>
+    <p class="sub" style="text-align:center">성과 점수 ${pct}점 · ${lab.phases.length}단계(요구사항→회고) 완주. ${PROJ_TIER[rev.lv]||("Lv"+rev.lv)} 기대치 ${rev.target}/100.</p>
+    <div class="rolebox"><div class="rolebig">${r.em} ${r.name}</div><div class="rolesub">종합 역량 ${r.avg}/100${nr?` · 다음 ${nr.name}까지 +${nr.need}`:""}</div></div>
+    <div class="fxrow" style="justify-content:center;margin-bottom:8px">${gr}</div>
+    <div style="margin:6px 0"><div style="font-size:13px;opacity:.75">💪 강점</div>${strongHtml}</div>
+    <div style="margin:6px 0"><div style="font-size:13px;opacity:.75">🩹 약점 (이 프로젝트 요구 대비)</div>${weakHtml}</div>
+    ${recoSection}
+    <button class="ovclose" id="lab-again" style="background:#5b6cff;margin-top:12px;margin-bottom:8px">🔁 이 프로젝트 재도전</button>
     <button class="ovclose" id="lab-more">다른 프로젝트</button>`;
+  const shut=()=>{ $("lab").classList.remove("on"); $("proj").classList.remove("on"); document.body.style.overflow=""; };
+  $("lab-body").querySelectorAll("[data-reco]").forEach(b=>b.onclick=()=>{ const k=b.dataset.reco,v=b.dataset.val; shut();
+    if(k==="track") gotoTrack(v); else if(k==="sim") openSims(); else if(k==="diag") openDiags(); });
   $("lab-x").onclick=closeLab;
   $("lab-again").onclick=()=>{ lab.i=0; renderPhase(); };
   $("lab-more").onclick=closeLab;
