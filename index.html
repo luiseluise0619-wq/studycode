@@ -593,6 +593,27 @@
   .node{box-shadow:0 2px 0 rgba(0,0,0,.07)}
   .node:active{box-shadow:0 1px 0 rgba(0,0,0,.07)}
   .node.locked{box-shadow:0 2px 0 var(--line)}
+
+  /* ---------- designed toast (replaces informational alert()) ---------- */
+  .toast{position:fixed; left:50%; bottom:26px; transform:translate(-50%,14px); z-index:120;
+    max-width:min(440px,calc(100vw - 32px)); padding:13px 18px; border-radius:12px;
+    background:var(--ink); color:var(--bg); font-size:13.5px; font-weight:600; line-height:1.5;
+    box-shadow:0 8px 30px rgba(0,0,0,.22); opacity:0; pointer-events:none; text-align:center;
+    transition:opacity .22s, transform .22s}
+  .toast.on{opacity:1; transform:translate(-50%,0)}
+  @media (prefers-reduced-motion:reduce){ .toast{transition:opacity .2s} }
+  /* ---------- designed confirm modal (replaces confirm()) ---------- */
+  .confirm-ovl{align-items:center; justify-content:center; padding:24px}
+  .confirm-card{background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:24px 22px 18px; width:100%; max-width:360px; box-shadow:0 20px 60px rgba(0,0,0,.28)}
+  .confirm-msg{font-size:15px; font-weight:600; line-height:1.6; color:var(--ink); white-space:pre-line}
+  .confirm-actions{display:flex; gap:10px; margin-top:20px}
+  .confirm-actions button{flex:1; padding:13px; border-radius:11px; font-weight:800; font-size:14.5px; cursor:pointer}
+  .confirm-no{background:var(--card); color:var(--ink); border:1px solid var(--line)}
+  .confirm-no:active{background:var(--bg-soft)}
+  .confirm-yes{background:var(--ink); color:var(--bg); border:none}
+  .confirm-yes.danger{background:var(--bad)}
+  .confirm-yes:active{transform:translateY(1px)}
 </style>
 
 <!-- ================= HOME ================= -->
@@ -628,6 +649,16 @@
 <div class="ovl" id="curr"><div class="ovcard" id="curr-body"></div></div>
 <div class="ovl" id="proj"><div class="ovcard" id="proj-body"></div></div>
 <div class="ovl" id="lab"><div class="ovcard" id="lab-body"></div></div>
+
+<!-- designed dialogs (replace native alert/confirm) -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="ovl confirm-ovl" id="confirm"><div class="confirm-card">
+  <div class="confirm-msg" id="confirm-msg"></div>
+  <div class="confirm-actions">
+    <button class="confirm-no" id="confirm-no">취소</button>
+    <button class="confirm-yes" id="confirm-yes">확인</button>
+  </div>
+</div></div>
 
 <!-- ================= LESSON ================= -->
 <div class="lesson" id="lesson">
@@ -1841,6 +1872,21 @@ let curCat="lang";
 
 /* ================= 렌더: 홈 ================= */
 const $=id=>document.getElementById(id);
+/* ---- designed dialogs (replace native alert/confirm) ---- */
+let __toastT=null;
+function toast(msg){ const t=$("toast"); if(!t){ return; } t.textContent=msg; t.classList.add("on");
+  clearTimeout(__toastT); __toastT=setTimeout(()=>t.classList.remove("on"), 2800); }
+function confirmModal(msg, onYes, opts){ opts=opts||{};
+  const o=$("confirm"), m=$("confirm-msg"), yes=$("confirm-yes"), no=$("confirm-no");
+  m.textContent=msg;
+  yes.textContent=opts.yes||"확인"; no.textContent=opts.no||"취소";
+  yes.className="confirm-yes"+(opts.danger?" danger":"");
+  const close=()=>{ o.classList.remove("on"); document.body.style.overflow=""; yes.onclick=null; no.onclick=null; };
+  yes.onclick=()=>{ close(); onYes&&onYes(); };
+  no.onclick=close;
+  o.onclick=e=>{ if(e.target===o) close(); };
+  o.classList.add("on"); document.body.style.overflow="hidden";
+}
 let liveOut="";
 let liveTest=null;
 window.addEventListener("message",function(e){ if(e&&e.data){ if(e.data.__cr==="out") liveOut=String(e.data.text||""); else if(e.data.__cr==="test") liveTest={pass:e.data.pass|0,total:e.data.total|0,impl:(e.data.impl==null?null:e.data.impl|0),gate:!!e.data.gate,parts:e.data.parts||null}; } });
@@ -1972,7 +2018,7 @@ function renderCourse(){
 /* ================= 레슨 진행 ================= */
 function startLesson(lang,ui,li){
   refillHearts();
-  if(!S.freeMode && S.hearts<=0){ alert("하트를 모두 썼어요! 내일 다시 채워지거나, 자유 모드를 켜면 하트 없이 연습할 수 있어요 💪"); return; }
+  if(!S.freeMode && S.hearts<=0){ toast("하트를 모두 썼어요. 자유 모드를 켜면 하트 없이 연습할 수 있어요."); return; }
   const les=COURSES[lang].units[ui].lessons[li];
   run={lang,ui,li,les,i:0,correct:0,total:les.q.length,hearts:S.hearts,id:`${lang}-${ui}-${li}`,color:COURSES[lang].color,free:S.freeMode};
   try{history.pushState({cr:1},"")}catch(e){}
@@ -2023,11 +2069,11 @@ function removeWrong(q){
 function paintReview(){
   const b=$("review-btn"); if(!b) return;
   const n=Array.isArray(S.wrongs)?S.wrongs.length:0;
-  b.innerHTML=`📓 오답노트${n?`<span class="badge">${n}</span>`:""}`;
+  b.innerHTML=`오답노트${n?`<span class="badge">${n}</span>`:""}`;
 }
 function startReview(){
   if(!Array.isArray(S.wrongs)||!S.wrongs.length){
-    alert("오답노트가 비어 있어요! 📓\n문제를 풀다 틀리면 여기에 모여, 골라서 다시 풀 수 있어요."); return; }
+    toast("오답노트가 아직 비어 있어요. 틀린 문제가 여기 모이면 골라서 다시 풀 수 있어요."); return; }
   const picked=shuffle(S.wrongs.slice()).slice(0,15).map(w=>w.q);
   const les={title:"오답노트 복습",xp:10,q:picked};
   run={lang:curLang,les,i:0,correct:0,total:picked.length,hearts:S.hearts,id:null,color:"#e0533d",free:true,review:true};
@@ -2278,14 +2324,14 @@ function endLesson(passed){
   } else {
     save();
     document.body.style.overflow="";
-    alert("하트를 다 썼어요 😢 잠시 쉬었다가 다시 도전해요! (하트는 매일 새로 채워집니다)");
+    toast("하트를 다 썼어요. 잠시 쉬었다가 다시 도전해요 — 하트는 매일 새로 채워집니다.");
     renderCourse();
   }
 }
 
 /* ================= 컨트롤 ================= */
-$("quit").onclick=()=>{ if(confirm("레슨을 나갈까요? 진행 중인 문제는 저장되지 않아요.")){ $("lesson").classList.remove("on"); document.body.style.overflow=""; S.hearts=run.hearts; save(); renderCourse(); } };
-$("reset-link").onclick=e=>{ e.preventDefault(); if(confirm("모든 진행상황(XP·연속학습·완료 레슨)을 초기화할까요?")){ S=Object.assign({},DEF); save(); location.reload(); } };
+$("quit").onclick=()=>{ confirmModal("레슨을 나갈까요? 진행 중인 문제는 저장되지 않아요.", ()=>{ $("lesson").classList.remove("on"); document.body.style.overflow=""; S.hearts=run.hearts; save(); renderCourse(); }, {yes:"나가기"}); };
+$("reset-link").onclick=e=>{ e.preventDefault(); confirmModal("모든 진행상황(XP·연속학습·완료 레슨)을 초기화할까요? 되돌릴 수 없어요.", ()=>{ S=Object.assign({},DEF); save(); location.reload(); }, {yes:"초기화", danger:true}); };
 
 /* 테마 */
 function applyTheme(t){ if(t) document.documentElement.setAttribute("data-theme",t); else document.documentElement.removeAttribute("data-theme"); }
@@ -2301,7 +2347,7 @@ $("theme-btn").onclick=()=>{
 $("random-btn").onclick=()=>startRandom(curLang);
 $("review-btn").onclick=()=>startReview();
 function paintFree(){ const b=$("free-btn"); b.setAttribute("aria-pressed",S.freeMode?"true":"false");
-  b.textContent=S.freeMode?"✅ 자유 모드 켜짐":"🔓 자유 모드"; }
+  b.textContent=S.freeMode?"자유 모드 · 켜짐":"자유 모드"; }
 $("free-btn").onclick=()=>{ S.freeMode=!S.freeMode; save(); paintFree(); renderCourse(); };
 
 /* ================= 시작 ================= */
