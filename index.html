@@ -532,6 +532,26 @@
   .practice-bar{gap:8px}
   .pbtn{font-size:13.5px; padding:12px}
   .foot-hint{position:static; background:none; border:none; margin-top:26px; padding:18px 0 0; border-top:1px solid var(--line); font-size:12px}
+
+  /* ---------- onboarding: branded welcome (first impression) ---------- */
+  #onboard .ovcard{padding:24px 22px}
+  .onb-logo{display:inline-flex; align-items:center; gap:8px; font-weight:800; font-size:16px; letter-spacing:-.03em; margin-bottom:16px; color:var(--ink)}
+  .onb-mk{width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--bg); display:grid; place-items:center; font-family:var(--mono); font-weight:700; font-size:13px}
+  .onb-title{font-size:24px; font-weight:800; letter-spacing:-.03em; line-height:1.28; margin:0 0 10px; text-wrap:balance; color:var(--ink)}
+  #onboard .sub{font-size:13.5px; line-height:1.6}
+  .onb-eyebrow{font-family:var(--mono); text-transform:uppercase; font-size:10.5px; letter-spacing:.12em; color:var(--ink-soft); font-weight:700; margin:20px 0 10px}
+  .goalbtn{align-items:center}
+  .goalbtn .go-arrow{margin-left:auto; color:var(--ink-soft); font-weight:800; font-size:15px}
+  .goalbtn:hover{border-color:var(--brand)}
+  .goalbtn:hover .go-arrow{color:var(--brand)}
+
+  /* ---------- lesson complete: restrained celebration ---------- */
+  .done-view .big{font-size:52px}
+  .done-view h1{font-size:26px; font-weight:800; letter-spacing:-.02em}
+  .done-view p{font-size:14px}
+  .reward{border-radius:14px; box-shadow:var(--shadow)}
+  .reward .rv{font-variant-numeric:tabular-nums}
+  .reward .rl{font-family:var(--mono); letter-spacing:.04em}
 </style>
 
 <!-- ================= HOME ================= -->
@@ -2269,7 +2289,12 @@ function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&
   el.querySelectorAll(".rnode").forEach(b=>b.onclick=()=>gotoTrack(b.dataset.k)); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; const pb=$("curr-btn"); if(pb)pb.onclick=openCurriculum; }
 function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
   const opts=[["ai","🤖","AI 엔지니어","Python→SQL→NumPy→Pandas→통계→ML→딥러닝"],["ds","📊","데이터 사이언티스트","Python→SQL→통계→NumPy→Pandas→ML→평가"],["fullstack","💻","풀스택 개발자","웹→JS→React→백엔드→DB→배포"],["backend","🖥️","백엔드 개발자","Python→SQL→백엔드→보안→네트워크→DevOps"],["free","🎯","자유 탐색","코스 없이 원하는 트랙을 자유롭게"]];
-  card.innerHTML=`<h2>어떤 개발자가 되고 싶나요?</h2><p class="sub">고르면 그 목표에 맞는 학습 코스를 짜드려요. 언제든 바꿀 수 있어요.</p>`+opts.map(o=>`<button class="goalbtn" data-g="${o[0]}"><span class="ge">${o[1]}</span><span><span class="gt">${o[2]}</span><span class="gd">${o[3]}</span></span></button>`).join("");
+  card.innerHTML=`<div class="onb-hero">
+      <div class="onb-logo"><span class="onb-mk">&lt;/&gt;</span> 코드런</div>
+      <h2 class="onb-title">주니어에서 시니어까지,<br>판단으로 크는 개발자 훈련</h2>
+      <p class="sub">문제 풀이 앱이 아니라 — 실무 판단·직접 코딩·SQL 실행·프로젝트로 역량을 키우는 시뮬레이터예요. 목표를 고르면 맞춤 코스를 짜드려요.</p>
+    </div>
+    <div class="onb-eyebrow">목표 선택 · 언제든 변경 가능</div>`+opts.map(o=>`<button class="goalbtn" data-g="${o[0]}"><span class="ge">${o[1]}</span><span><span class="gt">${o[2]}</span><span class="gd">${o[3]}</span></span><span class="go-arrow">→</span></button>`).join("");
   card.querySelectorAll(".goalbtn").forEach(b=>b.onclick=()=>{ S.goal=b.dataset.g; S.onboarded=true; save(); const p=COURSE_PATHS[S.goal]; o.classList.remove("on"); document.body.style.overflow=""; if(p&&p.tracks[0]&&COURSES[p.tracks[0]]) gotoTrack(p.tracks[0]); else renderRoadmap(); });
   o.classList.add("on"); document.body.style.overflow="hidden"; }
 /* ---- 실력 진단 테스트 ---- */
