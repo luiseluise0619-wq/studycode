@@ -557,7 +557,7 @@
   .ovh{font-family:var(--mono); text-transform:uppercase; font-size:11px; letter-spacing:.1em;
     color:var(--ink-soft); font-weight:700; margin:2px 0 6px}
   .ovtitle{font-size:22px; font-weight:800; letter-spacing:-.03em; color:var(--ink); margin:0 0 6px; line-height:1.15}
-  #profile-body h2{font-size:22px; font-weight:800; letter-spacing:-.03em; margin:2px 0 6px}
+  #profile-body h2, #aiov-body h2{font-size:22px; font-weight:800; letter-spacing:-.03em; margin:2px 0 6px}
   /* secondary (bordered) variant of the primary action button — kills inline color tells */
   .ovclose.alt{background:var(--card); color:var(--ink); border:1px solid var(--line)}
   .ovclose.alt:active{background:var(--bg-soft)}
@@ -614,6 +614,28 @@
   .confirm-yes{background:var(--ink); color:var(--bg); border:none}
   .confirm-yes.danger{background:var(--bad)}
   .confirm-yes:active{transform:translateY(1px)}
+
+  /* ---------- AI mentor (V4 — BYOK code review) ---------- */
+  .ai-field{display:flex; flex-direction:column; gap:6px; margin:14px 0}
+  .ai-field label{font-family:var(--mono); text-transform:uppercase; font-size:10.5px; letter-spacing:.1em; color:var(--ink-soft); font-weight:700}
+  .ai-field input, .ai-field select{padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); font-size:14px; font-family:inherit}
+  .ai-field input:focus, .ai-field select:focus{outline:none; border-color:var(--brand)}
+  .ai-note{font-size:12px; color:var(--ink-soft); line-height:1.55; margin:6px 0 2px}
+  .ai-btn{display:inline-flex; align-items:center; gap:7px; padding:9px 14px; border-radius:10px; border:1px solid var(--line);
+    background:var(--card); color:var(--ink); font-weight:700; font-size:13px; cursor:pointer; margin-top:10px}
+  .ai-btn:hover{border-color:var(--brand)}
+  .ai-btn.busy{opacity:.6; pointer-events:none}
+  .ai-review{margin-top:12px; border:1px solid var(--line); border-radius:12px; background:var(--bg-soft); padding:14px 15px; font-size:13.5px; line-height:1.62; color:var(--ink)}
+  .ai-review .ai-head{font-family:var(--mono); text-transform:uppercase; font-size:10.5px; letter-spacing:.1em; color:var(--ink-soft); font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:7px}
+  .ai-review .ai-verdict{font-weight:800; margin-bottom:8px}
+  .ai-review h4{font-size:12px; font-weight:800; margin:11px 0 3px; color:var(--ink)}
+  .ai-review p{margin:0 0 4px}
+  .ai-review ul{margin:2px 0 4px; padding-left:18px}
+  .ai-review li{margin:2px 0}
+  .ai-review code{font-family:var(--mono); background:var(--card); padding:1px 4px; border-radius:4px; font-size:12.5px}
+  .ai-spin{width:14px; height:14px; border:2px solid var(--line); border-top-color:var(--brand); border-radius:50%; display:inline-block; animation:aispin .7s linear infinite}
+  @keyframes aispin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){ .ai-spin{animation-duration:1.6s} }
 </style>
 
 <!-- ================= HOME ================= -->
@@ -641,7 +663,8 @@
     <button class="pbtn wrong" id="review-btn">오답노트</button>
     <button class="pbtn ghost" id="free-btn" aria-pressed="false">자유 모드</button>
   </div>
-  <div class="foot-hint" id="reset-hint">진행상황은 이 브라우저에 자동 저장돼요 · <a href="#" id="reset-link" style="color:var(--brand)">전체 초기화</a></div>
+  <div class="foot-hint" id="reset-hint">진행상황은 이 브라우저에 자동 저장돼요 · <a href="#" id="backup-link" style="color:var(--brand)">백업</a> · <a href="#" id="restore-link" style="color:var(--brand)">복원</a> · <a href="#" id="reset-link" style="color:var(--brand)">전체 초기화</a></div>
+  <input type="file" id="restore-file" accept="application/json,.json" hidden>
 </div>
 
 <div class="ovl" id="onboard"><div class="ovcard"></div></div>
@@ -649,6 +672,7 @@
 <div class="ovl" id="curr"><div class="ovcard" id="curr-body"></div></div>
 <div class="ovl" id="proj"><div class="ovcard" id="proj-body"></div></div>
 <div class="ovl" id="lab"><div class="ovcard" id="lab-body"></div></div>
+<div class="ovl" id="aiov"><div class="ovcard" id="aiov-body"></div></div>
 
 <!-- designed dialogs (replace native alert/confirm) -->
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1852,7 +1876,7 @@ dl:{name:"딥러닝",em:"🧠",color:"#d6336c",g:"linear-gradient(135deg,#d6336c
 
 /* ================= 상태 ================= */
 const MAX_HEARTS=5;
-const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10,proj:{},skills:{},sims:{},diags:{},implByK:{}};
+const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10,proj:{},skills:{},sims:{},diags:{},implByK:{},ai:{provider:"gemini",model:"gemini-2.0-flash",key:""}};
 let S=load();
 function load(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("coderun")||"{}"))}catch(e){return Object.assign({},DEF)}}
 function save(){localStorage.setItem("coderun",JSON.stringify(S))}
@@ -1887,6 +1911,95 @@ function confirmModal(msg, onYes, opts){ opts=opts||{};
   o.onclick=e=>{ if(e.target===o) close(); };
   o.classList.add("on"); document.body.style.overflow="hidden";
 }
+/* ---- V4: AI 코드 멘토 (BYOK · 모델 무관, 브라우저에서 직접 호출) ---- */
+const AI_PROVIDERS={
+  anthropic:{name:"Claude (Anthropic)", models:["claude-opus-4-8","claude-sonnet-5","claude-haiku-4-5"], keyHint:"sk-ant-...", url:"https://console.anthropic.com/settings/keys"},
+  openai:{name:"OpenAI", models:["gpt-4o","gpt-4o-mini","o4-mini"], keyHint:"sk-...", url:"https://platform.openai.com/api-keys"},
+  gemini:{name:"Google Gemini", models:["gemini-2.0-flash","gemini-1.5-pro"], keyHint:"AIza...", url:"https://aistudio.google.com/app/apikey"}
+};
+function aiCfg(){ if(!S.ai)S.ai={provider:"gemini",model:"gemini-2.0-flash",key:""}; return S.ai; }
+function aiReady(){ const c=aiCfg(); return !!(c.key&&c.provider&&c.model); }
+function aiCall(system, user, maxTokens){
+  const c=aiCfg(); maxTokens=maxTokens||1400;
+  if(c.provider==="anthropic"){
+    return fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{
+      "content-type":"application/json","x-api-key":c.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:c.model,max_tokens:maxTokens,system:system,messages:[{role:"user",content:user}]})})
+      .then(r=>r.json()).then(j=>{ if(j.error) throw new Error(j.error.message||"API 오류"); return (j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim(); });
+  }
+  if(c.provider==="openai"){
+    return fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{
+      "content-type":"application/json","authorization":"Bearer "+c.key},
+      body:JSON.stringify({model:c.model,max_tokens:maxTokens,messages:[{role:"system",content:system},{role:"user",content:user}]})})
+      .then(r=>r.json()).then(j=>{ if(j.error) throw new Error(j.error.message||"API 오류"); return (j.choices&&j.choices[0]&&j.choices[0].message.content||"").trim(); });
+  }
+  // gemini
+  return fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(c.model)+":generateContent?key="+encodeURIComponent(c.key),{method:"POST",headers:{"content-type":"application/json"},
+    body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:"user",parts:[{text:user}]}],generationConfig:{maxOutputTokens:maxTokens}})})
+    .then(r=>r.json()).then(j=>{ if(j.error) throw new Error(j.error.message||"API 오류"); const c=j.candidates&&j.candidates[0]; return (c&&c.content&&c.content.parts||[]).map(p=>p.text||"").join("").trim(); });
+}
+function aiMd(s){ // minimal markdown → html, input pre-escaped
+  s=escHtml(s);
+  s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+  const lines=s.split(/\n/); let out="",inList=false;
+  for(let ln of lines){ ln=ln.replace(/\s+$/,"");
+    let m=ln.match(/^\s*[-*]\s+(.*)$/);
+    if(m){ if(!inList){out+="<ul>";inList=true;} out+="<li>"+m[1]+"</li>"; continue; }
+    if(inList){out+="</ul>";inList=false;}
+    let h=ln.match(/^\s*#{1,4}\s+(.*)$/);
+    if(h){ out+="<h4>"+h[1]+"</h4>"; continue; }
+    if(ln.trim()==="") continue;
+    out+="<p>"+ln+"</p>";
+  }
+  if(inList)out+="</ul>";
+  return out;
+}
+function openAiSetup(){ const o=$("aiov"), body=$("aiov-body"); const c=aiCfg();
+  const provOpts=Object.keys(AI_PROVIDERS).map(k=>`<option value="${k}"${c.provider===k?" selected":""}>${AI_PROVIDERS[k].name}</option>`).join("");
+  const p=AI_PROVIDERS[c.provider];
+  const modelOpts=p.models.map(m=>`<option${c.model===m?" selected":""}>${m}</option>`).join("");
+  body.innerHTML=`<div class="ovh">AI 코드 멘토 · V4</div><h2>시니어 코드 리뷰</h2>
+    <p class="sub">직접 코딩·SQL 문제를 푼 뒤, 당신의 코드를 시니어 기준으로 리뷰받으세요. 정확성·엣지·성능·가독성·프로덕션 관점의 피드백을 제공합니다.</p>
+    <div class="ai-field"><label>제공자</label><select id="ai-prov">${provOpts}</select></div>
+    <div class="ai-field"><label>모델</label><select id="ai-model">${modelOpts}</select></div>
+    <div class="ai-field"><label>API 키 (BYOK)</label><input id="ai-key" type="password" placeholder="${p.keyHint}" value="${escHtml(c.key||"")}"></div>
+    <p class="ai-note">🔒 키는 <b>이 브라우저에만</b> 저장되며 서버로 전송되지 않습니다. 리뷰 요청 시에만 선택한 제공자로 직접 전송됩니다. 키 발급: <a href="${p.url}" target="_blank" rel="noopener" style="color:var(--brand)">${p.url}</a></p>
+    <p class="ai-note">※ 로컬에서 <code>index.html</code>을 직접 열었을 때 동작합니다. 일부 미리보기 환경은 외부 네트워크를 차단할 수 있어요.</p>
+    <button class="ovclose" id="ai-save" style="margin-top:12px">저장</button>
+    <button class="ovclose alt" id="ai-close">닫기</button>`;
+  const provSel=$("ai-prov"), modelSel=$("ai-model"), keyIn=$("ai-key");
+  provSel.onchange=()=>{ const np=AI_PROVIDERS[provSel.value]; modelSel.innerHTML=np.models.map(m=>`<option>${m}</option>`).join(""); keyIn.placeholder=np.keyHint; };
+  $("ai-save").onclick=()=>{ S.ai={provider:provSel.value,model:modelSel.value,key:keyIn.value.trim()}; save();
+    o.classList.remove("on"); document.body.style.overflow=""; toast(aiReady()?"AI 멘토가 연결됐어요.":"키를 입력하면 리뷰를 받을 수 있어요."); };
+  $("ai-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
+  o.onclick=e=>{ if(e.target===o){ o.classList.remove("on"); document.body.style.overflow=""; } };
+  o.classList.add("on"); document.body.style.overflow="hidden";
+}
+function aiReviewInto(host, q, code, lang){
+  if(!aiReady()){ openAiSetup(); return; }
+  host.innerHTML='<div class="ai-review"><div class="ai-head"><span class="ai-spin"></span>시니어 멘토가 코드를 검토 중…</div></div>';
+  const prob=(q.title||q.q||q.goal||"코딩 문제");
+  const sys="당신은 시니어 소프트웨어 엔지니어입니다. 주니어 개발자의 코드를 리뷰합니다. 한국어로, 간결하고 구체적으로 답하세요. 다음 5개 소제목을 '## 제목' 형식으로 사용하세요: 정확성, 엣지 케이스, 성능, 가독성, 시니어의 한마디. 각 항목은 1~3개의 불릿(- )으로. 칭찬만 하지 말고 실제로 개선점을 짚으세요. 코드를 다시 작성해 주지는 말고 방향만 제시하세요.";
+  const user="문제:\n"+prob+"\n\n언어: "+(lang||"JavaScript")+"\n\n제출한 코드:\n```\n"+code+"\n```";
+  aiCall(sys,user,1400).then(txt=>{
+    if(!txt){ host.innerHTML='<div class="ai-review"><div class="ai-head">AI 리뷰</div><p>빈 응답을 받았어요. 모델·키를 확인해 주세요.</p></div>'; return; }
+    host.innerHTML='<div class="ai-review"><div class="ai-head">🎓 AI 코드 리뷰 · '+escHtml(aiCfg().model)+'</div>'+aiMd(txt)+'</div>';
+  }).catch(e=>{
+    host.innerHTML='<div class="ai-review"><div class="ai-head">AI 리뷰 실패</div><p>'+escHtml(String(e.message||e))+'</p><p class="ai-note">키가 올바른지, 로컬 파일에서 실행 중인지 확인해 주세요.</p></div>';
+  });
+}
+/* 백업 / 복원 */
+function backupState(){ try{ const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download="coderun-backup.json"; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},100); toast("진행상황을 파일로 내려받았어요."); }
+  catch(e){ toast("백업에 실패했어요."); } }
+function restoreState(file){ const rd=new FileReader();
+  rd.onload=()=>{ try{ const obj=JSON.parse(rd.result); if(!obj||typeof obj!=="object") throw 0;
+    confirmModal("불러온 백업으로 현재 진행상황을 덮어쓸까요?", ()=>{ S=Object.assign({},DEF,obj); save(); location.reload(); }, {yes:"복원"}); }
+    catch(e){ toast("올바른 백업 파일이 아니에요."); } };
+  rd.readAsText(file); }
 let liveOut="";
 let liveTest=null;
 window.addEventListener("message",function(e){ if(e&&e.data){ if(e.data.__cr==="out") liveOut=String(e.data.text||""); else if(e.data.__cr==="test") liveTest={pass:e.data.pass|0,total:e.data.total|0,impl:(e.data.impl==null?null:e.data.impl|0),gate:!!e.data.gate,parts:e.data.parts||null}; } });
@@ -2279,11 +2392,20 @@ function applyResult(ok, correctText, q){
     $("l-hearts").textContent=run.free?"∞":run.hearts;
   }
   chk.textContent="계속"; chk.disabled=false;
+  if(q.t==="code"||q.t==="sql") addAiReview(q);
   chk.onclick=()=>{
     if(!run.free && run.hearts<=0){ endLesson(false); return; }
     run.i++;
     if(run.i>=run.total) endLesson(true); else showQ();
   };
+}
+function addAiReview(q){
+  const qb=$("qbody"); if(!qb||$("ai-slot"))return;
+  const lang = q.t==="sql"?"SQL":"JavaScript";
+  const wrap=document.createElement("div"); wrap.id="ai-slot"; wrap.style.margin="12px 0 4px";
+  wrap.innerHTML='<button class="ai-btn" id="ai-req"><span>🎓</span> AI 시니어 리뷰 받기</button><div id="ai-host"></div>';
+  qb.appendChild(wrap);
+  $("ai-req").onclick=()=>{ const ta=$(q.t==="sql"?"sqlcode":"livecode"); aiReviewInto($("ai-host"), q, ta?ta.value:"", lang); };
 }
 function endLesson(passed){
   if(run&&run.diag){ finishDiagnostic(); return; }
@@ -2332,6 +2454,9 @@ function endLesson(passed){
 /* ================= 컨트롤 ================= */
 $("quit").onclick=()=>{ confirmModal("레슨을 나갈까요? 진행 중인 문제는 저장되지 않아요.", ()=>{ $("lesson").classList.remove("on"); document.body.style.overflow=""; S.hearts=run.hearts; save(); renderCourse(); }, {yes:"나가기"}); };
 $("reset-link").onclick=e=>{ e.preventDefault(); confirmModal("모든 진행상황(XP·연속학습·완료 레슨)을 초기화할까요? 되돌릴 수 없어요.", ()=>{ S=Object.assign({},DEF); save(); location.reload(); }, {yes:"초기화", danger:true}); };
+$("backup-link").onclick=e=>{ e.preventDefault(); backupState(); };
+$("restore-link").onclick=e=>{ e.preventDefault(); $("restore-file").click(); };
+$("restore-file").onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) restoreState(f); e.target.value=""; };
 
 /* 테마 */
 function applyTheme(t){ if(t) document.documentElement.setAttribute("data-theme",t); else document.documentElement.removeAttribute("data-theme"); }
@@ -3185,11 +3310,13 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
   <button class="hubrow" id="p2-cause"><span class="hb-em">🔍</span><span class="hb-t"><span>원인 추적</span><span class="hb-s">증상만 보고 근본 원인을 규명</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-diag"><span class="hb-em">🩺</span><span class="hb-t"><span>실력 진단</span><span class="hb-s">짧은 진단으로 현재 위치 확인</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-proj"><span class="hb-em">🚀</span><span class="hb-t"><span>프로젝트 미션</span><span class="hb-s">요구사항부터 운영·장애까지 8단계</span></span><span class="hb-go">→</span></button>
+  <button class="hubrow" id="p2-ai"><span class="hb-em">🎓</span><span class="hb-t"><span>AI 코드 멘토 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">V4</span></span><span class="hb-s">${aiReady()?"연결됨 · "+escHtml(aiCfg().model)+" · 코딩 문제에서 리뷰 받기":"BYOK 키 연결 · 시니어 기준 코드 리뷰"}</span></span><span class="hb-go">→</span></button>
   <button class="ovclose alt" id="p2-close" style="margin-top:16px">닫기</button>`;
  $("p2-sim").onclick=openSims;
  $("p2-cause").onclick=openDiags;
  $("p2-diag").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; startDiagnostic(); };
  $("p2-proj").onclick=()=>{ o.classList.remove("on"); openProjects(); };
+ $("p2-ai").onclick=()=>{ o.classList.remove("on"); openAiSetup(); };
  $("p2-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
  o.classList.add("on"); document.body.style.overflow="hidden";
 }
