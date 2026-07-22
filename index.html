@@ -263,6 +263,18 @@
   .skill .sb{height:10px; border-radius:6px; background:var(--line); overflow:hidden}
   .skill .sb>i{display:block; height:100%; border-radius:6px; transition:width .4s}
   .ovclose{margin-top:8px; width:100%; padding:13px; border-radius:13px; border:none; background:var(--brand); color:#fff; font-weight:800; font-size:15px}
+  .wkbig{padding:13px 15px; border-radius:13px; background:var(--card); border:2px solid var(--brand); margin:4px 0 16px; box-shadow:var(--shadow)}
+  .wkbig .wt{font-weight:900; font-size:15px; color:var(--ink); margin-bottom:8px}
+  .mon{margin-bottom:12px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card)}
+  .mon>.mh{padding:11px 14px; font-weight:900; font-size:14px; color:#fff; display:flex; justify-content:space-between}
+  .wk{padding:9px 14px; border-top:1px solid var(--line)}
+  .wk .wl{font-size:12px; font-weight:800; color:var(--ink-soft); margin-bottom:4px}
+  .mod{display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13px; color:var(--ink)}
+  .mod .me{font-size:16px}
+  .mod .mt{font-weight:700}
+  .mod .mlv{margin-left:auto; font-size:11px; color:var(--ink-soft); font-weight:700; white-space:nowrap}
+  .mod.mdone .mt{opacity:.5; text-decoration:line-through}
+  .mstart{width:100%; padding:12px; border-radius:12px; border:none; background:var(--brand); color:#fff; font-weight:800; font-size:14px; margin-top:8px}
 </style>
 
 <!-- ================= HOME ================= -->
@@ -292,6 +304,7 @@
 
 <div class="ovl" id="onboard"><div class="ovcard"></div></div>
 <div class="ovl" id="profile"><div class="ovcard" id="profile-body"></div></div>
+<div class="ovl" id="curr"><div class="ovcard" id="curr-body"></div></div>
 
 <!-- ================= LESSON ================= -->
 <div class="lesson" id="lesson">
@@ -1506,8 +1519,8 @@ function renderDaily(){ const el=$("daily"); if(!el)return; const done=todayCoun
 function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const path=COURSE_PATHS[g];
   if(g==="free"||!path.tracks.length){ el.innerHTML=`<div class="rtitle"><span>🎯 자유 탐색 중</span><span><button id="diag-btn">🩺 진단</button> <button id="chg-goal">🚀 코스 선택</button></span></div>`; const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; return; }
   const nodes=path.tracks.filter(k=>COURSES[k]).map(k=>{ const c=COURSES[k],pg=trackProg(k); const active=k===curLang?" active":""; return `<button class="rnode${active}" data-k="${k}"><div class="rem">${c.em}</div><div class="rnm">${c.name}</div><div class="rpct">${pg.pct}%</div><div class="rp"><i style="width:${pg.pct}%"></i></div></button>`; }).join("");
-  el.innerHTML=`<div class="rtitle"><span>${path.em} ${path.name} 코스</span><span><button id="diag-btn">🩺 진단</button> <button id="chg-goal">변경</button></span></div><div class="rtrack">${nodes}</div>`;
-  el.querySelectorAll(".rnode").forEach(b=>b.onclick=()=>gotoTrack(b.dataset.k)); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; }
+  el.innerHTML=`<div class="rtitle"><span>${path.em} ${path.name} 코스</span><span><button id="curr-btn">📅 커리큘럼</button> <button id="diag-btn">🩺 진단</button> <button id="chg-goal">변경</button></span></div><div class="rtrack">${nodes}</div>`;
+  el.querySelectorAll(".rnode").forEach(b=>b.onclick=()=>gotoTrack(b.dataset.k)); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; const pb=$("curr-btn"); if(pb)pb.onclick=openCurriculum; }
 function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
   const opts=[["ai","🤖","AI 엔지니어","Python→SQL→NumPy→Pandas→통계→ML→딥러닝"],["ds","📊","데이터 사이언티스트","Python→SQL→통계→NumPy→Pandas→ML→평가"],["fullstack","💻","풀스택 개발자","웹→JS→React→백엔드→DB→배포"],["backend","🖥️","백엔드 개발자","Python→SQL→백엔드→보안→네트워크→DevOps"],["free","🎯","자유 탐색","코스 없이 원하는 트랙을 자유롭게"]];
   card.innerHTML=`<h2>어떤 개발자가 되고 싶나요?</h2><p class="sub">고르면 그 목표에 맞는 학습 코스를 짜드려요. 언제든 바꿀 수 있어요.</p>`+opts.map(o=>`<button class="goalbtn" data-g="${o[0]}"><span class="ge">${o[1]}</span><span><span class="gt">${o[2]}</span><span class="gd">${o[3]}</span></span></button>`).join("");
@@ -1540,8 +1553,52 @@ function openDiagResult(res){
   const rec=weak.slice(0,3).map(e=>COURSES[e.k].name).join(" → ");
   body.innerHTML=`<h2>🩺 실력 진단 결과</h2><p class="sub">종합 ${overall}% · 현재 단계: <b>AI ${stageOf(overall)}</b></p>${rows}
     <div style="margin:6px 0 14px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:700;font-size:13.5px;color:var(--ink)">📌 추천 학습 순서 (약한 것부터)<br><span style="color:var(--brand);font-weight:800">${rec||"-"}</span></div>
+    <button class="ovclose" id="diag-plan" style="background:#5b6cff;margin-bottom:8px">📅 6개월 커리큘럼 생성</button>
     <button class="ovclose" id="diag-go">가장 약한 영역 학습하기</button>`;
+  $("diag-plan").onclick=()=>{ S.planStart=today(); save(); o.classList.remove("on"); document.body.style.overflow=""; openCurriculum(); };
   $("diag-go").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; if(weak[0]) gotoTrack(weak[0].k); };
+  o.classList.add("on"); document.body.style.overflow="hidden";
+}
+/* ---- 6개월 커리큘럼 자동 생성 엔진 ---- */
+function planTracks(){ const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"ai"; const t=COURSE_PATHS[g].tracks.filter(k=>COURSES[k]); return t.length?t:diagTracks(); }
+function buildPlan(){
+  const tracks=planTracks(); const weak=new Set();
+  if(S.diag&&S.diag.res) Object.keys(S.diag.res).forEach(k=>{const r=S.diag.res[k]; if(r.t&&r.c/r.t<0.5) weak.add(k);});
+  const mods=[];
+  tracks.forEach(tk=>{ const c=COURSES[tk]; c.units.forEach((u,ui)=>{
+    let dn=0; u.lessons.forEach((l,li)=>{ if(S.done[tk+"-"+ui+"-"+li]) dn++; });
+    mods.push({track:tk,ui,title:u.title,em:c.em,name:c.name,g:c.g,color:c.color,total:u.lessons.length,done:dn,level:unitLevel(ui,c.units.length),weak:weak.has(tk),complete:dn>=u.lessons.length});
+  }); });
+  const remain=mods.filter(m=>!m.complete);
+  const totalLes=remain.reduce((s,m)=>s+(m.total-m.done),0)||1;
+  const WEEKS=26, perWeek=Math.max(2,Math.ceil(totalLes/WEEKS));
+  const weeks=[]; let cur={mods:[],load:0};
+  remain.forEach(m=>{ const load=m.total-m.done; if(cur.load>0 && cur.load+load>perWeek){ weeks.push(cur); cur={mods:[],load:0}; } cur.mods.push(m); cur.load+=load; });
+  if(cur.mods.length) weeks.push(cur);
+  return {weeks,tracks,weak,perWeek,remain:remain.length,mods};
+}
+function pathPct(){ const t=planTracks(); let d=0,tot=0; t.forEach(k=>{const p=trackProg(k);d+=p.d;tot+=p.t;}); return tot?Math.round(d/tot*100):0; }
+function addDays(iso,n){ const dt=new Date(iso+"T00:00:00"); dt.setDate(dt.getDate()+n); return dt.toISOString().slice(0,10); }
+function openCurriculum(){
+  if(!S.planStart){ S.planStart=today(); save(); }
+  const o=$("curr"), body=$("curr-body"); const plan=buildPlan();
+  const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"ai"; const persona=COURSE_PATHS[g];
+  const target=addDays(S.planStart,182); const pct=pathPct();
+  // months = weeks chunked into 6
+  const W=plan.weeks, perMonth=Math.max(1,Math.ceil(W.length/6));
+  const modHTML=(m)=>`<div class="mod${m.complete?" mdone":""}"><span class="me">${m.em}</span><span class="mt">${m.name} · ${m.title}</span><span class="mlv">Lv${m.level}${m.weak?" ⚠️":""}</span></div>`;
+  let monthsHTML="";
+  const MC=["#3b7dd8","#1aa38a","#dd8a1e","#8b5cf6","#e0533d","#2f9e6f"];
+  for(let mi=0; mi<6 && mi*perMonth<W.length; mi++){
+    const slice=W.slice(mi*perMonth,(mi+1)*perMonth); if(!slice.length) break;
+    let wkHTML=""; slice.forEach((wk,wj)=>{ const wn=mi*perMonth+wj+1; wkHTML+=`<div class="wk"><div class="wl">Week ${wn}</div>${wk.mods.map(modHTML).join("")}</div>`; });
+    monthsHTML+=`<div class="mon"><div class="mh" style="background:${MC[mi]}"><span>Month ${mi+1}</span><span>${slice.reduce((s,w)=>s+w.mods.length,0)}개 유닛</span></div>${wkHTML}</div>`;
+  }
+  const wk1=plan.weeks[0];
+  const wk1HTML=wk1?`<div class="wkbig"><div class="wt">🎯 이번 주 할 일 (Week 1)</div>${wk1.mods.map(modHTML).join("")}<button class="mstart" id="curr-start">첫 유닛 시작하기</button></div>`:`<div class="wkbig"><div class="wt">🎉 이 코스의 모든 유닛을 완료했어요!</div></div>`;
+  body.innerHTML=`<h2>📅 6개월 AI 개발자 커리큘럼</h2><p class="sub">${persona.em} ${persona.name} · ${S.planStart} → 목표 ${target} · 진행 ${pct}% · 남은 유닛 ${plan.remain}개 (주당 ~${plan.perWeek}레슨)</p>${wk1HTML}${monthsHTML}<button class="ovclose" id="curr-close">닫기</button>`;
+  if(wk1){ const sb=$("curr-start"); if(sb) sb.onclick=()=>{ const m=wk1.mods[0]; o.classList.remove("on"); document.body.style.overflow=""; gotoTrack(m.track); }; }
+  $("curr-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
   o.classList.add("on"); document.body.style.overflow="hidden";
 }
 /* ---- 약점 분석 (오답노트 기반) ---- */
