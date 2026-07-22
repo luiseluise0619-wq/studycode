@@ -136,10 +136,9 @@
   .node.done{}
   .node .crown{position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:15px;
     filter:drop-shadow(0 1px 0 rgba(0,0,0,.2))}
-  .node.current::after{content:"시작"; position:absolute; top:-34px; left:50%; transform:translateX(-50%);
+  .node.first-current::after{content:"시작"; position:absolute; top:-34px; left:50%; transform:translateX(-50%);
     background:var(--card); color:var(--brand); font-weight:800; font-size:11px; padding:4px 10px; border-radius:9px;
-    border:1px solid var(--line); box-shadow:var(--shadow); white-space:nowrap; animation:bob 1.2s ease-in-out infinite}
-  @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-3px)}}
+    border:1px solid var(--line); box-shadow:var(--shadow); white-space:nowrap}
   .node-label{font-size:12px; font-weight:700; color:var(--ink-soft); max-width:120px; text-align:center}
   .n0{transform:translateX(0)} .n1{transform:translateX(64px)} .n2{transform:translateX(96px)}
   .n3{transform:translateX(64px)} .n4{transform:translateX(0)} .n5{transform:translateX(-64px)}
@@ -2163,7 +2162,7 @@ function renderCourse(){
     banner.onclick=()=>openLab(pj.persona,pj.idx);
     wrap.appendChild(banner);
   }
-  let globalIdx=0; let prevAllDone=true;
+  let globalIdx=0; let prevAllDone=true; let firstCurrent=true;
   c.units.forEach((u,ui)=>{
     const head=document.createElement("div");
     head.className="unit-head"; head.style.background=c.g;
@@ -2181,7 +2180,7 @@ function renderCourse(){
       let cls="node n"+pos;
       let inner="";
       if(done){ cls+=" done"; btn.style.background=c.g; inner=`<span class="crown">👑</span>✓`; }
-      else if(unlocked){ cls+=" current"; btn.style.background=c.color; inner="★"; }
+      else if(unlocked){ cls+=" current"; if(firstCurrent){ cls+=" first-current"; firstCurrent=false; } btn.style.background=c.color; inner="★"; }
       else { cls+=" locked"; inner="🔒"; }
       btn.className=cls; btn.innerHTML=inner;
       btn.disabled=!unlocked && !done;
