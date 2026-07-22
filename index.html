@@ -1932,7 +1932,10 @@ const AI_PROVIDERS={
   openai:{name:"OpenAI (내 키)", models:["gpt-4o","gpt-4o-mini","o4-mini"], keyHint:"sk-...", url:"https://platform.openai.com/api-keys"},
   anthropic:{name:"Claude (내 키)", models:["claude-opus-4-8","claude-sonnet-5","claude-haiku-4-5"], keyHint:"sk-ant-...", url:"https://console.anthropic.com/settings/keys"}
 };
-function aiCfg(){ if(!S.ai)S.ai={provider:"proxy",model:"gemini-2.0-flash",key:""}; return S.ai; }
+function aiCfg(){ if(!S.ai)S.ai={provider:"proxy",model:"gemini-2.0-flash",key:""};
+  // 키를 안 넣은 상태면 자동으로 서버(Vercel 환경변수) 사용 — 환경변수만 넣으면 충분
+  if(S.ai.provider!=="proxy" && !(S.ai.key&&String(S.ai.key).trim())){ S.ai.provider="proxy"; if(!/^gemini/.test(S.ai.model||"")) S.ai.model="gemini-2.0-flash"; }
+  return S.ai; }
 function aiReady(){ const c=aiCfg(); const p=AI_PROVIDERS[c.provider]; if(p&&p.noKey) return !!(c.provider&&c.model); return !!(c.key&&c.provider&&c.model); }
 function aiCall(system, user, maxTokens){
   const c=aiCfg(); maxTokens=maxTokens||1400;
