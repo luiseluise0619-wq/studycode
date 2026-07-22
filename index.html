@@ -436,6 +436,14 @@
   .node.current::after{border-radius:7px; box-shadow:var(--shadow); font-family:var(--mono)}
   /* focus visibility for keyboard users */
   a:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  /* roadmap header: wrap gracefully instead of breaking the title */
+  .roadmap .rtitle{flex-wrap:wrap; gap:8px; align-items:center}
+  .roadmap .rtitle > span:first-child{flex:1 1 60%; min-width:0}
+  .roadmap .rtitle > span:last-child{display:flex; gap:6px; flex:0 0 auto; flex-wrap:wrap}
+  .roadmap .rtitle button{white-space:nowrap; border-radius:8px; font-family:var(--mono); font-size:11px}
+  /* curriculum / onboarding goal buttons: flat, tighter */
+  .goalbtn{border-radius:11px; box-shadow:var(--shadow)}
+  .goalbtn:active{border-color:var(--brand)}
 </style>
 
 <!-- ================= HOME ================= -->
@@ -454,7 +462,7 @@
   <div class="roadmap" id="roadmap"></div>
   <div class="catbar" id="catbar"></div>
   <div class="langbar" id="langbar" role="tablist"></div>
-  <div class="lab-title">🧪 실습실</div>
+  <div class="lab-title">실습실</div>
   <div class="practice-bar">
     <button class="pbtn" id="random-btn">🎲 랜덤 20문제</button>
     <button class="pbtn wrong" id="review-btn">📓 오답노트</button>
@@ -2130,9 +2138,9 @@ function bumpDaily(){ if(S.dayDate!==today()){S.dayCount=0;S.dayDate=today();} S
 function renderDaily(){ const el=$("daily"); if(!el)return; const done=todayCount(),t=S.dailyTarget||10; const pct=Math.min(100,Math.round(done/t*100)); const hit=done>=t;
   el.innerHTML=`<div class="dtop"><span>🔥 오늘 목표</span><span class="done">${hit?"완료! 🎉 계속 가요":done+" / "+t+" 문제"}</span></div><div class="dbar"><i style="width:${pct}%"></i></div>`; }
 function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const path=COURSE_PATHS[g];
-  if(g==="free"||!path.tracks.length){ el.innerHTML=`<div class="rtitle"><span>🎯 자유 탐색 중</span><span><button id="diag-btn">🩺 진단</button> <button id="chg-goal">🚀 코스 선택</button></span></div>`; const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; return; }
+  if(g==="free"||!path.tracks.length){ el.innerHTML=`<div class="rtitle"><span>자유 탐색 중</span><span><button id="diag-btn">진단</button> <button id="chg-goal">코스 선택</button></span></div>`; const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; return; }
   const nodes=path.tracks.filter(k=>COURSES[k]).map(k=>{ const c=COURSES[k],pg=trackProg(k); const active=k===curLang?" active":""; return `<button class="rnode${active}" data-k="${k}"><div class="rem">${c.em}</div><div class="rnm">${c.name}</div><div class="rpct">${pg.pct}%</div><div class="rp"><i style="width:${pg.pct}%"></i></div></button>`; }).join("");
-  el.innerHTML=`<div class="rtitle"><span>${path.em} ${path.name} 코스</span><span><button id="curr-btn">📅 커리큘럼</button> <button id="diag-btn">🩺 진단</button> <button id="chg-goal">변경</button></span></div><div class="rtrack">${nodes}</div>`;
+  el.innerHTML=`<div class="rtitle"><span>${path.em} ${path.name} 코스</span><span><button id="curr-btn">커리큘럼</button> <button id="diag-btn">진단</button> <button id="chg-goal">변경</button></span></div><div class="rtrack">${nodes}</div>`;
   el.querySelectorAll(".rnode").forEach(b=>b.onclick=()=>gotoTrack(b.dataset.k)); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; const pb=$("curr-btn"); if(pb)pb.onclick=openCurriculum; }
 function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
   const opts=[["ai","🤖","AI 엔지니어","Python→SQL→NumPy→Pandas→통계→ML→딥러닝"],["ds","📊","데이터 사이언티스트","Python→SQL→통계→NumPy→Pandas→ML→평가"],["fullstack","💻","풀스택 개발자","웹→JS→React→백엔드→DB→배포"],["backend","🖥️","백엔드 개발자","Python→SQL→백엔드→보안→네트워크→DevOps"],["free","🎯","자유 탐색","코스 없이 원하는 트랙을 자유롭게"]];
