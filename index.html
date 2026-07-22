@@ -1398,6 +1398,7 @@ function onCheck(){
 function applyResult(ok, correctText, q){
   run.answered=true;
   bumpDaily();
+  if(run.diag&&run.diagTrk){ const k=run.diagTrk[run.i]; if(run.diagRes[k]){ run.diagRes[k].t++; if(ok) run.diagRes[k].c++; } }
   const foot=$("foot"), msg=$("foot-msg"), chk=$("check");
   if(ok){ run.correct++; foot.className="foot good";
     msg.innerHTML=`<span class="em">🎉</span><div>정답이에요!</div>`;
@@ -1419,6 +1420,7 @@ function applyResult(ok, correctText, q){
   };
 }
 function endLesson(passed){
+  if(run&&run.diag){ finishDiagnostic(); return; }
   $("lesson").classList.remove("on");
   const acc=Math.round(run.correct/run.total*100);
   S.hearts=run.hearts;
@@ -1485,9 +1487,11 @@ $("free-btn").onclick=()=>{ S.freeMode=!S.freeMode; save(); paintFree(); renderC
 /* ================= 시작 ================= */
 /* ================= 성장 시스템 (로드맵·레벨·일일목표·프로필) ================= */
 const COURSE_PATHS={
- ai:{name:"AI·데이터 개발자",em:"🤖",tracks:["python","sql","numpy","pandas","stat","ml","mleval","dl"]},
+ ai:{name:"AI 엔지니어",em:"🤖",tracks:["python","sql","numpy","pandas","stat","ml","mleval","dl"]},
+ ds:{name:"데이터 사이언티스트",em:"📊",tracks:["python","sql","stat","numpy","pandas","ml","mleval"]},
  fullstack:{name:"풀스택 개발자",em:"💻",tracks:["web","javascript","react","backend","sql","devops"]},
- data:{name:"데이터 분석가",em:"📊",tracks:["python","sql","stat","pandas","numpy","ml"]},
+ backend:{name:"백엔드 개발자",em:"🖥️",tracks:["python","sql","backend","security","net","devops"]},
+ data:{name:"데이터 분석가",em:"📈",tracks:["python","sql","stat","pandas","numpy","ml"]},
  free:{name:"자유 탐색",em:"🎯",tracks:[]}
 };
 const LV_LABEL=["","문법 이해","코드 읽기","응용·문제해결","내부 동작","실무·면접"];
@@ -1500,19 +1504,62 @@ function bumpDaily(){ if(S.dayDate!==today()){S.dayCount=0;S.dayDate=today();} S
 function renderDaily(){ const el=$("daily"); if(!el)return; const done=todayCount(),t=S.dailyTarget||10; const pct=Math.min(100,Math.round(done/t*100)); const hit=done>=t;
   el.innerHTML=`<div class="dtop"><span>🔥 오늘 목표</span><span class="done">${hit?"완료! 🎉 계속 가요":done+" / "+t+" 문제"}</span></div><div class="dbar"><i style="width:${pct}%"></i></div>`; }
 function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const path=COURSE_PATHS[g];
-  if(g==="free"||!path.tracks.length){ el.innerHTML=`<div class="rtitle"><span>🎯 자유 탐색 중</span><button id="chg-goal">🚀 코스 선택</button></div>`; const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; return; }
+  if(g==="free"||!path.tracks.length){ el.innerHTML=`<div class="rtitle"><span>🎯 자유 탐색 중</span><span><button id="diag-btn">🩺 진단</button> <button id="chg-goal">🚀 코스 선택</button></span></div>`; const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; return; }
   const nodes=path.tracks.filter(k=>COURSES[k]).map(k=>{ const c=COURSES[k],pg=trackProg(k); const active=k===curLang?" active":""; return `<button class="rnode${active}" data-k="${k}"><div class="rem">${c.em}</div><div class="rnm">${c.name}</div><div class="rpct">${pg.pct}%</div><div class="rp"><i style="width:${pg.pct}%"></i></div></button>`; }).join("");
-  el.innerHTML=`<div class="rtitle"><span>${path.em} ${path.name} 코스</span><button id="chg-goal">변경</button></div><div class="rtrack">${nodes}</div>`;
-  el.querySelectorAll(".rnode").forEach(b=>b.onclick=()=>gotoTrack(b.dataset.k)); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; }
+  el.innerHTML=`<div class="rtitle"><span>${path.em} ${path.name} 코스</span><span><button id="diag-btn">🩺 진단</button> <button id="chg-goal">변경</button></span></div><div class="rtrack">${nodes}</div>`;
+  el.querySelectorAll(".rnode").forEach(b=>b.onclick=()=>gotoTrack(b.dataset.k)); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; }
 function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
-  const opts=[["ai","🤖","AI·데이터 개발자","Python→SQL→NumPy→Pandas→통계→ML→딥러닝"],["fullstack","💻","풀스택 개발자","웹→JS→React→백엔드→DB→배포"],["data","📊","데이터 분석가","Python→SQL→통계→Pandas→ML"],["free","🎯","자유 탐색","코스 없이 원하는 트랙을 자유롭게"]];
-  card.innerHTML=`<h2>목표가 뭐예요?</h2><p class="sub">고르면 그 목표에 맞는 학습 코스를 짜드려요. 언제든 바꿀 수 있어요.</p>`+opts.map(o=>`<button class="goalbtn" data-g="${o[0]}"><span class="ge">${o[1]}</span><span><span class="gt">${o[2]}</span><span class="gd">${o[3]}</span></span></button>`).join("");
+  const opts=[["ai","🤖","AI 엔지니어","Python→SQL→NumPy→Pandas→통계→ML→딥러닝"],["ds","📊","데이터 사이언티스트","Python→SQL→통계→NumPy→Pandas→ML→평가"],["fullstack","💻","풀스택 개발자","웹→JS→React→백엔드→DB→배포"],["backend","🖥️","백엔드 개발자","Python→SQL→백엔드→보안→네트워크→DevOps"],["free","🎯","자유 탐색","코스 없이 원하는 트랙을 자유롭게"]];
+  card.innerHTML=`<h2>어떤 개발자가 되고 싶나요?</h2><p class="sub">고르면 그 목표에 맞는 학습 코스를 짜드려요. 언제든 바꿀 수 있어요.</p>`+opts.map(o=>`<button class="goalbtn" data-g="${o[0]}"><span class="ge">${o[1]}</span><span><span class="gt">${o[2]}</span><span class="gd">${o[3]}</span></span></button>`).join("");
   card.querySelectorAll(".goalbtn").forEach(b=>b.onclick=()=>{ S.goal=b.dataset.g; S.onboarded=true; save(); const p=COURSE_PATHS[S.goal]; o.classList.remove("on"); document.body.style.overflow=""; if(p&&p.tracks[0]&&COURSES[p.tracks[0]]) gotoTrack(p.tracks[0]); else renderRoadmap(); });
   o.classList.add("on"); document.body.style.overflow="hidden"; }
+/* ---- 실력 진단 테스트 ---- */
+function diagTracks(){ const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"ai"; const t=COURSE_PATHS[g].tracks.filter(k=>COURSES[k]); return t.length?t:["python","sql","numpy","pandas","stat","ml"].filter(k=>COURSES[k]); }
+function startDiagnostic(){
+  const tracks=diagTracks(); const per=Math.max(2,Math.round(24/tracks.length));
+  const qs=[],trk=[];
+  tracks.forEach(k=>{ const pool=[]; COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>pool.push(q)))); shuffle(pool); pool.slice(0,per).forEach(q=>{qs.push(q);trk.push(k);}); });
+  const idx=qs.map((_,i)=>i); shuffle(idx);
+  const q2=idx.map(i=>qs[i]), t2=idx.map(i=>trk[i]);
+  run={lang:tracks[0],les:{title:"실력 진단",xp:0,q:q2},i:0,correct:0,total:q2.length,hearts:S.hearts,id:null,color:"#5b6cff",free:true,diag:true,diagTrk:t2,diagRes:{}};
+  tracks.forEach(k=>run.diagRes[k]={c:0,t:0});
+  openRun();
+}
+function finishDiagnostic(){
+  $("lesson").classList.remove("on"); document.body.style.overflow="";
+  S.diag={date:today(),res:{}}; Object.keys(run.diagRes).forEach(k=>S.diag.res[k]={c:run.diagRes[k].c,t:run.diagRes[k].t}); save();
+  openDiagResult(S.diag.res);
+}
+function stageOf(pct){ return pct<40?"Beginner":pct<70?"Intermediate":"Advanced"; }
+function openDiagResult(res){
+  const o=$("profile"), body=$("profile-body");
+  const es=Object.keys(res).filter(k=>COURSES[k]).map(k=>({k,pct:res[k].t?Math.round(res[k].c/res[k].t*100):0,c:res[k].c,t:res[k].t}));
+  let sc=0,st=0; es.forEach(e=>{sc+=e.c;st+=e.t;}); const overall=st?Math.round(sc/st*100):0;
+  const weak=[...es].sort((a,b)=>a.pct-b.pct);
+  const rows=es.map(e=>`<div class="skill"><div class="sh"><span>${COURSES[e.k].em} ${COURSES[e.k].name}</span><span>${e.pct}% · ${e.c}/${e.t}</span></div><div class="sb"><i style="width:${e.pct}%;background:${COURSES[e.k].color}"></i></div></div>`).join("");
+  const rec=weak.slice(0,3).map(e=>COURSES[e.k].name).join(" → ");
+  body.innerHTML=`<h2>🩺 실력 진단 결과</h2><p class="sub">종합 ${overall}% · 현재 단계: <b>AI ${stageOf(overall)}</b></p>${rows}
+    <div style="margin:6px 0 14px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:700;font-size:13.5px;color:var(--ink)">📌 추천 학습 순서 (약한 것부터)<br><span style="color:var(--brand);font-weight:800">${rec||"-"}</span></div>
+    <button class="ovclose" id="diag-go">가장 약한 영역 학습하기</button>`;
+  $("diag-go").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; if(weak[0]) gotoTrack(weak[0].k); };
+  o.classList.add("on"); document.body.style.overflow="hidden";
+}
+/* ---- 약점 분석 (오답노트 기반) ---- */
+function weaknessText(){
+  const w=S.wrongs||[]; if(!w.length) return "";
+  const byTrack={}; w.forEach(x=>{ const k=x.lang||"?"; byTrack[k]=(byTrack[k]||0)+1; });
+  const top=Object.keys(byTrack).map(k=>({k,n:byTrack[k]})).sort((a,b)=>b.n-a.n)[0];
+  const nm=(COURSES[top.k]&&COURSES[top.k].name)||top.k;
+  return `🔍 <b>${nm}</b>에서 오답이 가장 많아요(${top.n}개). 📓 오답노트로 집중 복습을 추천해요.`;
+}
 function openProfile(){ const o=$("profile"), body=$("profile-body");
   const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const keys=(g!=="free"&&COURSE_PATHS[g].tracks.length)?COURSE_PATHS[g].tracks.filter(k=>COURSES[k]):["python","sql","javascript","pandas","ml"].filter(k=>COURSES[k]);
   const rows=keys.map(k=>{ const c=COURSES[k],pg=trackProg(k); return `<div class="skill"><div class="sh"><span>${c.em} ${c.name}</span><span>${pg.pct}% · ${pg.d}/${pg.t}</span></div><div class="sb"><i style="width:${pg.pct}%;background:${c.color}"></i></div></div>`; }).join("");
-  body.innerHTML=`<h2>📈 내 성장</h2><p class="sub">완료 레슨 ${Object.keys(S.done).length}개 · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>${rows}<button class="ovclose" id="prof-close">닫기</button>`;
+  const wk=weaknessText();
+  const wkBox=wk?`<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:13.5px;font-weight:600;color:var(--ink)">${wk}</div>`:"";
+  const dg=S.diag?`종합 진단 완료 · `:``;
+  body.innerHTML=`<h2>📈 내 성장</h2><p class="sub">완료 레슨 ${Object.keys(S.done).length}개 · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>${rows}${wkBox}<button class="ovclose" id="prof-diag" style="background:#5b6cff;margin-bottom:8px">🩺 실력 진단 받기</button><button class="ovclose" id="prof-close">닫기</button>`;
+  $("prof-diag").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; startDiagnostic(); };
   $("prof-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
   o.classList.add("on"); document.body.style.overflow="hidden"; }
 $("profile-btn").onclick=openProfile;
