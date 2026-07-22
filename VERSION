@@ -9,8 +9,8 @@ Contents:
 - 직접 SQL 실행 채점 (sql.js SQLite WASM 인라인) — JOIN·집계·윈도우·CTE
 - 직접 Python 실행 채점 (Pyodide) — 함수 구현 → 테스트 통과, Implementation Score
 - Monaco(VS Code) 에디터 — 코드/SQL/Python 편집(문법 강조·자동완성), CDN 차단 시 textarea 폴백
-- Real Work 시뮬레이션 101       (장애30·리뷰20·기술선택30·이해관계자·프로덕트·윤리)
-- 원인 추적 진단 12              (불완전 정보 → 근본원인, red herring 포함)
+- Real Work 시뮬레이션 125       (장애30·리뷰20·기술선택30·이해관계자·프로덕트·윤리)
+- 원인 추적 진단 26              (불완전 정보 → 근본원인, red herring 포함)
 - 프로젝트 워크스페이스 30       (8단계 라이프사이클 + 연쇄 장애 + 성장 루프)
 - 9축 평가 엔진 + Developer Passport (코딩 능력 분해: Knowledge/Implementation/Debugging/Production)
 - 심화 유닛 12트랙 +255문항 (시니어/스태프 난이도: 시스템설계·백엔드·알고리즘·보안·네트워크·OS·DB내부·JS·React·AI·Java·DevOps)
