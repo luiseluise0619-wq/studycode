@@ -1273,7 +1273,7 @@ let curLang="python", run=null;
 const CATS=[
  {id:"lang",name:"💻 언어",tracks:["python","c","cpp","java","go","arduino"]},
  {id:"web",name:"🌐 웹·프론트",tracks:["web","javascript","react"]},
- {id:"data",name:"🗄️ 백엔드·데이터",tracks:["backend","sql","dbt"]},
+ {id:"data",name:"🗄️ 백엔드·데이터",tracks:["backend","sql","dbt","sysd"]},
  {id:"ds",name:"📊 데이터·AI",tracks:["pandas","numpy","stat","ml","mleval","dl"]},
  {id:"cs",name:"🧠 CS 전공",tracks:["cs","os","arch","net","algo","math","compiler","security","ai"]},
  {id:"etc",name:"⚡ 실습·기타",tracks:["code","mobile","devops","fp"]}
@@ -1427,7 +1427,7 @@ function showQ(){
   const foot=$("foot"); foot.className="foot"; $("foot-msg").innerHTML="";
   const chk=$("check"); chk.className="btn"; chk.textContent="확인"; chk.disabled=true;
   chk.onclick=onCheck;
-  const CATMAP={debug:["🐛 디버깅","#e0533d"],review:["🔍 코드리뷰","#8b5cf6"],perf:["⚡ 성능","#dd8a1e"],design:["🏗️ 설계","#3b7dd8"],ops:["🚨 실무 판단","#1aa38a"],interview:["🎓 면접","#d6336c"]};
+  const CATMAP={debug:["🐛 디버깅","#e0533d"],review:["🔍 코드리뷰","#8b5cf6"],perf:["⚡ 성능","#dd8a1e"],design:["🏗️ 설계","#3b7dd8"],ops:["🚨 실무 판단","#1aa38a"],interview:["🎓 면접","#d6336c"],internals:["⚙️ 내부동작","#0ea5a5"],security:["🔐 보안","#d6336c"]};
   const cb=q.cat&&CATMAP[q.cat]?`<span class="catbadge" style="background:${CATMAP[q.cat][1]}">${CATMAP[q.cat][0]}</span> `:"";
   let html=`<div>${cb}<span class="q-kind">${q.k||"문제"}</span></div><div class="q-title">${q.q}</div>`;
   if(q.code) html+=C(q.code);
