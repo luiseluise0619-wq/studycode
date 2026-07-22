@@ -230,6 +230,39 @@
   .foot-hint{position:fixed;left:0;right:0;bottom:0;padding:14px 16px;text-align:center;color:var(--ink-soft);
     font-size:12.5px;font-weight:600; background:var(--bg); border-top:1px solid var(--line)}
   @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+
+  /* ---------- growth system ---------- */
+  .daily{margin:12px 0 2px; padding:12px 14px; border-radius:14px; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow)}
+  .daily .dtop{display:flex; justify-content:space-between; align-items:center; font-weight:800; font-size:14px; color:var(--ink); margin-bottom:8px}
+  .daily .dtop .done{color:var(--brand)}
+  .dbar{height:9px; border-radius:6px; background:var(--line); overflow:hidden}
+  .dbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--brand),#5b6cff); border-radius:6px; transition:width .4s}
+  .roadmap{margin:14px 0 2px}
+  .roadmap .rtitle{display:flex; justify-content:space-between; align-items:center; font-weight:900; font-size:15px; margin:0 2px 8px; color:var(--ink)}
+  .roadmap .rtitle button{background:none; border:1px solid var(--line); border-radius:9px; padding:5px 10px; font-size:12px; font-weight:700; color:var(--ink-soft)}
+  .rtrack{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px; -webkit-overflow-scrolling:touch}
+  .rnode{flex:0 0 auto; min-width:98px; padding:11px 10px; border-radius:13px; border:2px solid var(--line); background:var(--card); text-align:center; box-shadow:var(--shadow)}
+  .rnode.active{border-color:var(--brand)}
+  .rnode .rem{font-size:22px}
+  .rnode .rnm{font-size:12px; font-weight:800; color:var(--ink); margin:3px 0 6px; white-space:nowrap}
+  .rnode .rpct{font-size:11px; font-weight:800; color:var(--ink-soft)}
+  .rnode .rp{height:6px; border-radius:4px; background:var(--line); margin-top:5px; overflow:hidden}
+  .rnode .rp>i{display:block; height:100%; background:var(--good)}
+  .ovl{position:fixed; inset:0; background:rgba(10,12,20,.66); display:none; align-items:center; justify-content:center; padding:20px; z-index:50}
+  .ovl.on{display:flex}
+  .ovcard{width:100%; max-width:460px; max-height:86vh; overflow-y:auto; background:var(--bg); border-radius:20px; padding:22px; box-shadow:0 14px 44px rgba(0,0,0,.42)}
+  .ovcard h2{margin:0 0 4px; font-size:20px; font-weight:900; color:var(--ink)}
+  .ovcard p.sub{margin:0 0 16px; color:var(--ink-soft); font-size:13.5px; font-weight:600}
+  .goalbtn{display:flex; align-items:center; gap:12px; width:100%; padding:15px; margin-bottom:10px; border-radius:14px; border:2px solid var(--line); background:var(--card); text-align:left; box-shadow:var(--shadow)}
+  .goalbtn:active{border-color:var(--brand)}
+  .goalbtn .ge{font-size:26px}
+  .goalbtn .gt{font-weight:800; font-size:15px; color:var(--ink); display:block}
+  .goalbtn .gd{font-size:12px; color:var(--ink-soft); font-weight:600; margin-top:2px; display:block}
+  .skill{margin-bottom:14px}
+  .skill .sh{display:flex; justify-content:space-between; font-weight:800; font-size:14px; color:var(--ink); margin-bottom:5px}
+  .skill .sb{height:10px; border-radius:6px; background:var(--line); overflow:hidden}
+  .skill .sb>i{display:block; height:100%; border-radius:6px; transition:width .4s}
+  .ovclose{margin-top:8px; width:100%; padding:13px; border-radius:13px; border:none; background:var(--brand); color:#fff; font-weight:800; font-size:15px}
 </style>
 
 <!-- ================= HOME ================= -->
@@ -239,9 +272,12 @@
     <div class="stat flame"><span class="ic">🔥</span><span id="s-streak">0</span></div>
     <div class="stat xp"><span class="ic">⭐</span><span id="s-xp">0</span></div>
     <div class="stat"><span class="ic heart-ic">❤</span><span id="s-hearts">5</span></div>
+    <button class="icon-btn" id="profile-btn" title="내 성장" aria-label="내 성장">📈</button>
     <button class="icon-btn" id="theme-btn" title="테마 전환" aria-label="테마 전환">◐</button>
   </div>
 
+  <div class="daily" id="daily"></div>
+  <div class="roadmap" id="roadmap"></div>
   <div class="catbar" id="catbar"></div>
   <div class="langbar" id="langbar" role="tablist"></div>
   <div class="lab-title">🧪 실습실</div>
@@ -253,6 +289,9 @@
   <div id="course"></div>
   <div class="foot-hint" id="reset-hint">진행상황은 이 브라우저에 자동 저장돼요 · <a href="#" id="reset-link" style="color:var(--brand)">전체 초기화</a></div>
 </div>
+
+<div class="ovl" id="onboard"><div class="ovcard"></div></div>
+<div class="ovl" id="profile"><div class="ovcard" id="profile-body"></div></div>
 
 <!-- ================= LESSON ================= -->
 <div class="lesson" id="lesson">
@@ -1121,7 +1160,7 @@ dl:{name:"딥러닝",em:"🧠",color:"#d6336c",g:"linear-gradient(135deg,#d6336c
 
 /* ================= 상태 ================= */
 const MAX_HEARTS=5;
-const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[]};
+const DEF={xp:0,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10};
 let S=load();
 function load(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("coderun")||"{}"))}catch(e){return Object.assign({},DEF)}}
 function save(){localStorage.setItem("coderun",JSON.stringify(S))}
@@ -1183,7 +1222,8 @@ function renderCourse(){
   c.units.forEach((u,ui)=>{
     const head=document.createElement("div");
     head.className="unit-head"; head.style.background=c.g;
-    head.innerHTML=`<div><div class="k">유닛 ${ui+1}</div><h2>${u.title}</h2></div><div class="guide">${u.guide}</div>`;
+    const _lv=unitLevel(ui,c.units.length);
+    head.innerHTML=`<div><div class="k">유닛 ${ui+1} · Lv${_lv} ${LV_LABEL[_lv]}</div><h2>${u.title}</h2></div><div class="guide">${u.guide}</div>`;
     wrap.appendChild(head);
     const path=document.createElement("div"); path.className="path";
     u.lessons.forEach((les,li)=>{
@@ -1210,7 +1250,7 @@ function renderCourse(){
     });
     wrap.appendChild(path);
   });
-  paintStats(); paintReview();
+  paintStats(); paintReview(); renderDaily(); renderRoadmap();
 }
 
 /* ================= 레슨 진행 ================= */
@@ -1348,6 +1388,7 @@ function onCheck(){
 }
 function applyResult(ok, correctText, q){
   run.answered=true;
+  bumpDaily();
   const foot=$("foot"), msg=$("foot-msg"), chk=$("check");
   if(ok){ run.correct++; foot.className="foot good";
     msg.innerHTML=`<span class="em">🎉</span><div>정답이에요!</div>`;
@@ -1421,5 +1462,40 @@ function paintFree(){ const b=$("free-btn"); b.setAttribute("aria-pressed",S.fre
 $("free-btn").onclick=()=>{ S.freeMode=!S.freeMode; save(); paintFree(); renderCourse(); };
 
 /* ================= 시작 ================= */
+/* ================= 성장 시스템 (로드맵·레벨·일일목표·프로필) ================= */
+const COURSE_PATHS={
+ ai:{name:"AI·데이터 개발자",em:"🤖",tracks:["python","sql","numpy","pandas","stat","ml","mleval","dl"]},
+ fullstack:{name:"풀스택 개발자",em:"💻",tracks:["web","javascript","react","backend","sql","devops"]},
+ data:{name:"데이터 분석가",em:"📊",tracks:["python","sql","stat","pandas","numpy","ml"]},
+ free:{name:"자유 탐색",em:"🎯",tracks:[]}
+};
+const LV_LABEL=["","문법 이해","코드 읽기","응용·문제해결","내부 동작","실무·면접"];
+function unitLevel(ui,total){ const per=Math.max(1,Math.ceil(total/5)); return Math.min(5, Math.floor(ui/per)+1); }
+function trackProg(key){ const c=COURSES[key]; if(!c) return {d:0,t:0,pct:0}; let d=0,t=0; c.units.forEach((u,ui)=>u.lessons.forEach((l,li)=>{t++; if(S.done[key+"-"+ui+"-"+li])d++;})); return {d,t,pct:t?Math.round(d/t*100):0}; }
+function catOf(key){ const c=CATS.find(c=>c.tracks.includes(key)); return c?c.id:"lang"; }
+function gotoTrack(key){ if(!COURSES[key])return; curCat=catOf(key); curLang=key; renderCats(); renderLangs(); renderCourse(); try{window.scrollTo({top:0,behavior:"smooth"});}catch(e){window.scrollTo(0,0);} }
+function todayCount(){ if(S.dayDate!==today()){S.dayCount=0;S.dayDate=today();} return S.dayCount; }
+function bumpDaily(){ if(S.dayDate!==today()){S.dayCount=0;S.dayDate=today();} S.dayCount++; save(); }
+function renderDaily(){ const el=$("daily"); if(!el)return; const done=todayCount(),t=S.dailyTarget||10; const pct=Math.min(100,Math.round(done/t*100)); const hit=done>=t;
+  el.innerHTML=`<div class="dtop"><span>🔥 오늘 목표</span><span class="done">${hit?"완료! 🎉 계속 가요":done+" / "+t+" 문제"}</span></div><div class="dbar"><i style="width:${pct}%"></i></div>`; }
+function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const path=COURSE_PATHS[g];
+  if(g==="free"||!path.tracks.length){ el.innerHTML=`<div class="rtitle"><span>🎯 자유 탐색 중</span><button id="chg-goal">🚀 코스 선택</button></div>`; const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; return; }
+  const nodes=path.tracks.filter(k=>COURSES[k]).map(k=>{ const c=COURSES[k],pg=trackProg(k); const active=k===curLang?" active":""; return `<button class="rnode${active}" data-k="${k}"><div class="rem">${c.em}</div><div class="rnm">${c.name}</div><div class="rpct">${pg.pct}%</div><div class="rp"><i style="width:${pg.pct}%"></i></div></button>`; }).join("");
+  el.innerHTML=`<div class="rtitle"><span>${path.em} ${path.name} 코스</span><button id="chg-goal">변경</button></div><div class="rtrack">${nodes}</div>`;
+  el.querySelectorAll(".rnode").forEach(b=>b.onclick=()=>gotoTrack(b.dataset.k)); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; }
+function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
+  const opts=[["ai","🤖","AI·데이터 개발자","Python→SQL→NumPy→Pandas→통계→ML→딥러닝"],["fullstack","💻","풀스택 개발자","웹→JS→React→백엔드→DB→배포"],["data","📊","데이터 분석가","Python→SQL→통계→Pandas→ML"],["free","🎯","자유 탐색","코스 없이 원하는 트랙을 자유롭게"]];
+  card.innerHTML=`<h2>목표가 뭐예요?</h2><p class="sub">고르면 그 목표에 맞는 학습 코스를 짜드려요. 언제든 바꿀 수 있어요.</p>`+opts.map(o=>`<button class="goalbtn" data-g="${o[0]}"><span class="ge">${o[1]}</span><span><span class="gt">${o[2]}</span><span class="gd">${o[3]}</span></span></button>`).join("");
+  card.querySelectorAll(".goalbtn").forEach(b=>b.onclick=()=>{ S.goal=b.dataset.g; S.onboarded=true; save(); const p=COURSE_PATHS[S.goal]; o.classList.remove("on"); document.body.style.overflow=""; if(p&&p.tracks[0]&&COURSES[p.tracks[0]]) gotoTrack(p.tracks[0]); else renderRoadmap(); });
+  o.classList.add("on"); document.body.style.overflow="hidden"; }
+function openProfile(){ const o=$("profile"), body=$("profile-body");
+  const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const keys=(g!=="free"&&COURSE_PATHS[g].tracks.length)?COURSE_PATHS[g].tracks.filter(k=>COURSES[k]):["python","sql","javascript","pandas","ml"].filter(k=>COURSES[k]);
+  const rows=keys.map(k=>{ const c=COURSES[k],pg=trackProg(k); return `<div class="skill"><div class="sh"><span>${c.em} ${c.name}</span><span>${pg.pct}% · ${pg.d}/${pg.t}</span></div><div class="sb"><i style="width:${pg.pct}%;background:${c.color}"></i></div></div>`; }).join("");
+  body.innerHTML=`<h2>📈 내 성장</h2><p class="sub">완료 레슨 ${Object.keys(S.done).length}개 · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>${rows}<button class="ovclose" id="prof-close">닫기</button>`;
+  $("prof-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
+  o.classList.add("on"); document.body.style.overflow="hidden"; }
+$("profile-btn").onclick=openProfile;
+
 refillHearts(); applyTheme(S.theme); paintFree(); renderCats(); renderLangs(); renderCourse();
+if(!S.onboarded) openOnboard();
 </script>
