@@ -19,7 +19,7 @@ V2는 **단일 HTML 파일**로 동작하는 클라이언트 전용 앱입니다
 index.html          # 전부. HTML + CSS + JS + 데이터가 한 파일.
 ├─ <style>          # 반응형(320~440px 모바일 브레이크포인트 포함)
 ├─ 데이터 (const)
-│   ├─ COURSES      # 32트랙 × 유닛 × 레슨 × 문항(2,884)
+│   ├─ COURSES      # 32트랙 × 유닛 × 레슨 × 문항(2,891)
 │   ├─ SIMS         # Real Work 시뮬 101
 │   ├─ DIAGS        # 원인 추적 진단 12
 │   ├─ PROJECTS     # {ai, backend, fullstack} × 프로젝트(30)
@@ -111,7 +111,7 @@ phase.type: note | decide | build | web
 구버전 프로젝트는 `steps[]` → `projPhases(p)`가 phases로 합성. 완료 시 **스코어카드**(`SCORECARD`) → 등급 S/A/B/C + Senior Readiness % → `finishProject()`가 축 보상 지급. 프로젝트는 난이도 티어(`PROJ_TIER`: Beginner→Principal)를 가짐.
 
 ### (f) 직접 코딩 · Implementation Score
-`code` 문제에 `tests[]`(정확성)·`edge[]`(엣지)·`perf{setup,in,out,ms}`(성능)를 달면, 샌드박스 iframe(`testDoc`)이 사용자 코드를 실행해 **구현 점수**를 낸다: 정확성 40 · 엣지 20 · 성능 20(있을 때만·`setup`은 타이밍 제외) · 코드품질 20(간결성·`var`지양·디버그로그 린트). "작동하지만 O(n²)·품질 낮음 → 낮은 점수"를 실제로 구현. 게이트(정답 여부)는 정확성+엣지 전부 통과. 점수는 `S.implByK[k]`(문제별 최고점)에 저장돼 Passport **코딩 능력 분해**(Knowledge=coding축 / Implementation=챌린지 평균 / Debugging=debugging축 / Production=프로젝트 점수 평균)로 노출. 실행은 JS만 가능 — SQL은 V3(sql.js), Python은 V4(Pyodide/샌드박스).
+`code` 문제에 `tests[]`(정확성)·`edge[]`(엣지)·`perf{setup,in,out,ms}`(성능)를 달면, 샌드박스 iframe(`testDoc`)이 사용자 코드를 실행해 **구현 점수**를 낸다: 정확성 40 · 엣지 20 · 성능 20(있을 때만·`setup`은 타이밍 제외) · 코드품질 20(간결성·`var`지양·디버그로그 린트). "작동하지만 O(n²)·품질 낮음 → 낮은 점수"를 실제로 구현. 게이트(정답 여부)는 정확성+엣지 전부 통과. 점수는 `S.implByK[k]`(문제별 최고점)에 저장돼 Passport **코딩 능력 분해**(Knowledge=coding축 / Implementation=챌린지 평균 / Debugging=debugging축 / Production=프로젝트 점수 평균)로 노출. JS는 iframe에서 실행. **SQL은 sql.js(SQLite WASM 인라인)로 V2에서 실제 실행·채점**(결과셋 비교) — Python만 V4(Pyodide/샌드박스)로 남음.
 
 ### (e) 성장 루프 (프로젝트 → 약점 → 추천 → 재도전)
 플랫폼의 핵심 순환. 프로젝트 완료 시 `projReview(p, 스코어카드축, pct)`가 **프로젝트 요구 역량**(`projReqAxes` = skills→9축 + 티어별 기대치 `TIER_TARGET[lv]`)과 실제 점수를 비교해 **병목 축**을 뽑는다. 병목 축마다 `AXIS_REMEDY`가 구체적 **맞춤 학습**(트랙·원인추적·실무 시뮬)을 클릭 가능한 버튼으로 제시하고, 클릭하면 `gotoTrack`/`openSims`/`openDiags`로 이동 → 해당 트랙 상단 배너(`projectForTrack`)가 다시 그 프로젝트를 권해 루프가 닫힌다. 같은 엔진이 Developer Passport에도 `axisWeaknessHtml()`로 상시 노출(9축 최저 역량 기준).
