@@ -3465,6 +3465,20 @@ function renderRole(){ const el=$("rolechip"); if(!el)return; const r=roleOf(ski
 $("profile-btn").onclick=openProfile2;
 $("rolechip").onclick=openProfile2;
 
+/* 유닛을 난이도 오름차순으로 재정렬 — 입문 → 중급 → 심화 → 직접 코딩 (점점 어려워지게) */
+function unitDiff(t){ t=t||"";
+  if(/실행 채점|직접 코딩|직접 SQL|챌린지/.test(t)) return 95;   // 손으로 코딩 = 개념 학습 이후
+  if(/심화|시니어|스태프|Staff|Principal/.test(t)) return 90;
+  if(/분산|내부|바이트코드|CPython|GIL|동시성|비동기|아키텍처|메모리 관리|메모리 관리와|최적화|프로파일|스케일|샤딩|복제|일관성|트랜잭션 격리|이벤트 루프|렌더링|V8|프로토타입|가비지|프로토콜|보안/.test(t)) return 72;
+  if(/중급|전략|패턴|고차|데코레이터|제너레이터|클로저|정규표현식|타입힌트|매직 메서드|프로퍼티|이터레이터|복잡도|캐싱|벡터화|인덱스|조인|트랜잭션|테스트|디버깅|예외/.test(t)) return 48;
+  if(/첫걸음|첫 걸음|입문|시작하기|하루/.test(t)) return 0;      // 절대 입문 = 맨 앞
+  if(/기초|기본|변수|자료형|반복|다루기|조회|첫/.test(t)) return 14;
+  return 30;
+}
+function reorderUnits(){ for(const k in COURSES){ const u=COURSES[k].units; if(!Array.isArray(u)||u.length<2) continue;
+  const idx=u.map((x,i)=>[i,unitDiff(x.title)]); idx.sort((a,b)=> (a[1]-b[1]) || (a[0]-b[0]) );
+  COURSES[k].units=idx.map(pr=>u[pr[0]]); } }
+reorderUnits();
 refillHearts(); ensureSkills(); applyTheme(S.theme); paintFree(); renderCats(); renderLangs(); renderCourse(); renderRole(); renderHero();
 if(!S.onboarded) openOnboard();
 if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEventListener("load",function(){ navigator.serviceWorker.register("/sw.js").catch(function(){}); }); }
