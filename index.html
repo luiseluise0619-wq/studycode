@@ -1,6 +1,6 @@
 <title>코드런 · CodeRun</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="description" content="주니어를 시니어로 훈련시키는 개발자 성장 시뮬레이터 — 실무 판단·직접 코딩·SQL·Python 실행" />
+<meta name="description" content="실행하며 배우는 개발 문제집 + 실무 판단 시뮬레이터 — SQL·Python·JS 실제 실행, 장애·설계 시뮬레이션. 시니어로 가는 길의 부교재(실전과 병행)." />
 <link rel="manifest" href="/manifest.webmanifest" />
 <meta name="theme-color" content="#0e141c" id="theme-color-meta" />
 <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -2233,31 +2233,40 @@ function openRun(){
 }
 /* ---- 오답노트 (실습실) ---- */
 function wKey(q){ return (q.q||"")+"|"+(q.code||"")+"|"+(q.o?q.o.join("~"):""); }
+/* ── 간격 반복 (Leitner SRS): 맞히면 다음 상자로 승급(복습 간격 늘어남), 틀리면 리셋 ── */
+const SRS_DAYS=[1,3,7,16,35,90];
+function srsAddDays(d,n){ try{ const t=new Date((d||today())+"T00:00:00"); t.setDate(t.getDate()+n); return t.toISOString().slice(0,10); }catch(e){ return today(); } }
+function srsDue(w,t){ return !w.due || w.due<=(t||today()); }
+function dueCount(){ if(!Array.isArray(S.wrongs))return 0; const t=today(); return S.wrongs.filter(w=>srsDue(w,t)).length; }
 function recordWrong(lang,q){
   if(!Array.isArray(S.wrongs)) S.wrongs=[];
   const k=wKey(q);
-  if(S.wrongs.some(w=>wKey(w.q)===k)) return;
-  S.wrongs.push({lang,q});
-  if(S.wrongs.length>80) S.wrongs.shift();
-  save();
+  const ex=S.wrongs.find(w=>wKey(w.q)===k);
+  if(ex){ ex.box=0; ex.due=today(); }          // 다시 틀림 → 상자 0으로 리셋
+  else { S.wrongs.push({lang,q,box:0,due:today()}); if(S.wrongs.length>200) S.wrongs.shift(); }
+  save(); paintReview();
 }
-function removeWrong(q){
+function srsPromote(q){                         // 복습에서 맞힘 → 다음 상자로 승급
   if(!Array.isArray(S.wrongs)) return;
-  const k=wKey(q);
-  const before=S.wrongs.length;
-  S.wrongs=S.wrongs.filter(w=>wKey(w.q)!==k);
-  if(S.wrongs.length!==before){ save(); paintReview(); }
+  const k=wKey(q); const w=S.wrongs.find(x=>wKey(x.q)===k); if(!w) return;
+  w.box=(w.box||0)+1;
+  if(w.box>=SRS_DAYS.length){ S.wrongs=S.wrongs.filter(x=>wKey(x.q)!==k); }  // 졸업 → 노트에서 제거
+  else { w.due=srsAddDays(today(), SRS_DAYS[w.box-1]); }
+  save(); paintReview();
 }
 function paintReview(){
   const b=$("review-btn"); if(!b) return;
-  const n=Array.isArray(S.wrongs)?S.wrongs.length:0;
-  b.innerHTML=`오답노트${n?`<span class="badge">${n}</span>`:""}`;
+  const n=Array.isArray(S.wrongs)?S.wrongs.length:0, due=dueCount();
+  b.innerHTML=`오답노트${due?`<span class="badge">${due}</span>`:(n?`<span class="badge" style="background:var(--line-strong)">${n}</span>`:"")}`;
 }
 function startReview(){
   if(!Array.isArray(S.wrongs)||!S.wrongs.length){
-    toast("오답노트가 아직 비어 있어요. 틀린 문제가 여기 모이면 골라서 다시 풀 수 있어요."); return; }
-  const picked=shuffle(S.wrongs.slice()).slice(0,15).map(w=>w.q);
-  const les={title:"오답노트 복습",xp:10,q:picked};
+    toast("오답노트가 아직 비어 있어요. 틀린 문제가 여기 모이면 간격 반복으로 다시 풀 수 있어요."); return; }
+  const t=today();
+  const dueItems=S.wrongs.filter(w=>srsDue(w,t));
+  const pool=dueItems.length?dueItems:S.wrongs.slice();   // 복습 기한 지난 것 우선, 없으면 전체
+  const picked=shuffle(pool.slice()).slice(0,15).map(w=>w.q);
+  const les={title:dueItems.length?"오늘 복습 (간격 반복)":"오답노트 복습",xp:10,q:picked};
   run={lang:curLang,les,i:0,correct:0,total:picked.length,hearts:S.hearts,id:null,color:"#e0533d",free:true,review:true};
   openRun();
 }
@@ -2520,7 +2529,7 @@ function applyResult(ok, correctText, q){
     awardForAnswer(run.lang, q);
     msg.innerHTML=`<span class="em">🎉</span><div>정답이에요!</div>`;
     chk.className="btn good";
-    if(run.review) removeWrong(q);
+    if(run.review) srsPromote(q);
   } else {
     recordWrong(run.lang, q);
     if(!run.free) run.hearts--;
@@ -2645,8 +2654,8 @@ function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
   const opts=[["ai","🤖","AI 엔지니어","Python→SQL→NumPy→Pandas→통계→ML→딥러닝"],["ds","📊","데이터 사이언티스트","Python→SQL→통계→NumPy→Pandas→ML→평가"],["fullstack","💻","풀스택 개발자","웹→JS→React→백엔드→DB→배포"],["backend","🖥️","백엔드 개발자","Python→SQL→백엔드→보안→네트워크→DevOps"],["free","🎯","자유 탐색","코스 없이 원하는 트랙을 자유롭게"]];
   card.innerHTML=`<div class="onb-hero">
       <div class="onb-logo"><span class="onb-mk">&lt;/&gt;</span> 코드런</div>
-      <h2 class="onb-title">주니어에서 시니어까지,<br>판단으로 크는 개발자 훈련</h2>
-      <p class="sub">문제 풀이 앱이 아니라 — 실무 판단·직접 코딩·SQL 실행·프로젝트로 역량을 키우는 시뮬레이터예요. 목표를 고르면 맞춤 코스를 짜드려요.</p>
+      <h2 class="onb-title">코드를 직접 돌려보고,<br>실무 판단을 연습하는 곳</h2>
+      <p class="sub">솔직히 — 이 앱만으로 시니어가 되진 않아요. 시니어는 실전에서 만들어집니다. 이건 그 <b>부교재</b>예요: SQL·Python·JS를 실제로 실행하고, 장애·설계 결정을 시뮬레이션하며 지식과 판단을 빠르게 채웁니다. 실전(사이드 프로젝트·회사 코드)과 병행하세요.</p>
     </div>
     <div class="onb-eyebrow">목표 선택 · 언제든 변경 가능</div>`+opts.map(o=>`<button class="goalbtn" data-g="${o[0]}"><span class="ge">${o[1]}</span><span><span class="gt">${o[2]}</span><span class="gd">${o[3]}</span></span><span class="go-arrow">→</span></button>`).join("");
   card.querySelectorAll(".goalbtn").forEach(b=>b.onclick=()=>{ S.goal=b.dataset.g; S.onboarded=true; save(); const p=COURSE_PATHS[S.goal]; o.classList.remove("on"); document.body.style.overflow=""; if(p&&p.tracks[0]&&COURSES[p.tracks[0]]) gotoTrack(p.tracks[0]); else renderRoadmap(); });
