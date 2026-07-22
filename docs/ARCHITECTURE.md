@@ -19,7 +19,7 @@ V2는 **단일 HTML 파일**로 동작하는 클라이언트 전용 앱입니다
 index.html          # 전부. HTML + CSS + JS + 데이터가 한 파일.
 ├─ <style>          # 반응형(320~440px 모바일 브레이크포인트 포함)
 ├─ 데이터 (const)
-│   ├─ COURSES      # 32트랙 × 유닛 × 레슨 × 문항(2,800)
+│   ├─ COURSES      # 32트랙 × 유닛 × 레슨 × 문항(2,884)
 │   ├─ SIMS         # Real Work 시뮬 101
 │   ├─ DIAGS        # 원인 추적 진단 12
 │   ├─ PROJECTS     # {ai, backend, fullstack} × 프로젝트(30)
