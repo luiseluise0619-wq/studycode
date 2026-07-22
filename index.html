@@ -318,6 +318,7 @@
     <div class="reward xp"><div class="rv" id="done-xp">+0</div><div class="rl">획득 XP</div></div>
     <div class="reward flame"><div class="rv" id="done-acc">0%</div><div class="rl">정답률</div></div>
   </div>
+  <button class="btn wide" id="done-review" style="max-width:320px;display:none;margin:0 auto 10px;background:#e0533d;box-shadow:0 3px 0 #b23a28">🔁 이 유닛 복습하기</button>
   <button class="btn wide" id="done-next" style="max-width:320px">계속하기</button>
 </div>
 
@@ -1273,6 +1274,14 @@ function startRandom(lang){
   run={lang,les,i:0,correct:0,total:picked.length,hearts:S.hearts,id:null,color:c.color,free:S.freeMode};
   openRun();
 }
+function startUnitReview(lang,ui){
+  const c=COURSES[lang], unit=c.units[ui]; const pool=[];
+  unit.lessons.forEach(l=>l.q.forEach(q=>pool.push(q)));
+  const picked=shuffle(pool.slice()).slice(0,12);
+  const les={title:unit.title+" 복습",xp:12,q:picked};
+  run={lang,les,i:0,correct:0,total:picked.length,hearts:S.hearts,id:null,color:c.color,free:true};
+  openRun();
+}
 function openRun(){
   try{history.pushState({cr:1},"")}catch(e){}
   $("lesson").classList.add("on");
@@ -1430,6 +1439,18 @@ function endLesson(passed){
     $("done-sub").textContent=run.correct===run.total?"만점이에요! 보너스 XP 획득 🎁":"잘했어요, 계속 이어가 봐요.";
     $("done-xp").textContent="+"+gained;
     $("done-acc").textContent=acc+"%";
+    // 유닛 완료 시 복습 유도 (간격 반복)
+    const rev=$("done-review"); const rlang=run.lang, rui=run.ui;
+    let unitDone=false;
+    if(run.id && rui!=null && COURSES[rlang]&&COURSES[rlang].units[rui]){
+      unitDone=COURSES[rlang].units[rui].lessons.every((l,li)=>S.done[rlang+"-"+rui+"-"+li]);
+    }
+    if(unitDone){
+      $("done-emoji").textContent="🎓";
+      $("done-title").textContent="유닛 완료!";
+      $("done-sub").textContent="복습으로 확실히 다지면 오래 기억돼요.";
+      rev.style.display=""; rev.onclick=()=>{ $("done").classList.remove("on"); startUnitReview(rlang,rui); };
+    } else { rev.style.display="none"; }
     $("done").classList.add("on");
     $("done-next").onclick=()=>{ $("done").classList.remove("on"); document.body.style.overflow=""; renderLangs(); renderCourse(); };
   } else {
