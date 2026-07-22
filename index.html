@@ -552,6 +552,47 @@
   .reward{border-radius:14px; box-shadow:var(--shadow)}
   .reward .rv{font-variant-numeric:tabular-nums}
   .reward .rl{font-family:var(--mono); letter-spacing:.04em}
+
+  /* ---------- overlay screens: unified product chrome ---------- */
+  .ovh{font-family:var(--mono); text-transform:uppercase; font-size:11px; letter-spacing:.1em;
+    color:var(--ink-soft); font-weight:700; margin:2px 0 6px}
+  .ovtitle{font-size:22px; font-weight:800; letter-spacing:-.03em; color:var(--ink); margin:0 0 6px; line-height:1.15}
+  #profile-body h2{font-size:22px; font-weight:800; letter-spacing:-.03em; margin:2px 0 6px}
+  /* secondary (bordered) variant of the primary action button — kills inline color tells */
+  .ovclose.alt{background:var(--card); color:var(--ink); border:1px solid var(--line)}
+  .ovclose.alt:active{background:var(--bg-soft)}
+  /* hub navigation rows — replaces stacked colored buttons */
+  .hubrow{display:flex; align-items:center; gap:12px; width:100%; padding:15px 16px; margin-top:8px;
+    border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink);
+    font-weight:700; font-size:14.5px; text-align:left; cursor:pointer; transition:border-color .12s}
+  .hubrow:hover{border-color:var(--brand)}
+  .hubrow .hb-em{font-size:19px; line-height:1; flex:0 0 auto}
+  .hubrow .hb-t{display:flex; flex-direction:column; gap:2px; min-width:0}
+  .hubrow .hb-s{font-size:12px; color:var(--ink-soft); font-weight:500; white-space:normal; line-height:1.4}
+  .hubrow .hb-go{margin-left:auto; color:var(--ink-soft); font-weight:800; font-size:15px; flex:0 0 auto}
+  .hubrow:hover .hb-go{color:var(--brand)}
+  /* SQL result: theme-aware surface (was hardcoded dark) */
+  .sqltbl{border-collapse:collapse; white-space:nowrap}
+  .sqltbl th{text-align:left; padding:2px 12px 5px 0; border-bottom:1px solid var(--ink-soft);
+    font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft)}
+  .sqltbl td{padding:3px 12px 3px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums}
+  .sql-meta{color:var(--ink-soft); font-size:11.5px; margin-top:5px; font-family:var(--mono)}
+  .sql-err{color:#e0533d; font-weight:600}
+  .sql-wait{color:var(--ink-soft); font-family:var(--mono); font-size:12px}
+
+  /* ---------- flatten primary actions: one ink CTA language, no chunky 3D / gradients ---------- */
+  .btn{background:var(--ink); color:var(--bg); box-shadow:none; border-radius:12px; letter-spacing:-.01em; transition:transform .08s, background .12s}
+  .btn:active{transform:translateY(1px); box-shadow:none}
+  .btn:disabled{background:var(--line-strong); color:var(--bg); box-shadow:none}
+  .btn.good{background:var(--good); color:#fff; box-shadow:none}
+  .btn.bad{background:var(--bad); color:#fff; box-shadow:none}
+  .lab-cta{background:var(--ink); color:var(--bg); box-shadow:none; border-radius:12px}
+  .lab-cta:active{transform:translateY(1px); box-shadow:none}
+  #random-btn{background:var(--ink); color:var(--bg); border-color:transparent; box-shadow:none}
+  .pbtn.ghost[aria-pressed="true"]{box-shadow:none}
+  .node{box-shadow:0 2px 0 rgba(0,0,0,.07)}
+  .node:active{box-shadow:0 1px 0 rgba(0,0,0,.07)}
+  .node.locked{box-shadow:0 2px 0 var(--line)}
 </style>
 
 <!-- ================= HOME ================= -->
@@ -613,7 +654,7 @@
     <div class="reward xp"><div class="rv" id="done-xp">+0</div><div class="rl">획득 XP</div></div>
     <div class="reward flame"><div class="rv" id="done-acc">0%</div><div class="rl">정답률</div></div>
   </div>
-  <button class="btn wide" id="done-review" style="max-width:320px;display:none;margin:0 auto 10px;background:#e0533d;box-shadow:0 3px 0 #b23a28">🔁 이 유닛 복습하기</button>
+  <button class="btn wide" id="done-review" style="max-width:320px;display:none;margin:0 auto 10px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:none">이 유닛 복습하기</button>
   <button class="btn wide" id="done-next" style="max-width:320px">계속하기</button>
 </div>
 
@@ -2095,16 +2136,17 @@ function sqlRun(schema, query){
   }).catch(function(e){ return {error:String(e&&e.message||e)}; });
 }
 function sqlTable(cols,rows){
-  if(!cols||!cols.length) return '<span style="opacity:.6">결과 컬럼 없음</span>';
-  var h='<table style="border-collapse:collapse;white-space:nowrap"><tr>'+cols.map(function(c){return '<th style="text-align:left;padding:2px 10px 4px 0;border-bottom:1px solid #3a3f52">'+escHtml(String(c))+'</th>';}).join('')+'</tr>';
-  rows.slice(0,50).forEach(function(r){ h+='<tr>'+r.map(function(v){return '<td style="padding:2px 10px 2px 0;border-bottom:1px solid #23273a">'+escHtml(v==null?'NULL':String(v))+'</td>';}).join('')+'</tr>'; });
-  if(rows.length>50) h+='<tr><td colspan="'+cols.length+'" style="opacity:.6;padding:3px 0">… '+(rows.length-50)+'행 더</td></tr>';
+  if(!cols||!cols.length) return '<span class="sql-meta">결과 컬럼 없음</span>';
+  var h='<table class="sqltbl"><tr>'+cols.map(function(c){return '<th>'+escHtml(String(c))+'</th>';}).join('')+'</tr>';
+  rows.slice(0,50).forEach(function(r){ h+='<tr>'+r.map(function(v){return '<td>'+escHtml(v==null?'NULL':String(v))+'</td>';}).join('')+'</tr>'; });
+  if(rows.length>50) h+='<tr><td colspan="'+cols.length+'" class="sql-meta" style="padding-top:4px">… '+(rows.length-50)+'행 더</td></tr>';
   return h+'</table>';
 }
-function sqlPreview(q, query){ var out=$("sqlout"); if(!out)return; out.textContent="실행 중…";
+function sqlPreview(q, query){ var out=$("sqlout"); if(!out)return;
+  out.innerHTML='<span class="sql-wait">'+(window.__sqlReady?'실행 중…':'SQLite 엔진 준비 중…')+'</span>';
   sqlRun(q.schema, query).then(function(res){ var o=$("sqlout"); if(!o)return;
-    if(res.error){ o.innerHTML='<span style="color:#ff8f6b">✗ '+escHtml(res.error)+'</span>'; return; }
-    o.innerHTML=sqlTable(res.cols,res.rows)+'<div style="opacity:.55;margin-top:4px">'+res.rows.length+'행</div>';
+    if(res.error){ o.innerHTML='<span class="sql-err">✗ '+escHtml(res.error)+'</span>'; return; }
+    o.innerHTML=sqlTable(res.cols,res.rows)+'<div class="sql-meta">'+res.rows.length+'행</div>';
   });
 }
 function setupSql(q){ var ta=$("sqlcode"); if(!ta)return; ta.value=q.src||""; var tmr;
@@ -2324,8 +2366,8 @@ function openDiagResult(res){
   const rec=weak.slice(0,3).map(e=>COURSES[e.k].name).join(" → ");
   body.innerHTML=`<h2>🩺 실력 진단 결과</h2><p class="sub">종합 ${overall}% · 현재 단계: <b>AI ${stageOf(overall)}</b></p>${rows}
     <div style="margin:6px 0 14px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:700;font-size:13.5px;color:var(--ink)">📌 추천 학습 순서 (약한 것부터)<br><span style="color:var(--brand);font-weight:800">${rec||"-"}</span></div>
-    <button class="ovclose" id="diag-plan" style="background:#5b6cff;margin-bottom:8px">📅 6개월 커리큘럼 생성</button>
-    <button class="ovclose" id="diag-go">가장 약한 영역 학습하기</button>`;
+    <button class="ovclose" id="diag-go" style="margin-bottom:8px">가장 약한 영역 학습하기</button>
+    <button class="ovclose alt" id="diag-plan">6개월 커리큘럼 생성</button>`;
   $("diag-plan").onclick=()=>{ S.planStart=today(); save(); o.classList.remove("on"); document.body.style.overflow=""; openCurriculum(); };
   $("diag-go").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; if(weak[0]) gotoTrack(weak[0].k); };
   o.classList.add("on"); document.body.style.overflow="hidden";
@@ -2401,7 +2443,7 @@ function codingBreakdownHtml(){
   const prod=ps.length?Math.round(ps.reduce((a,b)=>a+b,0)/ps.length):null;
   const items=[["Knowledge (아는가)","🧠",Math.round(S.skills.coding||0)],["Implementation (만드는가)","🛠️",implAvg],["Debugging (고치는가)","🐛",Math.round(S.skills.debugging||0)],["Production (운영하는가)","🚀",prod]];
   const bars=items.map(it=>{ const n=it[0],e=it[1],v=it[2]; const val=v==null?0:v, show=v==null?"—":(v+"/100");
-    return `<div style="margin:5px 0"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span>${e} ${n}</span><span>${show}</span></div><div style="height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:2px"><i style="display:block;height:100%;width:${val}%;background:linear-gradient(90deg,#3b7dd8,#5b6cff)"></i></div></div>`;
+    return `<div style="margin:5px 0"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span>${e} ${n}</span><span>${show}</span></div><div style="height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:2px"><i style="display:block;height:100%;width:${val}%;background:var(--brand)"></i></div></div>`;
   }).join("");
   return `<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line)"><div style="font-weight:800;margin-bottom:2px">💻 코딩 능력 분해</div><div style="font-size:12px;opacity:.7;margin-bottom:6px">"얼마나 아는가"와 "얼마나 만들 수 있는가"는 다릅니다. 직접 코딩(테스트 통과)이 Implementation을 올립니다.</div>${bars}</div>`;
 }
@@ -2718,8 +2760,8 @@ function finishProject(grade,pct,gains){
     <div style="margin:6px 0"><div style="font-size:13px;opacity:.75">💪 강점</div>${strongHtml}</div>
     <div style="margin:6px 0"><div style="font-size:13px;opacity:.75">🩹 약점 (이 프로젝트 요구 대비)</div>${weakHtml}</div>
     ${recoSection}
-    <button class="ovclose" id="lab-again" style="background:#5b6cff;margin-top:12px;margin-bottom:8px">🔁 이 프로젝트 재도전</button>
-    <button class="ovclose" id="lab-more">다른 프로젝트</button>`;
+    <button class="ovclose" id="lab-again" style="margin-top:12px;margin-bottom:8px">이 프로젝트 재도전</button>
+    <button class="ovclose alt" id="lab-more">다른 프로젝트</button>`;
   const shut=()=>{ $("lab").classList.remove("on"); $("proj").classList.remove("on"); document.body.style.overflow=""; };
   $("lab-body").querySelectorAll("[data-reco]").forEach(b=>b.onclick=()=>{ const k=b.dataset.reco,v=b.dataset.val; shut();
     if(k==="track") gotoTrack(v); else if(k==="sim") openSims(); else if(k==="diag") openDiags(); });
@@ -3027,8 +3069,8 @@ function pickDiagCause(i){ const d=dg.d, o=d.opts[i];
   const body=$("profile-body");
   body.innerHTML=`<div class="simtop"><span>${d.em} ${d.title}</span><button class="labx" id="dg-x">✕</button></div>
     <div class="simfb ${o.best?"good":"bad"}">${o.best?"✅ 정확한 진단!":"❌ 오진 —"} ${nl2br(o.fb)}</div><div class="fxrow">${fx}</div>
-    <button class="ovclose" id="dg-retry" style="background:#5b6cff;margin-bottom:8px">🔁 다시 진단</button>
-    <button class="ovclose" id="dg-more">다른 사건</button>`;
+    <button class="ovclose" id="dg-retry" style="margin-bottom:8px">다시 진단</button>
+    <button class="ovclose alt" id="dg-more">다른 사건</button>`;
   $("dg-x").onclick=openDiags; $("dg-retry").onclick=()=>startDiag(d.id); $("dg-more").onclick=openDiags;
   $("profile").scrollTop=0;
 }
@@ -3078,8 +3120,8 @@ function endSim(){ const s=sim.s, body=$("profile-body");
    <div class="simfb ${grade==="S"||grade==="A"?"good":"mid"}">${grade==="S"?"완벽한 판단이었습니다. 시니어의 의사결정입니다.":grade==="A"?"좋은 판단입니다. 한두 결정만 더 다듬으면 완벽해요.":grade==="B"?"방향은 맞지만 더 나은 선택지가 있었어요. 피드백을 복기하세요.":"몇몇 결정이 상황을 악화시켰어요. 피드백을 보고 다시 도전!"}</div>
    <div style="margin:10px 0 4px;font-weight:800;color:var(--ink)">역량 변화</div>${gains}
    <div style="margin:8px 0;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:800;color:var(--ink)">현재 등급: ${r.em} ${r.name} <span style="color:var(--ink-soft);font-weight:600">(종합 ${r.avg})</span></div>
-   <button class="ovclose" id="sim-retry" style="background:#5b6cff;margin-bottom:8px">🔁 같은 시나리오 다시</button>
-   <button class="ovclose" id="sim-more">다른 시뮬레이션</button>`;
+   <button class="ovclose" id="sim-retry" style="margin-bottom:8px">같은 시나리오 다시</button>
+   <button class="ovclose alt" id="sim-more">다른 시뮬레이션</button>`;
  $("sim-retry").onclick=()=>startSim(s.id);
  $("sim-more").onclick=openSims;
  $("profile").scrollTop=0;
@@ -3087,16 +3129,17 @@ function endSim(){ const s=sim.s, body=$("profile-body");
 function openProfile2(){ const o=$("profile"), body=$("profile-body");
  ensureSkills(); const r=roleOf(skillAvg()); const nx=nextRole(skillAvg());
  const done=Object.keys(S.done).length;
- body.innerHTML=`<h2>🎖️ Developer Passport</h2>
-  <div class="rolebox"><div class="rolebig">${r.em} ${r.name}</div><div class="rolesub">종합 역량 ${r.avg}/100 ${nx?`· 다음 <b>${nx.name}</b>까지 +${nx.need}`:"· 최고 등급 🎉"}</div></div>
+ body.innerHTML=`<div class="ovh">Developer Passport</div><h2>${r.em} ${r.name}</h2>
+  <div class="rolebox"><div class="rolebig">종합 역량 ${r.avg}<span style="font-weight:700;opacity:.8">/100</span></div><div class="rolesub">${nx?`다음 <b>${nx.name}</b>까지 +${nx.need}`:"최고 등급 도달"}</div></div>
   ${radarSVG()}
-  <div style="margin:8px 0 4px;font-weight:800;color:var(--ink)">9축 역량</div>${skillBars()}
-  <p class="sub" style="margin:12px 0 8px">완료 레슨 ${done} · ⭐ ${fmt(S.xp)} XP · 🔥 ${S.streak}일 · 📓 오답 ${(S.wrongs||[]).length}</p>
-  <button class="ovclose" id="p2-sim" style="background:#e0533d;margin-bottom:8px">🏢 실무 시뮬레이션</button>
-  <button class="ovclose" id="p2-cause" style="background:#0ea5a5;margin-bottom:8px">🔍 원인 추적 (진단)</button>
-  <button class="ovclose" id="p2-diag" style="background:#5b6cff;margin-bottom:8px">🩺 실력 진단</button>
-  <button class="ovclose" id="p2-proj" style="background:#1aa38a;margin-bottom:8px">🚀 프로젝트 미션</button>
-  <button class="ovclose" id="p2-close">닫기</button>`;
+  <div class="ovh" style="margin-top:14px">9축 역량</div>${skillBars()}
+  <p class="sub" style="margin:12px 0 6px">완료 레슨 ${done} · ${fmt(S.xp)} XP · 연속 ${S.streak}일 · 오답 ${(S.wrongs||[]).length}</p>
+  <div class="ovh" style="margin-top:16px">훈련 모드</div>
+  <button class="hubrow" id="p2-sim"><span class="hb-em">🏢</span><span class="hb-t"><span>실무 시뮬레이션</span><span class="hb-s">현장의 어려운 결정을 반복 — 9축에 반영</span></span><span class="hb-go">→</span></button>
+  <button class="hubrow" id="p2-cause"><span class="hb-em">🔍</span><span class="hb-t"><span>원인 추적</span><span class="hb-s">증상만 보고 근본 원인을 규명</span></span><span class="hb-go">→</span></button>
+  <button class="hubrow" id="p2-diag"><span class="hb-em">🩺</span><span class="hb-t"><span>실력 진단</span><span class="hb-s">짧은 진단으로 현재 위치 확인</span></span><span class="hb-go">→</span></button>
+  <button class="hubrow" id="p2-proj"><span class="hb-em">🚀</span><span class="hb-t"><span>프로젝트 미션</span><span class="hb-s">요구사항부터 운영·장애까지 8단계</span></span><span class="hb-go">→</span></button>
+  <button class="ovclose alt" id="p2-close" style="margin-top:16px">닫기</button>`;
  $("p2-sim").onclick=openSims;
  $("p2-cause").onclick=openDiags;
  $("p2-diag").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; startDiagnostic(); };

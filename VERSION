@@ -4,7 +4,7 @@ Status: evolving (V2.0 milestone 2026-07-22, actively extended since)
 단일 HTML 오프라인 PWA. 개발자 훈련 시뮬레이터.
 
 Contents:
-- 32 tracks / 2,891 questions   (Python 705 · SQL 572 중심)
+- 32 tracks / 2,907 questions   (Python 705 · SQL 572 중심)
 - 직접 코딩 99챌린지 (Implementation Score: 정확성·엣지·성능·품질) — JS/알고리즘
 - 직접 SQL 실행 채점 (sql.js SQLite WASM 인라인) — JOIN·집계·윈도우·CTE
 - Real Work 시뮬레이션 101       (장애30·리뷰20·기술선택30·이해관계자·프로덕트·윤리)
