@@ -1,0 +1,23 @@
+CodeRun V2.x — Developer Growth Simulator
+Status: evolving (V2.0 milestone 2026-07-22, actively extended since)
+
+단일 HTML 오프라인 PWA. 개발자 훈련 시뮬레이터.
+
+Contents:
+- 32 tracks / 2,907 questions   (Python 705 · SQL 572 중심)
+- 직접 코딩 99챌린지 (Implementation Score: 정확성·엣지·성능·품질) — JS/알고리즘
+- 직접 SQL 실행 채점 (sql.js SQLite WASM 인라인) — JOIN·집계·윈도우·CTE
+- Real Work 시뮬레이션 101       (장애30·리뷰20·기술선택30·이해관계자·프로덕트·윤리)
+- 원인 추적 진단 12              (불완전 정보 → 근본원인, red herring 포함)
+- 프로젝트 워크스페이스 30       (8단계 라이프사이클 + 연쇄 장애 + 성장 루프)
+- 9축 평가 엔진 + Developer Passport (코딩 능력 분해: Knowledge/Implementation/Debugging/Production)
+- AI 코드 멘토 (V4 · BYOK · 모델 무관: Gemini/OpenAI/Claude) — 직접 코딩·SQL 후 시니어 기준 리뷰
+- 데이터 이식성: 진행상황 백업/복원 (JSON 내보내기·가져오기)
+- 제품급 UI/UX 리디자인 (히어로 홈·브랜디드 온보딩·설계된 토스트/모달·평면 잉크 CTA)
+
+Docs:
+- README.md              제품 개요 · 트랙별 문항 수
+- docs/ARCHITECTURE.md   V2 내부 구조 (데이터 모델 · 엔진 · 상태)
+- docs/V3_DESIGN.md      V3 설계도 (DB 스키마 · REST API · 코드실행/프로젝트 모드 · 에디터 선택)
+
+Next: V3 (계정 · 클라우드 저장 · 성장 분석 · 프로젝트 평가) — 별도 백엔드 레포.
