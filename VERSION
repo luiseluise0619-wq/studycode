@@ -5,6 +5,7 @@ Status: evolving (V2.0 milestone 2026-07-22, actively extended since)
 
 Contents:
 - 32 tracks / 3,240 questions   (Python 705 · SQL 572 중심)
+- 개념(이론) 프라이머 279유닛: 문제 전에 개념 먼저 (요약·핵심 설명·예시 코드·기억할 점 → "문제 풀기")
 - 성장 로드맵 (마일스톤 프로그램): 입문→Junior→Mid→Senior→Staff→Principal, 실제 완료 마일스톤으로 단계 잠금 해제 (지식·직접코딩·시뮬/진단·프로젝트)
 - 직접 코딩 99챌린지 (Implementation Score: 정확성·엣지·성능·품질) — JS/알고리즘
 - 직접 SQL 실행 채점 (sql.js SQLite WASM 인라인) — JOIN·집계·윈도우·CTE
