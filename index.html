@@ -1,6 +1,6 @@
 <title>코드런 · CodeRun</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="description" content="실행하며 배우는 개발 문제집 + 실무 판단 시뮬레이터 — SQL·Python·JS 실제 실행, 장애·설계 시뮬레이션. 시니어로 가는 길의 부교재(실전과 병행)." />
+<meta name="description" content="입문에서 시니어까지, 하나의 프로그램. 단계별 마일스톤(지식·직접 코딩·실무 판단·프로젝트)을 실제로 해내며 레벨업. SQL·Python·JS 브라우저 실행, 장애·설계 시뮬레이션." />
 <link rel="manifest" href="/manifest.webmanifest" />
 <meta name="theme-color" content="#0e141c" id="theme-color-meta" />
 <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -586,6 +586,30 @@
   .pathbtns{display:flex; flex-wrap:wrap; gap:7px; margin-top:10px}
   .pathbtn{border:1px solid var(--line); background:var(--bg-soft); color:var(--ink); border-radius:9px; padding:8px 12px; font-size:12.5px; font-weight:700; cursor:pointer}
   .pathbtn:hover{border-color:var(--brand); color:var(--brand)}
+  /* mastery requirement checklist */
+  .preqs{margin-top:11px; display:flex; flex-direction:column; gap:2px}
+  .preq{display:flex; align-items:center; gap:9px; padding:8px 4px; border-top:1px solid var(--line); cursor:pointer; text-align:left; background:none; width:100%}
+  .preq:first-child{border-top:none}
+  .preq-ic{flex:0 0 auto; width:19px; height:19px; border-radius:50%; border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; color:var(--ink-soft)}
+  .preq.ok .preq-ic{background:var(--good); border-color:var(--good); color:#fff}
+  .preq-main{flex:1 1 auto; min-width:0}
+  .preq-lbl{font-size:12.7px; font-weight:700; color:var(--ink); line-height:1.35}
+  .preq.ok .preq-lbl{color:var(--ink-soft)}
+  .preq-mini{height:4px; border-radius:3px; background:var(--line); overflow:hidden; margin-top:5px}
+  .preq-mini>i{display:block; height:100%; background:var(--brand)}
+  .preq.ok .preq-mini>i{background:var(--good)}
+  .preq-n{flex:0 0 auto; font-family:var(--mono); font-size:11px; font-weight:800; color:var(--ink-soft)}
+  .preq-go{flex:0 0 auto; color:var(--ink-soft); font-weight:800; font-size:13px}
+  .preq:hover .preq-go{color:var(--brand)}
+  .pstage.locked{opacity:.55}
+  .pstage.locked .preq{cursor:default}
+  .path-prog{border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:10px 0 2px; background:var(--bg-soft)}
+  .path-prog-t{display:flex; justify-content:space-between; align-items:baseline; font-weight:800; font-size:13.5px}
+  .path-prog-n{font-family:var(--mono); color:var(--brand)}
+  .path-prog-bar{height:8px; border-radius:5px; background:var(--line); overflow:hidden; margin-top:9px; display:flex; gap:3px}
+  .path-prog-bar>i{flex:1; background:var(--line)}
+  .path-prog-bar>i.on{background:var(--brand)}
+  .path-prog-bar>i.cur{background:var(--brand); opacity:.45}
   .path-cta{display:flex; align-items:center; gap:8px; width:100%; margin-top:10px; padding:13px 15px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-weight:800; font-size:14px; cursor:pointer}
   .path-cta:hover{border-color:var(--brand)}
   .path-cta .pc-go{margin-left:auto; color:var(--ink-soft); font-weight:800}
@@ -2678,8 +2702,8 @@ function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
   const opts=[["ai","🤖","AI 엔지니어","Python→SQL→NumPy→Pandas→통계→ML→딥러닝"],["ds","📊","데이터 사이언티스트","Python→SQL→통계→NumPy→Pandas→ML→평가"],["fullstack","💻","풀스택 개발자","웹→JS→React→백엔드→DB→배포"],["backend","🖥️","백엔드 개발자","Python→SQL→백엔드→보안→네트워크→DevOps"],["free","🎯","자유 탐색","코스 없이 원하는 트랙을 자유롭게"]];
   card.innerHTML=`<div class="onb-hero">
       <div class="onb-logo"><span class="onb-mk">&lt;/&gt;</span> 코드런</div>
-      <h2 class="onb-title">코드를 직접 돌려보고,<br>실무 판단을 연습하는 곳</h2>
-      <p class="sub">솔직히 — 이 앱만으로 시니어가 되진 않아요. 시니어는 실전에서 만들어집니다. 이건 그 <b>부교재</b>예요: SQL·Python·JS를 실제로 실행하고, 장애·설계 결정을 시뮬레이션하며 지식과 판단을 빠르게 채웁니다. 실전(사이드 프로젝트·회사 코드)과 병행하세요.</p>
+      <h2 class="onb-title">입문에서 시니어까지,<br>하나의 프로그램</h2>
+      <p class="sub">레벨은 점수가 아니라 <b>해낸 일</b>로 오릅니다 — 단계마다 지식·직접 코딩·실무 판단·프로젝트 빌드 마일스톤을 실제로 채우며 Junior→Mid→Senior→Staff→Principal로. SQL·Python·JS를 브라우저에서 진짜 실행하고, 장애·설계 결정을 시뮬레이션합니다. 여기서 시니어의 뼈대를 세우고, 현장에서 살을 붙이면 완성됩니다.</p>
     </div>
     <div class="onb-eyebrow">목표 선택 · 언제든 변경 가능</div>`+opts.map(o=>`<button class="goalbtn" data-g="${o[0]}"><span class="ge">${o[1]}</span><span><span class="gt">${o[2]}</span><span class="gd">${o[3]}</span></span><span class="go-arrow">→</span></button>`).join("");
   card.querySelectorAll(".goalbtn").forEach(b=>b.onclick=()=>{ S.goal=b.dataset.g; S.onboarded=true; save(); const p=COURSE_PATHS[S.goal]; o.classList.remove("on"); document.body.style.overflow=""; if(p&&p.tracks[0]&&COURSES[p.tracks[0]]) gotoTrack(p.tracks[0]); else renderRoadmap(); });
@@ -3472,44 +3496,69 @@ function endSim(){ const s=sim.s, body=$("profile-body");
  $("profile").scrollTop=0;
 }
 /* ===== 성장 로드맵: 시니어까지 가는 통합 경로 ===== */
+/* ── 입문→시니어 프로그램: 단계별 '실제로 해내야 하는' 마일스톤 ──
+   레벨은 점수가 아니라 완료한 일로 오른다. 지식·직접코딩·판단(시뮬/진단)·빌드(프로젝트)를 고루 요구. */
 const SENIOR_PATH=[
- {role:"Junior", em:"🐣", gate:15, focus:"언어 기초 다지기",
-  what:"문법·자료구조·함수·제어 흐름을 손에 익힙니다. 매일 조금씩, 개념을 코드로 바꿔보세요.",
-  actions:[["언어 기초","track:python"],["직접 코딩 첫걸음","track:code"]]},
- {role:"Mid", em:"⚙️", gate:35, focus:"실무 기본기 — DB · 버전관리 · 테스트 · 디버깅",
-  what:"SQL로 데이터를 다루고, Git 워크플로·테스트·디버깅으로 '돌아가는 코드'에서 '유지보수되는 코드'로 넘어갑니다.",
-  actions:[["SQL 실행","track:sql"],["Git·DevOps","track:devops"],["알고리즘","track:algo"],["원인 추적","diag"]]},
- {role:"Senior", em:"🚀", gate:55, focus:"설계 · 성능 · 보안 + 판단",
-  what:"백엔드·시스템 설계·성능·보안을 익히고, 코드리뷰·기술선택 시뮬레이션으로 '결정'을 연습합니다. 프로젝트로 통합하세요.",
-  actions:[["시스템 설계","track:sysd"],["백엔드","track:backend"],["실무 시뮬","sim"],["프로젝트","proj"]]},
- {role:"Staff", em:"🏛️", gate:74, focus:"장애 · 아키텍처 · 심화",
-  what:"분산 시스템·장애 대응·아키텍처 심화. 원인추적과 장애 시뮬로 불확실성 속 판단력을, 각 트랙 심화 유닛으로 깊이를 더합니다.",
-  actions:[["시스템 설계 심화","track:sysd"],["장애 시뮬","sim"],["원인 추적","diag"],["상위 프로젝트","proj"]]},
- {role:"Principal", em:"👑", gate:90, focus:"조직 · 전략 · 영향력",
-  what:"기술을 넘어 이해관계자 설득·프로덕트 사고·윤리·리더십. 조직 차원의 트레이드오프를 다룹니다.",
-  actions:[["조직·프로덕트·윤리 시뮬","sim"]]}
+ {role:"Junior", em:"🐣", focus:"언어 기초를 손에 익히기",
+  what:"문법·자료구조·함수·제어 흐름. 개념을 읽는 데서 그치지 말고 직접 코드로 바꿔보며 '돌아가는 코드'를 만들어냅니다.",
+  req:[["track:python",12,"Python 기초 12레슨"],["code",4,"직접 코딩 4챌린지"],["track:javascript",6,"또 다른 언어(JS) 6레슨"]]},
+ {role:"Mid", em:"⚙️", focus:"실무 기본기 — DB · 버전관리 · 알고리즘 · 디버깅",
+  what:"SQL로 데이터를 다루고, Git/DevOps·알고리즘으로 '돌아가는 코드'에서 '유지보수되는 코드'로. 원인 추적으로 디버깅 감각을 세웁니다.",
+  req:[["track:sql",10,"SQL 실행 10레슨"],["track:devops",8,"Git·DevOps 8레슨"],["track:algo",8,"알고리즘 8레슨"],["diag",3,"원인 추적 3건"]]},
+ {role:"Senior", em:"🚀", focus:"설계 · 보안 + 결정을 연습",
+  what:"백엔드·시스템 설계·보안을 익히고, 실무 시뮬레이션으로 '판단'을, 프로젝트 완주로 요구사항→운영까지 '통합'을 경험합니다.",
+  req:[["track:sysd",10,"시스템 설계 10레슨"],["track:backend",10,"백엔드 10레슨"],["track:security",6,"보안 6레슨"],["sim",8,"실무 시뮬 8건"],["proj",1,"프로젝트 1개 완주"]]},
+ {role:"Staff", em:"🏛️", focus:"아키텍처 심화 · 장애 · 기술선택",
+  what:"분산·아키텍처 심화, 불확실성 속 장애 대응과 기술선택. 각 트랙 심화 유닛으로 깊이를, 다수 프로젝트로 폭을 만듭니다.",
+  req:[["track:sysd",18,"시스템 설계 심화까지 18레슨"],["sim:incident",6,"장애 시뮬 6건"],["sim:techchoice",6,"기술선택 시뮬 6건"],["diag",8,"원인 추적 8건"],["proj",3,"프로젝트 3개 완주"]]},
+ {role:"Principal", em:"👑", focus:"조직 · 프로덕트 · 전략 · 영향력",
+  what:"기술을 넘어 이해관계자 설득·프로덕트 사고·윤리. 조직 차원의 트레이드오프를 다루는 판단을 반복합니다.",
+  req:[["sim:stakeholder",4,"이해관계자 시뮬 4건"],["sim:product",8,"프로덕트 시뮬 8건"],["sim:ethics",3,"윤리 시뮬 3건"]]}
 ];
+function projDoneCount(){ let n=0; if(S.proj)for(const g in PROJECTS){ PROJECTS[g].forEach((_,i)=>{ if(S.proj[g+"-p"+i]) n++; }); } return n; }
+function simDoneCount(cat){ if(!S.sims)return 0; let n=0; for(const s of SIMS){ if(S.sims[s.id] && (!cat||s.cat===cat)) n++; } return n; }
+/* 요구사항 진행도 → {have,need,fn} */
+function reqProg(rq){ const [key,need]=rq;
+  if(key.indexOf("track:")===0){ const t=key.slice(6); return {have:trackProg(t).d, need, fn:key}; }
+  if(key==="code"){ return {have:trackProg("code").d, need, fn:"track:code"}; }
+  if(key.indexOf("sim:")===0){ return {have:simDoneCount(key.slice(4)), need, fn:"sim"}; }
+  if(key==="sim"){ return {have:simDoneCount(null), need, fn:"sim"}; }
+  if(key==="diag"){ return {have:Object.keys(S.diags||{}).length, need, fn:"diag"}; }
+  if(key==="proj"){ return {have:projDoneCount(), need, fn:"proj"}; }
+  return {have:0, need, fn:null};
+}
+function stageCleared(s){ return s.req.every(rq=>{ const p=reqProg(rq); return p.have>=p.need; }); }
+function programLevel(){ let n=0; for(const s of SENIOR_PATH){ if(stageCleared(s)) n++; else break; } return n; }
 function openPath(){ const o=$("profile"), body=$("profile-body"); ensureSkills();
   const avg=skillAvg(), r=roleOf(avg);
-  let ti=SENIOR_PATH.findIndex(s=>avg<s.gate); if(ti<0)ti=SENIOR_PATH.length-1;
+  const lvl=programLevel();                 // 완료한 단계 수 (0..5)
+  const ti=Math.min(lvl, SENIOR_PATH.length-1);   // 현재 진행 단계 index
+  const curRole=lvl===0?"입문":SENIOR_PATH[lvl-1].role;
   const cards=SENIOR_PATH.map((s,i)=>{
-    const done=avg>=s.gate, active=(i===ti);
-    const prev=i===0?0:SENIOR_PATH[i-1].gate;
-    const seg=done?100:Math.max(0,Math.min(100,Math.round((avg-prev)/((s.gate-prev)||1)*100)));
-    const btns=s.actions.map(a=>`<button class="pathbtn" data-fn="${a[1]}">${a[0]}</button>`).join("");
-    return `<div class="pstage${done?" done":""}${active?" active":""}">
-      <div class="pstage-h"><span class="pstage-em">${s.em}</span><b>${s.role}</b><span class="pstage-gate">종합 ${s.gate}+</span>${done?'<span class="pstage-chk">✓ 도달</span>':active?'<span class="pstage-now">현재</span>':""}</div>
+    const done=i<lvl, active=(i===ti && !done), locked=i>ti;
+    const rows=s.req.map((rq,ri)=>{ const p=reqProg(rq); const ok=p.have>=p.need;
+      const pct=Math.min(100,Math.round(p.have/(p.need||1)*100));
+      return `<button class="preq${ok?" ok":""}" data-fn="${p.fn||''}" ${locked?'disabled':''}>
+        <span class="preq-ic">${ok?"✓":ri+1}</span>
+        <span class="preq-main"><span class="preq-lbl">${rq[2]}</span>${ok?"":`<span class="preq-mini"><i style="width:${pct}%"></i></span>`}</span>
+        <span class="preq-n">${p.have}/${p.need}</span>${locked?"":'<span class="preq-go">→</span>'}</button>`;
+    }).join("");
+    const metN=s.req.filter(rq=>{const p=reqProg(rq);return p.have>=p.need;}).length;
+    return `<div class="pstage${done?" done":""}${active?" active":""}${locked?" locked":""}">
+      <div class="pstage-h"><span class="pstage-em">${s.em}</span><b>${s.role}</b>${done?'<span class="pstage-chk">✓ 완료</span>':active?'<span class="pstage-now">진행 중 '+metN+'/'+s.req.length+'</span>':'<span class="pstage-gate">잠김 · 앞 단계 먼저</span>'}</div>
       <div class="pstage-focus">${s.focus}</div>
       <div class="pstage-what">${s.what}</div>
-      ${active?`<div class="pstage-bar"><i style="width:${seg}%"></i></div>`:""}
-      <div class="pathbtns">${btns}</div>
+      <div class="preqs">${rows}</div>
     </div>`;
   }).join("");
-  body.innerHTML=`<div class="ovh">성장 로드맵 · 시니어까지</div><h2>${r.em} ${r.name} <span style="color:var(--ink-soft);font-weight:700">· 종합 ${Math.round(avg)}/100</span></h2>
-    <p class="sub">흩어진 학습을 하나의 길로 묶었어요. 각 단계의 <b>역량 게이트(9축 평균)</b>를 넘으면 다음 단계로. 지식→코딩→시뮬→진단→프로젝트가 한 흐름입니다. <b>앱은 지도, 실전이 걸음</b> — 병행하세요.</p>
+  const seg=SENIOR_PATH.map((s,i)=>`<i class="${i<lvl?'on':i===ti?'cur':''}"></i>`).join("");
+  body.innerHTML=`<div class="ovh">성장 로드맵 · 입문 → 시니어</div><h2>${r.em} ${curRole} <span style="color:var(--ink-soft);font-weight:700">· 종합 ${Math.round(avg)}/100</span></h2>
+    <p class="sub">레벨은 점수가 아니라 <b>실제로 해낸 일</b>로 오릅니다. 각 단계의 마일스톤(지식·직접 코딩·판단·빌드)을 모두 채우면 다음 단계가 열려요. 아래 항목을 누르면 바로 그 훈련으로 이동합니다.</p>
+    <div class="path-prog"><div class="path-prog-t"><span>프로그램 진행</span><span class="path-prog-n">${lvl}/${SENIOR_PATH.length} 단계 완료</span></div><div class="path-prog-bar">${seg}</div></div>
     ${cards}
-    <button class="ovclose alt" id="path-close" style="margin-top:14px">닫기</button>`;
-  body.querySelectorAll(".pathbtn").forEach(bt=>bt.onclick=()=>{ const fn=bt.dataset.fn; o.classList.remove("on"); document.body.style.overflow="";
+    <p class="sub" style="margin-top:14px;font-size:12px">현실적 한마디: 이 프로그램을 완주하면 시니어가 갖춰야 할 <b>지식·판단·통합 경험의 뼈대</b>가 섭니다. 실무 현장에서 진짜 시스템을 만들고 운영하며 살을 붙이면 완성됩니다.</p>
+    <button class="ovclose alt" id="path-close" style="margin-top:10px">닫기</button>`;
+  body.querySelectorAll(".preq").forEach(bt=>bt.onclick=()=>{ const fn=bt.dataset.fn; if(!fn)return; o.classList.remove("on"); document.body.style.overflow="";
     if(fn.indexOf("track:")===0){ gotoTrack(fn.slice(6)); }
     else if(fn==="sim"){ openSims(); }
     else if(fn==="diag"){ openDiags(); }
