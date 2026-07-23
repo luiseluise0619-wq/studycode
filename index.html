@@ -192,6 +192,22 @@
   .th-key ul{margin:0; padding-left:18px}
   .th-key li{font-size:14px; line-height:1.66; color:var(--ink); margin:3px 0}
   .th-p code.ic, .th-key code.ic, .th-sum code.ic{font-family:var(--mono); font-size:.9em; background:var(--bg-soft); border:1px solid var(--line); border-radius:5px; padding:1px 5px; color:var(--ink)}
+  /* ── 코드 리뷰 (다중 선택 결함 찾기) ── */
+  .rev-hint{font-size:12.5px; color:var(--ink-soft); margin:6px 2px 8px}
+  .rev-list{display:flex; flex-direction:column; gap:8px; margin-top:6px}
+  .revopt{display:flex; align-items:flex-start; gap:11px; text-align:left; padding:13px 14px; border-radius:12px; border:2px solid var(--line); background:var(--card); font-size:14.5px; font-weight:600; color:var(--ink); box-shadow:var(--shadow); line-height:1.5}
+  .revopt .revbox{flex:0 0 auto; width:22px; height:22px; border-radius:6px; border:2px solid var(--line); display:grid; place-items:center; font-size:13px; font-weight:900; color:transparent; margin-top:1px}
+  .revopt.sel{border-color:var(--brand); background:color-mix(in srgb,var(--brand) 9%,var(--card))}
+  .revopt.sel .revbox{background:var(--brand); border-color:var(--brand); color:#fff}
+  .revopt.rev-hit{border-color:var(--good); background:var(--good-soft)}
+  .revopt.rev-hit .revbox{background:var(--good); border-color:var(--good); color:#fff}
+  .revopt.rev-bad{border-color:var(--good)}                 /* 놓친 실제 결함 */
+  .revopt.rev-bad .revbox{border-color:var(--good); color:var(--good)}
+  .revopt.rev-wrong{border-color:var(--bad); background:var(--bad-soft)}  /* 오탐 */
+  .revopt.rev-wrong .revbox{background:var(--bad); border-color:var(--bad); color:#fff}
+  .revtag{display:inline-block; font-family:var(--mono); font-size:10px; font-weight:800; letter-spacing:.05em; padding:1px 6px; border-radius:6px; margin-left:6px}
+  .revtag.t-bad{background:var(--good-soft); color:var(--good)}
+  .revtag.t-ok{background:var(--bad-soft); color:var(--bad)}
   .fill-in{width:100%; padding:15px 16px; border-radius:14px; border:2px solid var(--line); background:var(--card);
     font-family:var(--mono); font-size:16px; color:var(--ink); box-shadow:var(--shadow)}
   .fill-in:focus{outline:none; border-color:var(--brand)}
@@ -2402,6 +2418,16 @@ function showQ(){
     body.innerHTML=html; body.scrollTop=0;
   } else if(q.t==="py"){
     body.innerHTML=html; body.scrollTop=0;
+  } else if(q.t==="review"){
+    html+=`<div class="rev-hint">🔍 실제 결함을 <b>모두</b> 고르세요 (정상 코드도 섞여 있어요)</div>`;
+    html+=`<div class="rev-list" id="revlist">`+q.items.map((it,idx)=>`<button class="revopt" data-i="${idx}"><span class="revbox">✓</span><span class="revtxt">${it.txt}</span></button>`).join("")+`</div>`;
+    body.innerHTML=html; body.scrollTop=0;
+    run.revsel=new Set();
+    body.querySelectorAll(".revopt").forEach(el=>el.onclick=()=>{ if(run.answered)return;
+      const i=+el.dataset.i;
+      if(run.revsel.has(i)){ run.revsel.delete(i); el.classList.remove("sel"); } else { run.revsel.add(i); el.classList.add("sel"); }
+      chk.disabled=run.revsel.size===0;
+    });
   } else {
     const wsSig = q.o.some(o=>/^\s|\s$|\s\s/.test(String(o)));  // 앞뒤·연속 공백이 답에 영향
     const mono = wsSig || q.o.some(o=>/[(){}=<>;*]|print|SELECT|cout|int /.test(o));
@@ -2597,6 +2623,21 @@ function onCheck(){
         applyResult(ok, "출력에 "+q.expect+" 가 나와야 해요", q);
       },300);
     }
+    return;
+  }
+  if(q.t==="review"){
+    const sel=run.revsel||new Set();
+    const badIdx=q.items.map((it,i)=>it.bad?i:-1).filter(i=>i>=0);
+    const ok = sel.size===badIdx.length && badIdx.every(i=>sel.has(i));
+    const els=$("revlist").children;
+    q.items.forEach((it,i)=>{ const el=els[i]; if(!el)return; el.onclick=null; el.classList.remove("sel");
+      if(it.bad && sel.has(i)) el.classList.add("rev-hit");           // 맞게 찾음
+      else if(it.bad && !sel.has(i)) el.classList.add("rev-bad");     // 놓친 결함
+      else if(!it.bad && sel.has(i)) el.classList.add("rev-wrong");   // 오탐
+      el.querySelector(".revtxt").insertAdjacentHTML("beforeend", it.bad?' <span class="revtag t-bad">결함</span>':' <span class="revtag t-ok">정상</span>');
+    });
+    const bads=q.items.filter(it=>it.bad).map(it=>it.txt);
+    applyResult(ok, "실제 결함: "+bads.join(" · "), q);
     return;
   }
   let ok=false, correctText="";
