@@ -4,8 +4,10 @@ Status: evolving (V2.0 milestone 2026-07-22, actively extended since)
 단일 HTML 오프라인 PWA. 개발자 훈련 시뮬레이터.
 
 Contents:
-- 32 tracks / 3,305 questions   (Python 705 · SQL 572 중심)
+- 32 tracks / 3,367 questions   (Python 705 · SQL 572 중심)
 - 실무 디버깅 챌린지 66개 (Python 36 · SQL 30): 버그 코드 고쳐 테스트 통과 + 원인/해결/재발방지. 실행 엔진으로 전량 기계 검증(정답 통과·버그 실패)
+- 직접 구현 34개 (Python 18 · SQL 16): 스텁→구현→실행 채점. 참조 정답 엔진 검증
+- 코드 리뷰 28개 (백엔드/보안 14 · JS/React 14): 코드 결함 다중선택(오탐 섞임), 집합 일치 채점. 항목별 정답 검토
 - 개념(이론) 프라이머 279유닛: 문제 전에 개념 먼저 (요약·핵심 설명·예시 코드·기억할 점 → "문제 풀기")
 - 성장 로드맵 (마일스톤 프로그램): 입문→Junior→Mid→Senior→Staff→Principal, 실제 완료 마일스톤으로 단계 잠금 해제 (지식·직접코딩·시뮬/진단·프로젝트)
 - 직접 코딩 99챌린지 (Implementation Score: 정확성·엣지·성능·품질) — JS/알고리즘
