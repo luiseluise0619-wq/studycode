@@ -15,10 +15,11 @@
 
 | 영역 | 규모 | 설명 |
 |---|---|---|
-| **지식 엔진** | 32트랙 · 3,168문항 | Python 705 / SQL 572 중심. choice·input·code(라이브 실행·테스트 통과) 문제 |
+| **지식 엔진** | 32트랙 · 3,240문항 | Python 705 / SQL 572 중심. choice·input·code(라이브 실행·테스트 통과) 문제 |
 | **Real Work 시뮬레이션** | 125개 | 장애·리뷰·기술선택·이해관계자·프로덕트·윤리 분기형 의사결정 |
 | **원인 추적(진단)** | 26개 | 불완전한 정보 + 단서(일부 red herring)로 근본원인 규명 |
 | **프로젝트 워크스페이스** | 30개 | 8단계 라이프사이클(요구사항→설계→개발→테스트→배포→운영→장애→Postmortem), 연쇄 장애 시나리오 |
+| **성장 로드맵(마일스톤 프로그램)** | 5단계 | 입문→Junior→Mid→Senior→Staff→Principal. 레벨은 점수가 아니라 **실제로 해낸 마일스톤**(지식·직접 코딩·판단·빌드)으로 상승 — 조건을 모두 채워야 다음 단계 잠금 해제 |
 | **9축 평가 엔진** | — | coding·debugging·algorithms·database·system_design·performance·security·communication·leadership |
 | **Developer Passport** | — | SVG 레이더 차트 + 역할 티어(Beginner→Principal) |
 
@@ -41,13 +42,15 @@ xdg-open index.html      # Linux
 
 ## 트랙별 문항 수
 
-**주력** Python 705 · SQL 572 · 백엔드 121 · 시스템 설계 99 · Git/DevOps 134 · 보안 64 · 알고리즘 67
+**주력** Python 705 · SQL 572 · 백엔드 167 · 시스템 설계 145 · Git/DevOps 134 · 보안 110 · 알고리즘 67
 **프론트엔드** JavaScript 152 (런타임·이벤트루프·V8·성능) · React 37 (렌더링·훅 내부) · HTML/CSS 73
 **언어** Java 98 · C 67 · C++ 66 · Go 53
 **데이터/AI** AI 엔지니어링 50 (서빙·RAG·MLOps) · Pandas 45 · NumPy 45 · 통계 45 · 머신러닝 45 · ML평가 45 · 딥러닝 45
 **CS** OS 31 · 네트워크 21 · DB내부 20 · 그 외
 
 > **심화 유닛(시니어/스태프 난이도)**: 12개 핵심 트랙에 각 ~22문항의 "심화 — 시니어/스태프 난이도" 유닛 추가(+255) — 시스템 설계·백엔드·알고리즘·보안·네트워크·OS·DB내부·JavaScript·React·AI·Java·DevOps. 정의 암기가 아니라 트레이드오프·내부 동작·실무 함정·엣지케이스 중심으로, 그럴듯한 오답(distractor)을 배치.
+
+> **시니어 실전 유닛(+72, 적대적 검증 통과)**: 프로그램의 시니어/스태프 구간을 실제로 뒷받침하도록 3개 핵심 트랙에 최심화 유닛 추가 — 시스템 설계(분산·일관성·quorum·합의·LSM·백프레셔), 백엔드(트랜잭션 격리 이상현상·MVCC·인덱스 sargability·멱등성·전달 의미론), 앱보안(XSS/CSRF/SQLi/SSRF 올바른 방어·JWT/OAuth 함정·암호 모드). 생성 후 별도 검토 에이전트가 정답을 독립 재검증 — 72문항 전부 무결(0 flagged).
 
 > 직접 코딩(테스트 통과형): 함수를 구현하면 여러 테스트 케이스로 자동 채점(Implementation Score: 정확성·엣지·성능·품질) — 코딩 실습·알고리즘 트랙.
 > 직접 SQL: `sql.js`(SQLite WASM 인라인)로 브라우저에서 실제 쿼리를 실행해 결과셋을 정답과 비교 채점 — SQL 트랙.
