@@ -133,6 +133,58 @@ function check(name, cond, detail){
   await p.close();
  }
 
+ /* ---------- 학습 경로의 별 노드를 그 자리에서 눌러 들어갈 수 있다 ---------- */
+ {
+  const p=await browser.newPage({viewport:{width:390,height:800}, hasTouch:true, isMobile:true});
+  p.on("pageerror",e=>errs.push("pageerror: "+e.message));
+  await p.addInitScript(()=>{ try{ localStorage.setItem("coderun",
+    JSON.stringify({onboarded:true, goal:"free", freeMode:true})); }catch(e){} });
+  await p.goto(FILE);
+  await p.waitForFunction(()=>typeof COURSES!=="undefined", {timeout:60000});
+  await p.waitForTimeout(700);
+
+  const rendered=await p.evaluate(()=>({
+    nodes:document.querySelectorAll(".node").length,
+    wraps:document.querySelectorAll(".node-wrap").length }));
+  check("학습 경로에 노드가 렌더된다", rendered.nodes>0 && rendered.wraps>0, rendered);
+
+  // 별의 중심과 라벨의 중심이 어긋나지 않는다 (가로 위치는 래퍼가 담당해야 함)
+  const align=await p.evaluate(()=>[...document.querySelectorAll(".node-wrap")].slice(0,8).map(w=>{
+    const n=w.querySelector(".node"), l=w.querySelector(".node-label");
+    if(!n||!l) return 0;
+    const a=n.getBoundingClientRect(), c=l.getBoundingClientRect();
+    return Math.round((a.x+a.width/2)-(c.x+c.width/2));
+  }));
+  check("별과 라벨이 세로로 정렬된다", align.every(d=>Math.abs(d)<=2), align);
+
+  // 손가락을 움직이지 않고 눌렀다 떼면 레슨이 열려야 한다.
+  // (.node 에 위치용 translateX 와 :active 의 translateY 가 함께 걸리면
+  //  누르는 순간 별이 옆으로 튀어 클릭이 빗나간다 — 그 회귀를 막는다)
+  const press=[];
+  for(const idx of [1,2,5,6]){
+    const has=await p.evaluate(i=>{ const n=document.querySelectorAll(".node")[i];
+      if(!n) return false; n.scrollIntoView({block:"center"}); return true; }, idx);
+    if(!has) continue;
+    await p.waitForTimeout(180);
+    const box=await p.evaluate(i=>{ const r=document.querySelectorAll(".node")[i].getBoundingClientRect();
+      return {x:r.x+r.width/2, y:r.y+r.height/2}; }, idx);
+    await p.mouse.move(box.x, box.y);
+    await p.mouse.down();
+    await p.waitForTimeout(110);
+    const dx=await p.evaluate(([i,x])=>{ const r=document.querySelectorAll(".node")[i].getBoundingClientRect();
+      return Math.round((r.x+r.width/2)-x); }, [idx, box.x]);
+    await p.mouse.up();
+    await p.waitForTimeout(220);
+    const opened=await p.evaluate(()=>{ const on=document.getElementById("lesson").classList.contains("on");
+      if(on){ document.getElementById("lesson").classList.remove("on"); document.body.style.overflow=""; }
+      return on; });
+    press.push({node:idx, dx, opened});
+  }
+  check("누르는 동안 별이 옆으로 움직이지 않는다", press.every(x=>Math.abs(x.dx)<=1), press);
+  check("별을 그 자리에서 눌러 레슨이 열린다", press.length>0 && press.every(x=>x.opened), press);
+  await p.close();
+ }
+
  /* ---------- 레슨을 끝까지 진행할 수 있다 ---------- */
  {
   const p=await page();
@@ -143,7 +195,9 @@ function check(name, cond, detail){
     if(sawTheory) chk.click();
     const sawBadge=!!document.querySelector("#qbody .lvbadge");
     let g=0;
-    while(document.getElementById("lesson").classList.contains("on") && g++<50){
+    while(document.getElementById("lesson").classList.contains("on") && g++<60){
+      const skip=document.getElementById("rc-skip");     // 인출 모드: 보기부터 연다
+      if(skip){ skip.click(); continue; }
       const o=document.querySelector("#opts .opt"), f=document.getElementById("fill");
       if(o){ o.click(); chk.click(); chk.click(); }
       else if(f){ f.value="x"; f.dispatchEvent(new Event("input")); chk.click(); chk.click(); }
@@ -157,6 +211,80 @@ function check(name, cond, detail){
   check("문항에 난이도 배지가 붙는다", r.sawBadge, r);
   check("레슨이 끝까지 진행되고 완료 화면이 뜬다", r.closed && r.doneShown, r);
   check("응답이 근거로 기록된다", r.recorded>0, r);
+  await p.close();
+ }
+
+ /* ---------- 인출 모드 ---------- */
+ {
+  const p=await page();
+  // 채점기: 오답을 정답으로 인정하는 일이 없어야 한다 (전 선택형 문항 전수)
+  const g=await p.evaluate(()=>{
+    const all=[];
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(x=>{
+      if((x.t||"choice")==="choice" && Array.isArray(x.o) && typeof x.a==="number") all.push(x);
+    })));
+    let n=0, exact=0, partial=0, falsePos=0, noise=0;
+    all.forEach(x=>{
+      n++;
+      const correct=String(x.o[x.a]);
+      if(gradeRecall(x, correct).hit) exact++;
+      const toks=rcTokens(correct);
+      if(gradeRecall(x, toks.slice(0,Math.max(1,Math.ceil(toks.length*0.7))).join(" ")).hit) partial++;
+      if(gradeRecall(x, String(x.o[(x.a+1)%x.o.length])).hit) falsePos++;
+      if(gradeRecall(x, "잘 모르겠습니다 아마도 그것 같습니다").hit) noise++;
+    });
+    return {n, exact, partial, falsePos, noise};
+  });
+  check("오답을 인출 성공으로 인정하지 않는다", g.falsePos===0, g);
+  check("무관한 답을 인정하지 않는다", g.noise===0, g);
+  check("정답을 적으면 대체로 인정된다", g.exact/g.n>0.8, {rate:(g.exact/g.n).toFixed(3)});
+  check("핵심 단어만 적어도 대체로 인정된다", g.partial/g.n>0.8, {rate:(g.partial/g.n).toFixed(3)});
+
+  // 흐름: 성공 / 실패 / 건너뛰기 / 끄기
+  const flow=await p.evaluate(()=>{
+    const open=(ui,li)=>{ startLesson("python",ui,li);
+      if(document.querySelector("#qbody .th-sum")) document.getElementById("check").click(); };
+    const out={};
+    S.rc=null; save();
+    open(0,0);
+    out.boxShown=!!document.getElementById("rc-in");
+    out.optsHiddenFirst=!document.getElementById("opts");
+    const q0=run.les.q[run.i];
+    const ta=document.getElementById("rc-in"); ta.value=String(q0.o[q0.a]);
+    ta.dispatchEvent(new Event("input")); document.getElementById("check").click();
+    out.hitGraded=run.answered && run.rcHit && document.getElementById("foot").className==="foot good";
+
+    open(0,1);
+    document.getElementById("rc-in").value="전혀 관련 없는 대답";
+    document.getElementById("rc-in").dispatchEvent(new Event("input"));
+    document.getElementById("check").click();
+    out.missRevealsOptions=!!document.getElementById("opts") && !!document.querySelector(".rc-mine");
+    out.notAutoGraded=!run.answered;
+
+    open(1,0);
+    document.getElementById("rc-skip").click();
+    out.skipRevealsOptions=!!document.getElementById("opts");
+
+    S.recall=false; save(); open(0,0);
+    out.offShowsOptions=!document.getElementById("rc-in") && !!document.getElementById("opts");
+    S.recall=true; save();
+    document.getElementById("lesson").classList.remove("on"); document.body.style.overflow="";
+    return out;
+  });
+  check("보기를 먼저 감춘다", flow.boxShown && flow.optsHiddenFirst, flow);
+  check("인출에 성공하면 바로 정답 처리된다", flow.hitGraded, flow);
+  check("인출에 실패하면 보기가 열리고 자동 채점되지 않는다", flow.missRevealsOptions && flow.notAutoGraded, flow);
+  check("모르겠어요로 보기를 열 수 있다", flow.skipRevealsOptions, flow);
+  check("인출 모드를 끄면 보기가 바로 나온다", flow.offShowsOptions, flow);
+
+  // 근거 문장에 인출 비율이 들어간다
+  const ev=await p.evaluate(()=>{
+    S.trk={}; const b=evBucket("trk","python");
+    for(let i=0;i<120;i++) evRecord(b, i<96, i<60?2:4, false);
+    b.rc={n:80, ok:44};
+    return trackEvidence("python");
+  });
+  check("근거에 '보기 없이 답한 비율'이 표시된다", ev.some(x=>/보기 없이/.test(x)), ev);
   await p.close();
  }
 
