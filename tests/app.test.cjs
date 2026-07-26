@@ -173,6 +173,25 @@ function check(name, cond, detail){
   });
   check("문항 유형이 5종 이상 실재한다", Object.keys(r.byType).length>=5, r.byType);
 
+  /* 출력 예측(cat=predict)은 실제 컴파일러로 정답을 검증해 넣은 문항이다.
+     a[0] 이 실행 결과이므로, 정규화 기준으로 정답 목록에 중복이 있으면 안 된다. */
+  const pred=await p.evaluate(()=>{
+    const nm=s=>String(s).toLowerCase().replace(/\s+/g,"").replace(/;$/,"");
+    let n=0, bad=0, noCode=0;
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
+      if(q.cat!=="predict") return;
+      n++;
+      if(!q.code) noCode++;
+      if(!Array.isArray(q.a) || !q.a.length) { bad++; return; }
+      const na=q.a.map(nm);
+      if(new Set(na).size!==na.length || na.some(x=>!x)) bad++;
+    })));
+    return {n, bad, noCode};
+  });
+  check("출력 예측 문항의 정답 목록이 정규화 기준으로 유효하다", pred.bad===0, pred);
+  check("출력 예측 문항에는 코드가 있다", pred.noCode===0, pred);
+  console.log("  출력 예측: "+pred.n+"문항 (Java·C·C++·Go, 실제 컴파일러로 정답 검증)");
+
   console.log("  콘텐츠: "+r.qs+"문항 / "+r.units+"유닛 / "+r.lessons+"레슨 · 유형 "+JSON.stringify(r.byType));
   console.log("  비율: "+Object.keys(B).map(k=>k+" "+(now[k]/r.qs*100).toFixed(1)+"%").join(" · "));
   console.log("  목표까지(choice 60% 환산 총 "+projected.toLocaleString()+"문항 기준): "+(gap.length?gap.join(" · "):"전부 달성"));
