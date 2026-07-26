@@ -124,7 +124,7 @@ function check(name, cond, detail){
     for(const k in COURSES){ const c={};
       COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
         const t=q.t||"choice"; c[t]=(c[t]||0)+1;
-        c.exec=(c.exec||0)+((t==="code"||t==="py"||t==="sql"||t==="html")?1:0);
+        c.exec=(c.exec||0)+((t==="code"||t==="py"||t==="sql"||t==="html"||t==="react"||t==="ts")?1:0);
         if(q.cat) c["cat:"+q.cat]=(c["cat:"+q.cat]||0)+1;
       })));
       perTrack[k]=c; }
@@ -181,13 +181,13 @@ function check(name, cond, detail){
   const MATRIX={
     //          review  log  exec  predict(input)  debug(cat)
     python:     {review:30,            exec:80,  predict:31,  "cat:debug":71},
-    javascript: {review:30,            exec:64,               "cat:debug":47},
+    javascript: {review:30,            exec:76,               "cat:debug":47},
     sql:        {review:30, log:20,    exec:87,  predict:31,  "cat:debug":57},
     java:       {review:32,                       predict:50, "cat:debug":20},
     c:          {review:32,                       predict:60, "cat:debug":20},
     cpp:        {review:32,                       predict:50, "cat:debug":20},
     go:         {review:32,                       predict:50, "cat:debug":20},
-    react:      {review:50,                                   "cat:debug":20},
+    react:      {review:50, exec:12,                          "cat:debug":20},
     web:        {review:30, exec:20},
     os:         {review:30, log:20,                           "cat:debug":4},
     net:        {review:30, log:40},
@@ -201,7 +201,7 @@ function check(name, cond, detail){
     c:          {review:30,                      predict:60,  "cat:debug":20},
     cpp:        {review:30,                      predict:50,  "cat:debug":20},
     go:         {review:30,                      predict:50,  "cat:debug":20},
-    react:      {review:30,                                   "cat:debug":20},
+    react:      {review:30, exec:20,                          "cat:debug":20},
     web:        {review:30, exec:20},
     os:         {review:30, log:20,                           "cat:debug":10},
     net:        {review:30, log:40},
@@ -228,7 +228,7 @@ function check(name, cond, detail){
      미달은 실패가 아니라 진행률로 보고한다 — 달성까지 CI 가 계속 빨간불이면 의미가 없다. */
   const B={choice:[55,60], input:[18,20], exec:[12,15], review:[5,8], log:[2,4]};
   const now={choice:r.byType.choice||0, input:r.byType.input||0,
-             exec:(r.byType.code||0)+(r.byType.py||0)+(r.byType.sql||0)+(r.byType.html||0),
+             exec:(r.byType.code||0)+(r.byType.py||0)+(r.byType.sql||0)+(r.byType.html||0)+(r.byType.react||0)+(r.byType.ts||0),
              review:r.byType.review||0, log:r.byType.log||0};
   const projected=Math.round(now.choice/(B.choice[1]/100));   // choice 60% 기준 최종 총량
   const gap=[];

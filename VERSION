@@ -6,7 +6,7 @@ Status: evolving (V2.0 milestone 2026-07-22, actively extended since)
 고른 트랙의 청크 하나만 뒤따라 받는다. 첫 로딩 10초대 → 1초대.
 
 Contents:
-- 32 tracks / 8,457 questions   (Python 934 · SQL 826 중심)
+- 32 tracks / 8,481 questions   (Python 934 · SQL 826 중심)
 - 실무 디버깅 챌린지 124개 (Python 56 · SQL 48 · JS 20): 버그 코드 고쳐 테스트 통과 + 원인/해결/재발방지. 실행 엔진으로 전량 기계 검증(정답 통과·버그 실패)
 - 직접 구현 54개 (Python 18 · SQL 16 · JS 20): 스텁→구현→실행 채점. 참조 정답 엔진 검증
 - 언어별 디버깅 100 (Java·C·C++·Go·React 각 20 · 유형 review + cat:debug): 컴파일은 되지만 잘못 동작하는
@@ -40,6 +40,8 @@ Contents:
 - 인출 모드: 선택형 문항의 보기를 먼저 감추고 직접 적게 함 (정답 인정 91% · 오답 인정 0%), 근거에 '보기 없이 답한 비율' 표시
 - 역량 점수: 활동량이 아니라 근거(최근 정답률·응용 이상 난이도·구현 통과율·표본)로 매번 재계산, 근거를 화면에 표시
 - 진도 키: 유닛/레슨 제목 기반 안정 ID (콘텐츠 추가로 진도가 어긋나지 않음)
+- 실행 가능한 언어: JavaScript · Python(Pyodide) · SQL(sql.js) · HTML/CSS · React(JSX) · TypeScript
+  Java·C·C++·Go 는 브라우저 실행이 불가능하므로 실제 컴파일러로 검증한 출력 예측·디버깅으로 훈련
 - 테스트: tests/engine.test.cjs 77 + tests/app.test.cjs 71, GitHub Actions 연결
   · 셸의 표시 문항 수와 데이터의 실제 문항 수 일치를 검사 (주입 중단으로 어긋난 적이 있어 고정)
 - 언어별 유형 매트릭스(docs/CONTENT_POLICY.md): 트랙마다 '그 언어답게' 채울 유형과 최소 확보량을
@@ -57,6 +59,14 @@ Contents:
 - 직접 코딩 99챌린지 (Implementation Score: 정확성·엣지·성능·품질) — JS/알고리즘
 - 직접 SQL 실행 채점 (sql.js SQLite WASM 인라인) — JOIN·집계·윈도우·CTE
 - 직접 Python 실행 채점 (Pyodide) — 함수 구현 → 테스트 통과, Implementation Score
+- React 실행 채점 12문항 (유형 react · L1~L4): JSX 를 직접 쓰면 sucrase 가 변환하고
+  실제 react-dom 이 iframe 에서 렌더한다. 클릭·입력까지 시킨 뒤 DOM 을 검사하므로
+  "화면이 실제로 그렇게 동작하는가" 로 채점한다. 상태 직접 변경 · 핸들러 즉시 호출 ·
+  key 인덱스 · && 와 0 · effect 정리 · 파생 상태 · 제어 컴포넌트 · aria-expanded
+- TypeScript 실행 채점 12문항 (유형 ts · L1~L4): sucrase 로 타입을 벗겨 기존 테스트 러너로
+  채점. 제네릭 · keyof · 판별 유니온 · unknown 검증 · 타입 가드 · ?? 와 || · 얕은 병합 ·
+  O(n²)→O(n) (성능 예산을 통과 조건에 포함하는 perfGate 신설)
+- 실행 엔진 (지연 로드): sucrase 288KB + react/react-dom 142KB. sql-wasm(852KB)보다 작다
 - HTML/CSS 실행 채점 20문항 (유형 html · 난이도 L1~L4): 마크업·스타일을 직접 고치면
   브라우저가 실제로 렌더하고, 계산된 스타일(getComputedStyle)과 실제 좌표(getBoundingClientRect)로
   채점한다. 실행 엔진을 따로 싣지 않아 오프라인에서도 그대로 동작.
