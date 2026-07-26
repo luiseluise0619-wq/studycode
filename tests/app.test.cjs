@@ -119,8 +119,13 @@ function check(name, cond, detail){
       });
     });});
     const introMissing=Object.keys(COURSES).filter(k=>!TRACK_INTRO[k]);
+    /* 트랙별 유형 분포 — 콘텐츠 정책(docs/CONTENT_POLICY.md) 강제용 */
+    const perTrack={};
+    for(const k in COURSES){ const c={};
+      COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{ const t=q.t||"choice"; c[t]=(c[t]||0)+1; })));
+      perTrack[k]=c; }
     return {units, lessons, qs, byType, noTheory, badTheory, badChoice, badLog, badReview,
-            introMissing, missions:GIT_MISSIONS.length, sims:SIMS.length, diags:DIAGS.length};
+            introMissing, perTrack, missions:GIT_MISSIONS.length, sims:SIMS.length, diags:DIAGS.length};
   });
   check("모든 레슨에 이론이 있다", r.noTheory===0, {noTheory:r.noTheory});
   check("이론이 요약·본문2절·예제·요점을 모두 갖춘다", r.badTheory===0, {badTheory:r.badTheory});
@@ -128,8 +133,32 @@ function check(name, cond, detail){
   check("로그 문항 구조가 올바르다", r.badLog===0, {badLog:r.badLog});
   check("리뷰 문항 구조가 올바르다", r.badReview===0, {badReview:r.badReview});
   check("모든 트랙에 분야 소개가 있다", r.introMissing.length===0, r.introMissing);
-  check("Git 미션 12개", r.missions===12, {missions:r.missions});
+  check("Git 미션 12개 이상", r.missions>=12, {missions:r.missions});
+
+  /* ---- 콘텐츠 정책 (docs/CONTENT_POLICY.md) ---- */
+  const CHOICE_CAP=5690;      // 선택형 동결선. 올리지 말 것 — 교체는 총량 불변이어야 한다
+  check("선택형이 동결선을 넘지 않는다 (choice 추가 금지)", r.byType.choice<=CHOICE_CAP,
+        {choice:r.byType.choice, cap:CHOICE_CAP});
+
+  /* 리뷰가 있어야 하는 트랙. 목표는 30, 지금 달성치를 기준선으로 박아 뒷걸음질을 막는다 */
+  const REVIEW_GOAL=30;
+  const REVIEW_TRACKS=["react","arch","os","net","web","ai","ml","pandas","numpy","mleval","backend","devops"];
+  const REVIEW_FLOOR={};      // 트랙: 지금까지 확보한 최소치 (확대할 때마다 같이 올린다)
+  REVIEW_TRACKS.forEach(k=>{ REVIEW_FLOOR[k]=REVIEW_FLOOR[k]||0; });
+  Object.assign(REVIEW_FLOOR, {backend:14, react:30, devops:32, os:30, net:30});
+  const revNow={}, revShort=[], revRegress=[];
+  REVIEW_TRACKS.forEach(k=>{
+    const n=(r.perTrack[k]||{}).review||0;
+    revNow[k]=n;
+    if(n<(REVIEW_FLOOR[k]||0)) revRegress.push(k+":"+n+"<"+REVIEW_FLOOR[k]);
+    if(n<REVIEW_GOAL) revShort.push(k+":"+n);
+  });
+  check("리뷰 확보량이 뒷걸음질하지 않는다", revRegress.length===0, revRegress);
+  if(revShort.length) console.log("  리뷰 목표 미달("+REVIEW_GOAL+"개 기준): "+revShort.join(" · "));
+  else check("지정 트랙 12개가 모두 리뷰 30개 이상", true);
+
   console.log("  콘텐츠: "+r.qs+"문항 / "+r.units+"유닛 / "+r.lessons+"레슨 · 유형 "+JSON.stringify(r.byType));
+  console.log("  리뷰 분포: "+JSON.stringify(revNow));
   await p.close();
  }
 
