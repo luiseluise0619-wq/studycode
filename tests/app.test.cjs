@@ -142,10 +142,10 @@ function check(name, cond, detail){
 
   /* 리뷰가 있어야 하는 트랙. 목표는 30, 지금 달성치를 기준선으로 박아 뒷걸음질을 막는다 */
   const REVIEW_GOAL=30;
-  const REVIEW_TRACKS=["react","arch","os","net","web","ai","ml","pandas","numpy","mleval","backend","devops"];
+  const REVIEW_TRACKS=["react","sysd","os","net","web","ai","ml","pandas","numpy","mleval","backend","devops"];
   const REVIEW_FLOOR={};      // 트랙: 지금까지 확보한 최소치 (확대할 때마다 같이 올린다)
   REVIEW_TRACKS.forEach(k=>{ REVIEW_FLOOR[k]=REVIEW_FLOOR[k]||0; });
-  Object.assign(REVIEW_FLOOR, {backend:14, react:30, devops:32, os:30, net:30});
+  Object.assign(REVIEW_FLOOR, {backend:30, react:30, devops:32, os:30, net:30, sysd:30, web:28});
   const revNow={}, revShort=[], revRegress=[];
   REVIEW_TRACKS.forEach(k=>{
     const n=(r.perTrack[k]||{}).review||0;
