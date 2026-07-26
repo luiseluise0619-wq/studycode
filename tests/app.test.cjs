@@ -124,7 +124,7 @@ function check(name, cond, detail){
     for(const k in COURSES){ const c={};
       COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
         const t=q.t||"choice"; c[t]=(c[t]||0)+1;
-        c.exec=(c.exec||0)+((t==="code"||t==="py"||t==="sql"||t==="html"||t==="react"||t==="ts"||t==="sim")?1:0);
+        c.exec=(c.exec||0)+((t==="code"||t==="py"||t==="sql"||t==="html"||t==="react"||t==="ts"||t==="sim"||t==="arch")?1:0);
         if(q.cat) c["cat:"+q.cat]=(c["cat:"+q.cat]||0)+1;
       })));
       perTrack[k]=c; }
@@ -148,6 +148,20 @@ function check(name, cond, detail){
   check("선택형은 4개의 서로 다른 보기와 유효한 정답을 갖는다", r.badChoice===0, {badChoice:r.badChoice});
   check("로그 문항 구조가 올바르다", r.badLog===0, {badLog:r.badLog});
   check("리뷰 문항 구조가 올바르다", r.badReview===0, {badReview:r.badReview});
+  /* 설계 문항: 시작 설계가 올바른 JSON 이고, 요건 검사가 4개 이상이어야 한다 */
+  const archChk=await p.evaluate(()=>{
+    let n=0, badJson=0, fewTests=0, badKind=0;
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
+      if(q.t!=="arch") return; n++;
+      try{ JSON.parse(q.src); }catch(e){ badJson++; }
+      if(!Array.isArray(q.tests)||q.tests.length<4) fewTests++;
+      if(["erd","api","cloud"].indexOf(q.kind)<0) badKind++;
+    })));
+    return {n, badJson, fewTests, badKind};
+  });
+  check("설계 문항의 시작 설계가 올바른 JSON 이다", archChk.badJson===0, archChk);
+  check("설계 문항이 요건 검사를 4개 이상 갖는다", archChk.fewTests===0, archChk);
+  check("설계 문항의 종류가 erd·api·cloud 중 하나다", archChk.badKind===0, archChk);
   check("모든 트랙에 분야 소개가 있다", r.introMissing.length===0, r.introMissing);
   check("Git 미션 12개 이상", r.missions>=12, {missions:r.missions});
 
@@ -228,7 +242,7 @@ function check(name, cond, detail){
      미달은 실패가 아니라 진행률로 보고한다 — 달성까지 CI 가 계속 빨간불이면 의미가 없다. */
   const B={choice:[55,60], input:[18,20], exec:[12,15], review:[5,8], log:[2,4]};
   const now={choice:r.byType.choice||0, input:r.byType.input||0,
-             exec:(r.byType.code||0)+(r.byType.py||0)+(r.byType.sql||0)+(r.byType.html||0)+(r.byType.react||0)+(r.byType.ts||0)+(r.byType.sim||0),
+             exec:(r.byType.code||0)+(r.byType.py||0)+(r.byType.sql||0)+(r.byType.html||0)+(r.byType.react||0)+(r.byType.ts||0)+(r.byType.sim||0)+(r.byType.arch||0),
              review:r.byType.review||0, log:r.byType.log||0};
   const projected=Math.round(now.choice/(B.choice[1]/100));   // choice 60% 기준 최종 총량
   const gap=[];
@@ -265,7 +279,7 @@ function check(name, cond, detail){
      목표는 총 10,000문항 기준이고 아직 멀기 때문에 실패시키지 않고 진행률만 보고한다.
      디버깅은 유형이 아니라 cat:"debug" 로 세므로 다른 칸과 겹칠 수 있다 — 그대로 표시한다. */
   const cat10=await p.evaluate(()=>{
-    const c={choice:0,input:0,code:0,debug:0,review:0,log:0,sim:0};
+    const c={choice:0,input:0,code:0,debug:0,review:0,log:0,sim:0,arch:0};
     for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
       const t=q.t||"choice";
       if(q.cat==="debug") c.debug++;
@@ -274,12 +288,13 @@ function check(name, cond, detail){
       else if(t==="review") c.review++;
       else if(t==="log") c.log++;
       else if(t==="sim") c.sim++;
+      else if(t==="arch") c.arch++;
       else c.code++;
     })));
     return {c, projects:(typeof PROJECTS!=="undefined"&&PROJECTS?Object.keys(PROJECTS).length:0),
             buildDays:(typeof BUILD_PROJECTS!=="undefined"&&BUILD_PROJECTS?BUILD_PROJECTS.reduce((a,p)=>a+(p.days||[]).length,0):0)};
   });
-  const TARGET10={choice:3000,input:1500,code:2000,debug:1000,review:800,log:500,sim:500};
+  const TARGET10={choice:3000,input:1500,code:2000,debug:1000,review:800,log:500,sim:500,arch:150};
   console.log("  10유형 구조 (목표 10,000문항 기준):");
   Object.keys(TARGET10).forEach(k=>{
     const now=cat10.c[k]||0, t=TARGET10[k];
