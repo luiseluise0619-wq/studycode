@@ -124,7 +124,7 @@ function check(name, cond, detail){
     for(const k in COURSES){ const c={};
       COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
         const t=q.t||"choice"; c[t]=(c[t]||0)+1;
-        c.exec=(c.exec||0)+((t==="code"||t==="py"||t==="sql"||t==="html"||t==="react"||t==="ts")?1:0);
+        c.exec=(c.exec||0)+((t==="code"||t==="py"||t==="sql"||t==="html"||t==="react"||t==="ts"||t==="sim")?1:0);
         if(q.cat) c["cat:"+q.cat]=(c["cat:"+q.cat]||0)+1;
       })));
       perTrack[k]=c; }
@@ -228,7 +228,7 @@ function check(name, cond, detail){
      미달은 실패가 아니라 진행률로 보고한다 — 달성까지 CI 가 계속 빨간불이면 의미가 없다. */
   const B={choice:[55,60], input:[18,20], exec:[12,15], review:[5,8], log:[2,4]};
   const now={choice:r.byType.choice||0, input:r.byType.input||0,
-             exec:(r.byType.code||0)+(r.byType.py||0)+(r.byType.sql||0)+(r.byType.html||0)+(r.byType.react||0)+(r.byType.ts||0),
+             exec:(r.byType.code||0)+(r.byType.py||0)+(r.byType.sql||0)+(r.byType.html||0)+(r.byType.react||0)+(r.byType.ts||0)+(r.byType.sim||0),
              review:r.byType.review||0, log:r.byType.log||0};
   const projected=Math.round(now.choice/(B.choice[1]/100));   // choice 60% 기준 최종 총량
   const gap=[];
@@ -261,6 +261,33 @@ function check(name, cond, detail){
   console.log("  콘텐츠: "+r.qs+"문항 / "+r.units+"유닛 / "+r.lessons+"레슨 · 유형 "+JSON.stringify(r.byType));
   console.log("  비율: "+Object.keys(B).map(k=>k+" "+(now[k]/r.qs*100).toFixed(1)+"%").join(" · "));
   console.log("  목표까지(choice 60% 환산 총 "+projected.toLocaleString()+"문항 기준): "+(gap.length?gap.join(" · "):"전부 달성"));
+  /* 10유형 구조(docs/CONTENT_POLICY.md) 진행률.
+     목표는 총 10,000문항 기준이고 아직 멀기 때문에 실패시키지 않고 진행률만 보고한다.
+     디버깅은 유형이 아니라 cat:"debug" 로 세므로 다른 칸과 겹칠 수 있다 — 그대로 표시한다. */
+  const cat10=await p.evaluate(()=>{
+    const c={choice:0,input:0,code:0,debug:0,review:0,log:0,sim:0};
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
+      const t=q.t||"choice";
+      if(q.cat==="debug") c.debug++;
+      if(t==="choice") c.choice++;
+      else if(t==="input") c.input++;
+      else if(t==="review") c.review++;
+      else if(t==="log") c.log++;
+      else if(t==="sim") c.sim++;
+      else c.code++;
+    })));
+    return {c, projects:(typeof PROJECTS!=="undefined"&&PROJECTS?Object.keys(PROJECTS).length:0),
+            buildDays:(typeof BUILD_PROJECTS!=="undefined"&&BUILD_PROJECTS?BUILD_PROJECTS.reduce((a,p)=>a+(p.days||[]).length,0):0)};
+  });
+  const TARGET10={choice:3000,input:1500,code:2000,debug:1000,review:800,log:500,sim:500};
+  console.log("  10유형 구조 (목표 10,000문항 기준):");
+  Object.keys(TARGET10).forEach(k=>{
+    const now=cat10.c[k]||0, t=TARGET10[k];
+    const bar=now>=t? "달성" : (t-now)+" 남음";
+    console.log("    "+k.padEnd(7)+String(now).padStart(5)+" / "+String(t).padStart(5)+"   "+bar);
+  });
+  console.log("    project  "+cat10.projects+" 프로젝트 · "+cat10.buildDays+" 빌드랩 Day (목표 500문항 상당)");
+
   console.log("  리뷰 분포: "+JSON.stringify(revNow));
   await p.close();
  }

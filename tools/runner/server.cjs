@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* CodeRun 로컬 실행 서버 — 브라우저에서 못 돌리는 언어를 "진짜 컴파일러" 로 실행한다.
+/* CodeRun 로컬 실행 서버 — 브라우저에서 못 돌리는 언어를 "진짜 컴파일러" 로 실행한다. (C · C++ · Java · Go · Rust)
  *
  * 왜 이게 필요한가
  *   C·C++·Java·Go 는 브라우저 안에서 정확하게 실행할 방법이 없다. 실제로 두 후보를
@@ -24,6 +24,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
+const REAL_HOME = process.env.HOME || os.homedir();
 const PORT = +(process.env.PORT || 8787);
 const HOST = process.env.HOST || "127.0.0.1";
 const TIMEOUT_MS = +(process.env.RUN_TIMEOUT_MS || 10000);
@@ -41,6 +42,9 @@ const LANGS = {
   java: { file: "Main.java", probe: ["javac", "-version"],
           build: (d) => run("javac", ["-nowarn", "-encoding", "UTF-8", "Main.java"], d),
           exec:  (d) => run("java", ["-Dfile.encoding=UTF-8", "-cp", ".", "Main"], d) },
+  rust: { file: "main.rs",   probe: ["rustc", "--version"],
+          build: (d) => run("rustc", ["-O", "--edition", "2021", "-A", "warnings", "-o", "prog", "main.rs"], d),
+          exec:  (d) => run(path.join(d, "prog"), [], d) },
   go:   { file: "main.go",   probe: ["go", "version"],
           build: (d) => { fs.writeFileSync(path.join(d, "go.mod"), "module run\n\ngo 1.21\n"); return { status: 0, stdout: "", stderr: "" }; },
           exec:  (d) => run("go", ["run", "."], d) },
@@ -54,6 +58,11 @@ function run(cmd, args, cwd, stdin) {
       PATH: process.env.PATH, HOME: cwd, LANG: "C.UTF-8",
       GOCACHE: path.join(cwd, ".gocache"), GOPATH: path.join(cwd, ".gopath"),
       GOFLAGS: "-mod=mod", GOTOOLCHAIN: "local", JAVA_TOOL_OPTIONS: "",
+      /* HOME 을 임시 디렉터리로 바꿔 격리하므로, 툴체인 위치는 따로 알려 줘야 한다.
+         rustup 은 $HOME/.rustup 을 보기 때문에 이걸 빼면 "toolchain 을 고를 수 없다" 로 실패한다. */
+      RUSTUP_HOME: process.env.RUSTUP_HOME || path.join(REAL_HOME, ".rustup"),
+      CARGO_HOME: process.env.CARGO_HOME || path.join(REAL_HOME, ".cargo"),
+      RUSTUP_TOOLCHAIN: process.env.RUSTUP_TOOLCHAIN || "stable",
     },
   });
   return {

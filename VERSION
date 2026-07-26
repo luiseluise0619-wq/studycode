@@ -6,7 +6,7 @@ Status: evolving (V2.0 milestone 2026-07-22, actively extended since)
 고른 트랙의 청크 하나만 뒤따라 받는다. 첫 로딩 10초대 → 1초대.
 
 Contents:
-- 32 tracks / 8,481 questions   (Python 934 · SQL 826 중심)
+- 32 tracks / 8,489 questions   (Python 934 · SQL 826 중심)
 - 실무 디버깅 챌린지 124개 (Python 56 · SQL 48 · JS 20): 버그 코드 고쳐 테스트 통과 + 원인/해결/재발방지. 실행 엔진으로 전량 기계 검증(정답 통과·버그 실패)
 - 직접 구현 54개 (Python 18 · SQL 16 · JS 20): 스텁→구현→실행 채점. 참조 정답 엔진 검증
 - 언어별 디버깅 100 (Java·C·C++·Go·React 각 20 · 유형 review + cat:debug): 컴파일은 되지만 잘못 동작하는
@@ -41,7 +41,7 @@ Contents:
 - 역량 점수: 활동량이 아니라 근거(최근 정답률·응용 이상 난이도·구현 통과율·표본)로 매번 재계산, 근거를 화면에 표시
 - 진도 키: 유닛/레슨 제목 기반 안정 ID (콘텐츠 추가로 진도가 어긋나지 않음)
 - 실행 가능한 언어 (브라우저 내장): JavaScript · Python(Pyodide) · SQL(sql.js) · HTML/CSS · React(JSX) · TypeScript
-- 실행 가능한 언어 (로컬 실행 서버): C · C++ · Java · Go — tools/runner/server.cjs 를 켜고 주소를 넣으면
+- 실행 가능한 언어 (로컬 실행 서버): C · C++ · Java · Go · Rust — tools/runner/server.cjs 를 켜고 주소를 넣으면
   기존 정적 언어 문항 352개(출력 예측 210 + 디버깅 80 + 기타)에서 '직접 실행해 보기' 패널이 열려
   코드를 고쳐 가며 실제 컴파일러 결과를 본다. 서버가 꺼져 있어도 나머지는 그대로 동작.
   브라우저 내 실행은 후보 둘(JSCPP·yaegi)을 실제로 돌려 보고 의미론 오류로 기각했다 — docs/CONTENT_POLICY.md
@@ -62,6 +62,11 @@ Contents:
 - 직접 코딩 99챌린지 (Implementation Score: 정확성·엣지·성능·품질) — JS/알고리즘
 - 직접 SQL 실행 채점 (sql.js SQLite WASM 인라인) — JOIN·집계·윈도우·CTE
 - 직접 Python 실행 채점 (Pyodide) — 함수 구현 → 테스트 통과, Implementation Score
+- 시뮬레이션 8문항 (새 유형 sim · L1~L4): 코드를 쓰고 결과를 눈으로 본다.
+  snap(라벨, 값, {hi:[...]}) 로 순간을 기록하면 배열은 막대로, 객체는 표로 그려지고
+  슬라이더·재생으로 되감아 볼 수 있다. 버블정렬 교환 / 이진탐색 범위 축소 / 스택 push·pop /
+  슬라이딩 윈도우 / 메모이제이션 표 / 얕은·깊은 복사 / 이벤트 루프 순서 / 상태 기계.
+  채점은 결과값 + 장면의 흐름(창이 한 칸씩 움직였는가 등)까지 확인
 - React 실행 채점 12문항 (유형 react · L1~L4): JSX 를 직접 쓰면 sucrase 가 변환하고
   실제 react-dom 이 iframe 에서 렌더한다. 클릭·입력까지 시킨 뒤 DOM 을 검사하므로
   "화면이 실제로 그렇게 동작하는가" 로 채점한다. 상태 직접 변경 · 핸들러 즉시 호출 ·

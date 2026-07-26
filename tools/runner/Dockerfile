@@ -4,7 +4,7 @@
 # --network none 을 주면 실행되는 코드가 바깥으로 나갈 수 없다.
 FROM node:22-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      gcc g++ default-jdk-headless golang-go \
+      gcc g++ default-jdk-headless golang-go rustc \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY server.cjs .
