@@ -157,7 +157,24 @@ function check(name, cond, detail){
   if(revShort.length) console.log("  리뷰 목표 미달("+REVIEW_GOAL+"개 기준): "+revShort.join(" · "));
   else check("지정 트랙 12개가 모두 리뷰 30개 이상", true);
 
+  /* 목표 비율 (docs/CONTENT_POLICY.md). choice 를 5,690 에 고정했을 때의 총량에서 역산한다.
+     미달은 실패가 아니라 진행률로 보고한다 — 달성까지 CI 가 계속 빨간불이면 의미가 없다. */
+  const B={choice:[55,60], input:[18,20], exec:[12,15], review:[5,8], log:[2,4]};
+  const now={choice:r.byType.choice||0, input:r.byType.input||0,
+             exec:(r.byType.code||0)+(r.byType.py||0)+(r.byType.sql||0),
+             review:r.byType.review||0, log:r.byType.log||0};
+  const projected=Math.round(now.choice/(B.choice[1]/100));   // choice 60% 기준 최종 총량
+  const gap=[];
+  Object.keys(B).forEach(k=>{
+    if(k==="choice") return;
+    const floor=Math.round(projected*B[k][0]/100);
+    if(now[k]<floor) gap.push(k+" "+now[k]+"/"+floor+" (+"+(floor-now[k])+")");
+  });
+  check("문항 유형이 5종 이상 실재한다", Object.keys(r.byType).length>=5, r.byType);
+
   console.log("  콘텐츠: "+r.qs+"문항 / "+r.units+"유닛 / "+r.lessons+"레슨 · 유형 "+JSON.stringify(r.byType));
+  console.log("  비율: "+Object.keys(B).map(k=>k+" "+(now[k]/r.qs*100).toFixed(1)+"%").join(" · "));
+  console.log("  목표까지(choice 60% 환산 총 "+projected.toLocaleString()+"문항 기준): "+(gap.length?gap.join(" · "):"전부 달성"));
   console.log("  리뷰 분포: "+JSON.stringify(revNow));
   await p.close();
  }
