@@ -738,6 +738,26 @@
   @keyframes aispin{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){ .ai-spin{animation-duration:1.6s} }
 
+  /* ---------- 막혔을 때 AI 에게 물어보기 (모든 문제 유형) ---------- */
+  .ask-open{display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px;
+    border:1px dashed var(--line); background:transparent; color:var(--ink-soft); font-weight:700;
+    font-size:12.5px; cursor:pointer; margin-top:12px; font-family:inherit}
+  .ask-open:hover{border-color:var(--brand); border-style:solid; color:var(--ink)}
+  .ask-panel{margin-top:10px; border:1px solid var(--line); border-radius:12px; background:var(--bg-soft); padding:12px}
+  .ask-chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:9px}
+  .ask-chip{padding:6px 11px; border-radius:999px; border:1px solid var(--line); background:var(--card);
+    color:var(--ink); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit}
+  .ask-chip:hover{border-color:var(--brand)}
+  .ask-chip.busy, .ask-panel.busy .ask-chip, .ask-panel.busy .ask-send{opacity:.5; pointer-events:none}
+  .ask-row{display:flex; gap:7px; align-items:flex-end}
+  .ask-in{flex:1; min-height:38px; max-height:120px; resize:vertical; padding:9px 11px; border:1px solid var(--line);
+    border-radius:10px; background:var(--card); color:var(--ink); font-size:13px; font-family:inherit; line-height:1.5}
+  .ask-in:focus{outline:none; border-color:var(--brand)}
+  .ask-send{padding:9px 14px; border-radius:10px; border:none; background:var(--ink); color:var(--bg);
+    font-weight:800; font-size:13px; cursor:pointer; font-family:inherit; white-space:nowrap}
+  .ask-note{font-size:11.5px; color:var(--ink-soft); margin:8px 0 0; line-height:1.5}
+  .ask-q{font-size:12px; font-weight:700; color:var(--ink-soft); margin:10px 0 0; font-family:var(--mono)}
+
   /* ---------- Monaco editor host (VS Code) — falls back to textarea if CDN blocked ---------- */
   .mon-host{height:200px; border:1px solid var(--line); border-radius:0 0 12px 12px; overflow:hidden; background:#1e1e1e}
   .mon-host .monaco-editor, .mon-host .monaco-editor .margin, .mon-host .monaco-editor-background{background-color:transparent}
@@ -1254,8 +1274,8 @@ function openAiSetup(){ const o=$("aiov"), body=$("aiov-body"); const c=aiCfg();
   const provOpts=Object.keys(AI_PROVIDERS).map(k=>`<option value="${k}"${c.provider===k?" selected":""}>${AI_PROVIDERS[k].name}</option>`).join("");
   const p=AI_PROVIDERS[c.provider];
   const modelOpts=p.models.map(m=>`<option${c.model===m?" selected":""}>${m}</option>`).join("");
-  body.innerHTML=`<div class="ovh">AI 코드 멘토 · V4</div><h2>시니어 코드 리뷰</h2>
-    <p class="sub">직접 코딩·SQL 문제를 푼 뒤, 당신의 코드를 시니어 기준으로 리뷰받으세요. 정확성·엣지·성능·가독성·프로덕션 관점의 피드백을 제공합니다.</p>
+  body.innerHTML=`<div class="ovh">AI 멘토 · V5</div><h2>막히면 물어보세요</h2>
+    <p class="sub"><b>모든 문제</b>에서 <b>🙋 모르겠어요</b> 버튼으로 물어볼 수 있습니다. 풀기 전에는 정답을 알려주지 않고 힌트·개념·접근법만 주며, 답을 낸 뒤에는 왜 그 답인지 전체 설명을 해 줍니다. 코딩·SQL 문제는 제출한 코드에 대한 시니어 리뷰(정확성·엣지·성능·가독성)도 받을 수 있어요.</p>
     <div class="ai-field"><label>제공자</label><select id="ai-prov">${provOpts}</select></div>
     <div class="ai-field"><label>모델</label><select id="ai-model">${modelOpts}</select></div>
     <div class="ai-field" id="ai-keyfield"${p.noKey?' style="display:none"':''}><label>API 키 (BYOK)</label><input id="ai-key" type="password" placeholder="${p.keyHint}" value="${escHtml(c.key||"")}"></div>
@@ -1286,6 +1306,138 @@ function aiReviewInto(host, q, code, lang){
   }).catch(e=>{
     host.innerHTML='<div class="ai-review"><div class="ai-head">AI 리뷰 실패</div><p>'+escHtml(String(e.message||e))+'</p><p class="ai-note">키가 올바른지, 로컬 파일에서 실행 중인지 확인해 주세요.</p></div>';
   });
+}
+/* ---- V5: 막혔을 때 물어보기 — 모든 문제 유형에서, 풀기 전에도 ----
+   기존 AI 리뷰는 코드·SQL 문제를 푼 *뒤*에만 열렸다. 막힌 순간에 물어볼 데가 없으면
+   결국 답을 보고 넘기게 된다. 그래서 어떤 유형이든 문제 화면에서 바로 물어볼 수 있게 한다.
+   단, 풀기 전에는 정답을 말하지 못하게 시스템 프롬프트로 잠근다 — 힌트는 학습이고 정답은 아니다. */
+function qPlain(s){   // 문항 필드에는 HTML(escape 된 코드 포함)이 섞여 있다. AI 에게는 평문으로 보낸다.
+  return String(s==null?"":s)
+    .replace(/<br\s*\/?>/gi,"\n").replace(/<\/(p|div|pre|li|tr)>/gi,"\n").replace(/<[^>]+>/g,"")
+    .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,"&")
+    .replace(/\n{3,}/g,"\n\n").trim();
+}
+function askEditorVal(q){
+  const ta=$(q.t==="sql"?"sqlcode":q.t==="py"?"pycode":"livecode");
+  return ta? String(ta.value||"") : "";   // Monaco 는 편집 내용을 textarea 로 되돌려 준다
+}
+function qAsText(q){
+  let s="[문제]\n"+qPlain(q.q);
+  if(q.code) s+="\n\n[주어진 코드]\n"+qPlain(q.code);
+  if(Array.isArray(q.o)) s+="\n\n[보기]\n"+q.o.map((o,i)=>String.fromCharCode(65+i)+". "+qPlain(o)).join("\n");
+  if(Array.isArray(q.items)){
+    const isLog=q.t==="log";
+    s+="\n\n["+(isLog?"로그":"검토 항목")+"]\n"+q.items.map((it,i)=>(i+1)+". "+qPlain(it.txt)).join("\n");
+    s+="\n\n(이 문제는 "+(isLog?"가장 먼저 고쳐야 하는 원인 한 줄을 고르는":"실제 결함인 항목을 모두 고르는")+" 문제다)";
+  }
+  if(q.t==="input") s+="\n\n(짧은 단답을 직접 입력하는 문제다)";
+  if(q.t==="code"||q.t==="py"||q.t==="sql"){
+    const lang=q.t==="sql"?"SQL":q.t==="py"?"Python":"JavaScript";
+    s+="\n\n(직접 "+lang+" 코드를 작성해 테스트를 통과시키는 문제다)";
+    if(q.schema) s+="\n\n[테이블 스키마]\n"+qPlain(q.schema);
+    if(Array.isArray(q.tests)&&q.tests.length)
+      s+="\n\n[통과해야 하는 테스트]\n"+q.tests.map(t=>qPlain(t.in)+" → "+qPlain(t.out)).join("\n");
+    const cur=askEditorVal(q);
+    if(cur.trim()) s+="\n\n[내가 지금 쓴 코드]\n"+cur;
+  }
+  return s;
+}
+function qAnswerText(q){
+  if(Array.isArray(q.items)){
+    const idx=[]; q.items.forEach((it,i)=>{ if(it.bad) idx.push(i+1); });
+    return idx.join(", ")+"번 — "+idx.map(n=>qPlain(q.items[n-1].txt)).join(" / ");
+  }
+  if(q.t==="input") return (q.a||[]).map(qPlain).join(" 또는 ");
+  if(Array.isArray(q.o)&&typeof q.a==="number") return String.fromCharCode(65+q.a)+". "+qPlain(q.o[q.a]);
+  if(q.sol) return q.sol;   // 실행형 참조 해답 (code 유형은 없을 수 있다 — 테스트가 명세다)
+  return "";
+}
+function myAnswerText(q){
+  if(Array.isArray(q.items)&&run.revsel) return [...run.revsel].map(i=>i+1).sort((a,b)=>a-b).join(", ")+"번";
+  if(q.t==="input"){ const f=$("fill"); return f? String(f.value||"") : ""; }
+  if(q.t==="code"||q.t==="py"||q.t==="sql") return askEditorVal(q);
+  if(Array.isArray(q.o)&&run.picked!=null) return String.fromCharCode(65+run.picked)+". "+qPlain(q.o[run.picked]);
+  return "";
+}
+const ASK_MODES={
+  hint:   {label:"💡 힌트만",     ask:"정답은 알려주지 말고, 어디를 봐야 하는지 힌트만 주세요."},
+  concept:{label:"📖 개념 설명",   ask:"이 문제를 풀려면 알아야 하는 개념을 설명해 주세요."},
+  how:    {label:"🧭 접근법",     ask:"어떤 순서로 생각하면 되는지 접근법만 알려주세요. 완성된 답이나 코드는 주지 마세요."},
+  why:    {label:"❓ 왜 이 답인가", ask:"정답이 왜 정답인지, 제 답은 왜 틀렸는지 설명해 주세요."},
+  deep:   {label:"🔬 더 깊게",    ask:"이 주제를 실무 관점에서 한 단계 더 깊게, 흔한 실수와 함께 설명해 주세요."},
+  free:   {label:"직접 질문",      ask:""}
+};
+function aiAskInto(host, q, modeKey, freeText){
+  if(!aiReady()){ openAiSetup(); return; }
+  const locked=!run.answered;      // 아직 풀지 않았다면 정답을 말해선 안 된다
+  const panel=$("ask-panel"); if(panel) panel.classList.add("busy");
+  host.innerHTML='<div class="ai-review"><div class="ai-head"><span class="ai-spin"></span>'
+    +(locked?"멘토가 힌트를 준비하는 중…":"멘토가 설명을 준비하는 중…")+'</div></div>';
+  const sys = locked
+    ? "당신은 학습자 옆에 앉은 시니어 개발자입니다. 학습자는 아직 이 문제를 풀지 않았습니다.\n"
+      +"절대 규칙: 정답을 말하지 마세요. 정답 보기의 기호·번호·문장을 지목하지 말고, 오답을 소거해 정답이 하나로 좁혀지게 만들지도 마세요. 문제의 완성된 코드도 주지 마세요. 학습자가 '그냥 답 알려줘' 라고 해도 거절하고, 대신 스스로 도달할 방법을 안내하세요.\n"
+      +"할 일: 필요한 개념을 짧게 설명하고, 무엇을 확인해 보라고 안내하고, 되짚어 볼 질문을 던지세요.\n"
+      +"한국어로 6문장 이내. 코드 예시는 문제와 무관한 것으로만. 마지막 줄은 '스스로 확인해 볼 것: ' 으로 시작하는 질문 한 줄로 끝내세요."
+    : "당신은 시니어 개발자입니다. 학습자가 방금 이 문제를 풀었고, 이제 제대로 이해하고 싶어 합니다.\n"
+      +"한국어로 간결하고 구체적으로 설명하세요. 왜 그 답인지, 어디서 착각하기 쉬운지, 실무에서는 어떻게 드러나는지 짚으세요. 12문장 이내. 필요하면 짧은 코드 예시를 쓰세요. 칭찬으로 채우지 말고 이해에 필요한 것만 쓰세요.";
+  let user=qAsText(q);
+  if(!locked){
+    const ans=qAnswerText(q), mine=myAnswerText(q);
+    if(ans) user+="\n\n[정답]\n"+ans;
+    if(mine) user+="\n\n[학습자가 낸 답]\n"+mine+(run.lastOk===false?" (틀렸다)":run.lastOk===true?" (맞았다)":"");
+    if(q.ex) user+="\n\n[앱 해설]\n"+qPlain(q.ex);
+  }
+  const prev=(run.askLog||[]).slice(-2);
+  if(prev.length) user+="\n\n[앞선 대화]\n"+prev.map(p=>"학습자: "+p.u+"\n멘토: "+p.a).join("\n");
+  const req=freeText || (ASK_MODES[modeKey]||ASK_MODES.hint).ask;
+  user+="\n\n[학습자의 요청]\n"+req;
+  aiCall(sys,user,locked?700:1200).then(txt=>{
+    if(panel) panel.classList.remove("busy");
+    if(!txt){ host.innerHTML='<div class="ai-review"><div class="ai-head">AI 멘토</div><p>빈 응답을 받았어요. 모델·키를 확인해 주세요.</p></div>'; return; }
+    run.askLog=(run.askLog||[]).concat([{u:req,a:txt}]).slice(-4);
+    host.innerHTML='<div class="ai-review"><div class="ai-head">'+(locked?"💡 힌트 · ":"🎓 AI 멘토 · ")+escHtml(aiCfg().model)+'</div>'
+      +'<p class="ask-q">Q. '+escHtml(req)+'</p>'+aiMd(txt)
+      +(locked?'<p class="ask-note">정답은 일부러 알려주지 않았어요. 먼저 스스로 답해 보면, 그 뒤에는 전체 설명을 해 줍니다.</p>':'')+'</div>';
+    run.askHtml=host.innerHTML;   // 화면이 다시 그려져도(인출→보기, 채점) 물어본 내용은 남긴다
+  }).catch(e=>{
+    if(panel) panel.classList.remove("busy");
+    /* 로컬 파일로 열면 서버 프록시(/api/review)가 없다 — 내 키를 넣으면 바로 쓸 수 있다 */
+    const localProxy = location.protocol==="file:" && aiCfg().provider==="proxy";
+    host.innerHTML='<div class="ai-review"><div class="ai-head">AI 멘토 연결 실패</div><p>'+escHtml(String(e.message||e))+'</p>'
+      +'<p class="ask-note">'+(localProxy
+        ? '파일로 열었을 때는 서버 프록시를 쓸 수 없어요. 내 API 키를 넣으면 바로 물어볼 수 있습니다.'
+        : '오프라인이거나 키가 없으면 물어볼 수 없어요. 문제 풀이와 해설은 그대로 됩니다.')
+      +'</p><button class="ask-chip" id="ask-setup">🔑 AI 멘토 설정 열기</button></div>';
+    const su=$("ask-setup"); if(su) su.onclick=()=>openAiSetup();
+  });
+}
+function addAiAsk(q){
+  const qb=$("qbody"); if(!qb) return;
+  /* 화면이 다시 그려질 때(인출 → 보기 전환, 채점 직후)도 물어본 내용은 남긴다.
+     innerHTML 로 본문을 통째로 갈아치우는 경로가 있어서 DOM 이 아니라 run 에 보관한다. */
+  const keep=run.askHtml||"", wasOpen=!!run.askOpen;
+  const old=$("ask-slot"); if(old) old.remove();
+  const answered=!!run.answered;
+  const modes = answered? ["why","deep","concept"] : ["hint","concept","how"];
+  const wrap=document.createElement("div"); wrap.id="ask-slot";
+  wrap.innerHTML='<button class="ask-open" id="ask-open">🙋 '+(answered?"더 설명해 달라고 물어보기":"모르겠어요 · AI에게 물어보기")+'</button>'
+    +'<div class="ask-panel" id="ask-panel" style="display:none">'
+    +'<div class="ask-chips">'+modes.map(m=>'<button class="ask-chip" data-m="'+m+'">'+ASK_MODES[m].label+'</button>').join("")+'</div>'
+    +(answered?'':'<p class="ask-note" style="margin:0 0 8px">정답은 알려주지 않아요 — 힌트·개념·접근법까지만.</p>')
+    +'<div class="ask-row"><textarea class="ask-in" id="ask-in" rows="1" spellcheck="false" placeholder="'
+    +(answered?"궁금한 걸 물어보세요":"막힌 부분을 물어보세요")+'"></textarea>'
+    +'<button class="ask-send" id="ask-send">물어보기</button></div><div id="ask-host"></div></div>';
+  qb.appendChild(wrap);
+  const panel=$("ask-panel"), host=$("ask-host");
+  if(keep) host.innerHTML=keep;
+  if(wasOpen||keep) panel.style.display="";
+  $("ask-open").onclick=()=>{ const on=panel.style.display!=="none"; panel.style.display=on?"none":"";
+    run.askOpen=!on;
+    if(!on) setTimeout(()=>{ try{$("ask-in").focus();}catch(_){} },40); };
+  wrap.querySelectorAll(".ask-chip").forEach(b=>b.onclick=()=>aiAskInto(host,q,b.dataset.m,""));
+  const send=()=>{ const t=$("ask-in").value.trim(); if(!t) return; aiAskInto(host,q,"free",t); };
+  $("ask-send").onclick=send;
+  $("ask-in").onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } };
 }
 /* ---- Monaco (VS Code) 에디터 · CDN 로드, 차단 시 textarea 폴백 ---- */
 const MON_BASE="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/";
@@ -3166,7 +3318,7 @@ function showQ(){
   disposeMon();
   $("prog").style.width=(run.i/run.total*100)+"%";
   $("l-hearts").textContent=run.free?"∞":run.hearts;
-  run.answered=false; run.picked=null;
+  run.answered=false; run.picked=null; run.lastOk=null; run.askLog=[]; run.askHtml=""; run.askOpen=false;
   run.rcDone=false; run.rcHit=false; run.rcText=""; run.rcTried=false;
   const foot=$("foot"); foot.className="foot"; $("foot-msg").innerHTML="";
   const chk=$("check"); chk.className="btn"; chk.textContent="확인"; chk.disabled=true;
@@ -3255,7 +3407,7 @@ function showQ(){
     };
     const showOpts=()=>{
       body.innerHTML=html+mineHtml()+optsHtml;
-      body.scrollTop=0; wireOpts(); afterRender();
+      body.scrollTop=0; wireOpts(); addAiAsk(q); afterRender();
     };
     if(recallOn(q) && !run.rcDone){
       body.innerHTML=html+
@@ -3291,6 +3443,7 @@ function showQ(){
   if(q.t==="code"){ chk.disabled=false; }
   if(q.t==="sql"){ setupSql(q); chk.disabled=false; mountMonaco("sqlcode","sql"); }
   if(q.t==="py"){ setupPy(q); chk.disabled=false; mountMonaco("pycode","python"); }
+  addAiAsk(q);   // 유형과 무관하게 — 막혔을 때 바로 물어볼 수 있어야 한다
 }
 function jsDoc(code){return '<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#e6e9f2;white-space:pre-wrap;word-break:break-word"><scr'+'ipt>var O=document.body,LOG="";function W(c,a){var t=[].map.call(a,function(x){return (typeof x==="object"&&x!==null)?JSON.stringify(x):String(x)}).join(" ");LOG+=t+"\\n";var d=document.createElement("div");if(c)d.style.color=c;d.textContent=t;O.appendChild(d);}console.log=function(){W("",arguments)};console.error=function(){W("#ff6b6b",arguments)};console.warn=function(){W("#ffc773",arguments)};try{'+code+'\n}catch(e){W("#ff6b6b",[e]);}try{parent.postMessage({__cr:"out",text:LOG},"*")}catch(e){}</scr'+'ipt></body>';}
 function renderLive(mode,code){const f=$("liveview");if(!f)return;f.srcdoc=(mode==="js")?jsDoc(code):code;}
@@ -3509,7 +3662,7 @@ function onCheck(){
   applyResult(ok, correctText, q);
 }
 function applyResult(ok, correctText, q){
-  run.answered=true;
+  run.answered=true; run.lastOk=ok;
   bumpDaily(); logAnswer(ok,q);
   if(run.diag&&run.diagTrk){ const k=run.diagTrk[run.i]; if(run.diagRes[k]){ run.diagRes[k].t++; if(ok) run.diagRes[k].c++; } }
   const foot=$("foot"), msg=$("foot-msg"), chk=$("check");
@@ -3529,6 +3682,7 @@ function applyResult(ok, correctText, q){
   chk.textContent="계속"; chk.disabled=false;
   afterRender();
   if(q.t==="code"||q.t==="sql") addAiReview(q);
+  addAiAsk(q);   // 채점 뒤에는 정답 잠금을 풀고 '왜 이 답인가' 를 물을 수 있게 다시 그린다
   chk.onclick=()=>{
     if(!run.free && run.hearts<=0){ endLesson(false); return; }
     run.i++;
@@ -4423,7 +4577,7 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
   <button class="hubrow" id="p2-cause"><span class="hb-em">🔍</span><span class="hb-t"><span>원인 추적</span><span class="hb-s">증상만 보고 근본 원인을 규명</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-diag"><span class="hb-em">🩺</span><span class="hb-t"><span>실력 진단</span><span class="hb-s">짧은 진단으로 현재 위치 확인</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-proj"><span class="hb-em">🚀</span><span class="hb-t"><span>프로젝트 미션</span><span class="hb-s">요구사항부터 운영·장애까지 8단계</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-ai"><span class="hb-em">🎓</span><span class="hb-t"><span>AI 코드 멘토 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">V4</span></span><span class="hb-s">${aiReady()?"연결됨 · "+escHtml(aiCfg().model)+" · 코딩 문제에서 리뷰 받기":"BYOK 키 연결 · 시니어 기준 코드 리뷰"}</span></span><span class="hb-go">→</span></button>
+  <button class="hubrow" id="p2-ai"><span class="hb-em">🎓</span><span class="hb-t"><span>AI 멘토 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">V5</span></span><span class="hb-s">${aiReady()?"연결됨 · "+escHtml(aiCfg().model)+" · 모든 문제에서 물어보기":"BYOK 키 연결 · 힌트·개념 질문 + 코드 리뷰"}</span></span><span class="hb-go">→</span></button>
   <button class="ovclose alt" id="p2-close" style="margin-top:16px">닫기</button>`;
  $("p2-build").onclick=()=>{ o.classList.remove("on"); openBuildLab(); };
  $("p2-git").onclick=()=>{ o.classList.remove("on"); openGitLab(); };

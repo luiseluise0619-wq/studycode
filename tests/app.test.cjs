@@ -444,6 +444,50 @@ function check(name, cond, detail){
   await p.close();
  }
 
+ /* ---------- 막혔을 때 AI 에게 물어보기 (V5) ---------- */
+ {
+  const p=await page();
+  const r=await p.evaluate(async()=>{
+    const calls=[];
+    window.aiCall=(sys,user)=>{ calls.push({sys,user}); return Promise.resolve("힌트 응답"); };
+    startLesson("python",0,0);
+    if(document.querySelector("#qbody .th-sum")) document.getElementById("check").click();
+    const skip=document.getElementById("rc-skip"); if(skip) skip.click();
+    const out={btn:!!document.getElementById("ask-open")};
+    out.closedAtFirst=document.getElementById("ask-panel").style.display==="none";
+    document.getElementById("ask-open").click();
+    out.chips=[...document.querySelectorAll(".ask-chip")].map(c=>c.dataset.m).join(",");
+    document.querySelector('.ask-chip[data-m="hint"]').click();
+    await new Promise(r=>setTimeout(r,50));
+    out.locked=/정답을 말하지 마세요/.test(calls[0].sys);
+    out.noLeak=!/\[정답\]/.test(calls[0].user);
+    out.sentProblem=/\[문제\]/.test(calls[0].user);
+    out.shown=/힌트 응답/.test(document.getElementById("ask-host").innerHTML);
+    const o=document.querySelector("#opts .opt"), f=document.getElementById("fill");
+    if(o) o.click(); else if(f){ f.value="x"; f.dispatchEvent(new Event("input")); }
+    document.getElementById("check").click();
+    await new Promise(r=>setTimeout(r,60));
+    out.kept=/힌트 응답/.test(document.getElementById("ask-host").innerHTML);
+    out.chips2=[...document.querySelectorAll(".ask-chip")].map(c=>c.dataset.m).join(",");
+    document.querySelector('.ask-chip[data-m="why"]').click();
+    await new Promise(r=>setTimeout(r,50));
+    const last=calls[calls.length-1];
+    out.unlocked=!/정답을 말하지 마세요/.test(last.sys);
+    out.sentAnswer=/\[정답\]/.test(last.user);
+    return out;
+  });
+  check("모든 문제에 물어보기 버튼이 있다", r.btn===true, r);
+  check("질문 패널은 접힌 상태로 시작한다", r.closedAtFirst===true, r);
+  check("풀기 전에는 힌트·개념·접근법만 제시한다", r.chips==="hint,concept,how", r);
+  check("풀기 전 프롬프트가 정답을 잠근다", r.locked===true && r.noLeak===true, r);
+  check("문제 내용이 프롬프트에 실린다", r.sentProblem===true, r);
+  check("AI 응답이 문제 화면에 표시된다", r.shown===true, r);
+  check("채점 후에도 물어본 내용이 남는다", r.kept===true, r);
+  check("채점 후에는 정답 해설을 물을 수 있다", r.chips2==="why,deep,concept", r);
+  check("채점 후 프롬프트에 정답이 실린다", r.unlocked===true && r.sentAnswer===true, r);
+  await p.close();
+ }
+
  /* ---------- 주요 화면이 열린다 ---------- */
  {
   const p=await page();
