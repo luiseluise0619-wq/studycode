@@ -197,8 +197,9 @@ Java·C·C++·Go 는 브라우저 실행이 없습니다. 그래도 다음은 �
      드러나는 완전한 프로그램을 함께 만들어 javac·gcc·g++·go run -race 로 재현을 확인한 뒤 주입
    - ✅ React 디버깅 20 (react-test-renderer 로 실제 렌더링해 증상 재현 확인)
    - ✅ OS 로그 20 (커널·cgroup·systemd) · 네트워크 로그 20 (DNS·TLS·MTU·conntrack·타임아웃)
-   - 남은 구멍: 출력예측(java +20 · c +30 · cpp +20 · go +20) ·
-     Python·JS·SQL 리뷰 각 +14~16 · SQL/Python 결과 예측 각 +30 · OS 디버깅 +6 · 실행형 +757
+   - ✅ 출력 예측 2차 +90 (Java 20 · C 30 포인터 추적 · C++ 20 · Go 20, 전량 실제 컴파일러 검증)
+   - ✅ Python·JavaScript·SQL 리뷰 +45 → 세 트랙 모두 30 달성 (12트랙 + 언어 3트랙 = 15트랙)
+   - 남은 구멍: SQL·Python 결과 예측 각 30 · OS 디버깅 +6 · 실행형 +757
 8. 실행형 확대 — 부족분 exec +757 (JS `code` · Python `py` · SQL `sql`) · input +372
 9. 빌드 랩 9 → 40 Day
 10. Git 미션 12 → 25

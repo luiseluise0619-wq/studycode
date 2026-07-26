@@ -131,6 +131,18 @@ function check(name, cond, detail){
     return {units, lessons, qs, byType, noTheory, badTheory, badChoice, badLog, badReview,
             introMissing, perTrack, missions:GIT_MISSIONS.length, sims:SIMS.length, diags:DIAGS.length};
   });
+  /* 셸(index.html)의 n 과 데이터 청크의 실제 문항 수가 어긋나면 목록에 잘못된 개수가 표시된다.
+     주입기가 검증 실패 시 일부 파일만 저장해 실제로 이 상태가 만들어진 적이 있어 검사로 고정한다. */
+  const nMismatch=await p.evaluate(()=>{
+    const bad=[];
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>{
+      if(Array.isArray(l.q) && typeof l.n==="number" && l.q.length!==l.n)
+        bad.push(k+"/"+u.title+"/"+l.title+" n="+l.n+" 실제="+l.q.length);
+    }));
+    return bad;
+  });
+  check("셸의 문항 수와 데이터의 실제 문항 수가 일치한다", nMismatch.length===0, nMismatch.slice(0,5));
+
   check("모든 레슨에 이론이 있다", r.noTheory===0, {noTheory:r.noTheory});
   check("이론이 요약·본문2절·예제·요점을 모두 갖춘다", r.badTheory===0, {badTheory:r.badTheory});
   check("선택형은 4개의 서로 다른 보기와 유효한 정답을 갖는다", r.badChoice===0, {badChoice:r.badChoice});
@@ -168,13 +180,13 @@ function check(name, cond, detail){
      FLOOR 는 콘텐츠를 넣을 때마다 같이 올린다. 내려서 통과시키지 말 것. */
   const MATRIX={
     //          review  log  exec  predict(input)  debug(cat)
-    python:     {review:15,            exec:80,               "cat:debug":71},
-    javascript: {review:14,            exec:64,               "cat:debug":47},
-    sql:        {review:16, log:20,    exec:87,               "cat:debug":57},
-    java:       {review:32,                       predict:30, "cat:debug":20},
-    c:          {review:32,                       predict:30, "cat:debug":20},
-    cpp:        {review:32,                       predict:30, "cat:debug":20},
-    go:         {review:32,                       predict:30, "cat:debug":20},
+    python:     {review:30,            exec:80,               "cat:debug":71},
+    javascript: {review:30,            exec:64,               "cat:debug":47},
+    sql:        {review:30, log:20,    exec:87,               "cat:debug":57},
+    java:       {review:32,                       predict:50, "cat:debug":20},
+    c:          {review:32,                       predict:60, "cat:debug":20},
+    cpp:        {review:32,                       predict:50, "cat:debug":20},
+    go:         {review:32,                       predict:50, "cat:debug":20},
     react:      {review:50,                                   "cat:debug":20},
     web:        {review:30},
     os:         {review:30, log:20,                           "cat:debug":4},
