@@ -17,20 +17,70 @@ function check(name, cond, detail){
 (async()=>{
  const browser=await chromium.launch(EXEC?{executablePath:EXEC}:{});
  const errs=[];
- async function page(state){
+ /* 앱은 셸만 먼저 뜨고 문항은 청크로 따라온다. 테스트는 필요한 청크를 명시적으로 기다린다.
+    opt.all=true 면 32개 트랙을 전부 받는다(전수 검사용, 느리다). */
+ async function page(state, opt){
    const p=await browser.newPage({viewport:{width:390,height:800}});
    p.on("pageerror",e=>errs.push("pageerror: "+e.message));
    await p.addInitScript(s=>{ try{ localStorage.setItem("coderun", JSON.stringify(s)); }catch(e){} },
      Object.assign({onboarded:true, goal:"free", freeMode:true}, state||{}));
    await p.goto(FILE);
    await p.waitForFunction(()=>typeof COURSES!=="undefined", {timeout:60000});
+   await p.evaluate(()=>Promise.all([ensureTrack(curLang), ensureProjects(), ensureSims(), ensureDiags()]));
+   if(opt&&opt.all){
+     await p.evaluate(()=>Promise.all(Object.keys(COURSES).map(k=>ensureTrack(k))), null);
+     await p.waitForFunction(()=>Object.keys(COURSES).every(k=>trackLoaded(k)), {timeout:120000});
+   }
+   await p.evaluate(()=>{ renderCourse(); });
    await p.waitForTimeout(700);
    return p;
  }
 
+ /* ---------- 분할된 앱 셸이 먼저 뜨고, 문항은 뒤따라 온다 ---------- */
+ {
+  const fs=require("fs");
+  const shell=fs.statSync(path.join(__dirname,"..","index.html")).size;
+  check("셸(index.html)이 600KB 미만이다", shell<600*1024, {bytes:shell});
+  const dataDir=path.join(__dirname,"..","data");
+  const files=fs.readdirSync(dataDir);
+  check("트랙 청크가 32개 있다", files.filter(f=>/^t-.+\.js$/.test(f)).length===32,
+        {n:files.filter(f=>/^t-.+\.js$/.test(f)).length});
+  check("시뮬·진단·프로젝트·SQL 청크가 있다",
+        ["sims.js","diags.js","projects.js","sql-wasm.js","sql-lib.js"].every(f=>files.indexOf(f)>=0), files);
+
+  const p=await browser.newPage({viewport:{width:390,height:800}});
+  const asked=[];
+  p.on("pageerror",e=>errs.push("pageerror: "+e.message));
+  p.on("request",r=>{ const u=r.url(); if(u.indexOf("/data/")>=0) asked.push(u.split("/").pop()); });
+  await p.addInitScript(s=>{ try{ localStorage.setItem("coderun", JSON.stringify(s)); }catch(e){} },
+    {onboarded:true, goal:"free", freeMode:true});
+  await p.goto(FILE);
+  await p.waitForFunction(()=>document.querySelectorAll(".node").length>0, {timeout:60000});
+  const early=await p.evaluate(()=>({
+    nodes:document.querySelectorAll(".node").length,
+    tracks:Object.keys(COURSES).length,
+    loaded:Object.keys(COURSES).filter(k=>trackLoaded(k))
+  }));
+  check("문항 없이도 트랙 지도가 그려진다", early.nodes>0 && early.tracks===32, early);
+  check("첫 화면에 다른 트랙은 받지 않는다", asked.filter(f=>/^t-/.test(f)).length<=1, asked.slice(0,8));
+  await p.waitForFunction(()=>trackLoaded(curLang), {timeout:60000});
+  const after=await p.evaluate(()=>{
+    let q=0, th=0; COURSES[curLang].units.forEach(u=>u.lessons.forEach(l=>{ q+=(l.q||[]).length; if(l.theory) th++; }));
+    return {q, th};
+  });
+  check("현재 트랙 청크가 붙으면 문항과 이론이 생긴다", after.q>500 && after.th>100, after);
+  const other=await p.evaluate(()=>ensureTrack("go").then(()=>{
+    let q=0; COURSES.go.units.forEach(u=>u.lessons.forEach(l=>q+=(l.q||[]).length)); return q;
+  }));
+  check("다른 트랙도 요청 시 붙는다", other>100, {go:other});
+  const sqlOk=await p.evaluate(()=>ensureSqlLib().then(()=>typeof initSqlJs==="function").catch(()=>false));
+  check("SQL 엔진이 필요할 때만 늦게 로드된다", sqlOk===true);
+  await p.close();
+ }
+
  /* ---------- 콘텐츠 무결성 ---------- */
  {
-  const p=await page();
+  const p=await page(null,{all:true});
   const r=await p.evaluate(()=>{
     let units=0, lessons=0, qs=0, noTheory=0, badTheory=0, badChoice=0, badLog=0, badReview=0;
     const byType={};
@@ -227,7 +277,7 @@ function check(name, cond, detail){
 
  /* ---------- 인출 모드 ---------- */
  {
-  const p=await page();
+  const p=await page(null,{all:true});
   // 채점기: 오답을 정답으로 인정하는 일이 없어야 한다 (전 선택형 문항 전수)
   const g=await p.evaluate(()=>{
     const all=[];
