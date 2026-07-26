@@ -6,7 +6,7 @@ Status: evolving (V2.0 milestone 2026-07-22, actively extended since)
 고른 트랙의 청크 하나만 뒤따라 받는다. 첫 로딩 10초대 → 1초대.
 
 Contents:
-- 32 tracks / 8,375 questions   (Python 903 · SQL 795 중심)
+- 32 tracks / 8,457 questions   (Python 934 · SQL 826 중심)
 - 실무 디버깅 챌린지 124개 (Python 56 · SQL 48 · JS 20): 버그 코드 고쳐 테스트 통과 + 원인/해결/재발방지. 실행 엔진으로 전량 기계 검증(정답 통과·버그 실패)
 - 직접 구현 54개 (Python 18 · SQL 16 · JS 20): 스텁→구현→실행 채점. 참조 정답 엔진 검증
 - 언어별 디버깅 100 (Java·C·C++·Go·React 각 20 · 유형 review + cat:debug): 컴파일은 되지만 잘못 동작하는
@@ -23,7 +23,10 @@ Contents:
   · JS·React 14 · 파이썬 15 · SQL 16 · Java 12 · C 12 · C++ 12 · Go 12
   코드 결함 다중선택(오탐 섞임), 집합 일치 채점. 정답 집합 통과 + 오탐 1개 추가 시 실패를 전 문항 기계 검증
 - Git 시뮬레이터 미션 12개: 브라우저에서 동작하는 Git 모델(commit/branch/merge·충돌/rebase/reset/revert/cherry-pick/stash/push·pull/tag/diff), 엔진 단위테스트 37 + 미션 해결경로 12 검증
-- 출력 예측 210문항 (Java 50 · C 60 · C++ 50 · Go 50, 문제 유형 input): 코드를 보고 실제 출력을 적는다.
+- 출력 예측 272문항 (Java 50 · C 60 · C++ 50 · Go 50 + SQL 31 · Python 31)
+  SQL 은 앱과 같은 sql.js(SQLite WASM) 로, Python 은 python3 로 실제 실행해 정답을 뽑았다.
+  JOIN 행 수 · NULL 의미론 · 윈도우 함수 · 클로저 · 제너레이터 · 가변 기본 인자 등
+- (기존) 정적 언어 출력 예측 210문항 (Java 50 · C 60 · C++ 50 · Go 50, 문제 유형 input): 코드를 보고 실제 출력을 적는다.
   C 는 포인터 추적(산술 단위·배열 붕괴·구조체 패딩·공용체·2차원 배열) 중심으로 30문항 추가.
   정답을 손으로 적지 않고 실제 javac·gcc·g++·go 로 컴파일·실행해 표준출력과 대조(검증에서 오답 3건 적발).
   실행 엔진이 없는 정적 언어를 디버깅·리뷰·출력예측으로 훈련한다는 정책의 실행.
@@ -54,6 +57,12 @@ Contents:
 - 직접 코딩 99챌린지 (Implementation Score: 정확성·엣지·성능·품질) — JS/알고리즘
 - 직접 SQL 실행 채점 (sql.js SQLite WASM 인라인) — JOIN·집계·윈도우·CTE
 - 직접 Python 실행 채점 (Pyodide) — 함수 구현 → 테스트 통과, Implementation Score
+- HTML/CSS 실행 채점 20문항 (유형 html · 난이도 L1~L4): 마크업·스타일을 직접 고치면
+  브라우저가 실제로 렌더하고, 계산된 스타일(getComputedStyle)과 실제 좌표(getBoundingClientRect)로
+  채점한다. 실행 엔진을 따로 싣지 않아 오프라인에서도 그대로 동작.
+  flex/grid 정렬 · box-sizing · 마진 상쇄 · sticky · z-index · ellipsis 3조건 · object-fit
+  + 접근성(alt · label[for] · th[scope] · aria-describedby · 대비 4.5:1 · 포커스 표시)
+  검증: 20문항 전량 시작 코드 미통과 + 참조 해답 전 검사 통과를 브라우저 렌더로 확인
 - Monaco(VS Code) 에디터 — 코드/SQL/Python 편집(문법 강조·자동완성), CDN 차단 시 textarea 폴백
 - Real Work 시뮬레이션 172       (장애·설계결정·기술선택·이해관계자·프로덕트·윤리; Wave3 +47 · best 판정 적대적 검토)
 - 원인 추적 진단 42              (불완전 정보 → 근본원인, red herring 포함; Wave3 +16 · 단서-원인 정합성 검토)
