@@ -32,7 +32,7 @@ function check(name, cond, detail){
  {
   const p=await page();
   const r=await p.evaluate(()=>{
-    let units=0, lessons=0, qs=0, noTheory=0, badTheory=0, badChoice=0, badLog=0;
+    let units=0, lessons=0, qs=0, noTheory=0, badTheory=0, badChoice=0, badLog=0, badReview=0;
     const byType={};
     for(const k in COURSES) COURSES[k].units.forEach(u=>{ units++; u.lessons.forEach(l=>{
       lessons++;
@@ -56,16 +56,27 @@ function check(name, cond, detail){
           const bad=(q.items||[]).filter(x=>x.bad).length;
           if(!q.items || q.items.length<6 || bad<1 || bad>=q.items.length) badLog++;
         }
+        if(q.t==="review"){
+          // 결함이 하나도 없거나 전부 결함이면 '모두 고르기'가 훈련이 되지 않는다
+          const bad=(q.items||[]).filter(x=>x.bad).length;
+          if(!q.items || q.items.length<4 || bad<1 || bad>=q.items.length) badReview++;
+          else {
+            const norm=q.items.map(x=>String(x.txt).replace(/\s+/g," ").trim());
+            if(new Set(norm).size!==norm.length) badReview++;      // 후보 중복 = 채점 불가
+          }
+          if(!q.code) badReview++;
+        }
       });
     });});
     const introMissing=Object.keys(COURSES).filter(k=>!TRACK_INTRO[k]);
-    return {units, lessons, qs, byType, noTheory, badTheory, badChoice, badLog,
+    return {units, lessons, qs, byType, noTheory, badTheory, badChoice, badLog, badReview,
             introMissing, missions:GIT_MISSIONS.length, sims:SIMS.length, diags:DIAGS.length};
   });
   check("모든 레슨에 이론이 있다", r.noTheory===0, {noTheory:r.noTheory});
   check("이론이 요약·본문2절·예제·요점을 모두 갖춘다", r.badTheory===0, {badTheory:r.badTheory});
   check("선택형은 4개의 서로 다른 보기와 유효한 정답을 갖는다", r.badChoice===0, {badChoice:r.badChoice});
   check("로그 문항 구조가 올바르다", r.badLog===0, {badLog:r.badLog});
+  check("리뷰 문항 구조가 올바르다", r.badReview===0, {badReview:r.badReview});
   check("모든 트랙에 분야 소개가 있다", r.introMissing.length===0, r.introMissing);
   check("Git 미션 12개", r.missions===12, {missions:r.missions});
   console.log("  콘텐츠: "+r.qs+"문항 / "+r.units+"유닛 / "+r.lessons+"레슨 · 유형 "+JSON.stringify(r.byType));
