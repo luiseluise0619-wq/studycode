@@ -299,6 +299,35 @@ function check(name, cond, detail){
   await p.close();
  }
 
+ /* ---------- 빌드 랩이 실제로 코드를 실행해 채점한다 ---------- */
+ {
+  const p=await page();
+  const r=await p.evaluate(async()=>{
+    S.build={}; save();
+    openBuildLab(); blOpen(0); BL.di=0; blApplyDayFiles(); blRender();
+
+    blRun(); await new Promise(r=>setTimeout(r,900));
+    const seed=(BL.res||[]).filter(x=>x.ok).length, total=(BL.res||[]).length;
+
+    Object.assign(S.build.orders.files, BUILD_SOL.orders[0]); save(); blRender();
+    blRun(); await new Promise(r=>setTimeout(r,900));
+    const sol=(BL.res||[]).filter(x=>x.ok).length;
+    const recorded=S.build.orders.done.indexOf(1)>=0;
+
+    S.build.orders.files["app.js"]="function handle(){ while(true){} }\nmodule.exports={handle};\n";
+    save(); blRender(); blRun(); await new Promise(r=>setTimeout(r,6000));
+    const loopGuard=!BL.running && (BL.res||[]).some(x=>/무한 루프/.test(x.err||""));
+
+    closeBuildLab();
+    return {seed, total, sol, recorded, loopGuard};
+  });
+  check("시작 코드로는 수용 기준을 통과하지 못한다", r.seed<r.total, r);
+  check("참조 해답으로는 전부 통과한다", r.sol===r.total && r.total>0, r);
+  check("통과한 Day 가 기록된다", r.recorded, r);
+  check("무한 루프가 있어도 앱이 멈추지 않는다", r.loopGuard, r);
+  await p.close();
+ }
+
  /* ---------- 주요 화면이 열린다 ---------- */
  {
   const p=await page();
@@ -313,6 +342,8 @@ function check(name, cond, detail){
     tryOpen("프로필", ()=>openProfile2(), ".skb");
     try{ openGitLab(); out["Git 시뮬레이터"]=!!document.querySelector(".glm"); closeGitLab(); }
     catch(e){ out["Git 시뮬레이터"]="ERR "+e.message; }
+    try{ openBuildLab(); out["빌드 랩"]=!!document.querySelector(".blp"); closeBuildLab(); }
+    catch(e){ out["빌드 랩"]="ERR "+e.message; }
     document.body.style.overflow="";
     return out;
   });
