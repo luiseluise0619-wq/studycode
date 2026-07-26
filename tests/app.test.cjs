@@ -145,7 +145,8 @@ function check(name, cond, detail){
   const REVIEW_TRACKS=["react","sysd","os","net","web","ai","ml","pandas","numpy","mleval","backend","devops"];
   const REVIEW_FLOOR={};      // 트랙: 지금까지 확보한 최소치 (확대할 때마다 같이 올린다)
   REVIEW_TRACKS.forEach(k=>{ REVIEW_FLOOR[k]=REVIEW_FLOOR[k]||0; });
-  Object.assign(REVIEW_FLOOR, {backend:30, react:30, devops:32, os:30, net:30, sysd:30, web:28, ai:30, ml:30});
+  Object.assign(REVIEW_FLOOR, {backend:30, react:30, devops:32, os:30, net:30, sysd:30, web:30,
+                               ai:30, ml:30, mleval:30, pandas:30, numpy:30});
   const revNow={}, revShort=[], revRegress=[];
   REVIEW_TRACKS.forEach(k=>{
     const n=(r.perTrack[k]||{}).review||0;
