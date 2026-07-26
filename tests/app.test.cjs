@@ -175,10 +175,10 @@ function check(name, cond, detail){
     c:          {review:32,                       predict:30, "cat:debug":20},
     cpp:        {review:32,                       predict:30, "cat:debug":20},
     go:         {review:32,                       predict:30, "cat:debug":20},
-    react:      {review:30,                                   "cat:debug":3},
+    react:      {review:50,                                   "cat:debug":20},
     web:        {review:30},
-    os:         {review:30, log:0,                            "cat:debug":4},
-    net:        {review:30, log:20},
+    os:         {review:30, log:20,                           "cat:debug":4},
+    net:        {review:30, log:40},
     devops:     {review:32, log:120}
   };
   const GOAL={

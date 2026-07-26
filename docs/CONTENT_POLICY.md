@@ -195,8 +195,10 @@ Java·C·C++·Go 는 브라우저 실행이 없습니다. 그래도 다음은 �
 7. **언어별 유형 매트릭스 채우기** ← 진행 중
    - ✅ Java·C·C++·Go 디버깅 각 20 (review + `cat:debug`, 총 +80). 각 문항은 버그가 실제로
      드러나는 완전한 프로그램을 함께 만들어 javac·gcc·g++·go run -race 로 재현을 확인한 뒤 주입
-   - 남은 구멍: 출력예측(java +20 · c +30 · cpp +20 · go +20) · React 디버깅 +17 ·
-     OS 로그 +20 · 네트워크 로그 +20 · Python·JS·SQL 리뷰 각 +14~16 · 실행형 +757
+   - ✅ React 디버깅 20 (react-test-renderer 로 실제 렌더링해 증상 재현 확인)
+   - ✅ OS 로그 20 (커널·cgroup·systemd) · 네트워크 로그 20 (DNS·TLS·MTU·conntrack·타임아웃)
+   - 남은 구멍: 출력예측(java +20 · c +30 · cpp +20 · go +20) ·
+     Python·JS·SQL 리뷰 각 +14~16 · SQL/Python 결과 예측 각 +30 · OS 디버깅 +6 · 실행형 +757
 8. 실행형 확대 — 부족분 exec +757 (JS `code` · Python `py` · SQL `sql`) · input +372
 9. 빌드 랩 9 → 40 Day
 10. Git 미션 12 → 25
