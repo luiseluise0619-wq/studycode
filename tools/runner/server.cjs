@@ -1,0 +1,143 @@
+#!/usr/bin/env node
+/* CodeRun 로컬 실행 서버 — 브라우저에서 못 돌리는 언어를 "진짜 컴파일러" 로 실행한다.
+ *
+ * 왜 이게 필요한가
+ *   C·C++·Java·Go 는 브라우저 안에서 정확하게 실행할 방법이 없다. 실제로 두 후보를
+ *   시험해 보고 둘 다 기각했다 (docs/CONTENT_POLICY.md 참고):
+ *     - JSCPP(C++ 인터프리터): -7/2 를 -4 로 계산 (정답 -3)
+ *     - yaegi(Go 인터프리터): defer 인자 평가 시점, defer 루프, nil 인터페이스가 명세와 다름
+ *   틀린 결과를 가르치느니, 진짜 컴파일러를 옆에서 돌리는 편이 낫다.
+ *
+ * 쓰는 법
+ *   node tools/runner/server.cjs            # 기본 http://127.0.0.1:8787
+ *   PORT=9000 node tools/runner/server.cjs
+ *   앱 → 설정 → "로컬 실행 서버" 에 주소를 넣으면 C·C++·Java·Go 문제에서 실행 버튼이 열린다.
+ *
+ * 보안
+ *   이 서버는 받은 소스를 그대로 컴파일·실행한다. 기본값은 127.0.0.1 바인딩이라
+ *   같은 기계에서만 접근된다. 절대 공개 인터페이스에 그대로 노출하지 말 것.
+ *   격리가 필요하면 tools/runner/Dockerfile 로 컨테이너 안에서 돌린다.
+ */
+const http = require("http");
+const { spawnSync } = require("child_process");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+
+const PORT = +(process.env.PORT || 8787);
+const HOST = process.env.HOST || "127.0.0.1";
+const TIMEOUT_MS = +(process.env.RUN_TIMEOUT_MS || 10000);
+const MAX_SRC = 200 * 1024;      // 소스 200KB 상한
+const MAX_OUT = 64 * 1024;       // 출력 64KB 상한 (무한 출력 방어)
+
+/* 언어별 컴파일·실행 방법. 없는 도구는 시작할 때 알려 준다. */
+const LANGS = {
+  c:    { file: "main.c",    probe: ["gcc", "--version"],
+          build: (d) => run("gcc", ["-std=c11", "-O1", "-w", "-o", "prog", "main.c"], d),
+          exec:  (d) => run(path.join(d, "prog"), [], d) },
+  cpp:  { file: "main.cpp",  probe: ["g++", "--version"],
+          build: (d) => run("g++", ["-std=c++17", "-O1", "-w", "-o", "prog", "main.cpp"], d),
+          exec:  (d) => run(path.join(d, "prog"), [], d) },
+  java: { file: "Main.java", probe: ["javac", "-version"],
+          build: (d) => run("javac", ["-nowarn", "-encoding", "UTF-8", "Main.java"], d),
+          exec:  (d) => run("java", ["-Dfile.encoding=UTF-8", "-cp", ".", "Main"], d) },
+  go:   { file: "main.go",   probe: ["go", "version"],
+          build: (d) => { fs.writeFileSync(path.join(d, "go.mod"), "module run\n\ngo 1.21\n"); return { status: 0, stdout: "", stderr: "" }; },
+          exec:  (d) => run("go", ["run", "."], d) },
+};
+
+function run(cmd, args, cwd, stdin) {
+  const r = spawnSync(cmd, args, {
+    cwd, encoding: "utf8", timeout: TIMEOUT_MS, input: stdin || "",
+    maxBuffer: MAX_OUT * 4,
+    env: {
+      PATH: process.env.PATH, HOME: cwd, LANG: "C.UTF-8",
+      GOCACHE: path.join(cwd, ".gocache"), GOPATH: path.join(cwd, ".gopath"),
+      GOFLAGS: "-mod=mod", GOTOOLCHAIN: "local", JAVA_TOOL_OPTIONS: "",
+    },
+  });
+  return {
+    status: r.status,
+    signal: r.signal,
+    stdout: cap(r.stdout || ""),
+    stderr: cap(r.stderr || ""),
+    timedOut: r.error && r.error.code === "ETIMEDOUT",
+  };
+}
+function cap(s) { return s.length > MAX_OUT ? s.slice(0, MAX_OUT) + "\n…(출력이 잘렸습니다)" : s; }
+
+function execute(lang, source, stdin) {
+  const spec = LANGS[lang];
+  if (!spec) return { error: "지원하지 않는 언어: " + lang };
+  if (typeof source !== "string" || !source.trim()) return { error: "소스가 비어 있습니다" };
+  if (source.length > MAX_SRC) return { error: "소스가 너무 큽니다 (200KB 상한)" };
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "coderun-"));
+  try {
+    fs.writeFileSync(path.join(dir, spec.file), source);
+    const t0 = Date.now();
+    const b = spec.build(dir);
+    if (b.timedOut) return { error: "컴파일 시간 초과" };
+    if (b.status !== 0) return { compileError: b.stderr || b.stdout || "컴파일 실패" };
+    const e = spec.exec(dir, stdin);
+    if (e.timedOut) return { stdout: e.stdout, stderr: e.stderr, timedOut: true,
+                             error: "실행 시간 초과 (" + TIMEOUT_MS + "ms) — 무한 루프인지 확인하세요" };
+    return { stdout: e.stdout, stderr: e.stderr, exit: e.status,
+             signal: e.signal || null, ms: Date.now() - t0 };
+  } catch (err) {
+    return { error: String((err && err.message) || err) };
+  } finally {
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {}
+  }
+}
+
+const CORS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-headers": "content-type",
+  "access-control-allow-methods": "POST, GET, OPTIONS",
+};
+
+const server = http.createServer((req, res) => {
+  const send = (code, obj) =>
+    res.writeHead(code, Object.assign({ "content-type": "application/json; charset=utf-8" }, CORS))
+       .end(JSON.stringify(obj));
+
+  if (req.method === "OPTIONS") return res.writeHead(204, CORS).end();
+  if (req.method === "GET" && req.url.startsWith("/health"))
+    return send(200, { ok: true, langs: available() });
+
+  if (req.method !== "POST" || !req.url.startsWith("/run"))
+    return send(404, { error: "POST /run 또는 GET /health 를 쓰세요" });
+
+  let body = "";
+  let tooBig = false;
+  req.on("data", (c) => {
+    body += c;
+    if (body.length > MAX_SRC + 4096) { tooBig = true; req.destroy(); }
+  });
+  req.on("end", () => {
+    if (tooBig) return send(413, { error: "요청이 너무 큽니다" });
+    let j;
+    try { j = JSON.parse(body); } catch (_) { return send(400, { error: "JSON 파싱 실패" }); }
+    send(200, execute(j.lang, j.source, j.stdin));
+  });
+});
+
+function available() {
+  const out = {};
+  for (const [k, v] of Object.entries(LANGS)) {
+    const r = spawnSync(v.probe[0], v.probe.slice(1), { encoding: "utf8", timeout: 8000 });
+    out[k] = r.status === 0;
+  }
+  return out;
+}
+
+server.listen(PORT, HOST, () => {
+  const av = available();
+  const ok = Object.keys(av).filter((k) => av[k]);
+  const no = Object.keys(av).filter((k) => !av[k]);
+  console.log("CodeRun 실행 서버: http://" + HOST + ":" + PORT);
+  console.log("  사용 가능: " + (ok.join(", ") || "(없음)"));
+  if (no.length) console.log("  없음: " + no.join(", ") + "  ← 해당 컴파일러를 설치하면 자동으로 켜집니다");
+  console.log("  앱 설정의 '로컬 실행 서버' 에 위 주소를 넣으세요.");
+});

@@ -40,9 +40,12 @@ Contents:
 - 인출 모드: 선택형 문항의 보기를 먼저 감추고 직접 적게 함 (정답 인정 91% · 오답 인정 0%), 근거에 '보기 없이 답한 비율' 표시
 - 역량 점수: 활동량이 아니라 근거(최근 정답률·응용 이상 난이도·구현 통과율·표본)로 매번 재계산, 근거를 화면에 표시
 - 진도 키: 유닛/레슨 제목 기반 안정 ID (콘텐츠 추가로 진도가 어긋나지 않음)
-- 실행 가능한 언어: JavaScript · Python(Pyodide) · SQL(sql.js) · HTML/CSS · React(JSX) · TypeScript
-  Java·C·C++·Go 는 브라우저 실행이 불가능하므로 실제 컴파일러로 검증한 출력 예측·디버깅으로 훈련
-- 테스트: tests/engine.test.cjs 77 + tests/app.test.cjs 71, GitHub Actions 연결
+- 실행 가능한 언어 (브라우저 내장): JavaScript · Python(Pyodide) · SQL(sql.js) · HTML/CSS · React(JSX) · TypeScript
+- 실행 가능한 언어 (로컬 실행 서버): C · C++ · Java · Go — tools/runner/server.cjs 를 켜고 주소를 넣으면
+  기존 정적 언어 문항 352개(출력 예측 210 + 디버깅 80 + 기타)에서 '직접 실행해 보기' 패널이 열려
+  코드를 고쳐 가며 실제 컴파일러 결과를 본다. 서버가 꺼져 있어도 나머지는 그대로 동작.
+  브라우저 내 실행은 후보 둘(JSCPP·yaegi)을 실제로 돌려 보고 의미론 오류로 기각했다 — docs/CONTENT_POLICY.md
+- 테스트: tests/engine.test.cjs 77 + tests/app.test.cjs 76, GitHub Actions 연결
   · 셸의 표시 문항 수와 데이터의 실제 문항 수 일치를 검사 (주입 중단으로 어긋난 적이 있어 고정)
 - 언어별 유형 매트릭스(docs/CONTENT_POLICY.md): 트랙마다 '그 언어답게' 채울 유형과 최소 확보량을
   표로 고정하고 테스트가 회귀를 막는다. 미달분은 실패가 아니라 진행률로 보고

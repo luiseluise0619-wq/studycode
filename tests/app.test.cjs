@@ -510,6 +510,40 @@ function check(name, cond, detail){
   await p.close();
  }
 
+ /* ---------- 로컬 실행 서버 연동 (C·C++·Java·Go) ---------- */
+ {
+  const p=await page();
+  const r=await p.evaluate(()=>{
+    const out={};
+    /* 설정이 없으면 실행 패널이 뜨면 안 된다 (오프라인 기본 동작을 해치지 않는다) */
+    S.runner={url:""};
+    out.readyWhenEmpty=runnerReady();
+    /* 조각 코드를 완전한 프로그램으로 감싸는 규칙 */
+    out.javaWrap=/public class Main/.test(wrapForRun("java",'System.out.println(1);'));
+    out.javaKeepsMain=wrapForRun("java","public class Main { public static void main(String[] a){} }")
+      .indexOf("public class Main {\n")!==0;
+    out.cWrap=/#include <stdio.h>[\s\S]*int main\(void\)/.test(wrapForRun("c",'printf("x");'));
+    out.cKeepsMain=!/int main\(void\)/.test(wrapForRun("c",'#include <stdio.h>\nint main(){return 0;}'));
+    out.goWrap=/^package main/.test(wrapForRun("go",'fmt.Println(1)'));
+    out.goKeepsMain=wrapForRun("go","package main\nfunc main(){}").indexOf("package main")===0;
+    out.cppWrap=/#include <iostream>[\s\S]*int main\(void\)/.test(wrapForRun("cpp",'std::cout<<1;'));
+    /* 주소를 넣으면 준비 상태가 된다 */
+    S.runner={url:"http://127.0.0.1:8787/"};
+    out.readyWhenSet=runnerReady();
+    out.baseTrimmed=runnerBase()==="http://127.0.0.1:8787";
+    S.runner={url:""};
+    return out;
+  });
+  check("실행 서버 주소가 없으면 연동이 꺼져 있다", r.readyWhenEmpty===false, r);
+  check("주소를 넣으면 연동이 켜지고 끝 슬래시를 정리한다", r.readyWhenSet===true && r.baseTrimmed===true, r);
+  check("Java 조각을 실행 가능한 프로그램으로 감싼다", r.javaWrap===true, r);
+  check("이미 main 이 있으면 그대로 둔다 (Java·C·Go)",
+        r.javaKeepsMain===true && r.cKeepsMain===true && r.goKeepsMain===true, r);
+  check("C·C++·Go 조각도 각 언어 규칙대로 감싼다",
+        r.cWrap===true && r.cppWrap===true && r.goWrap===true, r);
+  await p.close();
+ }
+
  /* ---------- 막혔을 때 AI 에게 물어보기 (V5) ---------- */
  {
   const p=await page();

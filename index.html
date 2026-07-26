@@ -3466,6 +3466,7 @@ function showQ(){
   if(q.t==="react"){ setupReact(q); chk.disabled=false; mountMonaco("livecode","javascript"); }
   if(q.t==="ts"){ setupTs(q); chk.disabled=false; mountMonaco("livecode","typescript"); }
   addAiAsk(q);   // 유형과 무관하게 — 막혔을 때 바로 물어볼 수 있어야 한다
+  addRunPanel(q); // C·C++·Java·Go 문항: 실행 서버가 켜져 있으면 직접 돌려볼 수 있게
 }
 function jsDoc(code){return '<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#e6e9f2;white-space:pre-wrap;word-break:break-word"><scr'+'ipt>var O=document.body,LOG="";function W(c,a){var t=[].map.call(a,function(x){return (typeof x==="object"&&x!==null)?JSON.stringify(x):String(x)}).join(" ");LOG+=t+"\\n";var d=document.createElement("div");if(c)d.style.color=c;d.textContent=t;O.appendChild(d);}console.log=function(){W("",arguments)};console.error=function(){W("#ff6b6b",arguments)};console.warn=function(){W("#ffc773",arguments)};try{'+code+'\n}catch(e){W("#ff6b6b",[e]);}try{parent.postMessage({__cr:"out",text:LOG},"*")}catch(e){}</scr'+'ipt></body>';}
 function renderLive(mode,code){const f=$("liveview");if(!f)return;f.srcdoc=(mode==="js")?jsDoc(code):code;}
@@ -3509,6 +3510,105 @@ function testDoc(code,spec){
   +'parent.postMessage(__out,"*");'
   +'}catch(e){document.body.innerHTML="<div style=\\"color:#ff6b6b\\">[\\ucf54\\ub4dc \\uc5d0\\ub7ec] "+esc(String(e&&e.message||e))+"</div>";var __e={__cr:"test",pass:0,total:(TS.length||0),impl:0,gate:false};try{window.__cr_result=__e;}catch(_){}try{parent.postMessage(__e,"*");}catch(_){}}'
   +'</scr'+'ipt></body>';
+}
+/* ===== 로컬 실행 서버 (C·C++·Java·Go) =====
+   브라우저 안에서 이 네 언어를 정확히 실행할 방법이 없다. 후보를 실제로 돌려 보고 둘 다
+   기각했다: JSCPP 는 -7/2 를 -4 로 계산하고(정답 -3), yaegi 는 defer 인자 평가 시점과
+   nil 인터페이스가 명세와 다르다. 틀린 결과를 가르치느니 진짜 컴파일러를 옆에서 돌린다.
+   tools/runner/server.cjs 를 켜고 주소를 넣으면 실행 버튼이 열린다. 안 켜도 나머지는 그대로 동작한다. */
+const RUN_LANGS={java:"java", c:"c", cpp:"cpp", go:"go"};
+const RUN_LABEL={java:"Java", c:"C", cpp:"C++", go:"Go"};
+function runnerCfg(){ if(!S.runner) S.runner={url:""}; return S.runner; }
+function runnerReady(){ return !!(runnerCfg().url||"").trim(); }
+function runnerBase(){ return (runnerCfg().url||"").trim().replace(/\/+$/,""); }
+function runnerHealth(){
+  if(!runnerReady()) return Promise.resolve({ok:false, error:"주소가 설정되지 않았어요"});
+  return fetch(runnerBase()+"/health").then(r=>r.json()).catch(e=>({ok:false, error:String(e.message||e)}));
+}
+function runnerRun(lang, source, stdin){
+  if(!runnerReady()) return Promise.resolve({error:"실행 서버 주소가 설정되지 않았어요"});
+  return fetch(runnerBase()+"/run",{method:"POST",headers:{"content-type":"application/json"},
+    body:JSON.stringify({lang:lang, source:source, stdin:stdin||""})})
+    .then(r=>r.json())
+    .catch(e=>({error:"실행 서버에 연결하지 못했어요 ("+String(e.message||e)+")"}));
+}
+/* 문항의 코드 조각을 그 언어의 완전한 프로그램으로 감싼다. 이미 main 이 있으면 그대로 둔다. */
+function wrapForRun(lang, code){
+  const c=String(code||"");
+  if(lang==="java"){
+    if(/class\s+Main\b/.test(c)) return c;
+    if(/public\s+static\s+void\s+main\b/.test(c)) return "public class Main {\n"+c+"\n}\n";
+    return "public class Main {\n  public static void main(String[] args) {\n"+
+           c.split("\n").map(l=>"    "+l).join("\n")+"\n  }\n}\n";
+  }
+  if(lang==="c"||lang==="cpp"){
+    const heads = lang==="c" ? "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n"
+                             : "#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\n";
+    if(/\bint\s+main\s*\(/.test(c)) return (/#include/.test(c)? "" : heads)+c;
+    return heads+"int main(void) {\n"+c.split("\n").map(l=>"  "+l).join("\n")+
+           "\n  return 0;\n}\n";
+  }
+  if(/func\s+main\s*\(/.test(c)) return (/^\s*package\s/.test(c)? "" : "package main\n\n")+c;
+  return "package main\n\nimport \"fmt\"\n\nvar _ = fmt.Sprint\n\nfunc main() {\n"+
+         c.split("\n").map(l=>"\t"+l).join("\n")+"\n}\n";
+}
+/* 정적 언어 문항 아래에 "직접 실행" 패널을 붙인다 (실행 서버가 켜져 있을 때만) */
+function addRunPanel(q){
+  const qb=$("qbody"); if(!qb) return;
+  const old=$("run-slot"); if(old) old.remove();
+  const lang=RUN_LANGS[run.lang];
+  if(!lang || !q.code || !runnerReady()) return;
+  const wrap=document.createElement("div"); wrap.id="run-slot";
+  wrap.innerHTML='<button class="ask-open" id="run-open">▶ '+RUN_LABEL[lang]+' 로 직접 실행해 보기</button>'
+    +'<div class="ask-panel" id="run-panel" style="display:none">'
+    +'<p class="ask-note" style="margin:0 0 8px">로컬 실행 서버가 실제 컴파일러로 돌립니다. 코드를 고쳐서 결과가 어떻게 달라지는지 확인해 보세요.</p>'
+    +'<textarea class="live-code" id="run-src" spellcheck="false" style="height:150px;border-radius:10px"></textarea>'
+    +'<div class="ask-row" style="margin-top:8px"><button class="ask-send" id="run-go">실행</button>'
+    +'<button class="ask-chip" id="run-reset">원래 코드로</button></div>'
+    +'<div id="run-out"></div></div>';
+  qb.appendChild(wrap);
+  const panel=$("run-panel"), ta=$("run-src"), host=$("run-out");
+  const initial=wrapForRun(lang, unescHtml(q.code));
+  ta.value=initial;
+  $("run-open").onclick=()=>{ const on=panel.style.display!=="none"; panel.style.display=on?"none":""; };
+  $("run-reset").onclick=()=>{ ta.value=initial; host.innerHTML=""; };
+  $("run-go").onclick=()=>{
+    host.innerHTML='<div class="ai-review"><div class="ai-head"><span class="ai-spin"></span>컴파일·실행 중…</div></div>';
+    runnerRun(lang, ta.value).then(r=>{
+      let body;
+      if(r.error) body='<div class="ai-head">실행 실패</div><p>'+escHtml(r.error)+'</p>';
+      else if(r.compileError) body='<div class="ai-head">컴파일 오류</div><pre class="code" style="margin:0">'+escHtml(r.compileError)+'</pre>';
+      else body='<div class="ai-head">실행 결과 · '+RUN_LABEL[lang]+(r.ms!=null?" · "+r.ms+"ms":"")+'</div>'
+        +'<pre class="code" style="margin:0">'+escHtml(r.stdout||"(출력 없음)")+'</pre>'
+        +(r.stderr? '<div class="ai-head" style="margin-top:8px">stderr</div><pre class="code" style="margin:0">'+escHtml(r.stderr)+'</pre>':'')
+        +(r.exit? '<p class="ask-note">종료 코드 '+r.exit+'</p>':'');
+      host.innerHTML='<div class="ai-review">'+body+'</div>';
+    });
+  };
+}
+function unescHtml(s){ return String(s==null?"":s)
+  .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,"&"); }
+function openRunnerSetup(){
+  const o=$("aiov"), body=$("aiov-body"); const c=runnerCfg();
+  body.innerHTML=`<div class="ovh">로컬 실행 서버</div><h2>C · C++ · Java · Go 직접 실행</h2>
+    <p class="sub">이 네 언어는 브라우저 안에서 정확히 실행할 방법이 없습니다(인터프리터들은 <b>정수 나눗셈·defer·nil 인터페이스</b> 같은 기본 의미론을 틀리게 계산합니다). 대신 내 컴퓨터에서 <b>진짜 컴파일러</b>를 돌리는 작은 서버를 켜면, 문제의 코드를 고쳐 가며 실제 결과를 볼 수 있습니다.</p>
+    <div class="ai-field"><label>서버 주소</label><input id="rn-url" placeholder="http://127.0.0.1:8787" value="${escHtml(c.url||"")}"></div>
+    <p class="ai-note">터미널에서 <code>node tools/runner/server.cjs</code> 를 실행한 뒤 위 주소를 넣으세요.
+    격리해서 돌리려면 <code>tools/runner/Dockerfile</code> 을 쓰세요 — <code>--network none</code> 으로 바깥 연결을 막을 수 있습니다.
+    <b>공개 인터페이스에 노출하지 마세요</b>: 받은 코드를 그대로 실행합니다.</p>
+    <div id="rn-stat" class="ai-note"></div>
+    <button class="ovclose" id="rn-test" style="margin-top:12px">연결 확인</button>
+    <button class="ovclose alt" id="rn-save">저장하고 닫기</button>`;
+  $("rn-test").onclick=()=>{ const u=$("rn-url").value.trim(); S.runner={url:u};
+    $("rn-stat").textContent="확인 중…";
+    runnerHealth().then(h=>{ $("rn-stat").innerHTML = h.ok
+      ? "✅ 연결됨 · 사용 가능: "+Object.keys(h.langs||{}).filter(k=>h.langs[k]).map(k=>RUN_LABEL[k]||k).join(", ")
+      : "❌ 연결 실패 — "+escHtml(h.error||"서버가 켜져 있는지 확인하세요"); }); };
+  $("rn-save").onclick=()=>{ S.runner={url:$("rn-url").value.trim()}; save();
+    o.classList.remove("on"); document.body.style.overflow="";
+    toast(runnerReady()?"실행 서버를 연결했어요.":"실행 서버 주소를 비웠어요."); };
+  o.onclick=e=>{ if(e.target===o){ o.classList.remove("on"); document.body.style.overflow=""; } };
+  o.classList.add("on"); document.body.style.overflow="hidden";
 }
 /* ===== HTML/CSS 실행 채점 =====
    사용자가 쓴 마크업·스타일을 그대로 렌더한 뒤, 그 문서 안에서 DOM 과 계산된 스타일을
@@ -4771,6 +4871,7 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
   <button class="hubrow" id="p2-cause"><span class="hb-em">🔍</span><span class="hb-t"><span>원인 추적</span><span class="hb-s">증상만 보고 근본 원인을 규명</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-diag"><span class="hb-em">🩺</span><span class="hb-t"><span>실력 진단</span><span class="hb-s">짧은 진단으로 현재 위치 확인</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-proj"><span class="hb-em">🚀</span><span class="hb-t"><span>프로젝트 미션</span><span class="hb-s">요구사항부터 운영·장애까지 8단계</span></span><span class="hb-go">→</span></button>
+  <button class="hubrow" id="p2-run"><span class="hb-em">▶</span><span class="hb-t"><span>로컬 실행 서버 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">C·C++·Java·Go</span></span><span class="hb-s">${runnerReady()?"연결됨 · "+escHtml(runnerBase()):"켜면 정적 언어 코드를 진짜 컴파일러로 실행"}</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-ai"><span class="hb-em">🎓</span><span class="hb-t"><span>AI 멘토 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">V5</span></span><span class="hb-s">${aiReady()?"연결됨 · "+escHtml(aiCfg().model)+" · 모든 문제에서 물어보기":"BYOK 키 연결 · 힌트·개념 질문 + 코드 리뷰"}</span></span><span class="hb-go">→</span></button>
   <button class="ovclose alt" id="p2-close" style="margin-top:16px">닫기</button>`;
  $("p2-build").onclick=()=>{ o.classList.remove("on"); openBuildLab(); };
@@ -4783,6 +4884,7 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
  $("p2-diag").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; startDiagnostic(); };
  $("p2-proj").onclick=()=>{ o.classList.remove("on"); openProjects(); };
  $("p2-ai").onclick=()=>{ o.classList.remove("on"); openAiSetup(); };
+ if($("p2-run")) $("p2-run").onclick=()=>{ o.classList.remove("on"); openRunnerSetup(); };
  $("p2-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
  o.classList.add("on"); document.body.style.overflow="hidden";
 }
