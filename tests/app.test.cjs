@@ -122,7 +122,11 @@ function check(name, cond, detail){
     /* 트랙별 유형 분포 — 콘텐츠 정책(docs/CONTENT_POLICY.md) 강제용 */
     const perTrack={};
     for(const k in COURSES){ const c={};
-      COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{ const t=q.t||"choice"; c[t]=(c[t]||0)+1; })));
+      COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
+        const t=q.t||"choice"; c[t]=(c[t]||0)+1;
+        c.exec=(c.exec||0)+((t==="code"||t==="py"||t==="sql")?1:0);
+        if(q.cat) c["cat:"+q.cat]=(c["cat:"+q.cat]||0)+1;
+      })));
       perTrack[k]=c; }
     return {units, lessons, qs, byType, noTheory, badTheory, badChoice, badLog, badReview,
             introMissing, perTrack, missions:GIT_MISSIONS.length, sims:SIMS.length, diags:DIAGS.length};
@@ -157,6 +161,56 @@ function check(name, cond, detail){
   check("리뷰 확보량이 뒷걸음질하지 않는다", revRegress.length===0, revRegress);
   if(revShort.length) console.log("  리뷰 목표 미달("+REVIEW_GOAL+"개 기준): "+revShort.join(" · "));
   else check("지정 트랙 12개가 모두 리뷰 30개 이상", true);
+
+  /* 언어별 유형 매트릭스 (docs/CONTENT_POLICY.md).
+     각 트랙이 "그 언어답게" 채워졌는지 본다. GOAL 은 정책 목표, FLOOR 는 지금까지의 확보량 —
+     FLOOR 아래로 떨어지면 실패(회귀 방지), GOAL 미달은 진행률로만 보고한다.
+     FLOOR 는 콘텐츠를 넣을 때마다 같이 올린다. 내려서 통과시키지 말 것. */
+  const MATRIX={
+    //          review  log  exec  predict(input)  debug(cat)
+    python:     {review:15,            exec:80,               "cat:debug":71},
+    javascript: {review:14,            exec:64,               "cat:debug":47},
+    sql:        {review:16, log:20,    exec:87,               "cat:debug":57},
+    java:       {review:32,                       predict:30, "cat:debug":20},
+    c:          {review:32,                       predict:30, "cat:debug":20},
+    cpp:        {review:32,                       predict:30, "cat:debug":20},
+    go:         {review:32,                       predict:30, "cat:debug":20},
+    react:      {review:30,                                   "cat:debug":3},
+    web:        {review:30},
+    os:         {review:30, log:0,                            "cat:debug":4},
+    net:        {review:30, log:20},
+    devops:     {review:32, log:120}
+  };
+  const GOAL={
+    python:     {review:30,            exec:100, predict:30,  "cat:debug":70},
+    javascript: {review:30,            exec:90,               "cat:debug":50},
+    sql:        {review:30, log:20,    exec:100, predict:30,  "cat:debug":55},
+    java:       {review:30,                      predict:50,  "cat:debug":20},
+    c:          {review:30,                      predict:60,  "cat:debug":20},
+    cpp:        {review:30,                      predict:50,  "cat:debug":20},
+    go:         {review:30,                      predict:50,  "cat:debug":20},
+    react:      {review:30,                                   "cat:debug":20},
+    web:        {review:30},
+    os:         {review:30, log:20,                           "cat:debug":10},
+    net:        {review:30, log:40},
+    devops:     {review:30, log:120}
+  };
+  const cnt=(k,key)=>{ const t=r.perTrack[k]||{};
+    return key==="predict" ? (t["cat:predict"]||0) : (t[key]||0); };
+  const mxRegress=[], mxShort=[];
+  Object.keys(MATRIX).forEach(k=>{
+    Object.keys(MATRIX[k]).forEach(key=>{
+      const n=cnt(k,key), floor=MATRIX[k][key];
+      if(n<floor) mxRegress.push(k+"."+key+" "+n+"<"+floor);
+    });
+    Object.keys(GOAL[k]||{}).forEach(key=>{
+      const n=cnt(k,key), goal=GOAL[k][key];
+      if(n<goal) mxShort.push(k+"."+key+" "+n+"/"+goal);
+    });
+  });
+  check("언어별 유형 확보량이 뒷걸음질하지 않는다", mxRegress.length===0, mxRegress);
+  if(mxShort.length) console.log("  매트릭스 미달: "+mxShort.join(" · "));
+  else check("언어별 유형 매트릭스가 전부 목표에 도달했다", true);
 
   /* 목표 비율 (docs/CONTENT_POLICY.md). choice 를 5,690 에 고정했을 때의 총량에서 역산한다.
      미달은 실패가 아니라 진행률로 보고한다 — 달성까지 CI 가 계속 빨간불이면 의미가 없다. */
