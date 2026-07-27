@@ -1818,6 +1818,7 @@ function openBuildLab(){
 function closeBuildLab(){
   $("blab").classList.remove("on"); document.body.style.overflow=""; BL=null;
   clearTimeout(__blTimer);
+  blFreshFrame();          /* 아직 돌고 있는 코드가 있으면 여기서 끊는다 */
   if(typeof renderCourse==="function") renderCourse();
 }
 function blRenderList(){
@@ -1939,6 +1940,14 @@ function blSaveCurrent(){
   const ta=$("bl-txt"); if(!ta) return;
   blState(blProject().id).files[BL.file]=ta.value; save();
 }
+/* 무한 루프가 든 코드는 srcdoc 을 비워도 멈추지 않는다 — 이미 도는 스크립트는 중단되지 않는다.
+   iframe 자체를 떼어내고 새로 달아야 그 브라우징 컨텍스트가 통째로 사라진다. */
+function blFreshFrame(){
+  const fr=$("bl-frame"); if(!fr) return null;
+  const nf=fr.cloneNode(false); nf.removeAttribute("srcdoc");
+  fr.parentNode.replaceChild(nf, fr);
+  return nf;
+}
 function blRun(){
   blSaveCurrent();
   const p=blProject(), st=blState(p.id), d=p.days[BL.di];
@@ -1947,7 +1956,7 @@ function blRun(){
   clearTimeout(__blTimer);
   __blTimer=setTimeout(()=>{
     if(!BL||!BL.running) return;
-    fr.srcdoc="";
+    blFreshFrame();
     BL.running=false;
     BL.res=d.tests.map(t=>({n:t.n, ok:false, err:"실행이 끝나지 않았습니다 — 무한 루프가 있는지 확인하세요."}));
     blRender();

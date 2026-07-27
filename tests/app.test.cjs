@@ -9,7 +9,9 @@ const FILE="file://"+path.join(__dirname,"..","index.html");
 const EXEC=process.env.PLAYWRIGHT_CHROMIUM || undefined;
 
 let pass=0, fail=0;
+const TRACE=!!process.env.CR_TRACE;
 function check(name, cond, detail){
+  if(TRACE) console.log((cond?"  ok  ":"  NO  ")+name);
   if(cond) pass++;
   else { fail++; console.log("FAIL  "+name+(detail?("\n      "+JSON.stringify(detail)):"")); }
 }
@@ -539,18 +541,49 @@ function check(name, cond, detail){
     const sol=(BL.res||[]).filter(x=>x.ok).length;
     const recorded=S.build.orders.done.indexOf(1)>=0;
 
-    S.build.orders.files["app.js"]="function handle(){ while(true){} }\nmodule.exports={handle};\n";
-    save(); blRender(); blRun(); await new Promise(r=>setTimeout(r,6000));
-    const loopGuard=!BL.running && (BL.res||[]).some(x=>/무한 루프/.test(x.err||""));
-
     closeBuildLab();
-    return {seed, total, sol, recorded, loopGuard};
+    return {seed, total, sol, recorded};
   });
   check("시작 코드로는 수용 기준을 통과하지 못한다", r.seed<r.total, r);
   check("참조 해답으로는 전부 통과한다", r.sol===r.total && r.total>0, r);
   check("통과한 Day 가 기록된다", r.recorded, r);
-  check("무한 루프가 있어도 앱이 멈추지 않는다", r.loopGuard, r);
   await p.close();
+ }
+
+ /* ---------- 무한 루프 방어 ----------
+    도는 스크립트는 iframe 을 떼어내도 멈추지 않고, 크로미움이 그 iframe 을 페이지와 같은
+    렌더러 프로세스에 두면 페이지 자체가 굳는다. 그래서 이 검사만 별도 브라우저에서 돌리고
+    끝나면 브라우저째 닫는다 — 굳더라도 나머지 스위트를 물고 늘어지지 못하게. */
+ {
+  const b2=await chromium.launch(EXEC?{executablePath:EXEC}:{});
+  let r=null;
+  try{
+   const p2=await b2.newPage({viewport:{width:390,height:800}});
+   await p2.addInitScript(()=>{ try{ localStorage.setItem("coderun",
+     JSON.stringify({onboarded:true, goal:"free", freeMode:true})); }catch(e){} });
+   await p2.goto(FILE);
+   await p2.waitForFunction(()=>typeof COURSES!=="undefined", {timeout:60000});
+   await p2.evaluate(()=>ensureBuild());
+   r=await Promise.race([
+    p2.evaluate(async()=>{
+      S.build={}; save();
+      await openBuildLab(); blOpen(0); BL.di=0; blApplyDayFiles(); blRender();
+      S.build.orders.files["app.js"]="function handle(){ while(true){} }\nmodule.exports={handle};\n";
+      save(); blRender(); blRun(); await new Promise(r=>setTimeout(r,6500));
+      const loopGuard=!BL.running && (BL.res||[]).some(x=>/무한 루프/.test(x.err||""));
+      /* 고쳐서 다시 실행 — 굳은 프레임을 갈아 끼우지 않으면 여기서 영영 안 끝난다 */
+      Object.assign(S.build.orders.files, BUILD_SOL.orders[0]); save(); BL.res=null; blRender();
+      blRun(); await new Promise(r=>setTimeout(r,2500));
+      const res=BL.res||[];
+      closeBuildLab();
+      return {loopGuard, again:res.filter(x=>x.ok).length, againTotal:res.length};
+    }),
+    new Promise(res=>setTimeout(()=>res({timeout:true}), 60000))
+   ]);
+  }catch(e){ r={err:String(e&&e.message||e).split("\n")[0]}; }
+  await b2.close();
+  check("무한 루프가 있어도 앱이 멈추지 않는다", r && r.loopGuard===true, r);
+  check("무한 루프 뒤에 고쳐서 다시 실행하면 채점된다", !!(r && r.againTotal>0 && r.again===r.againTotal), r);
  }
 
  /* ---------- 7일 프로젝트: 설계 문서 Day · 변이 테스트 Day · 성능 게이트 ---------- */
