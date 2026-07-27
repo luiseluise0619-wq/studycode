@@ -168,7 +168,8 @@ function check(name, cond, detail){
   check("Git 미션 12개 이상", r.missions>=12, {missions:r.missions});
 
   /* ---- 콘텐츠 정책 (docs/CONTENT_POLICY.md) ---- */
-  const CHOICE_CAP=5690;      // 선택형 동결선. 올리지 말 것 — 교체는 총량 불변이어야 한다
+  const CHOICE_CAP=5688;      // 선택형 동결선. 올리지 말 것 — 교체는 총량 불변이어야 한다
+                              // (5690 → 5688: 같은 유닛 안의 확인된 중복 2문항 삭제)
   check("선택형이 동결선을 넘지 않는다 (choice 추가 금지)", r.byType.choice<=CHOICE_CAP,
         {choice:r.byType.choice, cap:CHOICE_CAP});
 
