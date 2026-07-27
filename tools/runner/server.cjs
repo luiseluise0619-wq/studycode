@@ -105,6 +105,21 @@ const TESTS = {
                          const b = run("gcc", ["-std=c11", "-w", "-I", ".", "-o", "t"].concat(srcs), d);
                          if (b.status !== 0) return b;
                          return run(path.join(d, "t"), [], d); } },
+  java: { src: "Sol.java", test: "Test.java",
+          /* JUnit 4 는 gradle 배포판에 들어 있다. 네트워크 없이 그대로 쓴다. */
+          prep: () => {},
+          run:  (d) => {
+            const jars = ["/opt/gradle-8.14.3/lib/junit-4.13.2.jar",
+                          "/opt/gradle-8.14.3/lib/hamcrest-core-1.3.jar"].filter(p => fs.existsSync(p));
+            if (!jars.length) return { status: 1, stdout: "", stderr: "JUnit 을 찾지 못했습니다" };
+            const cp = jars.join(":") + ":.";
+            const srcs = walk(d, ".java");
+            const b = run("javac", ["-nowarn", "-encoding", "UTF-8", "-cp", cp, "-d", "."].concat(srcs), d, null, 60000);
+            if (b.status !== 0) return b;
+            const cls = srcs.map(f => path.basename(f, ".java")).filter(n => /Test$/.test(n));
+            if (!cls.length) return { status: 1, stdout: "", stderr: "테스트 클래스를 찾지 못했습니다" };
+            return run("java", ["-cp", cp, "org.junit.runner.JUnitCore"].concat(cls), d, null, 60000);
+          } },
   cpp:  { src: "sol.cpp", test: "test.cpp",
           /* catch2 는 650KB 단일 헤더라 문항마다 들고 다니면 데이터가 부푼다.
              러너가 한 벌 갖고 있다가 매번 깔아 준다. */
