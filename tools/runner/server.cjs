@@ -111,8 +111,18 @@ function executeTests(lang, source, testSource) {
     spec.prep(dir);
     fs.mkdirSync(path.dirname(path.join(dir, spec.src)), { recursive: true });
     fs.writeFileSync(path.join(dir, spec.src), source);
-    fs.mkdirSync(path.dirname(path.join(dir, spec.test)), { recursive: true });
-    fs.writeFileSync(path.join(dir, spec.test), String(testSource || ""));
+    /* 테스트가 여러 파일일 수 있다 (Go 의 cases_test.go 처럼). 이어 붙이면 package 선언이
+       두 번 나와 문법 오류가 나므로, 파일 이름을 유지해 각각 쓴다. */
+    const files = (testSource && typeof testSource === "object")
+      ? testSource
+      : { [path.basename(spec.test)]: String(testSource || "") };
+    const baseDir = path.dirname(path.join(dir, spec.test));
+    fs.mkdirSync(baseDir, { recursive: true });
+    for (const [name, body] of Object.entries(files)) {
+      const safe = path.basename(String(name));
+      if (!safe || safe.startsWith(".")) continue;
+      fs.writeFileSync(path.join(baseDir, safe), String(body || ""));
+    }
     const t0 = Date.now();
     const r = spec.run(dir);
     if (r.timedOut) return { timedOut: true, stdout: r.stdout, stderr: r.stderr,
