@@ -64,3 +64,41 @@
 ## 진행 기록
 
 - 2026-07-27: 대장 작성. BugsInPy 얕은 클론(7.6MB, 버그 501개) 확인.
+
+## 추가로 넣어야 할 소스 (2026-07-27 보강)
+
+언어마다 6유형(code·debug·review·output prediction·refactoring·performance)을 채우려면
+기존 37개로는 부족하다. 특히 **C·C++·Java·Go·Rust 의 실무 사례**와 **리팩터링·성능**
+소재가 비어 있다.
+
+| # | 저장소 | 왜 필요한가 | 만들 유형 | 상태 |
+|---|---|---|---|---|
+| 38 | exercism/exercism (+ 언어별 track 저장소) | 60개 언어 연습문제 + **테스트 포함**. 실행형의 최대 공급원 | code · refactoring | 대기 |
+| 39 | jkoppel/QuixBugs | 한 줄 버그 40개를 **Python·Java 쌍**으로 제공 | debug | 대기 |
+| 40 | princeton-nlp/SWE-bench | 실제 GitHub 이슈 + 패치 대규모 | debug · review | 대기 |
+| 41 | google/error-prone | 자바 **버그 패턴 카탈로그** (각 패턴에 예시·설명) | java debug · review | 대기 |
+| 42 | spotbugs/spotbugs · pmd/pmd | 정적 분석 규칙 = 리뷰 근거 카탈로그 | java review | 대기 |
+| 43 | eslint/eslint (rules) | JS 규칙마다 '왜' 가 문서화됨 | js review | 대기 |
+| 44 | golang/go wiki CodeReviewComments | Go 리뷰 관례 원본 | go review | 대기 |
+| 45 | google/styleguide | C++·Java·Go 등 언어별 스타일 근거 | review | 대기 |
+| 46 | rust-lang/rustlings | 러스트 연습 — **컴파일 에러가 곧 학습** | rust code · debug | 대기 |
+| 47 | rust-lang/rust-clippy | 러스트 린트 = 리팩터링 근거 | rust review · refactoring | 대기 |
+| 48 | danluu/post-mortems | **실제 장애 사후분석 모음** — 로그·리뷰 최고 소재 | log · review | 대기 |
+| 49 | kubernetes/kubernetes (issues) | 운영 장애 사례 | devops log | 대기 |
+| 50 | OWASP/CheatSheetSeries | 보안 대응 표준 | security review | 대기 |
+| 51 | juice-shop/juice-shop · WebGoat/WebGoat | 취약점 실습 앱 | security debug · log | 대기 |
+| 52 | RosettaCode (미러) | **같은 과제를 여러 언어로** → 언어 비교 문항 | output prediction | 대기 |
+| 53 | fffaraz/awesome-cpp · avelino/awesome-go | C++·Go 생태계 색인 | 커버리지 점검 | 대기 |
+| 54 | akullpp/awesome-java | 자바 생태계 색인 | 커버리지 점검 | 대기 |
+| 55 | binhnguyennus/awesome-scalability | 규모 설계 사례 | arch · review | 대기 |
+| 56 | mdn/content · cppreference (미러) | **의미론 근거 문서** — 출력 예측 정답의 출처 | 검증 근거 | 대기 |
+| 57 | torvalds/linux (docs) | OS 개념 원본 | os review · log | 대기 |
+| 58 | arduino/ArduinoCore-avr | Arduino 회로/핀 동작 근거 | arduino sim | 대기 |
+
+### 비어 있는 칸 (소스를 더 찾아야 하는 곳)
+
+- **refactoring** 유형: 린트 규칙(41~47)이 근거가 되지만, '전후 코드 쌍' 이 있는
+  데이터셋이 부족하다. Exercism 의 커뮤니티 솔루션 비교가 대안
+- **performance** 유형: 실측 기반이어야 한다. 벤치마크 저장소(예: 언어별 benchmark
+  게임)를 추가 검토
+- **Arduino 회로 시뮬레이션**: 엔진부터 만들어야 한다 (58번은 근거 자료일 뿐)
