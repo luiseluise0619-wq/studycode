@@ -48,6 +48,11 @@ const LANGS = {
   go:   { file: "main.go",   probe: ["go", "version"],
           build: (d) => { fs.writeFileSync(path.join(d, "go.mod"), "module run\n\ngo 1.21\n"); return { status: 0, stdout: "", stderr: "" }; },
           exec:  (d) => run("go", ["run", "."], d) },
+  /* 파이썬은 컴파일 단계가 없다. 다만 문법 오류를 '컴파일 오류' 로 구분해 주면
+     실행 오류와 원인이 섞이지 않아 학습에 도움이 된다. */
+  python: { file: "main.py", probe: ["python3", "--version"],
+          build: (d) => run("python3", ["-m", "py_compile", "main.py"], d),
+          exec:  (d) => run("python3", ["-I", "main.py"], d) },
 };
 
 function run(cmd, args, cwd, stdin, timeoutMs) {

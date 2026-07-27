@@ -396,7 +396,9 @@
   .lchk{display:flex; align-items:center; gap:8px; padding:7px 11px; margin-bottom:6px; border-radius:10px; background:var(--card); border:1px solid var(--line); font-size:13px; font-weight:600; color:var(--ink)}
   .lchk .ci{width:18px; text-align:center}
   .lchk.pass{border-color:#1aa38a} .lchk.fail{opacity:.7}
-  .labsolbox{margin:8px 0; border-radius:12px; overflow:hidden; border:1px solid var(--line); display:none}
+  .laboutbox{margin-top:8px;padding:10px;border-radius:8px;background:#0d1117;border:1px solid var(--line);font-family:var(--mono);font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow:auto;opacity:.92}
+.labnote{margin:6px 0;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.04);font-size:12px;line-height:1.5;opacity:.85}
+.labsolbox{margin:8px 0; border-radius:12px; overflow:hidden; border:1px solid var(--line); display:none}
   .labsolbox.on{display:block}
   .labsolbox pre{margin:0; padding:12px; background:#0f1117; color:#e6e9f2; font-family:ui-monospace,monospace; font-size:12.5px; line-height:1.5; overflow:auto; white-space:pre}
   .hintline{font-size:12.8px; color:var(--ink-soft); font-weight:600; margin:2px 0 10px} .hintline b{color:var(--ink)}
@@ -3632,14 +3634,68 @@ function simRun(q, code){
    기각했다: JSCPP 는 -7/2 를 -4 로 계산하고(정답 -3), yaegi 는 defer 인자 평가 시점과
    nil 인터페이스가 명세와 다르다. 틀린 결과를 가르치느니 진짜 컴파일러를 옆에서 돌린다.
    tools/runner/server.cjs 를 켜고 주소를 넣으면 실행 버튼이 열린다. 안 켜도 나머지는 그대로 동작한다. */
-const RUN_LANGS={java:"java", c:"c", cpp:"cpp", go:"go", rust:"rust"};
-const RUN_LABEL={java:"Java", c:"C", cpp:"C++", go:"Go", rust:"Rust"};
+const RUN_LANGS={java:"java", c:"c", cpp:"cpp", go:"go", rust:"rust", python:"python"};
+const RUN_LABEL={java:"Java", c:"C", cpp:"C++", go:"Go", rust:"Rust", python:"Python"};
 function runnerCfg(){ if(!S.runner) S.runner={url:""}; return S.runner; }
 function runnerReady(){ return !!(runnerCfg().url||"").trim(); }
 function runnerBase(){ return (runnerCfg().url||"").trim().replace(/\/+$/,""); }
 function runnerHealth(){
   if(!runnerReady()) return Promise.resolve({ok:false, error:"주소가 설정되지 않았어요"});
   return fetch(runnerBase()+"/health").then(r=>r.json()).catch(e=>({ok:false, error:String(e.message||e)}));
+}
+/* 통일 계약 POST /execute — 상태값(success·compile_error·runtime_error·timeout)을 그대로 쓴다 */
+function runnerExecute(language, code, stdin){
+  if(!runnerReady()) return Promise.resolve({status:"rejected", runtimeError:"실행 서버 주소가 설정되지 않았어요"});
+  return fetch(runnerBase()+"/execute",{method:"POST",headers:{"content-type":"application/json"},
+    body:JSON.stringify({language:language, code:code, stdin:stdin||""})})
+    .then(r=>r.json())
+    .catch(e=>({status:"rejected", runtimeError:"실행 서버에 연결하지 못했어요 ("+(e.message||e)+")"}));
+}
+function fmtExec(r){
+  if(!r) return "결과가 없습니다.";
+  if(r.compileError) return "문법 오류\n"+r.compileError;
+  if(r.status==="timeout") return "시간 초과 — 무한 루프가 있는지 확인해 보세요.";
+  if(r.runtimeError && r.status!=="success") return "실행 오류\n"+r.runtimeError;
+  const out=(r.output||"").trim();
+  return out || "(출력이 없습니다 — print 로 결과를 찍어 보세요)";
+}
+/* 랩 build 단계 실행. 언어마다 실행 경로가 다르고, 안 되는 경우는 이유를 정확히 말한다. */
+function labBuildRun(ph){
+  const out=$("lab-bout"), ed=$("lab-ed"); if(!out||!ed) return;
+  const code=ed.value;
+  if(!code.trim()){ out.textContent="코드를 먼저 작성해 주세요."; return; }
+  out.textContent="실행 중…";
+  if(ph.lang==="javascript"){
+    const logs=[];
+    const cl={ log:function(){ logs.push([].slice.call(arguments).map(v=>{
+          try{ return typeof v==="object"? JSON.stringify(v) : String(v); }catch(e){ return String(v); } }).join(" ")); } };
+    cl.error=cl.warn=cl.info=cl.log;
+    try{
+      const fn=new Function("console","module","exports",code);
+      const mod={exports:{}};
+      fn(cl, mod, mod.exports);
+      out.textContent=logs.length? logs.join("\n") : "(출력이 없습니다 — console.log 로 결과를 찍어 보세요)";
+    }catch(e){ out.textContent="오류: "+(e&&e.message||e); }
+    return;
+  }
+  if(ph.lang==="python"){
+    if(runnerReady()){
+      runnerExecute("python", code).then(r=>{ out.textContent="[로컬 실행 서버 · python3]\n"+fmtExec(r); });
+      return;
+    }
+    ensurePy().then(function(py){
+      if(!py){ out.textContent="파이썬을 실행하려면 둘 중 하나가 필요해요.\n"
+        +"  1) 로컬 실행 서버 (권장·오프라인): node tools/runner/server.cjs 를 켜고 프로필에 주소를 넣으세요\n"
+        +"  2) 온라인 접속: 브라우저용 파이썬을 내려받아 실행합니다 (file:// 로 연 경우에는 동작하지 않습니다)"; return; }
+      py.globals.set("__user_src__", code);
+      py.runPythonAsync("import sys, io\n_b=io.StringIO()\n_o=sys.stdout\nsys.stdout=_b\ntry:\n    exec(compile(__user_src__, '<lab>', 'exec'), {})\nexcept Exception as e:\n    print('실행 오류:', type(e).__name__+':', e)\nfinally:\n    sys.stdout=_o\n_b.getvalue()")
+        .then(function(s){ const t=String(s||"").trim();
+          out.textContent="[브라우저 파이썬]\n"+(t||"(출력이 없습니다 — print 로 결과를 찍어 보세요)"); })
+        .catch(function(e){ out.textContent="오류: "+(e&&e.message||e); });
+    });
+    return;
+  }
+  out.textContent="이 단계는 앱 안에서 실행하지 않습니다.";
 }
 function runnerRun(lang, source, stdin){
   if(!runnerReady()) return Promise.resolve({error:"실행 서버 주소가 설정되지 않았어요"});
@@ -4624,8 +4680,18 @@ function renderPhase(){
     inner=`<div class="simsit">${nl2br(ph.sit)}</div>`+ph.opts.map((o,i)=>`<button class="simopt" data-i="${i}">${escHtml(o.label)}</button>`).join("");
   } else if(ph.type==="build"){
     const draft=getDraft(lab.i)||"";
-    inner=`${ph.hint?`<div class="hintline">💡 <b>힌트</b> ${nl2br(ph.hint)}</div>`:""}${ph.acc?`<div class="accbox">✅ 완료 기준 · ${nl2br(ph.acc)}</div>`:""}
-      <textarea class="labed" id="lab-ed" spellcheck="false" placeholder="여기에 코드를 작성해 보세요 (앱에선 파이썬/SQL 실행은 안 되지만, 정답 예시와 비교하며 학습해요)">${escHtml(draft)}</textarea>
+    const blang=ph.lang||"";
+    const canRun=(blang==="javascript"||blang==="python");
+    const bph = blang==="javascript" ? "여기에 코드를 작성하고 ▶ 실행으로 결과를 확인하세요 (console.log 로 출력)"
+              : blang==="python" ? "여기에 코드를 작성하고 ▶ 실행으로 결과를 확인하세요 (print 로 출력)"
+              : blang==="sql" ? "여기에 쿼리를 작성하세요 — 실제 스키마와 방언(MySQL/BigQuery)이 필요해 앱에서는 실행하지 않고, 정답 예시와 비교합니다"
+              : "여기에 작성해 보세요";
+    const bnote = blang==="python" ? '<div class="labnote">🐍 로컬 실행 서버(python3)가 켜져 있으면 그쪽에서, 아니면 브라우저 파이썬으로 실행합니다.</div>'
+              : blang==="sql" ? '<div class="labnote">🗄 SQL 실행은 <b>SQL 트랙의 실행형 문항</b>에서 sql.js 로 직접 해 볼 수 있어요. 이 단계는 설계·문법 연습입니다.</div>'
+              : "";
+    inner=`${ph.hint?`<div class="hintline">💡 <b>힌트</b> ${nl2br(ph.hint)}</div>`:""}${ph.acc?`<div class="accbox">✅ 완료 기준 · ${nl2br(ph.acc)}</div>`:""}${bnote}
+      <textarea class="labed" id="lab-ed" spellcheck="false" placeholder="${escHtml(bph)}">${escHtml(draft)}</textarea>
+      ${canRun?`<div class="labrow"><button class="labrun" id="lab-brun">▶ 실행</button></div><pre class="laboutbox" id="lab-bout">실행 버튼을 누르면 결과가 여기에 나옵니다.</pre>`:""}
       ${ph.sol?`<div class="labrow"><button class="labsol" id="lab-solbtn">📖 정답 예시 보기</button></div><div class="labsolbox" id="lab-solbox"><pre>${escHtml(ph.sol)}</pre></div>`:""}`;
   } else {
     const draft=getDraft(lab.i)||"";
@@ -4651,6 +4717,7 @@ function wirePhase(ph,isLast){
   } else if(ph.type==="decide"){
     $("lab-body").querySelectorAll(".simopt").forEach(b=>b.onclick=()=>pickLabDecide(ph,+b.dataset.i));
   } else if(ph.type==="build"){
+    const brun=$("lab-brun"); if(brun) brun.onclick=()=>labBuildRun(ph);
     const sb=$("lab-solbtn"); if(sb) sb.onclick=()=>{ $("lab-solbox").classList.toggle("on"); sb.textContent=$("lab-solbox").classList.contains("on")?"📖 정답 예시 숨기기":"📖 정답 예시 보기"; };
   }
   const nb=$("lab-next"); if(nb) nb.onclick=()=>{
