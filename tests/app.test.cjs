@@ -555,7 +555,13 @@ function check(name, cond, detail){
     렌더러 프로세스에 두면 페이지 자체가 굳는다. 그래서 이 검사만 별도 브라우저에서 돌리고
     끝나면 브라우저째 닫는다 — 굳더라도 나머지 스위트를 물고 늘어지지 못하게. */
  {
-  const b2=await chromium.launch(EXEC?{executablePath:EXEC}:{});
+  /* headless_shell 은 srcdoc iframe 을 페이지와 같은 스레드에 올려서, 무한 루프가 돌면
+     페이지 자체가 굳어 이 검사를 할 수 없다. 완전한 크로미움이 있으면 그걸로 돌린다. */
+  const FULL=[EXEC, "/opt/pw-browsers/chromium"].find(c=>{ try{ return c && require("fs").existsSync(c); }catch(e){ return false; } });
+  if(!FULL){
+   console.log("  건너뜀: 무한 루프 검사에는 완전한 크로미움이 필요합니다 (headless_shell 에서는 재현 불가)");
+  } else {
+  const b2=await chromium.launch({executablePath:FULL});
   let r=null;
   try{
    const p2=await b2.newPage({viewport:{width:390,height:800}});
@@ -584,6 +590,7 @@ function check(name, cond, detail){
   await b2.close();
   check("무한 루프가 있어도 앱이 멈추지 않는다", r && r.loopGuard===true, r);
   check("무한 루프 뒤에 고쳐서 다시 실행하면 채점된다", !!(r && r.againTotal>0 && r.again===r.againTotal), r);
+  }
  }
 
  /* ---------- 7일 프로젝트: 설계 문서 Day · 변이 테스트 Day · 성능 게이트 ---------- */

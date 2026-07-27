@@ -45,7 +45,7 @@ Contents:
   기존 정적 언어 문항 352개(출력 예측 210 + 디버깅 80 + 기타)에서 '직접 실행해 보기' 패널이 열려
   코드를 고쳐 가며 실제 컴파일러 결과를 본다. 서버가 꺼져 있어도 나머지는 그대로 동작.
   브라우저 내 실행은 후보 둘(JSCPP·yaegi)을 실제로 돌려 보고 의미론 오류로 기각했다 — docs/CONTENT_POLICY.md
-- 테스트: tests/engine.test.cjs 91 + tests/app.test.cjs 85, GitHub Actions 연결
+- 테스트: tests/engine.test.cjs 91 + tests/app.test.cjs 87, GitHub Actions 연결
   · 빌드 랩 채점 엔진은 테스트가 index.html 에서 buildDoc 를 그대로 꺼내 쓴다 (복제본은 원본과 어긋난다)
   · 셸의 표시 문항 수와 데이터의 실제 문항 수 일치를 검사 (주입 중단으로 어긋난 적이 있어 고정)
 - 언어별 유형 매트릭스(docs/CONTENT_POLICY.md): 트랙마다 '그 언어답게' 채울 유형과 최소 확보량을
