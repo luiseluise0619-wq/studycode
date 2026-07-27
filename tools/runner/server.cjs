@@ -75,6 +75,57 @@ function run(cmd, args, cwd, stdin) {
 }
 function cap(s) { return s.length > MAX_OUT ? s.slice(0, MAX_OUT) + "\n…(출력이 잘렸습니다)" : s; }
 
+/* 테스트 모드 — exercism 처럼 '해답 파일 + 테스트 파일' 이 짝으로 오는 경우.
+   테스트를 우리 형식으로 번역하지 않고 그 언어의 테스트 러너에 그대로 맡긴다.
+   번역하면 의미가 틀어지고, 틀어진 채로 채점하면 그게 가짜 실행이다. */
+const TESTS = {
+  go:   { src: "sol.go", test: "sol_test.go",
+          prep: (d) => fs.writeFileSync(path.join(d, "go.mod"), "module ex\n\ngo 1.21\n"),
+          run:  (d) => run("go", ["test", "./..."], d) },
+  rust: { src: "src/lib.rs", test: "tests/it.rs",
+          prep: (d) => { fs.mkdirSync(path.join(d, "src"), { recursive: true });
+                         fs.mkdirSync(path.join(d, "tests"), { recursive: true });
+                         fs.writeFileSync(path.join(d, "Cargo.toml"),
+                           "[package]\nname=\"ex\"\nversion=\"0.1.0\"\nedition=\"2021\"\n"); },
+          run:  (d) => run("cargo", ["test", "--offline", "-q"], d) },
+  c:    { src: "sol.c", test: "test.c",
+          prep: () => {},
+          run:  (d) => { const b = run("gcc", ["-std=c11", "-w", "-o", "t", "sol.c", "test.c"], d);
+                         if (b.status !== 0) return b;
+                         return run(path.join(d, "t"), [], d); } },
+  cpp:  { src: "sol.cpp", test: "test.cpp",
+          prep: () => {},
+          run:  (d) => { const b = run("g++", ["-std=c++17", "-w", "-o", "t", "sol.cpp", "test.cpp"], d);
+                         if (b.status !== 0) return b;
+                         return run(path.join(d, "t"), [], d); } }
+};
+
+function executeTests(lang, source, testSource) {
+  const spec = TESTS[lang];
+  if (!spec) return { error: "테스트 모드를 지원하지 않는 언어: " + lang };
+  if (typeof source !== "string" || !source.trim()) return { error: "소스가 비어 있습니다" };
+  if (source.length > MAX_SRC || String(testSource || "").length > MAX_SRC)
+    return { error: "소스가 너무 큽니다 (200KB 상한)" };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "coderun-t-"));
+  try {
+    spec.prep(dir);
+    fs.mkdirSync(path.dirname(path.join(dir, spec.src)), { recursive: true });
+    fs.writeFileSync(path.join(dir, spec.src), source);
+    fs.mkdirSync(path.dirname(path.join(dir, spec.test)), { recursive: true });
+    fs.writeFileSync(path.join(dir, spec.test), String(testSource || ""));
+    const t0 = Date.now();
+    const r = spec.run(dir);
+    if (r.timedOut) return { timedOut: true, stdout: r.stdout, stderr: r.stderr,
+                             error: "실행 시간 초과 (" + TIMEOUT_MS + "ms)" };
+    return { pass: r.status === 0, stdout: r.stdout, stderr: r.stderr,
+             exit: r.status, ms: Date.now() - t0 };
+  } catch (err) {
+    return { error: String((err && err.message) || err) };
+  } finally {
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {}
+  }
+}
+
 function execute(lang, source, stdin) {
   const spec = LANGS[lang];
   if (!spec) return { error: "지원하지 않는 언어: " + lang };
@@ -115,8 +166,11 @@ const server = http.createServer((req, res) => {
   if (req.method === "GET" && req.url.startsWith("/health"))
     return send(200, { ok: true, langs: available() });
 
-  if (req.method !== "POST" || !req.url.startsWith("/run"))
-    return send(404, { error: "POST /run 또는 GET /health 를 쓰세요" });
+  const isRun = req.url.startsWith("/run");
+  const isExec = req.url.startsWith("/execute");   /* 통일 계약 (docs/EXECUTION.md) */
+  const isTest = req.url.startsWith("/test");      /* 언어의 테스트 러너에 그대로 맡긴다 */
+  if (req.method !== "POST" || !(isRun || isExec || isTest))
+    return send(404, { error: "POST /run · /execute · /test 또는 GET /health 를 쓰세요" });
 
   let body = "";
   let tooBig = false;
@@ -128,7 +182,21 @@ const server = http.createServer((req, res) => {
     if (tooBig) return send(413, { error: "요청이 너무 큽니다" });
     let j;
     try { j = JSON.parse(body); } catch (_) { return send(400, { error: "JSON 파싱 실패" }); }
-    send(200, execute(j.lang, j.source, j.stdin));
+    if (isTest) return send(200, executeTests(j.language || j.lang, j.code || j.source, j.test));
+    const r = execute(j.language || j.lang, j.code || j.source, j.stdin);
+    if (!isExec) return send(200, r);
+    /* 통일 계약으로 변환 — Local 과 Cloud 러너가 같은 모양을 돌려줘야 한다 */
+    send(200, {
+      status: r.error && !r.timedOut ? "rejected"
+            : r.timedOut ? "timeout"
+            : r.compileError ? "compile_error"
+            : (r.exit !== 0 && r.exit !== undefined) ? "runtime_error"
+            : "success",
+      output: r.stdout || "",
+      compileError: r.compileError || null,
+      runtimeError: (r.exit !== 0 && r.stderr) ? r.stderr : (r.error || null),
+      executionTime: r.ms == null ? null : r.ms
+    });
   });
 });
 

@@ -117,7 +117,8 @@ POST /execute
 - [x] Local Runner (`tools/runner/server.cjs`) — C·C++·Java·Go·Rust 실제 컴파일러
 - [x] Docker 격리 (`tools/runner/Dockerfile`) — network none · 메모리 · pids 제한
 - [x] 앱의 127.0.0.1 자동 탐지 + 실행 패널 (기존 352문항에서 열림)
-- [ ] `POST /execute` 통일 계약
+- [x] `POST /execute` 통일 계약 — 상태값 success/compile_error/runtime_error/timeout/rejected
+- [x] `POST /test` 테스트 모드 — go test · cargo test · gcc/g++ 링크 실행 (테스트를 번역하지 않는다)
 - [ ] 한 줄 실행 (npx / docker run) + 앱 안내에 복사 버튼
 - [ ] Cloud Runner (API Gateway + Docker Worker)
 - [ ] 실행 경로 배지 (내장/로컬/클라우드)
