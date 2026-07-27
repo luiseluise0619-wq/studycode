@@ -3648,6 +3648,15 @@ function runnerRun(lang, source, stdin){
     .then(r=>r.json())
     .catch(e=>({error:"실행 서버에 연결하지 못했어요 ("+String(e.message||e)+")"}));
 }
+/* 러너로 채점한다 — 테스트를 우리 형식으로 번역하지 않고 그 언어의 테스트 러너에 맡긴다.
+   go test · cargo test · gcc/g++ 링크 실행. 러너가 없으면 채점하지 않고 그렇게 알린다. */
+function runnerTest(lang, code, test){
+  if(!runnerReady()) return Promise.resolve({needRunner:true});
+  return fetch(runnerBase()+"/test",{method:"POST",headers:{"content-type":"application/json"},
+    body:JSON.stringify({language:lang, code:code, test:test})})
+    .then(r=>r.json())
+    .catch(e=>({error:"실행 서버에 연결하지 못했어요 ("+String(e.message||e)+")"}));
+}
 /* 문항의 코드 조각을 그 언어의 완전한 프로그램으로 감싼다. 이미 main 이 있으면 그대로 둔다. */
 function wrapForRun(lang, code){
   const c=String(code||"");
