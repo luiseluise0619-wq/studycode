@@ -50,9 +50,9 @@ const LANGS = {
           exec:  (d) => run("go", ["run", "."], d) },
 };
 
-function run(cmd, args, cwd, stdin) {
+function run(cmd, args, cwd, stdin, timeoutMs) {
   const r = spawnSync(cmd, args, {
-    cwd, encoding: "utf8", timeout: TIMEOUT_MS, input: stdin || "",
+    cwd, encoding: "utf8", timeout: timeoutMs || TIMEOUT_MS, input: stdin || "",
     maxBuffer: MAX_OUT * 4,
     env: {
       PATH: process.env.PATH, HOME: cwd, LANG: "C.UTF-8",
@@ -106,9 +106,17 @@ const TESTS = {
                          if (b.status !== 0) return b;
                          return run(path.join(d, "t"), [], d); } },
   cpp:  { src: "sol.cpp", test: "test.cpp",
-          prep: () => {},
+          /* catch2 는 650KB 단일 헤더라 문항마다 들고 다니면 데이터가 부푼다.
+             러너가 한 벌 갖고 있다가 매번 깔아 준다. */
+          prep: (d) => { const v = path.join(__dirname, "vendor");
+                         try {
+                           fs.mkdirSync(path.join(d, "test"), { recursive: true });
+                           fs.copyFileSync(path.join(v, "catch.hpp"), path.join(d, "test", "catch.hpp"));
+                           fs.copyFileSync(path.join(v, "tests-main.cpp"), path.join(d, "test", "tests-main.cpp"));
+                         } catch (_) {}
+                       },
           run:  (d) => { const srcs = walk(d, ".cpp");
-                         const b = run("g++", ["-std=c++17", "-w", "-I", ".", "-o", "t"].concat(srcs), d);
+                         const b = run("g++", ["-std=c++17", "-w", "-I", ".", "-I", "test", "-o", "t"].concat(srcs), d, null, 90000);
                          if (b.status !== 0) return b;
                          return run(path.join(d, "t"), [], d); } }
 };
