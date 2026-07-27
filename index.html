@@ -3650,10 +3650,10 @@ function runnerRun(lang, source, stdin){
 }
 /* 러너로 채점한다 — 테스트를 우리 형식으로 번역하지 않고 그 언어의 테스트 러너에 맡긴다.
    go test · cargo test · gcc/g++ 링크 실행. 러너가 없으면 채점하지 않고 그렇게 알린다. */
-function runnerTest(lang, code, test){
+function runnerTest(lang, code, test, name){
   if(!runnerReady()) return Promise.resolve({needRunner:true});
   return fetch(runnerBase()+"/test",{method:"POST",headers:{"content-type":"application/json"},
-    body:JSON.stringify({language:lang, code:code, test:test})})
+    body:JSON.stringify({language:lang, code:code, test:test, name:name})})
     .then(r=>r.json())
     .catch(e=>({error:"실행 서버에 연결하지 못했어요 ("+String(e.message||e)+")"}));
 }
@@ -4062,7 +4062,7 @@ function onCheck(){
       return;
     }
     chk.disabled=true; chk.textContent="컴파일·테스트 중…";
-    runnerTest(q.rt.lang, $("livecode").value, q.rt.test).then(r=>{
+    runnerTest(q.rt.lang, $("livecode").value, q.rt.test, q.rt.name).then(r=>{
       chk.textContent="확인";
       if(r.needRunner){ chk.disabled=false; toast("실행 서버가 설정되지 않았어요."); return; }
       if(r.error){ chk.disabled=false; toast(r.error); return; }

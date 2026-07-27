@@ -83,10 +83,12 @@ const TESTS = {
           prep: (d) => fs.writeFileSync(path.join(d, "go.mod"), "module ex\n\ngo 1.21\n"),
           run:  (d) => run("go", ["test", "./..."], d) },
   rust: { src: "src/lib.rs", test: "tests/it.rs",
-          prep: (d) => { fs.mkdirSync(path.join(d, "src"), { recursive: true });
+          /* 테스트가 `use <크레이트>::...` 로 참조하므로 이름이 문항과 같아야 한다 */
+          prep: (d, name) => { fs.mkdirSync(path.join(d, "src"), { recursive: true });
                          fs.mkdirSync(path.join(d, "tests"), { recursive: true });
+                         const n = String(name || "ex").replace(/[^A-Za-z0-9_-]/g, "") || "ex";
                          fs.writeFileSync(path.join(d, "Cargo.toml"),
-                           "[package]\nname=\"ex\"\nversion=\"0.1.0\"\nedition=\"2021\"\n"); },
+                           "[package]\nname=\"" + n + "\"\nversion=\"0.1.0\"\nedition=\"2021\"\n"); },
           run:  (d) => run("cargo", ["test", "--offline", "-q"], d) },
   c:    { src: "sol.c", test: "test.c",
           prep: () => {},
@@ -100,7 +102,7 @@ const TESTS = {
                          return run(path.join(d, "t"), [], d); } }
 };
 
-function executeTests(lang, source, testSource) {
+function executeTests(lang, source, testSource, name) {
   const spec = TESTS[lang];
   if (!spec) return { error: "테스트 모드를 지원하지 않는 언어: " + lang };
   if (typeof source !== "string" || !source.trim()) return { error: "소스가 비어 있습니다" };
@@ -108,7 +110,7 @@ function executeTests(lang, source, testSource) {
     return { error: "소스가 너무 큽니다 (200KB 상한)" };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "coderun-t-"));
   try {
-    spec.prep(dir);
+    spec.prep(dir, name);
     fs.mkdirSync(path.dirname(path.join(dir, spec.src)), { recursive: true });
     fs.writeFileSync(path.join(dir, spec.src), source);
     /* 테스트가 여러 파일일 수 있다 (Go 의 cases_test.go 처럼). 이어 붙이면 package 선언이
@@ -192,7 +194,7 @@ const server = http.createServer((req, res) => {
     if (tooBig) return send(413, { error: "요청이 너무 큽니다" });
     let j;
     try { j = JSON.parse(body); } catch (_) { return send(400, { error: "JSON 파싱 실패" }); }
-    if (isTest) return send(200, executeTests(j.language || j.lang, j.code || j.source, j.test));
+    if (isTest) return send(200, executeTests(j.language || j.lang, j.code || j.source, j.test, j.name));
     const r = execute(j.language || j.lang, j.code || j.source, j.stdin);
     if (!isExec) return send(200, r);
     /* 통일 계약으로 변환 — Local 과 Cloud 러너가 같은 모양을 돌려줘야 한다 */
