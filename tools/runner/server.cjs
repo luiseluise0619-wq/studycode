@@ -109,7 +109,10 @@ const TESTS = {
           /* JUnit 4 는 gradle 배포판에 들어 있다. 네트워크 없이 그대로 쓴다. */
           prep: () => {},
           run:  (d) => {
-            const jars = ["/opt/gradle-8.14.3/lib/junit-4.13.2.jar",
+            const v = path.join(__dirname, "vendor");
+            const jars = [path.join(v, "junit-platform-console-standalone.jar"),
+                          path.join(v, "assertj-core.jar"),
+                          "/opt/gradle-8.14.3/lib/junit-4.13.2.jar",
                           "/opt/gradle-8.14.3/lib/hamcrest-core-1.3.jar"].filter(p => fs.existsSync(p));
             if (!jars.length) return { status: 1, stdout: "", stderr: "JUnit 을 찾지 못했습니다" };
             const cp = jars.join(":") + ":.";
@@ -118,6 +121,11 @@ const TESTS = {
             if (b.status !== 0) return b;
             const cls = srcs.map(f => path.basename(f, ".java")).filter(n => /Test$/.test(n));
             if (!cls.length) return { status: 1, stdout: "", stderr: "테스트 클래스를 찾지 못했습니다" };
+            /* JUnit 5 콘솔 런처는 4 와 5 를 모두 돌린다 */
+            if (fs.existsSync(path.join(v, "junit-platform-console-standalone.jar")))
+              return run("java", ["-jar", path.join(v, "junit-platform-console-standalone.jar"),
+                                  "-cp", cp, "--details=summary", "--disable-ansi-colors"]
+                                 .concat(cls.flatMap(c => ["-c", c])), d, null, 90000);
             return run("java", ["-cp", cp, "org.junit.runner.JUnitCore"].concat(cls), d, null, 60000);
           } },
   cpp:  { src: "sol.cpp", test: "test.cpp",
@@ -136,7 +144,7 @@ const TESTS = {
                          return run(path.join(d, "t"), [], d); } }
 };
 
-function executeTests(lang, source, testSource, name) {
+function executeTests(lang, source, testSource, name, srcName) {
   const spec = TESTS[lang];
   if (!spec) return { error: "테스트 모드를 지원하지 않는 언어: " + lang };
   if (typeof source !== "string" || !source.trim()) return { error: "소스가 비어 있습니다" };
@@ -146,7 +154,9 @@ function executeTests(lang, source, testSource, name) {
   try {
     spec.prep(dir, name);
     fs.mkdirSync(path.dirname(path.join(dir, spec.src)), { recursive: true });
-    fs.writeFileSync(path.join(dir, spec.src), source);
+    const srcPath = srcName ? path.join(dir, path.basename(String(srcName))) : path.join(dir, spec.src);
+    fs.mkdirSync(path.dirname(srcPath), { recursive: true });
+    fs.writeFileSync(srcPath, source);
     /* 테스트가 여러 파일일 수 있다 (Go 의 cases_test.go 처럼). 이어 붙이면 package 선언이
        두 번 나와 문법 오류가 나므로, 파일 이름을 유지해 각각 쓴다. */
     const files = (testSource && typeof testSource === "object")
@@ -232,7 +242,7 @@ const server = http.createServer((req, res) => {
     if (tooBig) return send(413, { error: "요청이 너무 큽니다" });
     let j;
     try { j = JSON.parse(body); } catch (_) { return send(400, { error: "JSON 파싱 실패" }); }
-    if (isTest) return send(200, executeTests(j.language || j.lang, j.code || j.source, j.test, j.name));
+    if (isTest) return send(200, executeTests(j.language || j.lang, j.code || j.source, j.test, j.name, j.srcName));
     const r = execute(j.language || j.lang, j.code || j.source, j.stdin);
     if (!isExec) return send(200, r);
     /* 통일 계약으로 변환 — Local 과 Cloud 러너가 같은 모양을 돌려줘야 한다 */
