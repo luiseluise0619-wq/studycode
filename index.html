@@ -3382,7 +3382,7 @@ function showQ(){
       showOpts();
     }
   }
-  if(q.live||q.t==="code"){ setupLive(q); mountMonaco("livecode","javascript"); }
+  if(q.live||q.t==="code"){ setupLive(q); mountMonaco("livecode", (q.rt&&q.rt.lang)||"javascript"); }
   if(q.t==="code"){ chk.disabled=false; }
   if(q.t==="sql"){ setupSql(q); chk.disabled=false; mountMonaco("sqlcode","sql"); }
   if(q.t==="py"){ setupPy(q); chk.disabled=false; mountMonaco("pycode","python"); }
@@ -4051,6 +4051,28 @@ function onCheck(){
         : ("검사 "+r.pass+"/"+r.total+" — 남은 것: "+(miss.length?miss.slice(0,2).join(" · "):"화면이 아직 렌더되지 않았어요"));
       applyResult(!!r.gate, msg, q);
     }, 520);
+    return;
+  }
+  /* 러너 채점 문항 — 테스트를 번역하지 않고 그 언어의 테스트 러너가 판정한다.
+     러너가 없으면 채점하지 않는다. 오프라인에서 조용히 틀린 판정을 내리는 것이 더 나쁘다. */
+  if(q.t==="code" && q.rt){
+    const chk=$("check");
+    if(!runnerReady()){
+      toast("이 문항은 실행 서버가 필요해요 — 프로필에서 주소를 넣어 주세요.");
+      return;
+    }
+    chk.disabled=true; chk.textContent="컴파일·테스트 중…";
+    runnerTest(q.rt.lang, $("livecode").value, q.rt.test).then(r=>{
+      chk.textContent="확인";
+      if(r.needRunner){ chk.disabled=false; toast("실행 서버가 설정되지 않았어요."); return; }
+      if(r.error){ chk.disabled=false; toast(r.error); return; }
+      const out=String(r.stdout||r.stderr||"").trim();
+      liveOut = out.slice(0,4000);
+      const msg = r.pass ? "테스트 통과 (" + q.rt.lang + ")"
+        : (r.timedOut ? "실행 시간 초과 — 무한 루프인지 확인하세요"
+                      : "테스트 실패 — " + (out.split("\n").slice(0,2).join(" ") || "출력 없음"));
+      applyResult(!!r.pass, msg, q);
+    });
     return;
   }
   if(q.t==="code"){
