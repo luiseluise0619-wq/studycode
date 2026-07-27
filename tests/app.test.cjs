@@ -299,11 +299,17 @@ function check(name, cond, detail){
   });
   const TARGET10={choice:3000,input:1500,code:2000,debug:1000,review:800,log:500,sim:500,arch:150};
   console.log("  10유형 구조 (목표 10,000문항 기준):");
+  /* choice 의 3,000 은 목표가 아니라 상한이다 — 넘으면 '달성' 이 아니라 '초과' 로 읽어야 한다 */
   Object.keys(TARGET10).forEach(k=>{
     const now=cat10.c[k]||0, t=TARGET10[k];
-    const bar=now>=t? "달성" : (t-now)+" 남음";
+    const bar = k==="choice"
+      ? (now<=t ? "상한 이내" : (now-t)+" 초과 (상한)")
+      : (now>=t ? "달성" : (t-now)+" 남음");
     console.log("    "+k.padEnd(7)+String(now).padStart(5)+" / "+String(t).padStart(5)+"   "+bar);
   });
+  const remain10=Object.keys(TARGET10).filter(k=>k!=="choice")
+    .reduce((a,k)=>a+Math.max(0,TARGET10[k]-(cat10.c[k]||0)),0);
+  console.log("    남은 총량(choice 제외): "+remain10+"문항");
   console.log("    project  "+cat10.projects+" 프로젝트 · "+cat10.buildDays+" 빌드랩 Day · "+cat10.buildTests+" 수용 기준 (목표 500문항 상당)");
 
   console.log("  리뷰 분포: "+JSON.stringify(revNow));
