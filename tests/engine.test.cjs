@@ -234,41 +234,36 @@ GIT_MISSIONS.forEach(m=>{
    각 Day 가 미션으로 성립하는지를 두 방향으로 확인한다:
    시작 상태로는 통과하지 못하고, 참조 해답으로는 전부 통과해야 한다. */
 const vm=require("vm");
-const BUILD = section("/* ===== 빌드 프로젝트 — 요구사항을 읽고 직접 만든다 ===== */", "const BUILD_SOL=");
-const SOLLINE = (()=>{ const a=HTML.indexOf("const BUILD_SOL="); const b=HTML.indexOf("\n", a); return HTML.slice(a,b); })();
+/* 빌드 랩 데이터는 셸이 아니라 청크에 있다 (data/build.js) */
+const BUILDJS = fs.readFileSync(path.join(__dirname,"..","data","build.js"),"utf8");
+/* 채점 엔진은 복사하지 않고 index.html 에서 그대로 꺼내 쓴다 — 복사본은 반드시 원본과 어긋난다 */
+const BLENGINE = (()=>{ const a=HTML.indexOf("const BL_HELP ="); const m="\n   +'</scr'+'ipt></body>';\n}"; const b=HTML.indexOf(m,a); return HTML.slice(a,b+m.length); })();
 const bsand={};
-new Function("ctx","with(ctx){ "+BUILD+"\n"+SOLLINE+"\nctx.api={BUILD_PROJECTS,BUILD_SOL}; }")(bsand);
-const {BUILD_PROJECTS,BUILD_SOL}=bsand.api;
+new Function("ctx","with(ctx){ var __got={}; function __CR(k,v){ ctx.data=v; }\n"+BUILDJS+"\n"+BLENGINE+"\nctx.api={buildDoc}; }")(bsand);
+const BUILD_PROJECTS=bsand.data.projects, BUILD_SOL=bsand.data.sol;
+const {buildDoc}=bsand.api;
 
-const BL_HELP =
-  "function eq(a,b){ if(JSON.stringify(a)!==JSON.stringify(b)) throw new Error('기대 '+JSON.stringify(b)+' / 실제 '+JSON.stringify(a)); }" +
-  "function ok(c,m){ if(!c) throw new Error(m||'조건 불만족'); }" +
-  "function login(id){ var r=A.handle('POST','/auth/login',{id:id,pw:id.replace('u','pw')});" +
-  " if(!r||!r.body||!r.body.token) throw new Error('로그인 실패'); return r.body.token; }";
-
-function runBuildDay(files, tests){
-  const ctx=vm.createContext({});
-  vm.runInContext(
-    "var __src="+JSON.stringify(files)+", __mods={};"+
-    "function require(n){ var k=String(n).replace(/^\\.\\//,''); if(!/\\.js$/.test(k)) k+='.js';"+
-    " if(__mods[k]) return __mods[k].exports;"+
-    " if(__src[k]===undefined) throw new Error('파일 없음: '+k);"+
-    " var m={exports:{}}; __mods[k]=m;"+
-    " (new Function('module','exports','require',__src[k]))(m,m.exports,require); return m.exports; }"+
-    "function __reset(){ __mods={}; }", ctx);
-  return tests.map(t=>{
-    try{
-      vm.runInContext("(function(){ __reset(); var A=require('./app');"+BL_HELP+"\n"+t.c+"\n})()", ctx, {timeout:4000});
-      return {n:t.n, ok:true};
-    }catch(e){ return {n:t.n, ok:false, err:String(e&&e.message||e)}; }
-  });
+/* buildDoc 이 만든 문서에서 스크립트만 꺼내 vm 에서 돌린다. 브라우저와 같은 코드다. */
+function runBuildDay(files, day){
+  const doc=buildDoc(files, day.tests, day);
+  const src=doc.slice(doc.indexOf(">", doc.indexOf("<script"))+1, doc.lastIndexOf("</script>"));
+  let res=null;
+  const sand={ JSON, Math, Date, Number, String, Array, Object, Set, Map, Proxy, RegExp, Error, isNaN,
+    decodeURIComponent, encodeURIComponent,
+    performance:{ now:()=>Number(process.hrtime.bigint()/1000n)/1000 },
+    parent:{ postMessage:d=>{ res=d.res; } } };
+  sand.window=sand; sand.self=sand;
+  vm.createContext(sand);
+  vm.runInContext(src, sand, {timeout:60000});
+  return res||[];
 }
 
 t("빌드 프로젝트가 존재하고 필수 필드를 갖춘다", ()=>{
   ok(BUILD_PROJECTS.length>=2, "프로젝트 2개 이상");
   BUILD_PROJECTS.forEach(p=>{
     ["id","em","title","sub","brief","contract","seed","days"].forEach(f=>ok(p[f],p.id+"."+f+" 누락"));
-    ok(p.seed["app.js"], p.id+": 진입점 app.js 시드 필요");
+    ok(p.seed["app.js"]||p.days.some(d=>d.addFiles&&d.addFiles["app.js"]),
+      p.id+": 진입점 app.js 를 시드나 어느 Day 의 addFiles 로 줘야 한다");
     ok(Array.isArray(p.days)&&p.days.length>=3, p.id+": Day 3개 이상");
     ok(BUILD_SOL[p.id]&&BUILD_SOL[p.id].length===p.days.length, p.id+": Day 수만큼 참조 해답 필요");
     p.days.forEach(d=>{
@@ -281,14 +276,17 @@ t("빌드 프로젝트가 존재하고 필수 필드를 갖춘다", ()=>{
 BUILD_PROJECTS.forEach(p=>{
   let files=JSON.parse(JSON.stringify(p.seed));
   p.days.forEach((d,i)=>{
-    if(d.addFiles) Object.assign(files, d.addFiles);
-    const start=runBuildDay(files, d.tests);
+    /* 앱의 blApplyDayFiles 와 같은 규칙: 아직 없거나 시드 그대로일 때만 넣는다 */
+    if(d.addFiles) Object.keys(d.addFiles).forEach(f=>{
+      if(files[f]===undefined || files[f]===p.seed[f]) files[f]=d.addFiles[f];
+    });
+    const start=runBuildDay(files, d);
     const startOk=start.filter(x=>x.ok).length;
     t("빌드 "+p.id+" Day"+d.n+" — 시작 상태로는 통과하지 못한다", ()=>{
       ok(startOk<d.tests.length, "아무것도 안 해도 "+startOk+"/"+d.tests.length+" 통과 — 미션이 성립하지 않는다");
     });
     const solFiles=Object.assign({}, files, BUILD_SOL[p.id][i]);
-    const done=runBuildDay(solFiles, d.tests);
+    const done=runBuildDay(solFiles, d);
     const doneOk=done.filter(x=>x.ok).length;
     t("빌드 "+p.id+" Day"+d.n+" — 참조 해답으로 전부 통과한다", ()=>{
       if(doneOk!==d.tests.length){

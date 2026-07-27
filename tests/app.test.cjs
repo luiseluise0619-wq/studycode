@@ -26,7 +26,7 @@ function check(name, cond, detail){
      Object.assign({onboarded:true, goal:"free", freeMode:true}, state||{}));
    await p.goto(FILE);
    await p.waitForFunction(()=>typeof COURSES!=="undefined", {timeout:60000});
-   await p.evaluate(()=>Promise.all([ensureTrack(curLang), ensureProjects(), ensureSims(), ensureDiags()]));
+   await p.evaluate(()=>Promise.all([ensureTrack(curLang), ensureProjects(), ensureSims(), ensureDiags(), ensureBuild()]));
    if(opt&&opt.all){
      await p.evaluate(()=>Promise.all(Object.keys(COURSES).map(k=>ensureTrack(k))), null);
      await p.waitForFunction(()=>Object.keys(COURSES).every(k=>trackLoaded(k)), {timeout:120000});
@@ -292,7 +292,8 @@ function check(name, cond, detail){
       else c.code++;
     })));
     return {c, projects:(typeof PROJECTS!=="undefined"&&PROJECTS?Object.keys(PROJECTS).length:0),
-            buildDays:(typeof BUILD_PROJECTS!=="undefined"&&BUILD_PROJECTS?BUILD_PROJECTS.reduce((a,p)=>a+(p.days||[]).length,0):0)};
+            buildDays:(typeof BUILD_PROJECTS!=="undefined"&&BUILD_PROJECTS?BUILD_PROJECTS.reduce((a,p)=>a+(p.days||[]).length,0):0),
+            buildTests:(typeof BUILD_PROJECTS!=="undefined"&&BUILD_PROJECTS?BUILD_PROJECTS.reduce((a,p)=>a+(p.days||[]).reduce((b,d)=>b+(d.tests||[]).length,0),0):0)};
   });
   const TARGET10={choice:3000,input:1500,code:2000,debug:1000,review:800,log:500,sim:500,arch:150};
   console.log("  10유형 구조 (목표 10,000문항 기준):");
@@ -301,7 +302,7 @@ function check(name, cond, detail){
     const bar=now>=t? "달성" : (t-now)+" 남음";
     console.log("    "+k.padEnd(7)+String(now).padStart(5)+" / "+String(t).padStart(5)+"   "+bar);
   });
-  console.log("    project  "+cat10.projects+" 프로젝트 · "+cat10.buildDays+" 빌드랩 Day (목표 500문항 상당)");
+  console.log("    project  "+cat10.projects+" 프로젝트 · "+cat10.buildDays+" 빌드랩 Day · "+cat10.buildTests+" 수용 기준 (목표 500문항 상당)");
 
   console.log("  리뷰 분포: "+JSON.stringify(revNow));
   await p.close();
@@ -528,7 +529,7 @@ function check(name, cond, detail){
   const p=await page();
   const r=await p.evaluate(async()=>{
     S.build={}; save();
-    openBuildLab(); blOpen(0); BL.di=0; blApplyDayFiles(); blRender();
+    await openBuildLab(); blOpen(0); BL.di=0; blApplyDayFiles(); blRender();
 
     blRun(); await new Promise(r=>setTimeout(r,900));
     const seed=(BL.res||[]).filter(x=>x.ok).length, total=(BL.res||[]).length;
@@ -549,6 +550,56 @@ function check(name, cond, detail){
   check("참조 해답으로는 전부 통과한다", r.sol===r.total && r.total>0, r);
   check("통과한 Day 가 기록된다", r.recorded, r);
   check("무한 루프가 있어도 앱이 멈추지 않는다", r.loopGuard, r);
+  await p.close();
+ }
+
+ /* ---------- 7일 프로젝트: 설계 문서 Day · 변이 테스트 Day · 성능 게이트 ---------- */
+ {
+  const p=await page();
+  const r=await p.evaluate(async()=>{
+    S.build={}; save();
+    const pi=BUILD_PROJECTS.findIndex(x=>x.id==="deliver");
+    if(pi<0) return {err:"deliver 프로젝트가 없습니다"};
+    const proj=BUILD_PROJECTS[pi];
+    await openBuildLab(); blOpen(pi);
+    const wait=async()=>{ let t=0; while(BL.running && t<20000){ await new Promise(r=>setTimeout(r,150)); t+=150; } };
+    const days=[];
+    for(let di=0; di<proj.days.length; di++){
+      BL.di=di; blApplyDayFiles(); BL.res=null; blRender();
+      blRun(); await wait();
+      const seedOk=(BL.res||[]).filter(x=>x.ok).length, total=(BL.res||[]).length;
+      Object.assign(S.build.deliver.files, BUILD_SOL.deliver[di]); save(); BL.res=null; blRender();
+      const t0=Date.now(); blRun(); await wait();
+      days.push({n:proj.days[di].n, seedOk, total, ms:Date.now()-t0,
+        solOk:(BL.res||[]).filter(x=>x.ok).length,
+        fail:(BL.res||[]).filter(x=>!x.ok).map(x=>x.n+" :: "+x.err)});
+    }
+    const done=S.build.deliver.done.slice();
+    /* 색인 없이 매번 전체를 훑는 구현은 성능 게이트에서 떨어져야 한다 */
+    const d6=proj.days.findIndex(d=>d.n===6);
+    BL.di=d6; BL.res=null;
+    S.build.deliver.files["app.js"]=BUILD_SOL.deliver[d6]["app.js"]
+      .replace("const all = byCustomer[q.customerId] || [];",
+               "const all = orders.filter(o => o.customerId === q.customerId).sort((a, b) => a.createdAt - b.createdAt);");
+    save(); blRender(); blRun(); await wait();
+    const naive=(BL.res||[]).filter(x=>!x.ok).map(x=>x.n);
+    closeBuildLab();
+    return {days, done, naive};
+  });
+  check("7일 프로젝트가 있다", !r.err, r.err||"");
+  if(!r.err){
+   check("7일 전부 시작 상태로는 통과하지 못한다",
+     r.days.every(d=>d.seedOk<d.total && d.total>0), r.days.map(d=>d.n+":"+d.seedOk+"/"+d.total).join(" "));
+   check("7일 전부 참조 해답으로는 전부 통과한다",
+     r.days.every(d=>d.solOk===d.total), r.days.filter(d=>d.solOk!==d.total).map(d=>"Day"+d.n+" "+d.fail.join(" | ")).join("  //  "));
+   check("설계 Day(요구사항·DB·API)가 문서를 검사한다",
+     r.days.slice(0,3).every(d=>d.total>=9), r.days.slice(0,3).map(d=>d.total));
+   check("7일이 모두 완료로 기록된다", r.done.length===7, r.done);
+   check("Day 6 성능 게이트가 제한 시간 안에 끝난다",
+     r.days.find(d=>d.n===6).ms < 5000, r.days.find(d=>d.n===6).ms+"ms");
+   check("색인 없는 구현은 성능 게이트에서 떨어진다",
+     r.naive.length===1 && /빠르다/.test(r.naive[0]), r.naive);
+  }
   await p.close();
  }
 

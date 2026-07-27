@@ -1622,6 +1622,7 @@ function __CR(key, val){
   if(key==="sims"){ SIMS=val; return; }
   if(key==="diags"){ DIAGS=val; return; }
   if(key==="projects"){ PROJECTS=val; return; }
+  if(key==="build"){ BUILD_PROJECTS=val.projects; BUILD_SOL=val.sol; return; }
   if(key==="lib:react"){ window.__reactSrc=val; return; }
 }
 /* 트랙 문항을 제목으로 맞춰 구조에 얹는다 — 유닛 순서는 reorderUnits() 로 이미 바뀌어 있다 */
@@ -1670,6 +1671,7 @@ function ensureTrack(k){
 function ensureSims(){ return __got.sims?Promise.resolve(true):loadChunk("sims.js"); }
 function ensureDiags(){ return __got.diags?Promise.resolve(true):loadChunk("diags.js"); }
 function ensureProjects(){ return __got.projects?Promise.resolve(true):loadChunk("projects.js"); }
+function ensureBuild(){ return __got.build?Promise.resolve(true):loadChunk("build.js"); }
 /* TypeScript·JSX 변환기 (sucrase, 288KB). 파서만 필요하므로 부모 문서에서 돌린다. */
 function ensureSucrase(){
   if(typeof Sucrase!=="undefined" && Sucrase.transform) return Promise.resolve(true);
@@ -1736,190 +1738,9 @@ function prefetchRest(){
 }
 
 /* ===== 빌드 프로젝트 — 요구사항을 읽고 직접 만든다 ===== */
-const BUILD_PROJECTS=[
-{
- id:"orders", em:"🧾", lv:3, title:"주문 API 서버 만들기",
- sub:"저장소 → 인증 → 주문 → 권한 → 멱등성 → 장애 대응",
- brief:"6일에 걸쳐 주문 API 를 하나씩 쌓아 올립니다. 매일 쓴 코드가 다음 날 그대로 남으므로, 하루치를 대충 짜면 다음 날 그 위에서 고생하게 됩니다 — 실무와 같습니다.",
- contract:"진입점은 app.js 이고 handle(method, path, body, headers) 를 내보내야 합니다. 반환값은 {status, body} 입니다. 파일은 require('./store') 처럼 서로 불러올 수 있습니다.",
- seed:{
-  "app.js":"const store = require('./store');\n\nfunction handle(method, path, body, headers) {\n  // TODO: Day 1 — GET /items 를 처리하세요\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n",
-  "store.js":"// 메모리 저장소. Day 1 에서는 items 만 있으면 됩니다.\nconst items = [\n  { id: 'a', name: '키보드', price: 50000, stock: 10 },\n  { id: 'b', name: '마우스', price: 20000, stock: 3 }\n];\n\nmodule.exports = { items };\n"
- },
- days:[
-  {
-   n:1, title:"상품 목록 API",
-   req:["GET /items 는 상태 200 과 상품 배열을 반환한다.",
-        "응답 배열의 각 원소는 id, name, price, stock 을 가진다.",
-        "정의되지 않은 경로는 404 를 반환한다."],
-   hint:"handle 안에서 method 와 path 를 확인하고, store.items 를 그대로 body 에 담아 반환하면 됩니다.",
-   tests:[
-    {n:"GET /items 가 200 을 반환한다", c:"const r=A.handle('GET','/items'); eq(r.status,200);"},
-    {n:"상품 2개가 반환된다", c:"const r=A.handle('GET','/items'); eq(r.body.length,2);"},
-    {n:"상품에 필요한 필드가 있다", c:"const it=A.handle('GET','/items').body[0]; ok(it.id&&it.name&&typeof it.price==='number'&&typeof it.stock==='number','id·name·price·stock 필요');"},
-    {n:"없는 경로는 404", c:"eq(A.handle('GET','/nope').status,404);"}
-   ],
-   sol:{"app.js":"const store = require('./store');\n\nfunction handle(method, path, body, headers) {\n  if (method === 'GET' && path === '/items') {\n    return { status: 200, body: store.items };\n  }\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n"}
-  },
-  {
-   n:2, title:"로그인과 토큰",
-   req:["POST /auth/login 은 body 의 {id, pw} 를 확인한다.",
-        "사용자는 store.users 에 있다 — u1/pw1, u2/pw2.",
-        "성공하면 200 과 {token} 을 반환한다.",
-        "비밀번호가 틀리면 401 을 반환한다. 없는 사용자도 401 이다 — 존재 여부를 알려주면 안 된다.",
-        "토큰으로 나중에 누구인지 알 수 있어야 한다."],
-   hint:"토큰은 아무 문자열이어도 되지만, 그 토큰이 어느 사용자의 것인지 서버가 알 수 있어야 합니다. store 에 토큰→사용자 맵을 두는 방법이 가장 간단합니다.",
-   addFiles:{"store.js":"// 메모리 저장소\nconst items = [\n  { id: 'a', name: '키보드', price: 50000, stock: 10 },\n  { id: 'b', name: '마우스', price: 20000, stock: 3 }\n];\n\nconst users = [\n  { id: 'u1', pw: 'pw1' },\n  { id: 'u2', pw: 'pw2' }\n];\n\nmodule.exports = { items, users };\n"},
-   tests:[
-    {n:"올바른 비밀번호로 200 과 토큰", c:"const r=A.handle('POST','/auth/login',{id:'u1',pw:'pw1'}); eq(r.status,200); ok(typeof r.body.token==='string'&&r.body.token.length>0,'token 문자열 필요');"},
-    {n:"틀린 비밀번호는 401", c:"eq(A.handle('POST','/auth/login',{id:'u1',pw:'wrong'}).status,401);"},
-    {n:"없는 사용자도 401 (존재 여부를 노출하지 않는다)", c:"const a=A.handle('POST','/auth/login',{id:'nobody',pw:'x'}); eq(a.status,401); const b=A.handle('POST','/auth/login',{id:'u1',pw:'wrong'}); eq(JSON.stringify(a.body),JSON.stringify(b.body));"},
-    {n:"사용자마다 다른 토큰", c:"const t1=A.handle('POST','/auth/login',{id:'u1',pw:'pw1'}).body.token; const t2=A.handle('POST','/auth/login',{id:'u2',pw:'pw2'}).body.token; ok(t1!==t2,'서로 다른 토큰이어야 한다');"},
-    {n:"Day 1 기능이 그대로 동작한다", c:"eq(A.handle('GET','/items').status,200);"}
-   ],
-   sol:{"app.js":"const store = require('./store');\n\nlet seq = 0;\nconst sessions = {};\n\nfunction handle(method, path, body, headers) {\n  if (method === 'GET' && path === '/items') {\n    return { status: 200, body: store.items };\n  }\n  if (method === 'POST' && path === '/auth/login') {\n    const u = store.users.find(x => x.id === (body && body.id));\n    if (!u || u.pw !== body.pw) return { status: 401, body: { error: 'invalid credentials' } };\n    const token = 't' + (++seq);\n    sessions[token] = u.id;\n    return { status: 200, body: { token } };\n  }\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle, sessions };\n"}
-  },
-  {
-   n:3, title:"주문 생성",
-   req:["POST /orders 는 Authorization 헤더의 토큰으로 사용자를 확인한다. 없거나 잘못됐으면 401.",
-        "body 는 {itemId, qty} 다. 존재하지 않는 itemId 는 400.",
-        "qty 가 1 미만이거나 정수가 아니면 400.",
-        "재고보다 많이 주문하면 409 를 반환하고 재고는 그대로다.",
-        "성공하면 201 과 {id, itemId, qty, userId} 를 반환하고 재고가 그만큼 줄어든다."],
-   hint:"검증 순서가 중요합니다 — 인증 → 입력 검증 → 재고 확인 → 차감. 재고를 먼저 깎고 나중에 검증하면 실패한 주문이 재고를 갉아먹습니다.",
-   tests:[
-    {n:"토큰 없으면 401", c:"eq(A.handle('POST','/orders',{itemId:'a',qty:1}).status,401);"},
-    {n:"잘못된 토큰도 401", c:"eq(A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:'nope'}).status,401);"},
-    {n:"없는 상품은 400", c:"const t=login('u1'); eq(A.handle('POST','/orders',{itemId:'zzz',qty:1},{Authorization:t}).status,400);"},
-    {n:"수량이 0 이하면 400", c:"const t=login('u1'); eq(A.handle('POST','/orders',{itemId:'a',qty:0},{Authorization:t}).status,400); eq(A.handle('POST','/orders',{itemId:'a',qty:-3},{Authorization:t}).status,400);"},
-    {n:"재고보다 많으면 409 이고 재고는 그대로", c:"const t=login('u1'); const before=A.handle('GET','/items').body.find(i=>i.id==='b').stock; eq(A.handle('POST','/orders',{itemId:'b',qty:99},{Authorization:t}).status,409); eq(A.handle('GET','/items').body.find(i=>i.id==='b').stock, before);"},
-    {n:"성공하면 201 과 주문 정보", c:"const t=login('u1'); const r=A.handle('POST','/orders',{itemId:'a',qty:2},{Authorization:t}); eq(r.status,201); eq(r.body.itemId,'a'); eq(r.body.qty,2); eq(r.body.userId,'u1'); ok(r.body.id!=null,'주문 id 필요');"},
-    {n:"성공하면 재고가 줄어든다", c:"const t=login('u1'); const before=A.handle('GET','/items').body.find(i=>i.id==='a').stock; A.handle('POST','/orders',{itemId:'a',qty:3},{Authorization:t}); eq(A.handle('GET','/items').body.find(i=>i.id==='a').stock, before-3);"}
-   ],
-   sol:{"app.js":"const store = require('./store');\n\nlet seq = 0, orderSeq = 0;\nconst sessions = {};\nconst orders = [];\n\nfunction userOf(headers) {\n  const t = headers && headers.Authorization;\n  return t ? sessions[t] : undefined;\n}\n\nfunction handle(method, path, body, headers) {\n  if (method === 'GET' && path === '/items') return { status: 200, body: store.items };\n\n  if (method === 'POST' && path === '/auth/login') {\n    const u = store.users.find(x => x.id === (body && body.id));\n    if (!u || u.pw !== body.pw) return { status: 401, body: { error: 'invalid credentials' } };\n    const token = 't' + (++seq);\n    sessions[token] = u.id;\n    return { status: 200, body: { token } };\n  }\n\n  if (method === 'POST' && path === '/orders') {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n\n    const it = store.items.find(x => x.id === (body && body.itemId));\n    if (!it) return { status: 400, body: { error: 'unknown item' } };\n    if (!Number.isInteger(body.qty) || body.qty < 1) return { status: 400, body: { error: 'bad qty' } };\n    if (body.qty > it.stock) return { status: 409, body: { error: 'out of stock' } };\n\n    it.stock -= body.qty;\n    const order = { id: 'o' + (++orderSeq), itemId: it.id, qty: body.qty, userId };\n    orders.push(order);\n    return { status: 201, body: order };\n  }\n\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle, sessions, orders };\n"}
-  },
-  {
-   n:4, title:"내 주문만 보이기",
-   req:["GET /orders 는 인증된 사용자의 주문만 반환한다.",
-        "GET /orders/{id} 는 내 주문이면 200 과 주문을, 없으면 404 를 반환한다.",
-        "남의 주문 id 로 조회해도 403 이 아니라 404 를 반환한다 — 403 은 '그 주문이 존재한다'는 사실을 알려준다."],
-   hint:"권한이 없을 때 404 를 주는 것은 존재 여부 자체를 숨기기 위한 의도적 선택입니다. 이것이 IDOR 방어의 기본입니다.",
-   tests:[
-    {n:"내 주문만 목록에 나온다", c:"const t1=login('u1'), t2=login('u2'); A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:t1}); A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:t2}); const mine=A.handle('GET','/orders',null,{Authorization:t1}); eq(mine.status,200); eq(mine.body.length,1); eq(mine.body[0].userId,'u1');"},
-    {n:"내 주문은 단건 조회된다", c:"const t=login('u1'); const o=A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:t}).body; const r=A.handle('GET','/orders/'+o.id,null,{Authorization:t}); eq(r.status,200); eq(r.body.id,o.id);"},
-    {n:"남의 주문은 404 (403 이 아니다)", c:"const t1=login('u1'), t2=login('u2'); const o=A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:t1}).body; eq(A.handle('GET','/orders/'+o.id,null,{Authorization:t2}).status,404);"},
-    {n:"없는 주문도 같은 404", c:"const t=login('u1'); eq(A.handle('GET','/orders/nope',null,{Authorization:t}).status,404);"},
-    {n:"토큰 없이 조회하면 401", c:"eq(A.handle('GET','/orders').status,401);"}
-   ]
-  },
-  {
-   n:5, title:"중복 주문 막기 (멱등성)",
-   req:["POST /orders 요청에 Idempotency-Key 헤더가 있으면, 같은 키로 온 재요청은 새 주문을 만들지 않는다.",
-        "재요청은 처음과 같은 상태 코드와 같은 주문을 반환한다.",
-        "재요청에서 재고가 또 줄어들면 안 된다.",
-        "키가 다르면 별개의 주문이다.",
-        "키가 없으면 기존처럼 매번 새 주문을 만든다."],
-   hint:"결제·주문에서 네트워크가 끊기면 클라이언트는 같은 요청을 다시 보냅니다. 서버가 그것을 구분하지 못하면 두 번 결제됩니다. 처리한 키와 그 응답을 저장해 두는 것이 표준 해법입니다.",
-   tests:[
-    {n:"같은 키로 두 번 보내도 주문은 하나", c:"const t=login('u1'); const h={Authorization:t,'Idempotency-Key':'k1'}; const r1=A.handle('POST','/orders',{itemId:'a',qty:1},h); const r2=A.handle('POST','/orders',{itemId:'a',qty:1},h); eq(r1.body.id, r2.body.id); eq(A.handle('GET','/orders',null,{Authorization:t}).body.length, 1);"},
-    {n:"재요청에서 재고가 더 줄지 않는다", c:"const t=login('u1'); const h={Authorization:t,'Idempotency-Key':'k2'}; const before=A.handle('GET','/items').body.find(i=>i.id==='a').stock; A.handle('POST','/orders',{itemId:'a',qty:2},h); A.handle('POST','/orders',{itemId:'a',qty:2},h); eq(A.handle('GET','/items').body.find(i=>i.id==='a').stock, before-2);"},
-    {n:"재요청도 같은 상태 코드", c:"const t=login('u1'); const h={Authorization:t,'Idempotency-Key':'k3'}; const r1=A.handle('POST','/orders',{itemId:'a',qty:1},h); const r2=A.handle('POST','/orders',{itemId:'a',qty:1},h); eq(r1.status, r2.status);"},
-    {n:"키가 다르면 별개의 주문", c:"const t=login('u1'); A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:t,'Idempotency-Key':'x1'}); A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:t,'Idempotency-Key':'x2'}); eq(A.handle('GET','/orders',null,{Authorization:t}).body.length, 2);"},
-    {n:"키가 없으면 매번 새 주문", c:"const t=login('u1'); A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:t}); A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:t}); eq(A.handle('GET','/orders',null,{Authorization:t}).body.length, 2);"}
-   ]
-  },
-  {
-   n:6, title:"장애 대응 — 주문 취소",
-   req:["운영 이슈: 취소 기능이 없어 CS 가 데이터를 손으로 고치다 재고가 -4 가 된 상품이 나왔다. 취소 API 를 만든다.",
-        "DELETE /orders/{id} 는 내 주문이면 204 를 반환하고, 그 수량만큼 재고를 되돌린다.",
-        "취소된 주문은 목록과 단건 조회에서 사라진다.",
-        "이미 취소한 주문을 다시 취소하면 404 다.",
-        "남의 주문을 취소하려 해도 404 다 — 존재를 알려주지 않는다.",
-        "어떤 경우에도 재고가 원래 수량을 넘거나 음수가 되면 안 된다.",
-        "Day 1~5 의 동작은 그대로 유지된다."],
-   hint:"복원은 '한 번만' 되어야 합니다. 주문을 지우고 재고를 더하는 두 동작이 갈라져 있으면, 같은 주문을 두 번 취소했을 때 재고가 두 배로 늘어납니다. 취소 여부를 먼저 확정한 뒤 복원하세요.",
-   tests:[
-    {n:"내 주문을 취소하면 204", c:"const t=login('u1'); const o=A.handle('POST','/orders',{itemId:'a',qty:2},{Authorization:t}).body; eq(A.handle('DELETE','/orders/'+o.id,null,{Authorization:t}).status,204);"},
-    {n:"취소하면 재고가 정확히 되돌아온다", c:"const t=login('u1'); const before=A.handle('GET','/items').body.find(i=>i.id==='a').stock; const o=A.handle('POST','/orders',{itemId:'a',qty:3},{Authorization:t}).body; A.handle('DELETE','/orders/'+o.id,null,{Authorization:t}); eq(A.handle('GET','/items').body.find(i=>i.id==='a').stock, before);"},
-    {n:"취소한 주문은 목록에서 사라진다", c:"const t=login('u1'); const o=A.handle('POST','/orders',{itemId:'a',qty:1},{Authorization:t}).body; A.handle('DELETE','/orders/'+o.id,null,{Authorization:t}); eq(A.handle('GET','/orders',null,{Authorization:t}).body.length,0); eq(A.handle('GET','/orders/'+o.id,null,{Authorization:t}).status,404);"},
-    {n:"두 번 취소해도 재고가 두 배로 늘지 않는다", c:"const t=login('u1'); const before=A.handle('GET','/items').body.find(i=>i.id==='a').stock; const o=A.handle('POST','/orders',{itemId:'a',qty:2},{Authorization:t}).body; A.handle('DELETE','/orders/'+o.id,null,{Authorization:t}); eq(A.handle('DELETE','/orders/'+o.id,null,{Authorization:t}).status,404); eq(A.handle('GET','/items').body.find(i=>i.id==='a').stock, before);"},
-    {n:"남의 주문은 취소할 수 없고 재고도 그대로", c:"const t1=login('u1'), t2=login('u2'); const before=A.handle('GET','/items').body.find(i=>i.id==='a').stock; const o=A.handle('POST','/orders',{itemId:'a',qty:2},{Authorization:t1}).body; eq(A.handle('DELETE','/orders/'+o.id,null,{Authorization:t2}).status,404); eq(A.handle('GET','/items').body.find(i=>i.id==='a').stock, before-2);"},
-    {n:"토큰 없이 취소하면 401", c:"eq(A.handle('DELETE','/orders/o1').status,401);"},
-    {n:"재고는 절대 음수가 되지 않는다", c:"const t=login('u1'); const st=A.handle('GET','/items').body.find(i=>i.id==='b').stock; let okCount=0; for(let i=0;i<st+5;i++){ if(A.handle('POST','/orders',{itemId:'b',qty:1},{Authorization:t}).status===201) okCount++; } eq(okCount,st); eq(A.handle('GET','/items').body.find(i=>i.id==='b').stock,0);"},
-    {n:"Day 5 멱등성 유지", c:"const t=login('u1'); const h={Authorization:t,'Idempotency-Key':'z9'}; A.handle('POST','/orders',{itemId:'a',qty:1},h); A.handle('POST','/orders',{itemId:'a',qty:1},h); eq(A.handle('GET','/orders',null,{Authorization:t}).body.length,1);"}
-   ]
-  }
- ]
-},
-{
- id:"shorten", em:"🔗", lv:5, title:"URL 단축 서비스 — 빈 프로젝트",
- sub:"요구사항 문서만 있습니다. 구조·저장·검증을 전부 직접 정하세요",
- blank:true,
- brief:"파일도, 스키마도, API 명세도 없습니다. 요구사항 문서와 '진입점이 무엇을 반환해야 하는가' 만 주어집니다. 어떤 파일로 나눌지, 데이터를 어떻게 담을지, 검증을 어디서 할지는 전부 당신이 정합니다. 실무에서 받는 요청이 이 모양입니다.",
- contract:"app.js 가 handle(method, path, body, headers) 를 내보내야 합니다. 반환은 {status, body} 입니다. 그 외에는 아무 제약이 없습니다 — 파일을 추가하고 require 로 불러 쓰세요.",
- seed:{"app.js":"function handle(method, path, body, headers) {\n  // 여기서부터 전부 직접 설계하세요.\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n"},
- days:[
-  {
-   n:1, title:"단축과 조회",
-   req:["POST /links 는 body 의 {url} 을 받아 201 과 {code, url} 을 반환한다.",
-        "GET /links/{code} 는 200 과 {code, url} 을 반환한다. 없으면 404.",
-        "url 이 없거나 http:// 또는 https:// 로 시작하지 않으면 400 이다.",
-        "같은 url 을 두 번 단축하면 같은 code 를 돌려준다 — 새로 만들지 않는다.",
-        "code 는 서로 달라야 하고 6자 이상이어야 한다."],
-   hint:"저장을 어떻게 할지부터 정하세요. code→url 만으로는 '같은 url 재사용' 요구를 만족시킬 수 없습니다 — 반대 방향도 필요합니다.",
-   tests:[
-    {n:"단축하면 201 과 code", c:"const r=A.handle('POST','/links',{url:'https://example.com/a'}); eq(r.status,201); ok(typeof r.body.code==='string','code 문자열 필요'); ok(r.body.code.length>=6,'code 는 6자 이상');"},
-    {n:"조회하면 원본 url", c:"const c=A.handle('POST','/links',{url:'https://example.com/b'}).body.code; const r=A.handle('GET','/links/'+c); eq(r.status,200); eq(r.body.url,'https://example.com/b');"},
-    {n:"없는 code 는 404", c:"eq(A.handle('GET','/links/zzzzzz').status,404);"},
-    {n:"url 없으면 400", c:"eq(A.handle('POST','/links',{}).status,400); eq(A.handle('POST','/links',{url:''}).status,400);"},
-    {n:"http/https 가 아니면 400", c:"eq(A.handle('POST','/links',{url:'javascript:alert(1)'}).status,400); eq(A.handle('POST','/links',{url:'ftp://x.com'}).status,400);"},
-    {n:"같은 url 은 같은 code", c:"const a=A.handle('POST','/links',{url:'https://same.com'}).body.code; const b=A.handle('POST','/links',{url:'https://same.com'}).body.code; eq(a,b);"},
-    {n:"다른 url 은 다른 code", c:"const a=A.handle('POST','/links',{url:'https://one.com'}).body.code; const b=A.handle('POST','/links',{url:'https://two.com'}).body.code; ok(a!==b,'서로 다른 code');"}
-   ]
-  },
-  {
-   n:2, title:"커스텀 별칭과 충돌",
-   req:["POST /links 에 {url, alias} 가 오면 그 alias 를 code 로 쓴다.",
-        "alias 는 3~20자의 영문 소문자·숫자·하이픈만 허용한다. 아니면 400.",
-        "이미 쓰인 alias 면 409 를 반환한다.",
-        "예약어(api, admin, links, health)는 alias 로 쓸 수 없다 — 400.",
-        "Day 1 의 동작은 그대로 유지된다."],
-   hint:"'같은 url 은 같은 code' 규칙과 커스텀 별칭이 충돌합니다. 어느 쪽을 우선할지 스스로 정하고, 테스트가 요구하는 쪽에 맞추세요.",
-   tests:[
-    {n:"별칭으로 만들 수 있다", c:"const r=A.handle('POST','/links',{url:'https://a.com',alias:'my-link'}); eq(r.status,201); eq(r.body.code,'my-link'); eq(A.handle('GET','/links/my-link').body.url,'https://a.com');"},
-    {n:"중복 별칭은 409", c:"A.handle('POST','/links',{url:'https://b.com',alias:'dup'}); eq(A.handle('POST','/links',{url:'https://c.com',alias:'dup'}).status,409);"},
-    {n:"잘못된 문자는 400", c:"eq(A.handle('POST','/links',{url:'https://d.com',alias:'BAD_Alias!'}).status,400);"},
-    {n:"너무 짧거나 긴 별칭은 400", c:"eq(A.handle('POST','/links',{url:'https://e.com',alias:'ab'}).status,400); eq(A.handle('POST','/links',{url:'https://f.com',alias:'a'.repeat(21)}).status,400);"},
-    {n:"예약어는 400", c:"eq(A.handle('POST','/links',{url:'https://g.com',alias:'admin'}).status,400); eq(A.handle('POST','/links',{url:'https://h.com',alias:'api'}).status,400);"},
-    {n:"Day 1 동작 유지", c:"const r=A.handle('POST','/links',{url:'https://keep.com'}); eq(r.status,201); eq(A.handle('GET','/links/'+r.body.code).body.url,'https://keep.com');"}
-   ]
-  },
-  {
-   n:3, title:"방문 통계와 삭제",
-   req:["GET /r/{code} 는 302 와 {location} 을 반환하고 방문 수를 1 올린다. 없으면 404 이고 통계는 늘지 않는다.",
-        "GET /links/{code} 의 응답에 visits 가 포함된다.",
-        "DELETE /links/{code} 는 204 를 반환하고 이후 조회는 404 가 된다.",
-        "이미 삭제된 code 를 다시 삭제하면 404 다.",
-        "삭제한 뒤 같은 url 을 다시 단축하면 새 code 가 발급된다 — 삭제된 것을 되살리지 않는다.",
-        "Day 1~2 의 동작은 그대로 유지된다."],
-   hint:"삭제를 어떻게 표현할지(레코드 제거 vs 표시)에 따라 마지막 요구가 쉬워지기도 어려워지기도 합니다. url→code 역방향 색인도 함께 정리해야 합니다.",
-   tests:[
-    {n:"리다이렉트는 302 와 location", c:"const c=A.handle('POST','/links',{url:'https://r1.com'}).body.code; const r=A.handle('GET','/r/'+c); eq(r.status,302); eq(r.body.location,'https://r1.com');"},
-    {n:"방문할 때마다 visits 증가", c:"const c=A.handle('POST','/links',{url:'https://r2.com'}).body.code; A.handle('GET','/r/'+c); A.handle('GET','/r/'+c); A.handle('GET','/r/'+c); eq(A.handle('GET','/links/'+c).body.visits,3);"},
-    {n:"새 링크의 visits 는 0", c:"const c=A.handle('POST','/links',{url:'https://r3.com'}).body.code; eq(A.handle('GET','/links/'+c).body.visits,0);"},
-    {n:"없는 code 리다이렉트는 404", c:"eq(A.handle('GET','/r/nothere').status,404);"},
-    {n:"삭제하면 204, 이후 404", c:"const c=A.handle('POST','/links',{url:'https://r4.com'}).body.code; eq(A.handle('DELETE','/links/'+c).status,204); eq(A.handle('GET','/links/'+c).status,404); eq(A.handle('GET','/r/'+c).status,404);"},
-    {n:"두 번째 삭제는 404", c:"const c=A.handle('POST','/links',{url:'https://r5.com'}).body.code; A.handle('DELETE','/links/'+c); eq(A.handle('DELETE','/links/'+c).status,404);"},
-    {n:"삭제 후 같은 url 은 새 code", c:"const c1=A.handle('POST','/links',{url:'https://r6.com'}).body.code; A.handle('DELETE','/links/'+c1); const c2=A.handle('POST','/links',{url:'https://r6.com'}).body.code; ok(c1!==c2,'삭제된 code 를 되살리면 안 된다'); eq(A.handle('GET','/links/'+c2).body.url,'https://r6.com');"},
-    {n:"Day 2 동작 유지", c:"eq(A.handle('POST','/links',{url:'https://r7.com',alias:'keep-alias'}).body.code,'keep-alias'); eq(A.handle('POST','/links',{url:'https://r8.com',alias:'keep-alias'}).status,409);"}
-   ]
-  }
- ]
-}
-];
-
-const BUILD_SOL={"orders":[{"app.js":"const store = require('./store');\n\nfunction handle(method, path, body, headers) {\n  if (method === 'GET' && path === '/items') {\n    return { status: 200, body: store.items };\n  }\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n","store.js":"const items = [\n  { id: 'a', name: '키보드', price: 50000, stock: 10 },\n  { id: 'b', name: '마우스', price: 20000, stock: 3 }\n];\n\nmodule.exports = { items };\n"},{"app.js":"const store = require('./store');\n\nlet seq = 0;\nconst sessions = {};\n\nfunction handle(method, path, body, headers) {\n  if (method === 'GET' && path === '/items') return { status: 200, body: store.items };\n\n  if (method === 'POST' && path === '/auth/login') {\n    const u = store.users.find(x => x.id === (body && body.id));\n    if (!u || u.pw !== body.pw) return { status: 401, body: { error: 'invalid credentials' } };\n    const token = 't' + (++seq);\n    sessions[token] = u.id;\n    return { status: 200, body: { token } };\n  }\n\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n","store.js":"const items = [\n  { id: 'a', name: '키보드', price: 50000, stock: 10 },\n  { id: 'b', name: '마우스', price: 20000, stock: 3 }\n];\n\nconst users = [\n  { id: 'u1', pw: 'pw1' },\n  { id: 'u2', pw: 'pw2' }\n];\n\nmodule.exports = { items, users };\n"},{"app.js":"const store = require('./store');\n\nlet seq = 0, orderSeq = 0;\nconst sessions = {};\nconst orders = [];\n\nfunction userOf(headers) {\n  const t = headers && headers.Authorization;\n  return t ? sessions[t] : undefined;\n}\n\nfunction handle(method, path, body, headers) {\n  if (method === 'GET' && path === '/items') return { status: 200, body: store.items };\n\n  if (method === 'POST' && path === '/auth/login') {\n    const u = store.users.find(x => x.id === (body && body.id));\n    if (!u || u.pw !== body.pw) return { status: 401, body: { error: 'invalid credentials' } };\n    const token = 't' + (++seq);\n    sessions[token] = u.id;\n    return { status: 200, body: { token } };\n  }\n\n  if (method === 'POST' && path === '/orders') {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n\n    const it = store.items.find(x => x.id === (body && body.itemId));\n    if (!it) return { status: 400, body: { error: 'unknown item' } };\n    if (!Number.isInteger(body.qty) || body.qty < 1) return { status: 400, body: { error: 'bad qty' } };\n    if (body.qty > it.stock) return { status: 409, body: { error: 'out of stock' } };\n\n    it.stock -= body.qty;\n    const order = { id: 'o' + (++orderSeq), itemId: it.id, qty: body.qty, userId };\n    orders.push(order);\n    return { status: 201, body: order };\n  }\n\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n","store.js":"const items = [\n  { id: 'a', name: '키보드', price: 50000, stock: 10 },\n  { id: 'b', name: '마우스', price: 20000, stock: 3 }\n];\n\nconst users = [\n  { id: 'u1', pw: 'pw1' },\n  { id: 'u2', pw: 'pw2' }\n];\n\nmodule.exports = { items, users };\n"},{"app.js":"const store = require('./store');\n\nlet seq = 0, orderSeq = 0;\nconst sessions = {};\nconst orders = [];\n\nfunction userOf(headers) {\n  const t = headers && headers.Authorization;\n  return t ? sessions[t] : undefined;\n}\n\nfunction handle(method, path, body, headers) {\n  if (method === 'GET' && path === '/items') return { status: 200, body: store.items };\n\n  if (method === 'POST' && path === '/auth/login') {\n    const u = store.users.find(x => x.id === (body && body.id));\n    if (!u || u.pw !== body.pw) return { status: 401, body: { error: 'invalid credentials' } };\n    const token = 't' + (++seq);\n    sessions[token] = u.id;\n    return { status: 200, body: { token } };\n  }\n\n  if (method === 'POST' && path === '/orders') {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n    const it = store.items.find(x => x.id === (body && body.itemId));\n    if (!it) return { status: 400, body: { error: 'unknown item' } };\n    if (!Number.isInteger(body.qty) || body.qty < 1) return { status: 400, body: { error: 'bad qty' } };\n    if (body.qty > it.stock) return { status: 409, body: { error: 'out of stock' } };\n    it.stock -= body.qty;\n    const order = { id: 'o' + (++orderSeq), itemId: it.id, qty: body.qty, userId };\n    orders.push(order);\n    return { status: 201, body: order };\n  }\n\n  if (method === 'GET' && path === '/orders') {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n    return { status: 200, body: orders.filter(o => o.userId === userId) };\n  }\n\n  if (method === 'GET' && path.startsWith('/orders/')) {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n    const id = path.slice('/orders/'.length);\n    const o = orders.find(x => x.id === id && x.userId === userId);\n    // 남의 주문도 '없음'으로 답한다 — 403 은 존재를 알려준다\n    if (!o) return { status: 404, body: { error: 'not found' } };\n    return { status: 200, body: o };\n  }\n\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n","store.js":"const items = [\n  { id: 'a', name: '키보드', price: 50000, stock: 10 },\n  { id: 'b', name: '마우스', price: 20000, stock: 3 }\n];\n\nconst users = [\n  { id: 'u1', pw: 'pw1' },\n  { id: 'u2', pw: 'pw2' }\n];\n\nmodule.exports = { items, users };\n"},{"app.js":"const store = require('./store');\n\nlet seq = 0, orderSeq = 0;\nconst sessions = {};\nconst orders = [];\nconst seen = {};   // Idempotency-Key -> 이미 만든 응답\n\nfunction userOf(headers) {\n  const t = headers && headers.Authorization;\n  return t ? sessions[t] : undefined;\n}\n\nfunction handle(method, path, body, headers) {\n  if (method === 'GET' && path === '/items') return { status: 200, body: store.items };\n\n  if (method === 'POST' && path === '/auth/login') {\n    const u = store.users.find(x => x.id === (body && body.id));\n    if (!u || u.pw !== body.pw) return { status: 401, body: { error: 'invalid credentials' } };\n    const token = 't' + (++seq);\n    sessions[token] = u.id;\n    return { status: 200, body: { token } };\n  }\n\n  if (method === 'POST' && path === '/orders') {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n\n    const key = headers && headers['Idempotency-Key'];\n    if (key && seen[key]) return seen[key];\n\n    const it = store.items.find(x => x.id === (body && body.itemId));\n    if (!it) return { status: 400, body: { error: 'unknown item' } };\n    if (!Number.isInteger(body.qty) || body.qty < 1) return { status: 400, body: { error: 'bad qty' } };\n    if (body.qty > it.stock) return { status: 409, body: { error: 'out of stock' } };\n    it.stock -= body.qty;\n    const order = { id: 'o' + (++orderSeq), itemId: it.id, qty: body.qty, userId };\n    orders.push(order);\n    const res = { status: 201, body: order };\n    if (key) seen[key] = res;\n    return res;\n  }\n\n  if (method === 'GET' && path === '/orders') {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n    return { status: 200, body: orders.filter(o => o.userId === userId) };\n  }\n\n  if (method === 'GET' && path.startsWith('/orders/')) {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n    const id = path.slice('/orders/'.length);\n    const o = orders.find(x => x.id === id && x.userId === userId);\n    // 남의 주문도 '없음'으로 답한다 — 403 은 존재를 알려준다\n    if (!o) return { status: 404, body: { error: 'not found' } };\n    return { status: 200, body: o };\n  }\n\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n","store.js":"const items = [\n  { id: 'a', name: '키보드', price: 50000, stock: 10 },\n  { id: 'b', name: '마우스', price: 20000, stock: 3 }\n];\n\nconst users = [\n  { id: 'u1', pw: 'pw1' },\n  { id: 'u2', pw: 'pw2' }\n];\n\nmodule.exports = { items, users };\n"},{"app.js":"const store = require('./store');\n\nlet seq = 0, orderSeq = 0;\nconst sessions = {};\nconst orders = [];\nconst seen = {};   // Idempotency-Key -> 이미 만든 응답\n\nfunction userOf(headers) {\n  const t = headers && headers.Authorization;\n  return t ? sessions[t] : undefined;\n}\n\nfunction handle(method, path, body, headers) {\n  if (method === 'GET' && path === '/items') return { status: 200, body: store.items };\n\n  if (method === 'POST' && path === '/auth/login') {\n    const u = store.users.find(x => x.id === (body && body.id));\n    if (!u || u.pw !== body.pw) return { status: 401, body: { error: 'invalid credentials' } };\n    const token = 't' + (++seq);\n    sessions[token] = u.id;\n    return { status: 200, body: { token } };\n  }\n\n  if (method === 'POST' && path === '/orders') {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n\n    const key = headers && headers['Idempotency-Key'];\n    if (key && seen[key]) return seen[key];\n\n    const it = store.items.find(x => x.id === (body && body.itemId));\n    if (!it) return { status: 400, body: { error: 'unknown item' } };\n    if (!Number.isInteger(body.qty) || body.qty < 1) return { status: 400, body: { error: 'bad qty' } };\n    if (body.qty > it.stock) return { status: 409, body: { error: 'out of stock' } };\n    it.stock -= body.qty;\n    const order = { id: 'o' + (++orderSeq), itemId: it.id, qty: body.qty, userId };\n    orders.push(order);\n    const res = { status: 201, body: order };\n    if (key) seen[key] = res;\n    return res;\n  }\n\n  if (method === 'DELETE' && path.startsWith('/orders/')) {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n    const id = path.slice('/orders/'.length);\n    const i = orders.findIndex(x => x.id === id && x.userId === userId);\n    if (i < 0) return { status: 404, body: { error: 'not found' } };\n    const [o] = orders.splice(i, 1);          // 먼저 제거해 두 번 복원되지 않게 한다\n    const it = store.items.find(x => x.id === o.itemId);\n    if (it) it.stock += o.qty;\n    return { status: 204, body: null };\n  }\n\n  if (method === 'GET' && path === '/orders') {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n    return { status: 200, body: orders.filter(o => o.userId === userId) };\n  }\n\n  if (method === 'GET' && path.startsWith('/orders/')) {\n    const userId = userOf(headers);\n    if (!userId) return { status: 401, body: { error: 'unauthorized' } };\n    const id = path.slice('/orders/'.length);\n    const o = orders.find(x => x.id === id && x.userId === userId);\n    // 남의 주문도 '없음'으로 답한다 — 403 은 존재를 알려준다\n    if (!o) return { status: 404, body: { error: 'not found' } };\n    return { status: 200, body: o };\n  }\n\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n","store.js":"const items = [\n  { id: 'a', name: '키보드', price: 50000, stock: 10 },\n  { id: 'b', name: '마우스', price: 20000, stock: 3 }\n];\n\nconst users = [\n  { id: 'u1', pw: 'pw1' },\n  { id: 'u2', pw: 'pw2' }\n];\n\nmodule.exports = { items, users };\n"}],"shorten":[{"app.js":"const links = {};      // code -> { code, url, visits }\nconst byUrl = {};      // url  -> code\n\nfunction makeCode() {\n  const abc = 'abcdefghijkmnpqrstuvwxyz23456789';\n  let c = '';\n  do {\n    c = '';\n    for (let i = 0; i < 7; i++) c += abc[Math.floor(Math.random() * abc.length)];\n  } while (links[c]);\n  return c;\n}\n\nfunction validUrl(u) {\n  return typeof u === 'string' && /^https?:\\/\\//.test(u);\n}\n\nfunction handle(method, path, body, headers) {\n  if (method === 'POST' && path === '/links') {\n    const url = body && body.url;\n    if (!validUrl(url)) return { status: 400, body: { error: 'invalid url' } };\n    if (byUrl[url]) {\n      const ex = links[byUrl[url]];\n      return { status: 201, body: { code: ex.code, url: ex.url } };\n    }\n    const code = makeCode();\n    links[code] = { code, url, visits: 0 };\n    byUrl[url] = code;\n    return { status: 201, body: { code, url } };\n  }\n\n  if (method === 'GET' && path.startsWith('/links/')) {\n    const code = path.slice('/links/'.length);\n    const l = links[code];\n    if (!l) return { status: 404, body: { error: 'not found' } };\n    return { status: 200, body: { code: l.code, url: l.url } };\n  }\n\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n"},{"app.js":"const links = {};      // code -> { code, url, visits }\nconst byUrl = {};      // url  -> code\n\nfunction makeCode() {\n  const abc = 'abcdefghijkmnpqrstuvwxyz23456789';\n  let c = '';\n  do {\n    c = '';\n    for (let i = 0; i < 7; i++) c += abc[Math.floor(Math.random() * abc.length)];\n  } while (links[c]);\n  return c;\n}\n\nfunction validUrl(u) {\n  return typeof u === 'string' && /^https?:\\/\\//.test(u);\n}\n\nconst RESERVED = ['api', 'admin', 'links', 'health'];\n\nfunction validAlias(a) {\n  return typeof a === 'string' && /^[a-z0-9-]{3,20}$/.test(a) && RESERVED.indexOf(a) < 0;\n}\n\nfunction handle(method, path, body, headers) {\n  if (method === 'POST' && path === '/links') {\n    const url = body && body.url;\n    if (!validUrl(url)) return { status: 400, body: { error: 'invalid url' } };\n\n    const alias = body && body.alias;\n    if (alias !== undefined) {\n      if (!validAlias(alias)) return { status: 400, body: { error: 'invalid alias' } };\n      if (links[alias]) return { status: 409, body: { error: 'alias taken' } };\n      links[alias] = { code: alias, url, visits: 0 };\n      if (!byUrl[url]) byUrl[url] = alias;      // 별칭은 재사용 색인을 덮지 않는다\n      return { status: 201, body: { code: alias, url } };\n    }\n\n    if (byUrl[url]) {\n      const ex = links[byUrl[url]];\n      return { status: 201, body: { code: ex.code, url: ex.url } };\n    }\n    const code = makeCode();\n    links[code] = { code, url, visits: 0 };\n    byUrl[url] = code;\n    return { status: 201, body: { code, url } };\n  }\n\n  if (method === 'GET' && path.startsWith('/links/')) {\n    const code = path.slice('/links/'.length);\n    const l = links[code];\n    if (!l) return { status: 404, body: { error: 'not found' } };\n    return { status: 200, body: { code: l.code, url: l.url } };\n  }\n\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n"},{"app.js":"const links = {};      // code -> { code, url, visits }\nconst byUrl = {};      // url  -> code\n\nfunction makeCode() {\n  const abc = 'abcdefghijkmnpqrstuvwxyz23456789';\n  let c = '';\n  do {\n    c = '';\n    for (let i = 0; i < 7; i++) c += abc[Math.floor(Math.random() * abc.length)];\n  } while (links[c]);\n  return c;\n}\n\nfunction validUrl(u) {\n  return typeof u === 'string' && /^https?:\\/\\//.test(u);\n}\n\nconst RESERVED = ['api', 'admin', 'links', 'health'];\n\nfunction validAlias(a) {\n  return typeof a === 'string' && /^[a-z0-9-]{3,20}$/.test(a) && RESERVED.indexOf(a) < 0;\n}\n\nfunction handle(method, path, body, headers) {\n  if (method === 'POST' && path === '/links') {\n    const url = body && body.url;\n    if (!validUrl(url)) return { status: 400, body: { error: 'invalid url' } };\n\n    const alias = body && body.alias;\n    if (alias !== undefined) {\n      if (!validAlias(alias)) return { status: 400, body: { error: 'invalid alias' } };\n      if (links[alias]) return { status: 409, body: { error: 'alias taken' } };\n      links[alias] = { code: alias, url, visits: 0 };\n      if (!byUrl[url]) byUrl[url] = alias;      // 별칭은 재사용 색인을 덮지 않는다\n      return { status: 201, body: { code: alias, url } };\n    }\n\n    if (byUrl[url]) {\n      const ex = links[byUrl[url]];\n      return { status: 201, body: { code: ex.code, url: ex.url } };\n    }\n    const code = makeCode();\n    links[code] = { code, url, visits: 0 };\n    byUrl[url] = code;\n    return { status: 201, body: { code, url } };\n  }\n\n  if (method === 'GET' && path.startsWith('/links/')) {\n    const l = links[path.slice('/links/'.length)];\n    if (!l) return { status: 404, body: { error: 'not found' } };\n    return { status: 200, body: { code: l.code, url: l.url, visits: l.visits } };\n  }\n\n  if (method === 'DELETE' && path.startsWith('/links/')) {\n    const code = path.slice('/links/'.length);\n    const l = links[code];\n    if (!l) return { status: 404, body: { error: 'not found' } };\n    delete links[code];\n    if (byUrl[l.url] === code) delete byUrl[l.url];   // 역방향 색인도 정리한다\n    return { status: 204, body: null };\n  }\n\n  if (method === 'GET' && path.startsWith('/r/')) {\n    const l = links[path.slice('/r/'.length)];\n    if (!l) return { status: 404, body: { error: 'not found' } };\n    l.visits += 1;\n    return { status: 302, body: { location: l.url } };\n  }\n\n  return { status: 404, body: { error: 'not found' } };\n}\n\nmodule.exports = { handle };\n"}]};
-
+let BUILD_PROJECTS=[], BUILD_SOL={};
+/* 실제 데이터는 data/build.js — 셸에는 총 Day 수만 둔다 (허브 라벨용) */
+const BUILD_DAYS=16;
 
 /* ===== 빌드 랩 =====
    기존 프로젝트 34개는 '선택지를 고르는' 형식이었다. 여기서는 요구사항만 주고
@@ -1929,9 +1750,15 @@ const BL_HELP =
   "function eq(a,b){ if(JSON.stringify(a)!==JSON.stringify(b)) throw new Error('기대 '+JSON.stringify(b)+' / 실제 '+JSON.stringify(a)); }" +
   "function ok(c,m){ if(!c) throw new Error(m||'조건 불만족'); }" +
   "function login(id){ var r=A.handle('POST','/auth/login',{id:id,pw:id.replace('u','pw')});" +
-  " if(!r||!r.body||!r.body.token) throw new Error('로그인 실패 — Day 2 가 필요합니다'); return r.body.token; }";
+  " if(!r||!r.body||!r.body.token) throw new Error('로그인 실패 — Day 2 가 필요합니다'); return r.body.token; }" +
+  "function has(o,k){ if(!o||o[k]===undefined||o[k]===null) throw new Error('필드가 없습니다: '+k); return o[k]; }" +
+  "function arr(o,k){ var v=has(o,k); if(!Array.isArray(v)) throw new Error(k+' 는 배열이어야 합니다'); return v; }" +
+  "function S(v){ return typeof v==='string'?v:''; }" +
+  "function throws(f,m){ var t=false; try{ f(); }catch(e){ t=true; } if(!t) throw new Error(m||'예외가 발생해야 합니다'); }";
 
-function buildDoc(files, tests){
+
+function buildDoc(files, tests, day){
+  day=day||{};
   return '<!doctype html><meta charset=utf-8><body><scr'+'ipt>'
    +'var __src='+JSON.stringify(files)+', __mods={};'
    +'function require(n){ var k=String(n).replace(/^\\.\\//,""); if(!/\\.js$/.test(k)) k+=".js";'
@@ -1940,9 +1767,22 @@ function buildDoc(files, tests){
    +' var m={exports:{}}; __mods[k]=m;'
    +' (new Function("module","exports","require",__src[k]))(m,m.exports,require); return m.exports; }'
    +'function __reset(){ __mods={}; }'
+   +'var DOCF='+JSON.stringify(day.doc||"")+', REFSRC='+JSON.stringify(day.ref||"")+';'
+   /* 설계 Day: JSON 파일을 D 로 넘긴다. 코드가 아니라 문서를 검사하므로 실행하지 않고 파싱만 한다. */
+   +'function __json(f){ var t=__src[f]; if(t===undefined) throw new Error("파일이 없습니다: "+f);'
+   +' try{ return JSON.parse(t); }catch(e){ throw new Error(f+" 의 JSON 형식이 올바르지 않습니다 — "+e.message); } }'
+   /* app.js 가 깨져도 문서 검사는 계속돼야 한다. 실제로 A 를 만질 때만 터지게 미룬다. */
+   +'function __softA(){ try{ return require("./app"); }catch(e){ var m=String(e&&e.message||e);'
+   +'  return new Proxy({}, {get:function(){ throw new Error("app.js 를 불러오지 못했습니다 — "+m); }}); } }'
+   /* 변이 테스트: 기준 구현의 한 부분만 바꾼 앱을 만든다. 사용자 테스트가 이걸 잡아야 한다. */
+   +'function __build(src){ var keep=__src["app.js"]; __src["app.js"]=src; __mods={};'
+   +'  try{ return require("./app"); } finally { __src["app.js"]=keep; __mods={}; } }'
+   +'function REF(){ return __build(REFSRC); }'
+   +'function MUT(from,to){ if(REFSRC.indexOf(from)<0) throw new Error("내부 오류: 변이 지점을 찾지 못했습니다");'
+   +'  return __build(REFSRC.split(from).join(to)); }'
    +'var TS='+JSON.stringify(tests)+', HELP='+JSON.stringify(BL_HELP)+', out=[];'
-   +'for(var i=0;i<TS.length;i++){ try{'
-   +'  (new Function("__reset(); var A=require(\'./app\');"+HELP+"\\n"+TS[i].c))();'
+   +'for(var i=0;i<TS.length;i++){ try{ __reset();'
+   +'  (new Function((DOCF||REFSRC?"var A=__softA(), D=DOCF?__json(DOCF):null;":"var A=require(\'./app\');")+HELP+"\\n"+TS[i].c))();'
    +'  out.push({n:TS[i].n, ok:true});'
    +'}catch(e){ out.push({n:TS[i].n, ok:false, err:String(e&&e.message||e)}); } }'
    +'parent.postMessage({__cr:"build", res:out}, "*");'
@@ -1959,11 +1799,21 @@ function blState(id){
 }
 function blProject(){ return BUILD_PROJECTS[BL.pi]; }
 function blDoneDays(p){ return blState(p.id).done.length; }
+/* 허브 라벨은 청크가 오기 전에도 그려진다 — 저장된 진행만으로 센다 */
+function blDoneTotal(){ const b=S.build||{}; return Object.keys(b).reduce((a,k)=>a+((b[k]&&b[k].done||[]).length),0); }
 
 function openBuildLab(){
   $("blab").classList.add("on"); document.body.style.overflow="hidden";
   try{history.pushState({cr:1},"")}catch(e){}
+  if(!__got.build){
+    $("bl-name").textContent="빌드 랩"; $("bl-prog").textContent="불러오는 중…"; $("bl-menu").style.display="none";
+    $("bl-body").innerHTML='<div class="bl-req"><h3>불러오는 중…</h3></div>';
+    return ensureBuild().then(blRenderList).catch(function(){
+      $("bl-body").innerHTML='<div class="bl-req"><h3>불러오지 못했습니다</h3><p style="margin:6px 0 0">data/build.js 를 읽을 수 없습니다.</p></div>';
+    });
+  }
   blRenderList();
+  return Promise.resolve(true);
 }
 function closeBuildLab(){
   $("blab").classList.remove("on"); document.body.style.overflow=""; BL=null;
@@ -1973,7 +1823,7 @@ function closeBuildLab(){
 function blRenderList(){
   BL=null; clearTimeout(__blTimer);
   $("bl-name").textContent="빌드 랩";
-  const tot=BUILD_PROJECTS.reduce((a,p)=>a+p.days.length,0);
+  const tot=BUILD_PROJECTS.reduce((a,p)=>a+p.days.length,0)||BUILD_DAYS;
   const done=BUILD_PROJECTS.reduce((a,p)=>a+blDoneDays(p),0);
   $("bl-prog").textContent=done+" / "+tot+" Day 완료";
   $("bl-menu").style.display="none";
@@ -2011,6 +1861,9 @@ function blApplyDayFiles(){
     });
     if(changed) save();
   }
+  /* Day 마다 손대야 하는 파일이 다르다 — 설계 Day 는 JSON, 구현 Day 는 app.js */
+  const want=d&&(d.focus||d.doc);
+  if(want && st.files[want]!==undefined) BL.file=want;
 }
 function blRender(){
   const p=blProject(), st=blState(p.id), d=p.days[BL.di];
@@ -2059,7 +1912,7 @@ function blRender(){
 
   $("bl-tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{
     if(b.dataset.new){ const n=prompt("새 파일 이름 (예: store.js)"); if(!n) return;
-      const nm=/\.js$/.test(n)?n:n+".js";
+      const nm=/\.(js|json)$/.test(n)?n:n+".js";
       if(!st.files[nm]) st.files[nm]="";
       save(); BL.file=nm; blRender(); return; }
     blSaveCurrent(); BL.file=b.dataset.f; blRender();
@@ -2099,7 +1952,7 @@ function blRun(){
     BL.res=d.tests.map(t=>({n:t.n, ok:false, err:"실행이 끝나지 않았습니다 — 무한 루프가 있는지 확인하세요."}));
     blRender();
   }, 5000);
-  fr.srcdoc=buildDoc(st.files, d.tests);
+  fr.srcdoc=buildDoc(st.files, d.tests, d);
 }
 function blOnResult(res){
   if(!BL||!BL.running) return;
@@ -5140,7 +4993,7 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
   <p class="sub" style="margin:12px 0 6px">완료 레슨 ${done} · ${fmt(S.xp)} XP · 연속 ${S.streak}일 · 오답 ${(S.wrongs||[]).length}</p>
   ${rankBarHtml()}
   <div class="ovh" style="margin-top:16px">훈련 모드</div>
-  <button class="hubrow" id="p2-build"><span class="hb-em">🛠</span><span class="hb-t"><span>빌드 랩 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">직접 만들기</span></span><span class="hb-s">요구사항만 보고 파일을 쓰고 실행해 통과시키기 · ${BUILD_PROJECTS.reduce((a,p)=>a+blDoneDays(p),0)}/${BUILD_PROJECTS.reduce((a,p)=>a+p.days.length,0)} Day</span></span><span class="hb-go">→</span></button>
+  <button class="hubrow" id="p2-build"><span class="hb-em">🛠</span><span class="hb-t"><span>빌드 랩 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">직접 만들기</span></span><span class="hb-s">요구사항만 보고 파일을 쓰고 실행해 통과시키기 · ${blDoneTotal()}/${BUILD_DAYS} Day</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-git"><span class="hb-em">🐙</span><span class="hb-t"><span>Git 시뮬레이터</span><span class="hb-s">${glDoneCount()}/${GIT_MISSIONS.length} 미션 · 브랜치·병합·충돌·리베이스를 직접 실행</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-coach"><span class="hb-em">🧭</span><span class="hb-t"><span>학습 코치</span><span class="hb-s">내 기록으로 진단 — 난이도·유형별 정답률과 다음 할 일</span></span><span class="hb-go">→</span></button>
   <button class="hubrow" id="p2-ach"><span class="hb-em">🏅</span><span class="hb-t"><span>업적 · 활동 랭크</span><span class="hb-s">${Object.keys(S.ach||{}).length}/${ACHV.length} 획득 · ${rankOf(S.xp||0).name}</span></span><span class="hb-go">→</span></button>
