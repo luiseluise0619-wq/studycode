@@ -78,6 +78,15 @@ function cap(s) { return s.length > MAX_OUT ? s.slice(0, MAX_OUT) + "\n…(출�
 /* 테스트 모드 — exercism 처럼 '해답 파일 + 테스트 파일' 이 짝으로 오는 경우.
    테스트를 우리 형식으로 번역하지 않고 그 언어의 테스트 러너에 그대로 맡긴다.
    번역하면 의미가 틀어지고, 틀어진 채로 채점하면 그게 가짜 실행이다. */
+function walk(dir, ext, base) {
+  base = base || dir; let out = [];
+  for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, f.name);
+    if (f.isDirectory()) out = out.concat(walk(p, ext, base));
+    else if (f.name.endsWith(ext)) out.push(path.relative(base, p));
+  }
+  return out;
+}
 const TESTS = {
   go:   { src: "sol.go", test: "sol_test.go",
           prep: (d) => fs.writeFileSync(path.join(d, "go.mod"), "module ex\n\ngo 1.21\n"),
@@ -92,12 +101,14 @@ const TESTS = {
           run:  (d) => run("cargo", ["test", "--offline", "-q"], d) },
   c:    { src: "sol.c", test: "test.c",
           prep: () => {},
-          run:  (d) => { const b = run("gcc", ["-std=c11", "-w", "-o", "t", "sol.c", "test.c"], d);
+          run:  (d) => { const srcs = walk(d, ".c");
+                         const b = run("gcc", ["-std=c11", "-w", "-I", ".", "-o", "t"].concat(srcs), d);
                          if (b.status !== 0) return b;
                          return run(path.join(d, "t"), [], d); } },
   cpp:  { src: "sol.cpp", test: "test.cpp",
           prep: () => {},
-          run:  (d) => { const b = run("g++", ["-std=c++17", "-w", "-o", "t", "sol.cpp", "test.cpp"], d);
+          run:  (d) => { const srcs = walk(d, ".cpp");
+                         const b = run("g++", ["-std=c++17", "-w", "-I", ".", "-o", "t"].concat(srcs), d);
                          if (b.status !== 0) return b;
                          return run(path.join(d, "t"), [], d); } }
 };
@@ -121,9 +132,13 @@ function executeTests(lang, source, testSource, name) {
     const baseDir = path.dirname(path.join(dir, spec.test));
     fs.mkdirSync(baseDir, { recursive: true });
     for (const [name, body] of Object.entries(files)) {
-      const safe = path.basename(String(name));
-      if (!safe || safe.startsWith(".")) continue;
-      fs.writeFileSync(path.join(baseDir, safe), String(body || ""));
+      /* 하위 경로는 허용하되(test-framework/unity.h) 상위로 탈출하는 것은 막는다 */
+      const rel = path.normalize(String(name)).replace(/^(\.\.(\/|\\|$))+/, "");
+      if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) continue;
+      const dest = path.join(baseDir, rel);
+      if (!dest.startsWith(baseDir)) continue;
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, String(body || ""));
     }
     const t0 = Date.now();
     const r = spec.run(dir);
@@ -188,7 +203,7 @@ const server = http.createServer((req, res) => {
   let tooBig = false;
   req.on("data", (c) => {
     body += c;
-    if (body.length > MAX_SRC + 4096) { tooBig = true; req.destroy(); }
+    if (body.length > (isTest ? 4 * 1024 * 1024 : MAX_SRC + 4096)) { tooBig = true; req.destroy(); }
   });
   req.on("end", () => {
     if (tooBig) return send(413, { error: "요청이 너무 큽니다" });
