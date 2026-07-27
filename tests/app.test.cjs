@@ -169,8 +169,12 @@ function check(name, cond, detail){
   check("Git 미션 12개 이상", r.missions>=12, {missions:r.missions});
 
   /* ---- 콘텐츠 정책 (docs/CONTENT_POLICY.md) ---- */
-  const CHOICE_CAP=5688;      // 선택형 동결선. 올리지 말 것 — 교체는 총량 불변이어야 한다
+  const CHOICE_CAP=3000;      // 선택형 동결선. 올리지 말 것 — 교체는 총량 불변이어야 한다
                               // (5690 → 5688: 같은 유닛 안의 확인된 중복 2문항 삭제)
+                              // (5688 → 3000: 목표 비율 choice 30% 에 맞춰 약한 문항부터 2,688개 삭제.
+                              //  기준 — 길이 편향(정답이 최장·최단의 1.8배 이상) · 해설 40자 미만 ·
+                              //  트랙 안 줄기 중복 · 단답 보기. cat 태그(debug·predict) 문항과
+                              //  레슨당 마지막 선택형 1개는 보호했다)
   check("선택형이 동결선을 넘지 않는다 (choice 추가 금지)", r.byType.choice<=CHOICE_CAP,
         {choice:r.byType.choice, cap:CHOICE_CAP});
 
@@ -492,7 +496,23 @@ function check(name, cond, detail){
       if(document.querySelector("#qbody .th-sum")) document.getElementById("check").click(); };
     const out={};
     S.rc=null; save();
-    open(0,0);
+    /* 고정 좌표(0,0)를 믿지 않는다 — 문항이 늘거나 줄면 그 자리가 선택형이 아닐 수 있다.
+       첫 문항이 선택형인 레슨들을 먼저 찾고, 그중 인출로 채점 가능한 것을 성공 경로에 쓴다.
+       ("Hello" vs "\"Hello\"" 처럼 오답과 글자만 다른 문항은 인출로 구분할 수 없고, 거절하는 채점기가 옳다) */
+    const spots=[], hitSpots=[];
+    for(let ui=0; ui<COURSES.python.units.length && hitSpots.length<1; ui++){
+      for(let li=0; li<COURSES.python.units[ui].lessons.length; li++){
+        open(ui,li);
+        const q=run.les.q[run.i];
+        if(!q || (q.t||"choice")!=="choice" || !q.o) continue;
+        spots.push([ui,li]);
+        if(gradeRecall(q,String(q.o[q.a])).hit){ hitSpots.push([ui,li]); break; }
+      }
+    }
+    out.spots=spots.length; out.hitSpots=hitSpots.length;
+    const pick=i=>spots[Math.min(i, spots.length-1)]||[0,0];
+
+    open(hitSpots[0][0], hitSpots[0][1]);
     out.boxShown=!!document.getElementById("rc-in");
     out.optsHiddenFirst=!document.getElementById("opts");
     const q0=run.les.q[run.i];
@@ -500,18 +520,18 @@ function check(name, cond, detail){
     ta.dispatchEvent(new Event("input")); document.getElementById("check").click();
     out.hitGraded=run.answered && run.rcHit && document.getElementById("foot").className==="foot good";
 
-    open(0,1);
+    open(pick(0)[0], pick(0)[1]);
     document.getElementById("rc-in").value="전혀 관련 없는 대답";
     document.getElementById("rc-in").dispatchEvent(new Event("input"));
     document.getElementById("check").click();
     out.missRevealsOptions=!!document.getElementById("opts") && !!document.querySelector(".rc-mine");
     out.notAutoGraded=!run.answered;
 
-    open(1,0);
+    open(pick(1)[0], pick(1)[1]);
     document.getElementById("rc-skip").click();
     out.skipRevealsOptions=!!document.getElementById("opts");
 
-    S.recall=false; save(); open(0,0);
+    S.recall=false; save(); open(pick(0)[0], pick(0)[1]);
     out.offShowsOptions=!document.getElementById("rc-in") && !!document.getElementById("opts");
     S.recall=true; save();
     document.getElementById("lesson").classList.remove("on"); document.body.style.overflow="";
