@@ -64,6 +64,16 @@
 ## 진행 기록
 
 - 2026-07-27: 대장 작성. BugsInPy 얕은 클론(7.6MB, 버그 501개) 확인.
+- 2026-07-27: **eslint 규칙 문서 자동 추출 208문항을 전량 삭제했다.** 규칙 문서의 예제
+  코드를 줄 단위로 잘라 '어긴 줄 고르기' 로 만들었는데, 검수해 보니 문항이 성립하지
+  않았다 — 프롬프트에 영문 원문이나 URL 이 그대로 들어갔고(`- https://developer.mozilla.org/...`),
+  코드 칸이 코드가 아닌 설명문이었으며, 정답 줄이 문맥 없이는 판별 불가였고
+  (`function doSomethingElse(condition) {` 가 정답), 해설 208개가 전부 같은 문장이었다.
+  공백만 다른 보기 중복 2건은 앱 테스트에서 잡혔다.
+  **교훈: 원문을 잘라 붙이는 추출은 데이터셋(diff·테스트)이 정답을 정할 때만 통한다.**
+  규칙 문서는 정답을 정해 주지 않는다 — 사람이 코드를 새로 써야 한다.
+  대체: 규칙이 가리키는 <b>패턴</b>을 소재로 40문항을 직접 작성하고, 문항이 주장하는
+  런타임 동작 40건을 node 로 실행 검증했다 (`ver_js_bugs.cjs`, 40/40 확인).
 
 ## 추가로 넣어야 할 소스 (2026-07-27 보강)
 
@@ -78,7 +88,7 @@
 | 40 | princeton-nlp/SWE-bench | 실제 GitHub 이슈 + 패치 대규모 | debug · review | 대기 |
 | 41 | google/error-prone | 자바 **버그 패턴 카탈로그** (각 패턴에 예시·설명) | java debug · review | 대기 |
 | 42 | spotbugs/spotbugs · pmd/pmd | 정적 분석 규칙 = 리뷰 근거 카탈로그 | java review | 대기 |
-| 43 | eslint/eslint (rules) | JS 규칙마다 '왜' 가 문서화됨 | js review | 대기 |
+| 43 | eslint/eslint (rules) | JS 규칙마다 '왜' 가 문서화됨 | js review | ⚠ 자동 추출 기각 → 수작업 40문항 (아래 기록) |
 | 44 | golang/go wiki CodeReviewComments | Go 리뷰 관례 원본 | go review | 대기 |
 | 45 | google/styleguide | C++·Java·Go 등 언어별 스타일 근거 | review | 대기 |
 | 46 | rust-lang/rustlings | 러스트 연습 — **컴파일 에러가 곧 학습** | rust code · debug | 대기 |
