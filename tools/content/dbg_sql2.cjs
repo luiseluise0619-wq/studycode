@@ -1,0 +1,88 @@
+/* SQL 실행형 디버깅 2차 — 앱의 진짜 SQL 엔진(sql.js)이 채점한다.
+   src 는 실행은 되지만 결과가 요구사항과 다르고, sol 은 맞다.
+   검증: sol 의 결과가 비어 있지 않아야 하고, src 의 결과는 sol 과 달라야 한다. */
+module.exports = [
+{ k:"HAVING 과 WHERE 를 뒤바꾼다", ordered:true,
+  q:"2024년 주문만 대상으로, 주문이 2건 이상인 고객의 이름과 주문 수를 세야 합니다. 지금은 2023년 주문까지 세고 있습니다. name, cnt 두 컬럼을 name 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE orders (id INTEGER, name TEXT, yr INTEGER);\nINSERT INTO orders VALUES (1,'김',2024),(2,'김',2024),(3,'박',2024),(4,'박',2023),(5,'이',2023),(6,'이',2023),(7,'최',2024),(8,'최',2024),(9,'최',2023);",
+  src:"SELECT name, COUNT(*) AS cnt\nFROM orders\nGROUP BY name\nHAVING COUNT(*) >= 2 AND yr = 2024\nORDER BY name;",
+  sol:"SELECT name, COUNT(*) AS cnt\nFROM orders\nWHERE yr = 2024\nGROUP BY name\nHAVING COUNT(*) >= 2\nORDER BY name;",
+  ex:"🐛 원인: <code>WHERE</code> 는 <b>그룹으로 묶기 전에 행을 거르고</b>, <code>HAVING</code> 은 <b>묶은 뒤 그룹을 거릅니다</b>. 연도 조건을 HAVING 에 두면 이미 2023년 행까지 포함해 센 뒤라 개수가 부풀고, 그룹 안의 <code>yr</code> 은 대표값 하나라 판정도 엉뚱해집니다.\n🔧 해결: <b>행 조건은 WHERE, 집계 결과 조건은 HAVING</b>. <code>COUNT(*) &gt;= 2</code> 만 HAVING 에 남깁니다.\n🛡 재발 방지: 실행 순서를 외워 두면 헷갈리지 않습니다 — FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY. 'HAVING 에 집계 함수가 없다면 WHERE 로 갈 조건' 이라는 신호로 읽으세요." },
+
+{ k:"NOT IN 과 NULL", ordered:true,
+  q:"탈퇴하지 않은 회원의 이름을 뽑아야 하는데 결과가 아예 비어 있습니다. leavers 테이블에는 회원 번호가 NULL 인 행이 섞여 있습니다. name 을 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE members (id INTEGER, name TEXT);\nINSERT INTO members VALUES (1,'김'),(2,'박'),(3,'이');\nCREATE TABLE leavers (member_id INTEGER);\nINSERT INTO leavers VALUES (2),(NULL);",
+  src:"SELECT name\nFROM members\nWHERE id NOT IN (SELECT member_id FROM leavers)\nORDER BY name;",
+  sol:"SELECT name\nFROM members\nWHERE NOT EXISTS (SELECT 1 FROM leavers l WHERE l.member_id = members.id)\nORDER BY name;",
+  ex:"🐛 원인: <code>NOT IN</code> 의 목록에 <b>NULL 이 하나라도 있으면</b> 결과가 전부 사라집니다. <code>id NOT IN (2, NULL)</code> 은 <code>id &lt;&gt; 2 AND id &lt;&gt; NULL</code> 이고, <code>&lt;&gt; NULL</code> 은 참도 거짓도 아닌 <b>UNKNOWN</b> — AND 로 묶이면 절대 참이 되지 못합니다.\n🔧 해결: <code>NOT EXISTS</code> 는 '<b>짝이 있는가</b>' 만 보므로 NULL 에 영향받지 않습니다. <code>WHERE member_id IS NOT NULL</code> 을 서브쿼리에 추가해도 됩니다.\n🛡 재발 방지: SQL 의 NULL 은 '값이 없음' 이 아니라 '<b>알 수 없음</b>' 입니다. 세 가지 진리값(참·거짓·UNKNOWN)을 기억하면 이 부류의 버그가 한꺼번에 이해됩니다 — 안전한 기본 선택은 NOT EXISTS 입니다." },
+
+{ k:"COUNT(컬럼) 은 NULL 을 세지 않는다", ordered:true,
+  q:"부서별 <b>직원 수</b>와 <b>이메일이 등록된 직원 수</b>를 함께 보여줘야 하는데, 두 값이 똑같이 나옵니다. dept, total, with_email 세 컬럼을 dept 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE emp (dept TEXT, name TEXT, email TEXT);\nINSERT INTO emp VALUES ('개발','김','k@x.com'),('개발','박',NULL),('개발','이','l@x.com'),('영업','최',NULL),('영업','정',NULL);",
+  src:"SELECT dept, COUNT(*) AS total, COUNT(*) AS with_email\nFROM emp\nGROUP BY dept\nORDER BY dept;",
+  sol:"SELECT dept, COUNT(*) AS total, COUNT(email) AS with_email\nFROM emp\nGROUP BY dept\nORDER BY dept;",
+  ex:"🐛 원인: <code>COUNT(*)</code> 는 <b>행의 개수</b>를, <code>COUNT(컬럼)</code> 은 <b>그 컬럼이 NULL 이 아닌 행의 개수</b>를 셉니다. 둘을 같은 것으로 보면 '값이 있는 것만' 세는 질문에 답할 수 없습니다.\n🔧 해결: 채워진 값만 셀 때는 <code>COUNT(email)</code>. 조건부로 세려면 <code>COUNT(CASE WHEN 조건 THEN 1 END)</code> 또는 <code>SUM(조건)</code> 을 씁니다.\n🛡 재발 방지: 이 성질은 <b>데이터 점검</b>에 매우 유용합니다 — <code>COUNT(*) - COUNT(col)</code> 이 곧 결측 개수입니다. <code>COUNT(DISTINCT col)</code> 역시 NULL 을 세지 않는다는 점을 함께 기억하세요." },
+
+{ k:"AVG 는 NULL 을 분모에서 뺀다", ordered:true,
+  q:"설문 점수의 <b>전체 응답자 대비 평균</b>(무응답은 0점으로 취급)을 구해야 하는데, 무응답이 아예 빠져 평균이 높게 나옵니다. team, avg_score 두 컬럼을 team 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE survey (team TEXT, score INTEGER);\nINSERT INTO survey VALUES ('A',10),('A',NULL),('B',6),('B',4),('B',NULL),('B',NULL);",
+  src:"SELECT team, AVG(score) AS avg_score\nFROM survey\nGROUP BY team\nORDER BY team;",
+  sol:"SELECT team, AVG(COALESCE(score,0)) AS avg_score\nFROM survey\nGROUP BY team\nORDER BY team;",
+  ex:"🐛 원인: 집계 함수는 <b>NULL 을 건너뜁니다</b>. <code>AVG</code> 의 분모는 전체 행 수가 아니라 <b>값이 있는 행 수</b>라, 무응답이 많을수록 평균이 실제보다 높아집니다 — 오류가 없어 눈치채기 어렵습니다.\n🔧 해결: 무응답을 0으로 보겠다는 <b>결정을 코드에 적습니다</b> — <code>AVG(COALESCE(score,0))</code>. 또는 <code>SUM(score)*1.0/COUNT(*)</code> 로 분모를 명시합니다.\n🛡 재발 방지: '무응답을 0으로 볼 것인가, 모집단에서 뺄 것인가' 는 <b>도메인 결정</b>이지 기술 문제가 아닙니다. 어느 쪽이든 코드에 드러나야 리뷰어와 분석가가 같은 숫자를 이해합니다." },
+
+{ k:"DISTINCT 가 집계를 가린다", ordered:true,
+  q:"상품별 <b>주문한 고객 수</b>(중복 제외)를 세야 하는데, 같은 고객이 여러 번 사면 그만큼 부풀려 세집니다. product, buyers 두 컬럼을 product 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE sales (product TEXT, customer TEXT);\nINSERT INTO sales VALUES ('노트북','김'),('노트북','김'),('노트북','박'),('마우스','이'),('마우스','이'),('마우스','이');",
+  src:"SELECT product, COUNT(customer) AS buyers\nFROM sales\nGROUP BY product\nORDER BY product;",
+  sol:"SELECT product, COUNT(DISTINCT customer) AS buyers\nFROM sales\nGROUP BY product\nORDER BY product;",
+  ex:"🐛 원인: <code>COUNT(customer)</code> 는 <b>행을 셉니다</b> — 같은 고객이 세 번 사면 3으로 셉니다. '몇 명이 샀는가' 와 '몇 건이 팔렸는가' 는 다른 질문인데 SQL 은 묻지 않고 후자를 답합니다.\n🔧 해결: <code>COUNT(DISTINCT customer)</code> 로 <b>서로 다른 값의 개수</b>를 셉니다.\n🛡 재발 방지: 지표 정의에서 '유니크' 라는 단어가 나오면 거의 항상 DISTINCT 가 필요합니다(DAU·구매자 수·방문자 수). 반대로 DISTINCT 를 남발하면 <b>중복을 만든 진짜 원인</b>(조인 팬아웃)을 덮어 버리니, 먼저 왜 중복이 생겼는지 확인하세요." },
+
+{ k:"조인이 행을 부풀린다", ordered:true,
+  q:"주문별 결제 금액 합계를 구해야 하는데, 주문에 배송 이력이 여러 건 있으면 금액이 그 배수로 커집니다. order_id, paid 두 컬럼을 order_id 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE orders2 (id INTEGER, amount INTEGER);\nINSERT INTO orders2 VALUES (1,1000),(2,2000);\nCREATE TABLE ships (order_id INTEGER, leg TEXT);\nINSERT INTO ships VALUES (1,'a'),(1,'b'),(2,'a');",
+  src:"SELECT o.id AS order_id, SUM(o.amount) AS paid\nFROM orders2 o\nJOIN ships s ON s.order_id = o.id\nGROUP BY o.id\nORDER BY o.id;",
+  sol:"SELECT o.id AS order_id, o.amount AS paid\nFROM orders2 o\nWHERE EXISTS (SELECT 1 FROM ships s WHERE s.order_id = o.id)\nORDER BY o.id;",
+  ex:"🐛 원인: 1:N 조인은 왼쪽 행을 <b>오른쪽 짝의 수만큼 복제</b>합니다. 주문 1에 배송이 2건이면 1000원짜리 행이 2개가 되어 <code>SUM</code> 이 2000원이 됩니다 — <b>팬아웃</b>입니다.\n🔧 해결: 존재 여부만 필요하면 조인 대신 <code>EXISTS</code> 를 씁니다. 양쪽 모두 집계해야 한다면 각각 집계한 뒤 조인하거나 서브쿼리로 분리합니다.\n🛡 재발 방지: <b>조인 전후로 행 수를 확인</b>하는 습관이 가장 확실한 방어입니다. 'JOIN 뒤에 SUM 이 있다' 를 위험 신호로 읽으세요 — DISTINCT 로 덮으면 금액처럼 같은 값이 여러 번 나올 수 있는 경우에 또 틀립니다." },
+
+{ k:"윈도우 함수 없이 순위를 매긴다", ordered:true,
+  q:"부서별로 급여가 가장 높은 직원의 이름과 급여를 뽑아야 하는데, 이름과 급여가 서로 다른 사람 것으로 섞여 나옵니다. dept, name, salary 세 컬럼을 dept 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE staff (dept TEXT, name TEXT, salary INTEGER);\nINSERT INTO staff VALUES ('개발','김',500),('개발','박',700),('개발','이',600),('영업','최',400),('영업','정',900);",
+  src:"SELECT dept, MIN(name) AS name, MAX(salary) AS salary\nFROM staff\nGROUP BY dept\nORDER BY dept;",
+  sol:"SELECT dept, name, salary\nFROM (\n  SELECT dept, name, salary,\n         ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn\n  FROM staff\n)\nWHERE rn = 1\nORDER BY dept;",
+  ex:"🐛 원인: <code>MAX(salary)</code> 와 <code>MIN(name)</code> 은 <b>서로 독립적으로</b> 계산됩니다 — 최고 급여와 그 급여를 받는 사람의 이름이 짝이라는 보장이 전혀 없습니다. 개발팀의 최고 급여는 박(700)인데 이름은 알파벳/가나다 최솟값인 김이 나옵니다.\n🔧 해결: <b>윈도우 함수</b>로 그룹 안 순위를 매기고 1위만 고릅니다 — <code>ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC)</code>.\n🛡 재발 방지: 'X 가 최대인 행의 다른 컬럼' 은 집계로 풀 수 없는 대표적 문제(greatest-n-per-group)입니다. 동점 처리도 함께 정하세요 — <code>ROW_NUMBER</code> 는 하나만, <code>RANK</code> 는 동점을 모두 남깁니다." },
+
+{ k:"UNION 이 중복을 지운다", ordered:true,
+  q:"두 채널의 접속 로그를 합쳐 전체 접속 건수를 보고해야 하는데, 같은 사용자의 같은 날짜 접속이 하나로 합쳐져 건수가 적게 나옵니다. user_id, day 두 컬럼을 user_id, day 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE web_log (user_id INTEGER, day TEXT);\nINSERT INTO web_log VALUES (1,'01-01'),(1,'01-02'),(2,'01-01');\nCREATE TABLE app_log (user_id INTEGER, day TEXT);\nINSERT INTO app_log VALUES (1,'01-01'),(2,'01-03');",
+  src:"SELECT user_id, day FROM web_log\nUNION\nSELECT user_id, day FROM app_log\nORDER BY user_id, day;",
+  sol:"SELECT user_id, day FROM web_log\nUNION ALL\nSELECT user_id, day FROM app_log\nORDER BY user_id, day;",
+  ex:"🐛 원인: <code>UNION</code> 은 <b>중복을 제거</b>합니다. 웹과 앱에서 같은 날 접속한 사용자는 두 건이어야 하는데 한 건으로 합쳐져, 건수가 조용히 줄어듭니다.\n🔧 해결: 모든 행을 보존하려면 <code>UNION ALL</code> 입니다.\n🛡 재발 방지: 성능 면에서도 <code>UNION ALL</code> 이 기본입니다 — <code>UNION</code> 은 중복 제거를 위해 <b>정렬이나 해싱</b>을 해야 해서 비쌉니다. '중복을 지워야 하는 이유' 를 설명할 수 있을 때만 UNION 을 쓰세요." },
+
+{ k:"문자열 비교로 날짜를 거른다", ordered:true,
+  q:"2024년 3월 한 달의 매출 합계를 구해야 하는데, 3월 31일 데이터가 빠집니다. total 한 컬럼만 출력하세요.",
+  schema:"CREATE TABLE tx (ts TEXT, amount INTEGER);\nINSERT INTO tx VALUES ('2024-02-28 10:00',100),('2024-03-01 09:00',200),('2024-03-31 23:30',400),('2024-04-01 00:10',800);",
+  src:"SELECT SUM(amount) AS total\nFROM tx\nWHERE ts BETWEEN '2024-03-01' AND '2024-03-31';",
+  sol:"SELECT SUM(amount) AS total\nFROM tx\nWHERE ts >= '2024-03-01' AND ts < '2024-04-01';",
+  ex:"🐛 원인: 값이 <code>'2024-03-31 23:30'</code> 처럼 <b>시각을 포함</b>하면 <code>&lt;= '2024-03-31'</code> 비교에서 탈락합니다 — 문자열로 보면 <code>'2024-03-31 23:30'</code> 이 <code>'2024-03-31'</code> 보다 큽니다. BETWEEN 은 양끝을 포함하지만, 그 '끝' 이 <b>그날 0시</b>라는 것이 함정입니다.\n🔧 해결: <b>반열린 구간</b>(<code>&gt;= 시작 AND &lt; 다음 달 1일</code>)을 쓰면 시각이 있든 없든, 초 단위든 마이크로초 단위든 항상 맞습니다.\n🛡 재발 방지: 날짜 범위는 언제나 <code>[시작, 끝)</code> 로 적는 습관을 들이세요. <code>DATE(ts) = '2024-03-31'</code> 처럼 컬럼에 함수를 씌우는 방법도 결과는 맞지만 <b>인덱스를 못 쓰게</b> 만듭니다." },
+
+{ k:"LIKE 와 와일드카드 이스케이프", ordered:true,
+  q:"할인율 표기 '50%' 가 들어간 상품만 찾아야 하는데, 숫자 50 만 들어간 상품(50개 한정 판매)까지 걸립니다. name 을 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE items (name TEXT);\nINSERT INTO items VALUES ('여름세일 50% 할인'),('50개 한정 판매'),('봄맞이 50% 쿠폰'),('가을 신상');",
+  src:"SELECT name\nFROM items\nWHERE name LIKE '%50%%'\nORDER BY name;",
+  sol:"SELECT name\nFROM items\nWHERE name LIKE '%50\\%%' ESCAPE '\\'\nORDER BY name;",
+  ex:"🐛 원인: <code>LIKE</code> 에서 <code>%</code> 는 <b>임의의 문자열</b>을 뜻하는 와일드카드입니다. 찾고 싶은 문자 <code>%</code> 를 그대로 쓰면 패턴이 <code>'%50%%'</code> — 사실상 '50 을 포함' 이 되어 버립니다.\n🔧 해결: <code>ESCAPE</code> 절로 탈출 문자를 정하고 리터럴 <code>%</code> 앞에 붙입니다. <code>_</code>(한 글자)도 같은 처리가 필요합니다.\n🛡 재발 방지: 사용자 입력을 LIKE 패턴에 그대로 넣는 것은 <b>기능 버그이자 성능 문제</b>입니다 — <code>%</code> 로 시작하는 패턴은 인덱스를 못 씁니다. 검색어에 포함된 <code>%</code>·<code>_</code> 는 애플리케이션에서 이스케이프해 넘기세요." },
+
+{ k:"CASE 의 조건 순서", ordered:true,
+  q:"점수를 등급으로 나누는데 모든 사람이 C 로 나옵니다. name, grade 두 컬럼을 name 오름차순으로 출력하세요. (90 이상 A, 80 이상 B, 그 외 C)",
+  schema:"CREATE TABLE scores (name TEXT, score INTEGER);\nINSERT INTO scores VALUES ('김',95),('박',85),('이',70),('최',90);",
+  src:"SELECT name,\n       CASE WHEN score >= 0 THEN 'C'\n            WHEN score >= 80 THEN 'B'\n            WHEN score >= 90 THEN 'A'\n       END AS grade\nFROM scores\nORDER BY name;",
+  sol:"SELECT name,\n       CASE WHEN score >= 90 THEN 'A'\n            WHEN score >= 80 THEN 'B'\n            ELSE 'C'\n       END AS grade\nFROM scores\nORDER BY name;",
+  ex:"🐛 원인: <code>CASE</code> 는 <b>위에서부터 처음 참인 가지</b>에서 멈춥니다. 가장 넓은 조건(<code>score &gt;= 0</code>)을 맨 위에 두면 아래 조건들은 <b>영원히 도달하지 못합니다</b>.\n🔧 해결: <b>좁은 조건부터 넓은 조건 순</b>으로 씁니다. 마지막은 <code>ELSE</code> 로 받으면 조건이 겹칠 걱정이 없습니다.\n🛡 재발 방지: <code>ELSE</code> 를 빼면 어디에도 걸리지 않은 행이 조용히 <b>NULL</b> 이 됩니다 — 등급이 비어 있는 이유를 나중에 찾게 됩니다. 경계값(정확히 90인 사람)을 테스트에 꼭 넣으세요 — 이 문항의 '최' 가 그 역할입니다." },
+
+{ k:"GROUP BY 없이 집계와 컬럼을 섞는다", ordered:true,
+  q:"각 카테고리의 상품 수를 보여줘야 하는데 한 줄만 나옵니다. category, n 두 컬럼을 category 오름차순으로 출력하세요.",
+  schema:"CREATE TABLE goods (category TEXT, name TEXT);\nINSERT INTO goods VALUES ('가전','TV'),('가전','냉장고'),('의류','셔츠'),('의류','바지'),('의류','양말'),('식품','쌀');",
+  src:"SELECT category, COUNT(*) AS n\nFROM goods\nORDER BY category;",
+  sol:"SELECT category, COUNT(*) AS n\nFROM goods\nGROUP BY category\nORDER BY category;",
+  ex:"🐛 원인: <code>GROUP BY</code> 가 없으면 테이블 <b>전체가 하나의 그룹</b>이 됩니다. 집계 결과는 한 줄이고, 함께 쓴 <code>category</code> 는 SQLite 가 임의의 행에서 가져온 값입니다 — 다른 DBMS 라면 아예 오류입니다.\n🔧 해결: 집계와 함께 보여줄 컬럼은 <b>전부 GROUP BY 에</b> 넣습니다.\n🛡 재발 방지: SQLite·MySQL 은 이 실수를 오류로 막지 않고 <b>조용히 아무 값이나 돌려줍니다</b>. 개발 중에 통과하고 데이터가 늘어난 뒤 이상해지는 전형적인 경로라, 표준에 맞게 쓰는 습관이 곧 이식성입니다." },
+];
