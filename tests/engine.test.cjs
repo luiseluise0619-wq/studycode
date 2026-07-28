@@ -262,18 +262,34 @@ t("빌드 프로젝트가 존재하고 필수 필드를 갖춘다", ()=>{
   ok(BUILD_PROJECTS.length>=2, "프로젝트 2개 이상");
   BUILD_PROJECTS.forEach(p=>{
     ["id","em","title","sub","brief","contract","seed","days"].forEach(f=>ok(p[f],p.id+"."+f+" 누락"));
-    ok(p.seed["app.js"]||p.days.some(d=>d.addFiles&&d.addFiles["app.js"]),
-      p.id+": 진입점 app.js 를 시드나 어느 Day 의 addFiles 로 줘야 한다");
+    const native=p.lang&&p.lang!=="js";
+    if(native){
+      /* 언어 프로젝트는 러너가 파일 하나를 컴파일한다 — 진입점은 mainFile 이고
+         실제 채점은 tools/content/ver_langproj.cjs 가 실제 컴파일러로 확인한다 */
+      ok(p.mainFile&&p.seed[p.mainFile], p.id+": mainFile 과 그 시드가 필요하다");
+      ok(Object.keys(p.seed).length===1, p.id+": 언어 프로젝트의 시드는 파일 하나여야 한다");
+    } else {
+      ok(p.seed["app.js"]||p.days.some(d=>d.addFiles&&d.addFiles["app.js"]),
+        p.id+": 진입점 app.js 를 시드나 어느 Day 의 addFiles 로 줘야 한다");
+    }
     ok(Array.isArray(p.days)&&p.days.length>=3, p.id+": Day 3개 이상");
     ok(BUILD_SOL[p.id]&&BUILD_SOL[p.id].length===p.days.length, p.id+": Day 수만큼 참조 해답 필요");
     p.days.forEach(d=>{
       ok(d.title&&Array.isArray(d.req)&&d.req.length&&d.hint, p.id+" Day"+d.n+": 요구사항·힌트 필요");
       ok(Array.isArray(d.tests)&&d.tests.length>=4, p.id+" Day"+d.n+": 수용 기준 4개 이상");
+      if(native){
+        ok(d.rt&&d.rt.test&&Object.keys(d.rt.test).length, p.id+" Day"+d.n+": 러너 테스트 파일 필요");
+        ok(BUILD_SOL[p.id][d.n-1]&&BUILD_SOL[p.id][d.n-1][p.mainFile],
+           p.id+" Day"+d.n+": 참조 해답이 "+p.mainFile+" 를 담아야 한다");
+      }
     });
   });
 });
 
 BUILD_PROJECTS.forEach(p=>{
+  /* 언어 프로젝트는 실제 컴파일러가 필요해 여기서 돌리지 않는다(엔진 테스트는 오프라인이어야 한다).
+     '시드는 실패하고 해답은 통과한다' 는 ver_langproj.cjs 가 러너로 확인한다. */
+  if(p.lang&&p.lang!=="js") return;
   let files=JSON.parse(JSON.stringify(p.seed));
   p.days.forEach((d,i)=>{
     /* 앱의 blApplyDayFiles 와 같은 규칙: 아직 없거나 시드 그대로일 때만 넣는다 */

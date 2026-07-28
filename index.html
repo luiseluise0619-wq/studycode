@@ -1742,7 +1742,7 @@ function prefetchRest(){
 /* ===== 빌드 프로젝트 — 요구사항을 읽고 직접 만든다 ===== */
 let BUILD_PROJECTS=[], BUILD_SOL={};
 /* 실제 데이터는 data/build.js — 셸에는 총 Day 수만 둔다 (허브 라벨용) */
-const BUILD_DAYS=21;
+const BUILD_DAYS=27;
 
 /* ===== 빌드 랩 =====
    기존 프로젝트 34개는 '선택지를 고르는' 형식이었다. 여기서는 요구사항만 주고
@@ -1915,7 +1915,8 @@ function blRender(){
 
   $("bl-tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{
     if(b.dataset.new){ const n=prompt("새 파일 이름 (예: store.js)"); if(!n) return;
-      const nm=/\.(js|json)$/.test(n)?n:n+".js";
+      /* 언어 프로젝트는 러너가 파일 하나를 컴파일하므로 확장자를 임의로 붙이지 않는다 */
+      const nm=(p.lang&&p.lang!=="js")?n:(/\.(js|json)$/.test(n)?n:n+".js");
       if(!st.files[nm]) st.files[nm]="";
       save(); BL.file=nm; blRender(); return; }
     blSaveCurrent(); BL.file=b.dataset.f; blRender();
@@ -1950,10 +1951,39 @@ function blFreshFrame(){
   fr.parentNode.replaceChild(nf, fr);
   return nf;
 }
+/* 언어 프로젝트(go·rust·c·cpp·java)는 브라우저가 아니라 로컬 러너의 실제 컴파일러가 채점한다.
+   테스트를 우리 형식으로 번역하지 않고 그 언어의 테스트 러너에 그대로 맡기고,
+   실패하면 러너가 낸 출력을 그대로 보여 준다 — 어느 테스트가 왜 깨졌는지는 그 출력이 가장 정확하다. */
+function blRunNative(p, st, d){
+  const main=p.mainFile||Object.keys(st.files)[0];
+  clearTimeout(__blTimer);
+  __blTimer=setTimeout(()=>{
+    if(!BL||!BL.running) return;
+    BL.running=false;
+    BL.res=[{n:"컴파일·테스트가 끝나지 않았습니다", ok:false, err:"무한 루프가 있는지 확인하세요."}];
+    blRender();
+  }, 60000);
+  runnerTest(p.lang, st.files[main]||"", d.rt.test, p.id, p.srcName).then(r=>{
+    if(!BL||!BL.running) return;
+    clearTimeout(__blTimer);
+    let res;
+    if(r&&r.needRunner){
+      BL.running=false;
+      res=[{n:"로컬 실행 서버가 필요합니다", ok:false,
+            err:"tools/runner 를 띄우고 설정에서 주소를 넣어 주세요 (기본 http://127.0.0.1:8787)"}];
+      BL.res=res; blRender(); return;
+    }
+    const out=[(r&&r.stdout)||"", (r&&r.stderr)||""].join("\n").trim();
+    res=[{n:(d.rt&&d.rt.label)||"언어 테스트 러너 판정", ok:!!(r&&r.pass),
+          err:(r&&r.error)||out.slice(0,1500)}];
+    blOnResult(res);
+  });
+}
 function blRun(){
   blSaveCurrent();
   const p=blProject(), st=blState(p.id), d=p.days[BL.di];
   BL.running=true; BL.res=null; blRender();
+  if(p.lang && p.lang!=="js"){ blRunNative(p, st, d); return; }
   const fr=$("bl-frame"); if(!fr){ BL.running=false; return; }
   clearTimeout(__blTimer);
   __blTimer=setTimeout(()=>{
