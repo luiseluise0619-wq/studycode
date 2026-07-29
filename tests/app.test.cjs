@@ -86,6 +86,10 @@ function check(name, cond, detail){
   const p=await page(null,{all:true});
   const r=await p.evaluate(()=>{
     let units=0, lessons=0, qs=0, noTheory=0, badTheory=0, badChoice=0, badLog=0, badReview=0;
+    /* 실행해 볼 수 있는 트랙에서 '출력 맞히기' 를 선택형으로 내면 실행형이 할 일을 뺏는다 */
+    const HANDS=/무엇이 출력|무엇을 (출력|반환)|출력 결과|실행 결과는|반환값은|이 코드의 결과/;
+    const RUNNABLE=new Set(["python","sql","javascript","java","c","cpp","go","rust","react","web","code","algo"]);
+    let handsChoice=0;
     const byType={};
     for(const k in COURSES) COURSES[k].units.forEach(u=>{ units++; u.lessons.forEach(l=>{
       lessons++;
@@ -95,6 +99,8 @@ function check(name, cond, detail){
               !Array.isArray(t.key) || !t.key.length) badTheory++;
       l.q.forEach(q=>{
         qs++; byType[q.t||"choice"]=(byType[q.t||"choice"]||0)+1;
+        if((q.t||"choice")==="choice" && RUNNABLE.has(k) &&
+           HANDS.test(String(q.q||"").replace(/<[^>]*>/g,""))) handsChoice++;
         if((q.t||"choice")==="choice"){
           if(!Array.isArray(q.o) || q.o.length!==4) badChoice++;
           else if(!(q.a>=0 && q.a<q.o.length)) badChoice++;
@@ -131,7 +137,7 @@ function check(name, cond, detail){
         if(q.cat) c["cat:"+q.cat]=(c["cat:"+q.cat]||0)+1;
       })));
       perTrack[k]=c; }
-    return {units, lessons, qs, byType, noTheory, badTheory, badChoice, badLog, badReview,
+    return {units, lessons, qs, byType, handsChoice, noTheory, badTheory, badChoice, badLog, badReview,
             introMissing, perTrack, missions:GIT_MISSIONS.length, sims:SIMS.length, diags:DIAGS.length};
   });
   /* 셸(index.html)의 n 과 데이터 청크의 실제 문항 수가 어긋나면 목록에 잘못된 개수가 표시된다.
@@ -169,14 +175,14 @@ function check(name, cond, detail){
   check("Git 미션 12개 이상", r.missions>=12, {missions:r.missions});
 
   /* ---- 콘텐츠 정책 (docs/CONTENT_POLICY.md) ---- */
-  const CHOICE_CAP=3000;      // 선택형 동결선. 올리지 말 것 — 교체는 총량 불변이어야 한다
-                              // (5690 → 5688: 같은 유닛 안의 확인된 중복 2문항 삭제)
-                              // (5688 → 3000: 목표 비율 choice 30% 에 맞춰 약한 문항부터 2,688개 삭제.
-                              //  기준 — 길이 편향(정답이 최장·최단의 1.8배 이상) · 해설 40자 미만 ·
-                              //  트랙 안 줄기 중복 · 단답 보기. cat 태그(debug·predict) 문항과
-                              //  레슨당 마지막 선택형 1개는 보호했다)
-  check("선택형이 동결선을 넘지 않는다 (choice 추가 금지)", r.byType.choice<=CHOICE_CAP,
-        {choice:r.byType.choice, cap:CHOICE_CAP});
+  /* 선택형 총량 동결선은 폐기했다. 총량이 아니라 '이 유형이어야만 하는가' 로 판정한다.
+     (5690 → 5688: 확인된 중복 2문항 삭제)
+     (5688 → 3000: 목표 비율에 맞춰 '문항 만듦새' 기준으로 2,688개 삭제 — 기준이 틀렸다.
+      만듦새는 '직접 해 보는 게 나은가' 와 다른 질문이라, 실행으로는 절대 얻을 수 없는
+      판단형 문항까지 잘려 나갔다. 아두이노처럼 앱에서 실행 자체가 불가능한 영역도 있다.)
+     (3000 → 복원: 실행으로 대체 가능한 것만 남기고 2,457개를 제자리로 되돌렸다) */
+  check("실행해 볼 수 있는 트랙에 '출력 맞히기' 선택형을 늘리지 않는다",
+        r.handsChoice<=30, {handsChoice:r.handsChoice, note:"이런 건 실행형으로 내야 한다"});
 
   /* 리뷰가 있어야 하는 트랙. 목표는 30, 지금 달성치를 기준선으로 박아 뒷걸음질을 막는다 */
   const REVIEW_GOAL=30;
@@ -303,15 +309,15 @@ function check(name, cond, detail){
             buildDays:(typeof BUILD_PROJECTS!=="undefined"&&BUILD_PROJECTS?BUILD_PROJECTS.reduce((a,p)=>a+(p.days||[]).length,0):0),
             buildTests:(typeof BUILD_PROJECTS!=="undefined"&&BUILD_PROJECTS?BUILD_PROJECTS.reduce((a,p)=>a+(p.days||[]).reduce((b,d)=>b+(d.tests||[]).length,0),0):0)};
   });
-  const TARGET10={choice:3000,input:1500,code:2000,debug:1000,review:800,log:500,sim:500,arch:150};
-  console.log("  10유형 구조 (목표 10,000문항 기준):");
-  /* choice 의 3,000 은 목표가 아니라 상한이다 — 넘으면 '달성' 이 아니라 '초과' 로 읽어야 한다 */
+  /* 총량 상한은 없다. 선택형은 '실행으로 대체할 수 없는 지식' 이면 얼마든 있어도 되고,
+     나머지 유형은 각자의 목표만큼 채운다 — 비율은 결과이지 제약이 아니다. */
+  const TARGET10={choice:null,input:1500,code:2000,debug:1000,review:800,log:500,sim:500,arch:150};
+  console.log("  10유형 구조 (choice 는 상한 없음 · 나머지는 목표치):");
   Object.keys(TARGET10).forEach(k=>{
     const now=cat10.c[k]||0, t=TARGET10[k];
-    const bar = k==="choice"
-      ? (now<=t ? "상한 이내" : (now-t)+" 초과 (상한)")
+    const bar = t===null ? "상한 없음"
       : (now>=t ? "달성" : (t-now)+" 남음");
-    console.log("    "+k.padEnd(7)+String(now).padStart(5)+" / "+String(t).padStart(5)+"   "+bar);
+    console.log("    "+k.padEnd(7)+String(now).padStart(5)+" / "+String(t===null?"—":t).padStart(5)+"   "+bar);
   });
   const remain10=Object.keys(TARGET10).filter(k=>k!=="choice")
     .reduce((a,k)=>a+Math.max(0,TARGET10[k]-(cat10.c[k]||0)),0);
