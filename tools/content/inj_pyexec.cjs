@@ -4,7 +4,7 @@
    slice 로 한 콘텐츠 파일을 여러 트랙에 나눠 넣을 수 있다.
    전부 성공해야 쓴다(all-or-nothing). */
 const fs=require("fs");
-const ROOT="/home/user/studycode";
+const ROOT=process.cwd();
 const SPEC=require(process.argv[2]);
 const ALL=require(SPEC.source);
 const Q=SPEC.slice ? ALL.slice(SPEC.slice[0], SPEC.slice[1]) : ALL;
