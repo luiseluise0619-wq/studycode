@@ -53,6 +53,10 @@ const LANGS = {
   python: { file: "main.py", probe: ["python3", "--version"],
           build: (d) => run("python3", ["-m", "py_compile", "main.py"], d),
           exec:  (d) => run("python3", ["-I", "main.py"], d) },
+  /* PHP 도 컴파일 단계는 없다. php -l 로 문법 검사만 먼저 돌려 원인을 갈라 준다. */
+  php:  { file: "main.php",  probe: ["php", "--version"],
+          build: (d) => run("php", ["-l", "main.php"], d),
+          exec:  (d) => run("php", ["-d", "display_errors=1", "main.php"], d) },
 };
 
 function run(cmd, args, cwd, stdin, timeoutMs) {
@@ -146,7 +150,12 @@ const TESTS = {
           run:  (d) => { const srcs = walk(d, ".cpp");
                          const b = run("g++", ["-std=c++17", "-w", "-I", ".", "-I", "test", "-o", "t"].concat(srcs), d, null, 90000);
                          if (b.status !== 0) return b;
-                         return run(path.join(d, "t"), [], d); } }
+                         return run(path.join(d, "t"), [], d); } },
+  /* PHP 는 PHPUnit 이 없어도 되도록, 테스트 파일이 sol.php 를 require 하고
+     실패 시 0 이 아닌 종료 코드로 끝내는 규약을 쓴다(C 의 test.c 와 같은 방식). */
+  php:  { src: "sol.php", test: "test.php",
+          prep: () => {},
+          run:  (d) => run("php", ["-d", "display_errors=1", "test.php"], d) }
 };
 
 function executeTests(lang, source, testSource, name, srcName) {
