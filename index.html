@@ -4473,7 +4473,11 @@ function addTraceBtn(){
      : traceRun(pyTraceSrc(p.src, p.expr, p.want), ctx))
       .then(function(env){
         b.disabled=false;
-        if(env.__nopy||env.__nosql||env.__nojs){ m.textContent="이 환경에서는 실행 엔진을 불러오지 못했습니다."; return; }
+        if(env.__nopy||env.__nosql||env.__nojs){
+          /* 무엇이 없는지 말한다 — "엔진" 이라고만 하면 사용자가 할 수 있는 게 없다 */
+          m.textContent="이 환경에서는 "+(p.kind==="sqlq"?"SQLite":p.kind==="jsq"?"파서":"파이썬")
+            +"을(를) 불러오지 못했습니다."; return;
+        }
         if(env.__err){ m.textContent="추적하지 못했습니다 — "+env.__err; return; }
         /* 문법 오류 등으로 단계가 하나도 없으면 빈 뷰어를 열지 않는다 */
         if(!(env.events||[]).length){
