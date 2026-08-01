@@ -23,7 +23,9 @@ const NEED = {
   throw: { req: ["name"], opt: ["msg"], val: [] },
   out:   { req: ["text"],            val: [] },
   mem:   { req: ["addr", "size"], opt: ["name"], val: ["to"] },
-  row:   { req: ["table", "op"],     val: ["to"] },
+  /* row 은 표에서의 set 이다. UPDATE 를 '지우고 새로 넣기' 로 적으면 거짓말이 되므로
+     set 과 같은 자리에 from 을 둔다 — 새 필드가 아니라 set 의 규칙을 그대로 쓴 것이다. */
+  row:   { req: ["table", "op"],     val: ["from", "to"] },
   dom:   { req: ["sel", "op"],       val: ["to"] },
 };
 
