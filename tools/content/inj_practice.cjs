@@ -34,8 +34,10 @@ GROUPS.forEach(g => {
   g.q.forEach(x => {
     if (seen.has(norm(x.q))) throw new Error("중복 문항 — " + x.k);
     seen.add(norm(x.q));
-    if (!x.k || !x.src || !x.sol || !x.tests || !x.tests.length || !x.ex)
-      throw new Error((x.k || "?") + ": 필드 누락");
+    if (!x.k || !x.src || !x.sol || !x.ex) throw new Error((x.k || "?") + ": 필드 누락");
+    /* SQL 은 테스트 목록이 아니라 표(schema)와 기준 쿼리(sol)로 채점한다 */
+    if (SPEC.lang === "sql") { if (!x.schema) throw new Error(x.k + ": schema 가 없다"); }
+    else if (!x.tests || !x.tests.length) throw new Error(x.k + ": tests 가 없다");
     /* 원문 그대로 비교한다. 공백을 지우고 비교하면 '들여쓰기가 버그' 인 문제를
        같은 코드로 오해한다 — 초보자가 가장 자주 만나는 버그인데 그걸 막으면 안 된다.
        '고칠 것이 없는 문제' 인지는 ver_practice.cjs 가 실제로 돌려서 확인한다. */
