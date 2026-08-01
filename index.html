@@ -206,6 +206,16 @@
   .th-key-t{font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--good); margin-bottom:6px}
   .th-key ul{margin:0; padding-left:18px}
   .th-key li{font-size:14px; line-height:1.66; color:var(--ink); margin:3px 0}
+  .th-plain{font-size:14.5px; line-height:1.75; color:var(--ink); background:rgba(74,222,128,.10); border:1px solid rgba(74,222,128,.35); border-radius:12px; padding:12px 14px; margin:12px 0}
+  .th-plain-t{display:block; font-size:12px; font-weight:800; letter-spacing:.2px; color:#2f9e5e; margin-bottom:6px}
+  .th-terms{background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:12px 0}
+  .th-terms-t{font-size:12px; font-weight:800; color:var(--ink-soft); margin-bottom:6px}
+  .th-term{font-size:13.5px; line-height:1.7; padding:3px 0}
+  .th-term b{color:var(--brand)}
+  .gl{font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; border-bottom:1.5px dotted var(--brand); line-height:inherit}
+  .gl:active{opacity:.6}
+  .glpop{position:fixed; left:12px; right:12px; bottom:calc(var(--footh,72px) + 12px); z-index:60; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.28); padding:12px 14px; font-size:14px; line-height:1.7}
+  .glpop b{display:block; color:var(--brand); margin-bottom:4px}
   .th-p code.ic, .th-key code.ic, .th-sum code.ic{font-family:var(--mono); font-size:.9em; background:var(--bg-soft); border:1px solid var(--line); border-radius:5px; padding:1px 5px; color:var(--ink)}
   /* ── 코드 리뷰 (다중 선택 결함 찾기) ── */
   .rev-hint{font-size:12.5px; color:var(--ink-soft); margin:6px 2px 8px}
@@ -1621,6 +1631,7 @@ function loadChunk(file){
 function __CR(key, val){
   __got[key]=true;
   if(key.indexOf("t:")===0){ mergeTrack(key.slice(2), val); return; }
+  if(key==="glossary"){ GLOSSARY=val; GLOSS_KEYS=Object.keys(val).sort(function(x,y){return y.length-x.length;}); return; }
   if(key==="sims"){ SIMS=val; return; }
   if(key==="diags"){ DIAGS=val; return; }
   if(key==="projects"){ PROJECTS=val; return; }
@@ -1670,6 +1681,9 @@ function ensureTrack(k){
   if(trackLoaded(k)) return Promise.resolve(true);
   return loadChunk("t-"+k+".js");
 }
+let GLOSSARY=null, GLOSS_KEYS=[];
+/* 용어 사전은 이론 화면에서만 쓴다. 없으면 주석 없이 그냥 그린다 — 로드 실패가 학습을 막지 않는다. */
+function ensureGloss(){ return __got.glossary?Promise.resolve(true):loadChunk("glossary.js"); }
 function ensureSims(){ return __got.sims?Promise.resolve(true):loadChunk("sims.js"); }
 function ensureDiags(){ return __got.diags?Promise.resolve(true):loadChunk("diags.js"); }
 function ensureProjects(){ return __got.projects?Promise.resolve(true):loadChunk("projects.js"); }
@@ -3223,15 +3237,41 @@ function thText(s){ s=escHtml(s);
   s=s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
   return nl2br(s);
 }
+/* 이론 본문에서 처음 나오는 용어에만 표시를 붙인다. 한 화면에 8개까지 —
+   전부 칠하면 읽는 흐름이 끊겨서 오히려 방해가 된다. */
+function glossMark(html, seen){
+  if(!GLOSSARY||!GLOSS_KEYS.length) return html;
+  return html.split(/(<[^>]*>)/).map(function(seg,i){
+    if(i%2) return seg;                     // 태그는 건드리지 않는다
+    GLOSS_KEYS.forEach(function(w){
+      if(seen.size>=8||seen.has(w)) return;
+      let at=-1;
+      for(let k=seg.indexOf(w); k>=0; k=seg.indexOf(w,k+1)){
+        const prev=k?seg[k-1]:"";
+        if(/[가-힣A-Za-z0-9_]/.test(prev)) continue;   // 더 긴 낱말의 일부면 건너뛴다
+        at=k; break;
+      }
+      if(at<0) return;
+      seen.add(w);
+      seg=seg.slice(0,at)+'<button type="button" class="gl" data-w="'+escHtml(w)+'">'+escHtml(w)+"</button>"+seg.slice(at+w.length);
+    });
+    return seg;
+  }).join("");
+}
 function renderTheory(th){
   if(!th) return "";
   if(typeof th==="string") return `<p class="th-p">${thText(th)}</p>`;
   let h="";
   if(th.sum) h+=`<div class="th-sum">${thText(th.sum)}</div>`;
+  /* 쉬운 말로 한 번 더 — 전문 용어 없이, 비유로. 초보자는 여기서 붙잡힌다. */
+  if(th.plain) h+=`<div class="th-plain"><span class="th-plain-t">🌱 쉽게 말하면</span>${thText(th.plain)}</div>`;
   (th.body||[]).forEach(b=>{ if(b.h)h+=`<h3 class="th-h">${thText(b.h)}</h3>`; if(b.t)h+=`<p class="th-p">${thText(b.t)}</p>`; });
   if(th.code&&th.code.c){ h+=C(escHtml(th.code.c)); if(th.code.cap)h+=`<p class="th-cap">${thText(th.code.cap)}</p>`; }
+  if(Array.isArray(th.terms)&&th.terms.length){ h+=`<div class="th-terms"><div class="th-terms-t">🔤 이 레슨의 용어</div>`+
+    th.terms.map(t=>`<div class="th-term"><b>${escHtml(t.w)}</b> ${thText(t.d)}</div>`).join("")+`</div>`; }
   if(Array.isArray(th.key)&&th.key.length){ h+=`<div class="th-key"><div class="th-key-t">✓ 기억할 점</div><ul>`+th.key.map(k=>`<li>${thText(k)}</li>`).join("")+`</ul></div>`; }
-  return h;
+  const seen=new Set();
+  return glossMark(h, seen);
 }
 
 /* 고정 하단 바가 본문 끝을 가리지 않도록 여백을 실측해서 맞춘다 */
@@ -3264,12 +3304,28 @@ function afterRender(){ requestAnimationFrame(()=>{ syncFootPad(); markCodeOverf
   if(window.ResizeObserver){ const f=$("foot"); if(f) new ResizeObserver(syncFootPad).observe(f); }
 })();
 
+/* 용어 표시를 누르면 아래에 뜻 카드를 띄운다. 화면을 옮기지 않으므로 읽던 자리를 잃지 않는다. */
+document.addEventListener("click",function(e){
+  const pop=document.querySelector(".glpop");
+  const b=e.target.closest?e.target.closest(".gl"):null;
+  if(pop) pop.remove();
+  if(!b||!GLOSSARY) return;
+  const w=b.getAttribute("data-w"), d=GLOSSARY[w];
+  if(!d) return;
+  const el=document.createElement("div");
+  el.className="glpop"; el.innerHTML="<b>"+escHtml(w)+"</b>"+escHtml(d);
+  document.body.appendChild(el);
+});
 function showTheory(){
   disposeMon();
   $("prog").style.width="0%";
   $("l-hearts").textContent=run.free?"∞":run.hearts;
   const body=$("qbody");
   body.innerHTML=`<div class="theory"><div class="th-badge">📖 개념 먼저</div><h2 class="th-title">${escHtml(run.les.title)}</h2>${renderTheory(run.les.theory)}</div>`;
+  /* #qbody 는 이론과 문제가 함께 쓰는 그릇이다. 아직 이론 화면일 때만 다시 그린다 —
+     안 그러면 사전이 늦게 도착했을 때 이미 넘어간 문제를 덮어쓴다. */
+  if(!__got.glossary) ensureGloss().then(function(){ if($("qbody")===body && body.querySelector(".theory") && run && run.les)
+    body.innerHTML=`<div class="theory"><div class="th-badge">📖 개념 먼저</div><h2 class="th-title">${escHtml(run.les.title)}</h2>${renderTheory(run.les.theory)}</div>`; }).catch(function(){});
   body.scrollTop=0;
   const foot=$("foot"); foot.className="foot"; $("foot-msg").innerHTML="";
   const chk=$("check"); chk.className="btn"; chk.textContent="이해했어요 · 문제 풀기 →"; chk.disabled=false;
