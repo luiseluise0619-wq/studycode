@@ -38,6 +38,10 @@ GROUPS.forEach(g => {
     /* SQL 은 테스트 목록이 아니라 표(schema)와 기준 쿼리(sol)로 채점한다 */
     if (SPEC.lang === "sql") { if (!x.schema) throw new Error(x.k + ": schema 가 없다"); }
     else if (!x.tests || !x.tests.length) throw new Error(x.k + ": tests 가 없다");
+    /* html·react 는 DOM 검사({d, js})다 — 입력/기대값 쌍이 아니다 */
+    else if (SPEC.lang === "html" || SPEC.lang === "react") {
+      x.tests.forEach(t => { if (!t || !t.d || !t.js) throw new Error(x.k + ": DOM 검사는 {d, js} 여야 한다"); });
+    }
     /* 원문 그대로 비교한다. 공백을 지우고 비교하면 '들여쓰기가 버그' 인 문제를
        같은 코드로 오해한다 — 초보자가 가장 자주 만나는 버그인데 그걸 막으면 안 된다.
        '고칠 것이 없는 문제' 인지는 ver_practice.cjs 가 실제로 돌려서 확인한다. */
@@ -51,6 +55,8 @@ GROUPS.forEach(g => {
   const q = g.q.map(x => {
     const base = { k: x.k, cat: x.cat || "internals", q: x.q, src: x.src, sol: x.sol, ex: x.ex };
     if (SPEC.lang === "sql") return Object.assign(base, { t: "sql", schema: x.schema, ordered: !!x.ordered });
+    if (SPEC.lang === "html" || SPEC.lang === "react")
+      return Object.assign(base, { t: SPEC.lang, lv: x.lv || 1, tests: x.tests });
     return Object.assign(base, {
       t: SPEC.lang === "py" ? "py" : "code",
       run: SPEC.lang === "js" ? "js" : undefined,

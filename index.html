@@ -4092,7 +4092,14 @@ function renderTsTest(q, code){
 function setupTs(q){ var ta=$("livecode"); if(!ta) return; ta.value=q.src||"";
   var go=function(){ renderTsTest(q, ta.value); }; var tmr;
   ta.oninput=function(){ clearTimeout(tmr); tmr=setTimeout(go,400); }; go(); }
-function renderHtmlTest(q, code){ var f=$("liveview"); if(!f) return; liveTest=null; f.srcdoc=htmlTestDoc(code, q.tests); }
+/* 하네스는 결과를 두 번 보낸다 — 파싱 직후, 그리고 load 직후. 레이아웃(폭·위치)이
+   확정된 것은 두 번째다. 그래서 load 가 왔는지를 따로 기억해 두고, 채점은 그때까지
+   기다린다. 고정 시간만 기다리면 느린 기기에서 '폭이 0' 인 첫 값으로 채점해 버린다. */
+let htmlLoaded=false;
+function renderHtmlTest(q, code){ var f=$("liveview"); if(!f) return;
+  liveTest=null; htmlLoaded=false;
+  f.onload=function(){ htmlLoaded=true; };
+  f.srcdoc=htmlTestDoc(code, q.tests); }
 function setupHtml(q){ var ta=$("livecode"); if(!ta) return; ta.value=q.src||"";
   var go=function(){ renderHtmlTest(q, ta.value); }; var tmr;
   ta.oninput=function(){ clearTimeout(tmr); tmr=setTimeout(go,300); }; go(); }
@@ -4267,14 +4274,21 @@ function onCheck(){
   if(q.t==="html"){
     const chk=$("check"); chk.disabled=true; chk.textContent="검사 중…";
     renderHtmlTest(q, $("livecode").value);
-    setTimeout(()=>{
-      const r=liveTest||{pass:0,total:(q.tests||[]).length,impl:0,gate:false};
-      if(r.impl!=null && q.k) recordImpl(q.k, r.impl);
-      const miss=(r.detail||[]).filter(d=>!d.ok).map(d=>d.d);
-      const msg = r.gate ? ("검사 "+r.pass+"/"+r.total+" 통과")
-        : ("검사 "+r.pass+"/"+r.total+" — 남은 것: "+(miss.length?miss.slice(0,2).join(" · "):"화면이 아직 렌더되지 않았어요"));
-      applyResult(!!r.gate, msg, q);
-    }, 520);
+    /* load 가 오고 마지막 결과가 도착할 때까지 기다린다(최대 2초). 못 기다리면
+       레이아웃 전 값으로 채점해 멀쩡한 답을 틀렸다고 한다. */
+    const t0=Date.now();
+    const settle=()=>{
+      if((!htmlLoaded || !liveTest) && Date.now()-t0 < 2000){ setTimeout(settle, 60); return; }
+      setTimeout(()=>{
+        const r=liveTest||{pass:0,total:(q.tests||[]).length,impl:0,gate:false};
+        if(r.impl!=null && q.k) recordImpl(q.k, r.impl);
+        const miss=(r.detail||[]).filter(d=>!d.ok).map(d=>d.d);
+        const msg = r.gate ? ("검사 "+r.pass+"/"+r.total+" 통과")
+          : ("검사 "+r.pass+"/"+r.total+" — 남은 것: "+(miss.length?miss.slice(0,2).join(" · "):"화면이 아직 렌더되지 않았어요"));
+        applyResult(!!r.gate, msg, q);
+      }, 140);   // load 뒤에 오는 두 번째 결과를 받을 여유
+    };
+    setTimeout(settle, 200);
     return;
   }
   /* 러너 채점 문항 — 테스트를 번역하지 않고 그 언어의 테스트 러너가 판정한다.
