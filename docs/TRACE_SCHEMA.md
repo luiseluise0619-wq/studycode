@@ -94,10 +94,14 @@ Python·JavaScript·SQL·C++·Java 어댑터가 각자 다른 방법으로 만�
 | `throw` | `name`, `msg?` | 예외 발생 | 전부 |
 | `out` | `text` | 표준출력 | 전부 |
 | `mem` | `addr`, `size`, `name?`, `to?` | 메모리 셀 변화 | C·C++ |
-| `row` | `table`, `op`, `to` | 표의 행 변화 (`op`: `ins`/`upd`/`del`/`scan`) | SQL |
+| `row` | `table`, `op`, `from?`, `to` | 표의 행 변화 (`op`: `ins`/`upd`/`del`/`scan`) | SQL |
 | `dom` | `sel`, `op`, `to?` | DOM 변화 (`op`: `add`/`upd`/`rm`) | JS·HTML |
 
 `from` 이 없으면 "이전에 없던 것", 있으면 "이 값에서 저 값으로".
+
+`row` 은 **표에서의 `set`** 이다. 그래서 `set` 과 같은 자리에 `from` 을 둔다.
+UPDATE 를 `del` + `ins` 로 적으면 "고쳤다" 가 "지우고 새로 넣었다" 로 바뀌어 거짓말이 된다.
+새 필드를 만든 것이 아니라 `set` 의 규칙을 그대로 쓴 것이고, 이벤트 종류는 늘리지 않았다.
 
 ### 값 (Value) — `from` · `to` · `args` 에 들어가는 것
 
@@ -179,10 +183,19 @@ create index on runs ((ctx->>'qid'));
 | 언어 | 방법 | 상태 |
 |---|---|---|
 | **Python** | `sys.settrace` (Pyodide) | 구현·CPython 검증 완료 · **Pyodide 검증 대기** (`pw_pyodide.cjs`) |
-| SQL | sql.js 단계 캡처 + `EXPLAIN QUERY PLAN` | 미착수 |
+| **SQL** | sql.js `iterateStatements` · 행 단위 `step()` · rowid 스냅샷 · `EXPLAIN QUERY PLAN` | **완료** — 브라우저에서 모킹 없이 검증 (`pw_sql.cjs`) |
+| **JavaScript** | acorn 으로 파싱 후 원문에 탐침 삽입 (원문은 고치지 않는다) | **완료** — 브라우저에서 모킹 없이 검증 (`pw_js.cjs`) |
 | HTML/CSS | 기존 iframe 렌더 재사용 | 미착수 |
-| JavaScript | Sucrase 로 AST 계측 | 미착수 |
 | C·C++ | 서버 디버거 (gdb) | 보류 — 비용이 크다 |
 | Java | JVMTI·JDI | 보류 |
 
 새 어댑터는 `node tools/tracer/schema.cjs <봉투.json>` 을 통과해야 한다.
+
+**Python 만 CDN(Pyodide)이 필요하다.** SQL(sql.js)과 JavaScript(acorn)는 저장소 안에
+있어 오프라인에서 돌고, 그래서 자동 검증도 끝까지 돌릴 수 있다.
+
+### 세 어댑터를 만들고 보니
+
+`row` 에 `from` 을 연 것 말고는 스키마를 건드릴 일이 없었다. 이벤트 종류도 그대로다.
+값에 모양 태그를 붙여 둔 것이 제값을 했다 — SQL 의 한 행은 `dict` 고, 뷰는 그것이
+질의 결과인지 파이썬 딕셔너리인지 묻지 않고 표로 그린다. 화면은 여전히 하나다.
