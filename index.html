@@ -3398,6 +3398,7 @@ function showQ(){
   $("prog").style.width=(run.i/run.total*100)+"%";
   $("l-hearts").textContent=run.free?"∞":run.hearts;
   run.answered=false; run.picked=null; run.lastOk=null; run.askLog=[]; run.askHtml=""; run.askOpen=false;
+  run.tracePlan=null;   // 앞 문항의 추적 계획이 남으면 남의 코드를 내 코드라고 보여 주게 된다
   run.rcDone=false; run.rcHit=false; run.rcText=""; run.rcTried=false;
   const foot=$("foot"); foot.className="foot"; $("foot-msg").innerHTML="";
   const chk=$("check"); chk.className="btn"; chk.textContent="확인"; chk.disabled=true;
@@ -4189,6 +4190,7 @@ function onCheck(){
       let sw=0,sv=0; comps.forEach(c=>{sw+=c.w;sv+=c.r*c.w;}); const impl=Math.round(sv/sw*100);
       if(q.k) recordImpl(q.k, impl);
       renderPyRows(cr, er);
+      run.tracePlan=tracePlanFor(q, src, cr.concat(er));
       const msg="구현 점수 "+impl+"/100 · 테스트 "+(cPass+ePass)+"/"+(cr.length+er.length)+(gate?" 통과":" — 전부 통과해야 정답이에요");
       applyResult(gate, msg, q);
     });
@@ -4348,6 +4350,7 @@ function applyResult(ok, correctText, q){
   chk.textContent="계속"; chk.disabled=false;
   afterRender();
   if(q.t==="code"||q.t==="sql") addAiReview(q);
+  addTraceBtn();  // 틀린 그 입력으로 다시 돌려 볼 수 있게 — '틀렸습니다' 에서 끝내지 않는다
   addAiAsk(q);   // 채점 뒤에는 정답 잠금을 풀고 '왜 이 답인가' 를 물을 수 있게 다시 그린다
   chk.onclick=()=>{
     if(!run.free && run.hearts<=0){ endLesson(false); return; }
@@ -4362,6 +4365,47 @@ function addAiReview(q){
   wrap.innerHTML='<button class="ai-btn" id="ai-req"><span>🎓</span> AI 시니어 리뷰 받기</button><div id="ai-host"></div>';
   qb.appendChild(wrap);
   $("ai-req").onclick=()=>{ const ta=$(q.t==="sql"?"sqlcode":"livecode"); aiReviewInto($("ai-host"), q, ta?ta.value:"", lang); };
+}
+
+/* ── 채점 결과 → 재생 뷰어 ──────────────────────────────────────────────
+   문항이 자산이 되려면 '틀렸습니다' 에서 끝나면 안 된다. 틀린 그 입력을 그대로
+   다시 돌려 어느 줄에서 갈라졌는지 보여 준다. 예제가 아니라 방금 내가 쓴 코드다. */
+function pyTraceSrc(user, expr){
+  /* 함수 정의만 추적하면 아무 일도 일어나지 않는다 — 실제로 한 번 불러야 한다.
+     붙이는 줄은 이 한 줄뿐이고, 뷰어의 코드 패널에 그대로 보이므로 숨기지 않는다. */
+  return String(user||"").replace(/\s+$/,"")+"\n\n결과 = "+expr+"\n";
+}
+function tracePlanFor(q, src, rows){
+  if(!q||q.t!=="py"||!q.tests||!q.tests.length) return null;
+  const bad=(rows||[]).filter(function(r){return !r[0];})[0];
+  const expr=bad?bad[1]:q.tests[0].in;
+  if(!expr) return null;
+  return {src:src, expr:expr, fail:!!bad, got:bad?bad[2]:null, want:bad?bad[3]:null, k:q.k||null};
+}
+function addTraceBtn(){
+  const p=(typeof run!=="undefined"&&run)?run.tracePlan:null, qb=$("qbody");
+  if(!p||!qb) return;
+  const old=$("trace-slot"); if(old) old.remove();
+  const wrap=document.createElement("div"); wrap.id="trace-slot"; wrap.style.margin="10px 0 4px";
+  wrap.innerHTML='<button class="ai-btn" id="trace-go"><span>🔎</span> '
+    +(p.fail?"왜 이 값이 나왔는지 한 줄씩 보기":"내 코드가 어떻게 돌았는지 보기")
+    +'</button><div class="tv-msg" id="trace-msg"></div>';
+  qb.appendChild(wrap);
+  $("trace-go").onclick=function(){
+    const b=$("trace-go"), m=$("trace-msg");
+    b.disabled=true; m.textContent="파이썬 준비 중… (처음 한 번은 조금 걸립니다)";
+    traceRun(pyTraceSrc(p.src, p.expr),
+             {track:run.lang, lesson:(run.les||{}).title||"", concept:p.k||""})
+      .then(function(env){
+        b.disabled=false;
+        if(env.__nopy){ m.textContent="이 환경에서는 파이썬을 불러오지 못했습니다."; return; }
+        if(env.__err){ m.textContent="추적하지 못했습니다 — "+env.__err; return; }
+        m.textContent="";
+        openTrace(env, p.expr, p.fail
+          ? ("기대한 값은 "+p.want+" 인데 "+p.got+" 이(가) 나왔습니다. 어느 줄에서 갈라지는지 보세요.")
+          : "통과한 코드입니다. 값이 어떤 순서로 만들어졌는지 보세요.");
+      });
+  };
 }
 function endLesson(passed){
   disposeMon();
