@@ -246,6 +246,11 @@
   .tv-btn:disabled{opacity:.35}
   .tv-slider{flex:1; accent-color:var(--brand)}
   .tv-count{font-size:12px; color:var(--ink-soft); font-weight:700; white-space:nowrap; min-width:76px; text-align:right}
+  .tv-mine{margin-bottom:14px}
+  .tv-ta{width:100%; min-height:96px; box-sizing:border-box; font-family:var(--mono); font-size:13px; line-height:1.7; padding:10px 12px; border:1px solid var(--line); border-radius:11px; background:var(--bg-soft); color:var(--ink); resize:vertical}
+  .tv-run{margin-top:8px; width:100%; padding:10px; border:0; border-radius:11px; background:var(--brand); color:#fff; font:inherit; font-weight:800}
+  .tv-run:disabled{opacity:.5}
+  .tv-msg{font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin-top:7px; min-height:1px}
   .tv-pick{display:block; width:100%; text-align:left; margin-bottom:8px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:inherit; font:inherit}
   .tv-pick b{display:block; font-size:14.5px; margin-bottom:3px}
   .tv-pick span{display:block; font-size:12.5px; color:var(--ink-soft); line-height:1.55}
@@ -1679,6 +1684,7 @@ function __CR(key, val){
   if(key==="glossary"){ GLOSSARY=val; GLOSS_KEYS=Object.keys(val).sort(function(x,y){return y.length-x.length;}); return; }
   if(key==="intro"){ TRACK_INTRO=val; return; }
   if(key==="traceDemo"){ TRACE_DEMO=val; return; }
+  if(key==="tracer"){ TRACER_SRC=val; return; }
   if(key==="sims"){ SIMS=val; return; }
   if(key==="diags"){ DIAGS=val; return; }
   if(key==="projects"){ PROJECTS=val; return; }
@@ -4635,7 +4641,23 @@ function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&
 /* ===== 실행 재생 — 코드가 한 줄씩 어떻게 도는지 본다 =====
    데이터는 트레이스 스키마 v1(docs/TRACE_SCHEMA.md). 뷰는 봉투의 순수 함수라
    Pyodide 로 만든 것이든 미리 만들어 둔 예제든 똑같이 그린다. */
-let TRACE_DEMO=null, TV=null;
+let TRACE_DEMO=null, TV=null, TRACER_SRC=null;
+function ensureTracer(){ return __got.tracer?Promise.resolve(true):loadChunk("trace.js"); }
+/* 사용자 코드를 실제로 추적한다. Pyodide 가 없으면 그 사실을 그대로 알린다 —
+   조용히 예제로 바꿔치기하면 사용자는 자기 코드가 돈 줄 안다. */
+function traceRun(src, ctx){
+  return Promise.all([ensurePy(), ensureTracer()]).then(function(a){
+    const py=a[0];
+    if(!py||!TRACER_SRC) return {__nopy:true};
+    try{
+      if(!py.__crTracer){ py.runPython(TRACER_SRC); py.__crTracer=true; }
+      py.globals.set("__cr_src", String(src||""));
+      const env=JSON.parse(py.runPython("trace_json(__cr_src)"));
+      if(ctx) env.ctx=ctx;
+      return env;
+    }catch(e){ return {__err:String(e&&e.message||e)}; }
+  }).catch(function(e){ return {__err:String(e&&e.message||e)}; });
+}
 function ensureTraceDemo(){ return __got.traceDemo?Promise.resolve(true):loadChunk("trace-demo.js"); }
 
 /* 이벤트를 단계별로 묶고, 각 단계 시점의 '변수 전체 상태' 를 미리 쌓아 둔다.
@@ -4759,6 +4781,11 @@ function openTraceDemo(){
     const o=$("tracev"), card=o.querySelector(".ovcard");
     card.innerHTML='<div class="tv-head"><b>코드가 어떻게 도는지 보기</b><button class="tv-x" id="tv-close">닫기</button></div>'
       +'<p class="tv-hint">한 줄씩 넘기며 변수가 언제 생기고 언제 바뀌는지 봅니다. 초보자가 자주 막히는 곳으로 골랐습니다.</p>'
+      +'<div class="tv-mine"><div class="tv-sec" style="margin-top:0">내 코드로 해보기</div>'
+      +'<textarea class="tv-ta" id="tv-src" spellcheck="false" placeholder="a = [1, 2, 3]\nb = a\nb.append(4)\nprint(a)"></textarea>'
+      +'<button class="tv-run" id="tv-run">▶ 실행 과정 보기</button>'
+      +'<div class="tv-msg" id="tv-msg"></div></div>'
+      +'<div class="tv-sec">예제로 먼저 보기</div>'
       +(TRACE_DEMO||[]).map(function(d,i){
         return '<button class="tv-pick" data-i="'+i+'"><b>'+escHtml(d.title)+'</b><span>'+escHtml(d.hint)+'</span></button>';
       }).join("");
@@ -4767,6 +4794,19 @@ function openTraceDemo(){
     card.querySelectorAll(".tv-pick").forEach(function(b){
       b.onclick=function(){ const d=TRACE_DEMO[+b.dataset.i]; openTrace(d.env, d.title, d.hint); };
     });
+    const run=$("tv-run");
+    if(run) run.onclick=function(){
+      const src=($("tv-src")||{}).value||"";
+      if(!src.trim()){ $("tv-msg").textContent="코드를 먼저 적어 주세요."; return; }
+      run.disabled=true; $("tv-msg").textContent="파이썬 준비 중… (처음 한 번은 조금 걸립니다)";
+      traceRun(src).then(function(env){
+        run.disabled=false;
+        if(env.__nopy){ $("tv-msg").innerHTML="이 환경에서는 파이썬을 불러오지 못했습니다. 아래 예제로 먼저 보실 수 있어요."; return; }
+        if(env.__err){ $("tv-msg").textContent="실행하지 못했습니다 — "+env.__err; return; }
+        $("tv-msg").textContent="";
+        openTrace(env, "내 코드", env.err?("여기서 "+env.err.type+" 가 났습니다. 그 직전 값을 보세요."):"한 줄씩 넘기며 값이 어떻게 변하는지 보세요.");
+      });
+    };
   }).catch(function(){ toast("예제를 불러오지 못했습니다."); });
 }
 
