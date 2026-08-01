@@ -1696,9 +1696,12 @@ function __CR(key, val){
   if(key==="intro"){ TRACK_INTRO=val; return; }
   if(key==="traceDemo"){ TRACE_DEMO=val; return; }
   if(key==="traceDemoSql"){ TRACE_DEMO_SQL=val; return; }
+  if(key==="traceDemoJs"){ TRACE_DEMO_JS=val; return; }
   if(key==="tracer"){ TRACER_SRC=val; return; }
   if(key==="traceable"){ TRACEABLE=new Set(val); return; }
   if(key==="sqlTracer"){ SQL_TRACER=val; return; }
+  if(key==="jsTracer"){ JS_TRACER=val; return; }
+  if(key==="acorn"){ return; }   /* 전역 acorn 으로 붙는다 — 담아 둘 값이 없다 */
   if(key==="sims"){ SIMS=val; return; }
   if(key==="diags"){ DIAGS=val; return; }
   if(key==="projects"){ PROJECTS=val; return; }
@@ -4739,7 +4742,8 @@ function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&
 /* ===== 실행 재생 — 코드가 한 줄씩 어떻게 도는지 본다 =====
    데이터는 트레이스 스키마 v1(docs/TRACE_SCHEMA.md). 뷰는 봉투의 순수 함수라
    Pyodide 로 만든 것이든 미리 만들어 둔 예제든 똑같이 그린다. */
-let TRACE_DEMO=null, TRACE_DEMO_SQL=null, TV=null, TRACER_SRC=null, TRACEABLE=null, SQL_TRACER=null;
+let TRACE_DEMO=null, TRACE_DEMO_SQL=null, TRACE_DEMO_JS=null, TV=null,
+    TRACER_SRC=null, TRACEABLE=null, SQL_TRACER=null, JS_TRACER=null;
 function ensureTracer(){ return __got.tracer?Promise.resolve(true):loadChunk("trace.js"); }
 /* 사용자 코드를 실제로 추적한다. Pyodide 가 없으면 그 사실을 그대로 알린다 —
    조용히 예제로 바꿔치기하면 사용자는 자기 코드가 돈 줄 안다. */
@@ -4758,6 +4762,20 @@ function traceRun(src, ctx){
 }
 function ensureTraceDemo(){ return __got.traceDemo?Promise.resolve(true):loadChunk("trace-demo.js"); }
 function ensureTraceDemoSql(){ return __got.traceDemoSql?Promise.resolve(true):loadChunk("trace-demo-sql.js"); }
+function ensureTraceDemoJs(){ return __got.traceDemoJs?Promise.resolve(true):loadChunk("trace-demo-js.js"); }
+/* acorn 은 243KB 다. 예제만 볼 사람에게 받게 하지 않는다 — 직접 돌릴 때만 받는다. */
+function ensureJsTracer(){
+  return (typeof acorn!=="undefined"?Promise.resolve(true):loadChunk("acorn.js"))
+    .then(function(){ return __got.jsTracer?true:loadChunk("trace-js.js"); });
+}
+/* JS 도 CDN 이 필요 없다. 계측한 코드를 브라우저 엔진이 그대로 돌린다 — 해석기 흉내가 아니다. */
+function traceRunJs(src, ctx){
+  return ensureJsTracer().then(function(){
+    if(typeof acorn==="undefined"||!JS_TRACER) return {__nojs:true};
+    try{ return JS_TRACER(String(src||""), {acorn:acorn, ctx:ctx||null}); }
+    catch(e){ return {__err:String(e&&e.message||e)}; }
+  }).catch(function(e){ return {__err:String(e&&e.message||e)}; });
+}
 function ensureSqlTracer(){ return __got.sqlTracer?Promise.resolve(true):loadChunk("trace-sql.js"); }
 /* SQL 은 Pyodide 가 필요 없다 — sql.js 는 저장소 안에 있다. 오프라인에서도 돈다. */
 function traceRunSql(sql, schema, ctx){
@@ -4939,15 +4957,19 @@ const TV_TABS=[
   {k:"python", label:"파이썬",
    ph:"a = [1, 2, 3]\nb = a\nb.append(4)\nprint(a)",
    mine:"내 코드로 해보기", wait:"파이썬 준비 중… (처음 한 번은 조금 걸립니다)"},
+  {k:"js", label:"자바스크립트",
+   ph:"let a = [1, 2, 3];\nlet b = a;\nb.push(4);\nconsole.log(a);",
+   mine:"내 코드로 해보기", wait:"파서 준비 중… (처음 한 번은 조금 걸립니다)"},
   {k:"sql", label:"SQL",
    ph:"create table t(a int, b text);\ninsert into t values (1,'가'),(2,'나');\nselect * from t where a > 1;",
    mine:"내 쿼리로 해보기", wait:"SQLite 준비 중… (처음 한 번은 조금 걸립니다)"},
 ];
-function tvDemos(){ return (TV_LANG==="sql"?TRACE_DEMO_SQL:TRACE_DEMO)||[]; }
+function tvDemos(){ return (TV_LANG==="sql"?TRACE_DEMO_SQL:TV_LANG==="js"?TRACE_DEMO_JS:TRACE_DEMO)||[]; }
 function openTraceDemo(lang){
   /* onclick 으로 바로 걸면 이벤트 객체가 들어온다 — 아는 언어만 받는다 */
   if(TV_TABS.some(function(t){ return t.k===lang; })) TV_LANG=lang;
-  const need = TV_LANG==="sql" ? ensureTraceDemoSql() : ensureTraceDemo();
+  const need = TV_LANG==="sql" ? ensureTraceDemoSql()
+             : TV_LANG==="js"  ? ensureTraceDemoJs() : ensureTraceDemo();
   need.then(function(){
     const tab=TV_TABS.filter(function(t){return t.k===TV_LANG;})[0];
     const o=$("tracev"), card=o.querySelector(".ovcard");
@@ -4974,13 +4996,21 @@ function openTraceDemo(lang){
     });
     const run=$("tv-run");
     if(run) run.onclick=function(){
-      const src=($("tv-src")||{}).value||"", isSql=TV_LANG==="sql";
+      const src=($("tv-src")||{}).value||"", L=TV_LANG, isSql=L==="sql";
       if(!src.trim()){ $("tv-msg").textContent=(isSql?"쿼리를":"코드를")+" 먼저 적어 주세요."; return; }
       run.disabled=true; $("tv-msg").textContent=tab.wait;
-      (isSql?traceRunSql(src,""):traceRun(src)).then(function(env){
+      (isSql?traceRunSql(src,""):L==="js"?traceRunJs(src):traceRun(src)).then(function(env){
         run.disabled=false;
-        if(env.__nopy||env.__nosql){ $("tv-msg").innerHTML="이 환경에서는 "+(isSql?"SQLite":"파이썬")+"을 불러오지 못했습니다. 아래 예제로 먼저 보실 수 있어요."; return; }
+        if(env.__nopy||env.__nosql||env.__nojs){ $("tv-msg").innerHTML="이 환경에서는 "+(isSql?"SQLite":L==="js"?"파서":"파이썬")+"을 불러오지 못했습니다. 아래 예제로 먼저 보실 수 있어요."; return; }
         if(env.__err){ $("tv-msg").textContent="실행하지 못했습니다 — "+env.__err; return; }
+        /* 문법 오류는 단계가 하나도 없다. 빈 뷰어를 열면 '왜 안 되지' 만 남는다 —
+           무엇이 틀렸는지 여기서 바로 말한다. */
+        if(!(env.events||[]).length){
+          $("tv-msg").textContent = env.err
+            ? (env.err.type+": "+(env.err.msg||"")+(env.err.line?" ("+env.err.line+"번째 줄)":""))
+            : "보여 줄 실행 단계가 없습니다.";
+          return;
+        }
         $("tv-msg").textContent="";
         openTrace(env, isSql?"내 쿼리":"내 코드",
           env.err?("여기서 "+env.err.type+" 가 났습니다"+(env.err.msg?" — "+env.err.msg:"")+". 그 직전을 보세요.")

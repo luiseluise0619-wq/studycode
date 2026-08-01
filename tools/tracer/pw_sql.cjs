@@ -42,7 +42,7 @@ function serve(){
    out.sqlLibUntouched=typeof initSqlJs!=="function";
    openTraceDemo("sql");
    await sleep(400);
-   out.tabsShown=document.querySelectorAll("#tracev.on .tv-tab").length===2;
+   out.tabsShown=document.querySelectorAll("#tracev.on .tv-tab").length===3;
    out.sqlTabOn=(document.querySelector("#tracev.on .tv-tab.on")||{}).textContent==="SQL";
    out.sqlDemos=document.querySelectorAll("#tracev.on .tv-pick").length;
    out.stillNoEngine=typeof initSqlJs!=="function";      // 예제만 봤는데 870KB 를 받으면 안 된다
