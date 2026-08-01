@@ -1685,6 +1685,7 @@ function __CR(key, val){
   if(key==="intro"){ TRACK_INTRO=val; return; }
   if(key==="traceDemo"){ TRACE_DEMO=val; return; }
   if(key==="tracer"){ TRACER_SRC=val; return; }
+  if(key==="traceable"){ TRACEABLE=new Set(val); return; }
   if(key==="sims"){ SIMS=val; return; }
   if(key==="diags"){ DIAGS=val; return; }
   if(key==="projects"){ PROJECTS=val; return; }
@@ -1797,6 +1798,7 @@ function prefetchRest(){
   const idle=window.requestIdleCallback||function(f){ setTimeout(f,1200); };
   idle(function(){
     ensureIntro().catch(function(){});
+    ensureTraceable().catch(function(){});   // 2KB — 채점 직후에 필요하므로 미리 받아 둔다
     ensureProjects().then(function(){ if(typeof renderCourse==="function") renderCourse(); }).catch(function(){});
     idle(function(){ ensureSims().catch(function(){}); idle(function(){ ensureDiags().catch(function(){}); }); });
     /* 실행까지 할 필요는 없는 것들은 캐시에만 채워 둔다 */
@@ -4351,6 +4353,15 @@ function applyResult(ok, correctText, q){
   afterRender();
   if(q.t==="code"||q.t==="sql") addAiReview(q);
   addTraceBtn();  // 틀린 그 입력으로 다시 돌려 볼 수 있게 — '틀렸습니다' 에서 끝내지 않는다
+  if(q.code&&(q.t==="choice"||q.t==="input")){
+    /* 허용 목록은 2KB 라 늦게 와도 되지만, 오는 사이 다음 문항으로 넘어갔을 수 있다 */
+    const at=run.i;
+    ensureTraceable().then(function(){
+      if(!run||run.i!==at||!run.answered||run.tracePlan) return;
+      run.tracePlan=tracePlanFor(q, null, null);
+      addTraceBtn();
+    }).catch(function(){});
+  }
   addAiAsk(q);   // 채점 뒤에는 정답 잠금을 풀고 '왜 이 답인가' 를 물을 수 있게 다시 그린다
   chk.onclick=()=>{
     if(!run.free && run.hearts<=0){ endLesson(false); return; }
@@ -4375,34 +4386,64 @@ function pyTraceSrc(user, expr){
      붙이는 줄은 이 한 줄뿐이고, 뷰어의 코드 패널에 그대로 보이므로 숨기지 않는다. */
   return String(user||"").replace(/\s+$/,"")+"\n\n결과 = "+expr+"\n";
 }
+/* 문항에 붙은 코드 블록을 실제 파이썬 원문으로 되돌린다 (화면용 태그·엔티티 제거) */
+function traceText(code){
+  let s=String(code||"").replace(/<br\s*\/?>/gi,"\n").replace(/<\/(div|p)>/gi,"\n").replace(/<[^>]+>/g,"");
+  let p; do{ p=s; s=s.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")
+    .replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/&apos;/g,"'"); }while(s!==p);
+  return s;
+}
+/* 코드 블록의 지문. tools/tracer/scan_code.py 의 key() 와 같은 값이 나와야 한다 —
+   한쪽만 고치면 버튼이 조용히 사라진다. crypto.subtle 은 file:// 에서 못 쓰므로 FNV-1a. */
+function traceKey(code){
+  const b=new TextEncoder().encode(traceText(code).replace(/\s+/g,""));
+  let h=2166136261;
+  for(let i=0;i<b.length;i++) h=Math.imul(h^b[i], 16777619)>>>0;
+  return ("0000000"+h.toString(16)).slice(-8);
+}
+function ensureTraceable(){ return __got.traceable?Promise.resolve(true):loadChunk("traceable.js"); }
+
 function tracePlanFor(q, src, rows){
-  if(!q||q.t!=="py"||!q.tests||!q.tests.length) return null;
-  const bad=(rows||[]).filter(function(r){return !r[0];})[0];
-  const expr=bad?bad[1]:q.tests[0].in;
-  if(!expr) return null;
-  return {src:src, expr:expr, fail:!!bad, got:bad?bad[2]:null, want:bad?bad[3]:null, k:q.k||null};
+  if(!q) return null;
+  if(q.t==="py"){
+    if(!q.tests||!q.tests.length) return null;
+    const bad=(rows||[]).filter(function(r){return !r[0];})[0];
+    const expr=bad?bad[1]:q.tests[0].in;
+    if(!expr) return null;
+    return {kind:"py", src:src, expr:expr, fail:!!bad,
+            got:bad?bad[2]:null, want:bad?bad[3]:null, k:q.k||null};
+  }
+  /* 출력 예측 문항 — 예측하고, 틀리고, 진짜로 어떻게 도는지 본다. 뷰어가 가장 잘 맞는 자리다.
+     단 '실제로 돌아가는 코드' 만 허용한다. 설명용 조각에 버튼을 달면 누른 사람이 한 번 속는다. */
+  if((q.t==="choice"||q.t==="input") && q.code && TRACEABLE && TRACEABLE.has(traceKey(q.code)))
+    return {kind:"code", src:traceText(q.code), expr:null, fail:false, k:q.k||null};
+  return null;
 }
 function addTraceBtn(){
   const p=(typeof run!=="undefined"&&run)?run.tracePlan:null, qb=$("qbody");
   if(!p||!qb) return;
   const old=$("trace-slot"); if(old) old.remove();
   const wrap=document.createElement("div"); wrap.id="trace-slot"; wrap.style.margin="10px 0 4px";
-  wrap.innerHTML='<button class="ai-btn" id="trace-go"><span>🔎</span> '
-    +(p.fail?"왜 이 값이 나왔는지 한 줄씩 보기":"내 코드가 어떻게 돌았는지 보기")
+  const label = p.kind==="code" ? "이 코드가 실제로 어떻게 도는지 보기"
+              : p.fail ? "왜 이 값이 나왔는지 한 줄씩 보기"
+              : "내 코드가 어떻게 돌았는지 보기";
+  wrap.innerHTML='<button class="ai-btn" id="trace-go"><span>🔎</span> '+label
     +'</button><div class="tv-msg" id="trace-msg"></div>';
   qb.appendChild(wrap);
   $("trace-go").onclick=function(){
     const b=$("trace-go"), m=$("trace-msg");
     b.disabled=true; m.textContent="파이썬 준비 중… (처음 한 번은 조금 걸립니다)";
-    traceRun(pyTraceSrc(p.src, p.expr),
+    traceRun(p.kind==="code"?p.src:pyTraceSrc(p.src, p.expr),
              {track:run.lang, lesson:(run.les||{}).title||"", concept:p.k||""})
       .then(function(env){
         b.disabled=false;
         if(env.__nopy){ m.textContent="이 환경에서는 파이썬을 불러오지 못했습니다."; return; }
         if(env.__err){ m.textContent="추적하지 못했습니다 — "+env.__err; return; }
         m.textContent="";
-        openTrace(env, p.expr, p.fail
-          ? ("기대한 값은 "+p.want+" 인데 "+p.got+" 이(가) 나왔습니다. 어느 줄에서 갈라지는지 보세요.")
+        openTrace(env,
+          p.kind==="code" ? "이 코드" : p.expr,
+          p.kind==="code" ? "예측한 값과 어디서 갈라지는지 한 줄씩 보세요."
+          : p.fail ? ("기대한 값은 "+p.want+" 인데 "+p.got+" 이(가) 나왔습니다. 어느 줄에서 갈라지는지 보세요.")
           : "통과한 코드입니다. 값이 어떤 순서로 만들어졌는지 보세요.");
       });
   };
@@ -4685,7 +4726,7 @@ function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&
 /* ===== 실행 재생 — 코드가 한 줄씩 어떻게 도는지 본다 =====
    데이터는 트레이스 스키마 v1(docs/TRACE_SCHEMA.md). 뷰는 봉투의 순수 함수라
    Pyodide 로 만든 것이든 미리 만들어 둔 예제든 똑같이 그린다. */
-let TRACE_DEMO=null, TV=null, TRACER_SRC=null;
+let TRACE_DEMO=null, TV=null, TRACER_SRC=null, TRACEABLE=null;
 function ensureTracer(){ return __got.tracer?Promise.resolve(true):loadChunk("trace.js"); }
 /* 사용자 코드를 실제로 추적한다. Pyodide 가 없으면 그 사실을 그대로 알린다 —
    조용히 예제로 바꿔치기하면 사용자는 자기 코드가 돈 줄 안다. */
