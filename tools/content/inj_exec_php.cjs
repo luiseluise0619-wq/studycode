@@ -3,7 +3,7 @@
    전부 성공해야 쓴다(all-or-nothing). */
 const fs=require("fs");
 const Q=require("./exec_php.cjs");
-const ROOT="/home/user/studycode";
+const ROOT=require("path").resolve(__dirname, "..", "..");
 const EXPECT=12;
 if(Q.length!==EXPECT) throw new Error(EXPECT+"문항 기대, 실제 "+Q.length);
 

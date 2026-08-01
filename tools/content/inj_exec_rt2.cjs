@@ -3,7 +3,7 @@
    전부 성공해야 쓴다(all-or-nothing), 개수는 EXPECT 로 못 박는다 */
 const fs=require("fs");
 const Q=require("./exec_rt2.cjs");
-const ROOT="/home/user/studycode";
+const ROOT=require("path").resolve(__dirname, "..", "..");
 
 const EXPECT={java:6, c:5, cpp:5, go:5, rust:3};
 const SRCNAME={ go:"sol.go", c:"sol.c", cpp:"sol.cpp", java:"Sol.java" };  /* rust 는 주면 lib 타깃이 깨진다 */

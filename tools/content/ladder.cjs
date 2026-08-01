@@ -5,7 +5,7 @@
      코드가 붙었는가 · 문제 줄기 길이 · 보기 평균 길이 · 판단/이유를 묻는가
    선택형끼리의 순서만 바꾸고 실행형·리뷰·로그 등 다른 유형의 자리는 건드리지 않는다. */
 const fs=require("fs");
-const ROOT=process.env.ROOT||"/home/user/studycode";
+const ROOT=require("path").resolve(__dirname, "..", "..");
 
 function difficulty(q){
   const stem=String(q.q||"");

@@ -3,7 +3,7 @@
    전부 성공해야 쓴다(all-or-nothing), 개수는 EXPECT 로 못 박는다 */
 const fs=require("fs");
 const Q=require("./exec_sysnet.cjs");
-const ROOT="/home/user/studycode";
+const ROOT=require("path").resolve(__dirname, "..", "..");
 const EXPECT={sysd:12, net:12};
 const byTrack={};
 Q.forEach(q=>{ (byTrack[q.track]=byTrack[q.track]||[]).push(q); });

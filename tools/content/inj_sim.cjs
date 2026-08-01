@@ -4,7 +4,7 @@
    ref(참조 구현)는 주입하지 않는다 — 정답을 데이터에 심으면 안 된다.
    전부 성공해야 쓴다(all-or-nothing). */
 const fs=require("fs");
-const ROOT="/home/user/studycode";
+const ROOT=require("path").resolve(__dirname, "..", "..");
 const SPEC=require(process.argv[2]);
 const ALL=require(SPEC.source);
 const xp=SPEC.xp||70;

@@ -8,7 +8,7 @@
    것 순으로 다시 정렬한다(계단식). */
 const {execSync}=require("child_process");
 const fs=require("fs");
-const ROOT="/home/user/studycode";
+const ROOT=require("path").resolve(__dirname, "..", "..");
 const TRIM="4f391cc";              /* 선택형 2,688문항 삭제 커밋 */
 
 function readTrack(ref, f){

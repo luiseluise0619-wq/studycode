@@ -3,7 +3,7 @@
    전부 성공해야 쓴다(all-or-nothing). */
 const fs=require("fs");
 const LAB=require(process.argv[2]||"./lab_lang1.cjs");
-const ROOT="/home/user/studycode";
+const ROOT=require("path").resolve(__dirname, "..", "..");
 
 const path=ROOT+"/data/build.js";
 const raw=fs.readFileSync(path,"utf8");

@@ -3,7 +3,7 @@
    검증 전용 필드(_p)는 주입하지 않는다 — 정답 판정과 무관한 데이터를 앱에 싣지 않는다.
    전부 성공해야 쓴다(all-or-nothing). */
 const fs=require("fs");
-const ROOT="/home/user/studycode";
+const ROOT=require("path").resolve(__dirname, "..", "..");
 const UNITS=[].concat(require("./track_php1.cjs"), require("./track_php2.cjs"));
 
 const EXPECT_UNITS=12;
