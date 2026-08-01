@@ -237,6 +237,17 @@
   .tv-arw{opacity:.5; margin:0 5px}
   .tv-tag{font-size:10.5px; font-weight:800; color:#2f9e5e; white-space:nowrap}
   .tv-empty{font-size:13px; color:var(--ink-soft); padding:6px 2px}
+  /* dict 모양의 행이 쌓이면 표로 그린다. 무슨 언어인지 보지 않는다 — 모양만 본다. */
+  .tv-tw{overflow-x:auto; border:1px solid var(--line); border-radius:9px}
+  .tv-tbl{border-collapse:collapse; width:100%; font-family:var(--mono); font-size:12.5px}
+  .tv-tbl th,.tv-tbl td{padding:5px 9px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap}
+  .tv-tbl th{background:var(--card); font-weight:700; color:var(--ink-soft); font-size:11.5px}
+  .tv-tbl tr:last-child td{border-bottom:0}
+  .tv-tbl tr.hot td{background:rgba(74,222,128,.14); font-weight:700}
+  .tv-more{font-size:12px; color:var(--ink-soft); padding:5px 2px}
+  .tv-tabs{display:flex; gap:6px; margin:10px 0 2px}
+  .tv-tab{flex:1; padding:7px 10px; border:1px solid var(--line); border-radius:9px; background:var(--card); font-size:13px; font-weight:700; color:var(--ink-soft); cursor:pointer}
+  .tv-tab.on{border-color:var(--brand); color:var(--brand); background:rgba(91,108,255,.08)}
   .tv-out{background:#0f1420; color:#d6e2ff; border-radius:9px; padding:9px 11px; font-family:var(--mono); font-size:12.5px; margin:0; white-space:pre-wrap; word-break:break-all}
   .tv-err{margin-top:10px; padding:9px 11px; border-radius:9px; background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.4); font-size:13px}
   .tv-eline{opacity:.7}
@@ -1684,8 +1695,10 @@ function __CR(key, val){
   if(key==="glossary"){ GLOSSARY=val; GLOSS_KEYS=Object.keys(val).sort(function(x,y){return y.length-x.length;}); return; }
   if(key==="intro"){ TRACK_INTRO=val; return; }
   if(key==="traceDemo"){ TRACE_DEMO=val; return; }
+  if(key==="traceDemoSql"){ TRACE_DEMO_SQL=val; return; }
   if(key==="tracer"){ TRACER_SRC=val; return; }
   if(key==="traceable"){ TRACEABLE=new Set(val); return; }
+  if(key==="sqlTracer"){ SQL_TRACER=val; return; }
   if(key==="sims"){ SIMS=val; return; }
   if(key==="diags"){ DIAGS=val; return; }
   if(key==="projects"){ PROJECTS=val; return; }
@@ -4716,7 +4729,7 @@ function traceCardHtml(){
     +'<span>한 줄씩 넘기며 변수가 언제 생기고 언제 바뀌는지 — 초보자가 막히는 곳으로 예제를 골랐습니다</span></span>'
     +'<span class="tc-go">→</span></button>';
 }
-function bindTraceCard(){ const b=$("trace-open"); if(b) b.onclick=openTraceDemo; }
+function bindTraceCard(){ const b=$("trace-open"); if(b) b.onclick=function(){ openTraceDemo(); }; }
 function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const path=COURSE_PATHS[g];
   if(g==="free"||!path.tracks.length){ el.innerHTML=traceCardHtml()+`<div class="rtitle"><span>자유 탐색 중</span><span><button id="diag-btn">진단</button> <button id="chg-goal">코스 선택</button></span></div>`; bindTraceCard(); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; return; }
   const nodes=path.tracks.filter(k=>COURSES[k]).map(k=>{ const c=COURSES[k],pg=trackProg(k); const active=k===curLang?" active":""; return `<button class="rnode${active}" data-k="${k}"><div class="rem">${c.em}</div><div class="rnm">${c.name}</div><div class="rpct">${pg.pct}%</div><div class="rp"><i style="width:${pg.pct}%"></i></div></button>`; }).join("");
@@ -4726,7 +4739,7 @@ function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&
 /* ===== 실행 재생 — 코드가 한 줄씩 어떻게 도는지 본다 =====
    데이터는 트레이스 스키마 v1(docs/TRACE_SCHEMA.md). 뷰는 봉투의 순수 함수라
    Pyodide 로 만든 것이든 미리 만들어 둔 예제든 똑같이 그린다. */
-let TRACE_DEMO=null, TV=null, TRACER_SRC=null, TRACEABLE=null;
+let TRACE_DEMO=null, TRACE_DEMO_SQL=null, TV=null, TRACER_SRC=null, TRACEABLE=null, SQL_TRACER=null;
 function ensureTracer(){ return __got.tracer?Promise.resolve(true):loadChunk("trace.js"); }
 /* 사용자 코드를 실제로 추적한다. Pyodide 가 없으면 그 사실을 그대로 알린다 —
    조용히 예제로 바꿔치기하면 사용자는 자기 코드가 돈 줄 안다. */
@@ -4744,16 +4757,34 @@ function traceRun(src, ctx){
   }).catch(function(e){ return {__err:String(e&&e.message||e)}; });
 }
 function ensureTraceDemo(){ return __got.traceDemo?Promise.resolve(true):loadChunk("trace-demo.js"); }
+function ensureTraceDemoSql(){ return __got.traceDemoSql?Promise.resolve(true):loadChunk("trace-demo-sql.js"); }
+function ensureSqlTracer(){ return __got.sqlTracer?Promise.resolve(true):loadChunk("trace-sql.js"); }
+/* SQL 은 Pyodide 가 필요 없다 — sql.js 는 저장소 안에 있다. 오프라인에서도 돈다. */
+function traceRunSql(sql, schema, ctx){
+  return Promise.all([ensureSqlLib(), ensureSqlTracer()]).then(function(){
+    if(typeof ensureSql!=="function"||!SQL_TRACER) return {__nosql:true};
+    return ensureSql().then(function(SQL){
+      try{ return SQL_TRACER(SQL, schema||"", String(sql||""), {ctx:ctx||null}); }
+      catch(e){ return {__err:String(e&&e.message||e)}; }
+    });
+  }).catch(function(e){ return {__err:String(e&&e.message||e)}; });
+}
 
 /* 이벤트를 단계별로 묶고, 각 단계 시점의 '변수 전체 상태' 를 미리 쌓아 둔다.
    슬라이더를 아무 데나 놔도 그 시점 상태를 바로 그릴 수 있어야 하기 때문이다. */
 function traceFrames(env){
   const F=[]; let cur=null; const vars={}; let out="";
+  /* 훑어 나온 행은 한 배열을 프레임들이 나눠 쓴다 — 프레임마다 복사하면
+     1000행짜리 결과에서 메모리가 제곱으로 는다. 프레임은 '여기까지' 만 기억한다.
+     바깥 깊이에서 새 단계가 열리면 새 배열로 간다. 안 그러면 두 번째 질의의 결과가
+     첫 번째 결과에 이어 붙어 한 표처럼 보인다. */
+  let res=[];
   (env.events||[]).forEach(function(e){
     if(e.e==="step"){
       if(cur) F.push(cur);
+      if(e.d===0 && res.length) res=[];
       cur={s:e.s, line:e.line, fn:e.fn, d:e.d, changed:{}, gone:[], out:out,
-           vars:Object.assign({},vars), note:null};
+           vars:Object.assign({},vars), note:null, res:res, resN:res.length, scan:0, chg:null};
       return;
     }
     if(!cur) return;
@@ -4764,8 +4795,14 @@ function traceFrames(env){
     else if(e.e==="call"){ cur.note={k:"call", name:e.name}; }
     else if(e.e==="ret"){ cur.note={k:"ret", to:e.to}; }
     else if(e.e==="throw"){ cur.note={k:"throw", name:e.name, msg:e.msg||""}; }
+    else if(e.e==="row"){
+      if(e.op==="scan"){ res.push(e); cur.resN=res.length; cur.scan=res.length; }
+      else cur.chg=(cur.chg||[]).concat(e);
+    }
   });
   if(cur) F.push(cur);
+  F.hasVars=F.some(function(f){ return Object.keys(f.vars).length>0; });
+  F.hasRows=F.some(function(f){ return f.res.length>0 || (f.chg&&f.chg.length); });
   return F;
 }
 
@@ -4784,11 +4821,38 @@ function tvVal(v){
   if(v.k==="ref") return "→ #"+v.id;
   return v.v;
 }
-/* 지금 무슨 일이 일어나는지 한 문장으로. 전문 용어를 쓰지 않는다. */
+/* dict 모양의 행이 쌓이면 표로 그린다. 어떤 언어가 만든 행인지 보지 않는다. */
+function tvTable(rows, hot){
+  if(!rows.length) return "";
+  const MAX=30, start=Math.max(0, rows.length-MAX);
+  const cols=(rows[0].to.v||[]).map(function(p){ return p[0]; });
+  let h='<div class="tv-tw"><table class="tv-tbl"><tr>'
+    +cols.map(function(c){ return '<th>'+escHtml(c)+'</th>'; }).join("")+'</tr>';
+  rows.slice(start).forEach(function(r,i){
+    h+='<tr'+((start+i)===hot?' class="hot"':'')+'>'
+      +(r.to.v||[]).map(function(p){ return '<td>'+escHtml(p[1])+'</td>'; }).join("")+'</tr>';
+  });
+  h+='</table></div>';
+  if(start) h+='<div class="tv-more">앞의 '+start+'행은 접었습니다</div>';
+  return h;
+}
+function tvChanges(chg){
+  const L={ins:"들어옴", upd:"바뀜", del:"사라짐"};
+  return chg.map(function(e){
+    const from=e.from?'<span class="tv-from">'+escHtml(tvVal(e.from))+'</span><span class="tv-arw">→</span>':"";
+    return '<div class="tv-v ch"><span class="tv-k">'+escHtml(e.table)+'</span>'
+      +'<span class="tv-val">'+from+escHtml(tvVal(e.to))+'</span>'
+      +'<span class="tv-tag">'+(L[e.op]||e.op)+'</span></div>';
+  }).join("");
+}
+/* 지금 무슨 일이 일어나는지 한 문장으로. 전문 용어를 쓰지 않는다.
+   무엇이 담긴 단계인지로 고른다 — 언어를 묻지 않는다. */
 function tvNote(f, last){
   if(f.note&&f.note.k==="throw") return "여기서 <b>"+escHtml(f.note.name)+"</b> 가 났습니다"+(f.note.msg?" — "+escHtml(f.note.msg):"");
   if(f.note&&f.note.k==="call") return "함수 <b>"+escHtml(f.note.name)+"</b> 안으로 들어갑니다";
   if(f.note&&f.note.k==="ret") return "<b>"+escHtml(tvVal(f.note.to))+"</b> 을(를) 돌려주고 함수를 나옵니다";
+  if(f.scan) return "<b>"+f.scan+"번째 행</b>이 나왔습니다";
+  if(f.chg&&f.chg.length) return "표가 바뀌었습니다 — 아래에서 무엇이 달라졌는지 보세요";
   if(last) return "실행이 끝났습니다";
   return f.line+"번째 줄을 <b>실행하기 직전</b>입니다";
 }
@@ -4810,17 +4874,25 @@ function renderTrace(env, F, i){
       +'<span class="tv-val">'+from+escHtml(tvVal(v))+'</span>'
       +(ch?'<span class="tv-tag">'+(ch.from?"방금 바뀜":"방금 생김")+'</span>':'')+'</div>';
   }).join("") : '<div class="tv-empty">아직 만들어진 변수가 없습니다</div>';
+  /* 변수를 한 번도 만들지 않는 실행(질의문 등)에 '변수 없음' 을 보여 주지 않는다 */
+  const varb=F.hasVars?'<div class="tv-sec">변수</div><div class="tv-vars">'+rows+'</div>':"";
 
-  const depth=f.d>0?'<div class="tv-depth">함수 안 '+f.d+'단계 깊이 · <b>'+escHtml(f.fn)+'</b></div>':"";
-  const outb=f.out?'<div class="tv-sec">출력</div><pre class="tv-out">'+escHtml(f.out)+'</pre>':"";
+  let tblb="";
+  if(F.hasRows){
+    const seen=f.res.slice(0, f.resN);
+    if(seen.length) tblb+='<div class="tv-sec">나온 행</div>'+tvTable(seen, f.scan?f.scan-1:-1);
+    if(f.chg&&f.chg.length) tblb+='<div class="tv-sec">표 변화</div><div class="tv-vars">'+tvChanges(f.chg)+'</div>';
+  }
+
+  const depth=(f.d>0&&!F.hasRows)?'<div class="tv-depth">함수 안 '+f.d+'단계 깊이 · <b>'+escHtml(f.fn)+'</b></div>':"";
+  const outb=f.out?'<div class="tv-sec">'+(F.hasRows?"실행 계획":"출력")+'</div><pre class="tv-out">'+escHtml(f.out)+'</pre>':"";
   const errb=(last&&env.err)?'<div class="tv-err"><b>'+escHtml(env.err.type)+'</b> '+escHtml(env.err.msg||"")
     +(env.err.line?' <span class="tv-eline">('+env.err.line+'번째 줄)</span>':'')+'</div>':"";
   const cutb=(last&&env.cut)?'<div class="tv-cut">단계가 너무 많아 여기서 멈췄습니다 (상한 '+env.steps+'단계)</div>':"";
 
   return '<div class="tv-code">'+code+'</div>'
     +'<div class="tv-note">'+tvNote(f,last)+'</div>'+depth
-    +'<div class="tv-sec">변수</div><div class="tv-vars">'+rows+'</div>'
-    +outb+errb+cutb;
+    +varb+tblb+outb+errb+cutb;
 }
 
 function tvGo(i){
@@ -4860,36 +4932,59 @@ document.addEventListener("keydown",function(e){
   else if(e.key==="Escape") closeTrace();
 });
 
-/* 예제 고르기 — Pyodide 없이도 바로 보여 줄 수 있어야 한다 */
-function openTraceDemo(){
-  ensureTraceDemo().then(function(){
+/* 예제 고르기 — 엔진을 하나도 받지 않고 바로 보여 줄 수 있어야 한다.
+   파이썬 예제·SQL 예제 모두 미리 만든 트레이스다. 직접 돌리는 건 누른 뒤에 받는다. */
+let TV_LANG="python";
+const TV_TABS=[
+  {k:"python", label:"파이썬",
+   ph:"a = [1, 2, 3]\nb = a\nb.append(4)\nprint(a)",
+   mine:"내 코드로 해보기", wait:"파이썬 준비 중… (처음 한 번은 조금 걸립니다)"},
+  {k:"sql", label:"SQL",
+   ph:"create table t(a int, b text);\ninsert into t values (1,'가'),(2,'나');\nselect * from t where a > 1;",
+   mine:"내 쿼리로 해보기", wait:"SQLite 준비 중… (처음 한 번은 조금 걸립니다)"},
+];
+function tvDemos(){ return (TV_LANG==="sql"?TRACE_DEMO_SQL:TRACE_DEMO)||[]; }
+function openTraceDemo(lang){
+  /* onclick 으로 바로 걸면 이벤트 객체가 들어온다 — 아는 언어만 받는다 */
+  if(TV_TABS.some(function(t){ return t.k===lang; })) TV_LANG=lang;
+  const need = TV_LANG==="sql" ? ensureTraceDemoSql() : ensureTraceDemo();
+  need.then(function(){
+    const tab=TV_TABS.filter(function(t){return t.k===TV_LANG;})[0];
     const o=$("tracev"), card=o.querySelector(".ovcard");
     card.innerHTML='<div class="tv-head"><b>코드가 어떻게 도는지 보기</b><button class="tv-x" id="tv-close">닫기</button></div>'
-      +'<p class="tv-hint">한 줄씩 넘기며 변수가 언제 생기고 언제 바뀌는지 봅니다. 초보자가 자주 막히는 곳으로 골랐습니다.</p>'
-      +'<div class="tv-mine"><div class="tv-sec" style="margin-top:0">내 코드로 해보기</div>'
-      +'<textarea class="tv-ta" id="tv-src" spellcheck="false" placeholder="a = [1, 2, 3]\nb = a\nb.append(4)\nprint(a)"></textarea>'
+      +'<div class="tv-tabs">'+TV_TABS.map(function(t){
+          return '<button class="tv-tab'+(t.k===TV_LANG?" on":"")+'" data-k="'+t.k+'">'+t.label+'</button>';
+        }).join("")+'</div>'
+      +'<p class="tv-hint">한 단계씩 넘기며 무엇이 언제 바뀌는지 봅니다. 초보자가 자주 막히는 곳으로 골랐습니다.</p>'
+      +'<div class="tv-mine"><div class="tv-sec" style="margin-top:0">'+tab.mine+'</div>'
+      +'<textarea class="tv-ta" id="tv-src" spellcheck="false" placeholder="'+escHtml(tab.ph)+'"></textarea>'
       +'<button class="tv-run" id="tv-run">▶ 실행 과정 보기</button>'
       +'<div class="tv-msg" id="tv-msg"></div></div>'
       +'<div class="tv-sec">예제로 먼저 보기</div>'
-      +(TRACE_DEMO||[]).map(function(d,i){
+      +tvDemos().map(function(d,i){
         return '<button class="tv-pick" data-i="'+i+'"><b>'+escHtml(d.title)+'</b><span>'+escHtml(d.hint)+'</span></button>';
       }).join("");
     o.classList.add("on"); document.body.style.overflow="hidden";
     $("tv-close").onclick=closeTrace;
+    card.querySelectorAll(".tv-tab").forEach(function(b){
+      b.onclick=function(){ openTraceDemo(b.dataset.k); };
+    });
     card.querySelectorAll(".tv-pick").forEach(function(b){
-      b.onclick=function(){ const d=TRACE_DEMO[+b.dataset.i]; openTrace(d.env, d.title, d.hint); };
+      b.onclick=function(){ const d=tvDemos()[+b.dataset.i]; openTrace(d.env, d.title, d.hint); };
     });
     const run=$("tv-run");
     if(run) run.onclick=function(){
-      const src=($("tv-src")||{}).value||"";
-      if(!src.trim()){ $("tv-msg").textContent="코드를 먼저 적어 주세요."; return; }
-      run.disabled=true; $("tv-msg").textContent="파이썬 준비 중… (처음 한 번은 조금 걸립니다)";
-      traceRun(src).then(function(env){
+      const src=($("tv-src")||{}).value||"", isSql=TV_LANG==="sql";
+      if(!src.trim()){ $("tv-msg").textContent=(isSql?"쿼리를":"코드를")+" 먼저 적어 주세요."; return; }
+      run.disabled=true; $("tv-msg").textContent=tab.wait;
+      (isSql?traceRunSql(src,""):traceRun(src)).then(function(env){
         run.disabled=false;
-        if(env.__nopy){ $("tv-msg").innerHTML="이 환경에서는 파이썬을 불러오지 못했습니다. 아래 예제로 먼저 보실 수 있어요."; return; }
+        if(env.__nopy||env.__nosql){ $("tv-msg").innerHTML="이 환경에서는 "+(isSql?"SQLite":"파이썬")+"을 불러오지 못했습니다. 아래 예제로 먼저 보실 수 있어요."; return; }
         if(env.__err){ $("tv-msg").textContent="실행하지 못했습니다 — "+env.__err; return; }
         $("tv-msg").textContent="";
-        openTrace(env, "내 코드", env.err?("여기서 "+env.err.type+" 가 났습니다. 그 직전 값을 보세요."):"한 줄씩 넘기며 값이 어떻게 변하는지 보세요.");
+        openTrace(env, isSql?"내 쿼리":"내 코드",
+          env.err?("여기서 "+env.err.type+" 가 났습니다"+(env.err.msg?" — "+env.err.msg:"")+". 그 직전을 보세요.")
+                 :"한 단계씩 넘기며 무엇이 어떻게 변하는지 보세요.");
       });
     };
   }).catch(function(){ toast("예제를 불러오지 못했습니다."); });
