@@ -15,6 +15,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 const JS = require("./js_basic.js");
 const SQL = require("./sql_basic.js");
 const WEB = require("./web_basic.js");
+const REACT = require("./react_basic.js");
 
 function serve() {
   const T = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json",
@@ -49,14 +50,20 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
   await p.addInitScript(s => { try { localStorage.setItem("coderun", JSON.stringify(s)); } catch (e) {} },
     { onboarded: true, goal: "free", freeMode: true });
   await p.goto("http://127.0.0.1:" + srv.address().port + "/index.html");
-  await p.waitForFunction(() => typeof testDoc === "function" && typeof gradeSql === "function" && typeof htmlTestDoc === "function", { timeout: 60000 });
+  await p.waitForFunction(() => typeof testDoc === "function" && typeof gradeSql === "function" && typeof htmlTestDoc === "function" && typeof reactTestDoc === "function", { timeout: 60000 });
 
-  const items = flat(JS, "js").concat(flat(SQL, "sql")).concat(flat(WEB, "html"));
+  const items = flat(JS, "js").concat(flat(SQL, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react"));
   const out = await p.evaluate(async (items) => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const res = [];
-    const ONSCREEN = "position:fixed;top:0;left:0;width:400px;height:420px;opacity:0;pointer-events:none;border:0;z-index:-1";
+    /* 레이아웃을 재는 프레임은 '진짜로 보이게' 둔다. opacity:0 이나 z-index:-1 로
+       가려 두면 크로미움이 렌더 자체를 건너뛰어 RECT().width 가 0 으로 나온다.
+       앱에서는 미리보기가 실제로 보이므로 이 문제가 없다 — 검증기만 불리한 조건이었다. */
+    const ONSCREEN = "position:fixed;top:0;left:0;width:400px;height:420px;border:0;z-index:99999;background:#fff";
     const OFFSCREEN = "position:absolute;left:-9999px;width:10px;height:10px";
+    /* React 는 변환기(sucrase)와 라이브러리를 먼저 받아 둔다 — 앱이 하는 그대로다 */
+    await ensureSucrase();
+    const REACT_LIB = await ensureReactSrc();
 
     /* 앱이 쓰는 그 하네스를 그대로 쓴다 — 채점 규칙을 여기서 다시 구현하지 않는다 */
     function gradeJs(q, code) {
@@ -66,18 +73,19 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
         f.setAttribute("sandbox", "allow-scripts");
         /* 보낸 프레임을 반드시 확인한다. 앞 문항의 프레임이 늦게 보낸 결과를
            받으면 문항과 결과가 한 칸씩 밀려서, 멀쩡한 문제가 실패로 보인다. */
-        let last = null, done = false;
+        let last = null, done = false, seen = 0;
         const fin = () => { if (done) return; done = true;
           window.removeEventListener("message", on); f.remove(); resolve(last); };
         const on = e => {
           if (!e.data || e.data.__cr !== "test" || e.source !== f.contentWindow) return;
           last = e.data;                       // 마지막 값을 쓴다
+          if (++seen >= 2) fin();
         };
         window.addEventListener("message", on);
         document.body.appendChild(f);
           // load 뒤 한 번 더 오는 값을 기다린다
         f.srcdoc = testDoc(code, { tests: q.tests, edge: q.edge });
-        setTimeout(fin, 1200);   // 하네스의 두 번째 실행까지 넉넉히 기다린다
+        setTimeout(fin, 2500);   // 두 번째가 끝내 안 오면 마지막 값으로 판정
       });
     }
 
@@ -91,30 +99,38 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
                    solGate: sol ? !!sol.gate : null, srcGate: src ? !!src.gate : null,
                    solPass: sol ? sol.pass + "/" + sol.total : "?",
                    srcPass: src ? src.pass + "/" + src.total : "?" });
-      } else if (x.lang === "html") {
-        /* 앱이 쓰는 htmlTestDoc 을 그대로 쓴다 — 브라우저가 실제로 그린 결과를 본다 */
+      } else if (x.lang === "react") {
+        /* 앱과 같은 길: sucrase 로 JSX 를 벗기고 진짜 react-dom 으로 마운트한다 */
         const grade = (code) => new Promise(resolve => {
+          const t = tsToJs(code, true);
+          if (t.error) return resolve({ pass: 0, total: x.tests.length, gate: false, syntax: t.error });
           const f = document.createElement("iframe");
           f.style.cssText = ONSCREEN;
           f.setAttribute("sandbox", "allow-scripts");
-          let last = null, done = false;
+          let last = null, done = false, seen = 0;
           const fin = () => { if (done) return; done = true;
             window.removeEventListener("message", on); f.remove(); resolve(last); };
           const on = e => {
             if (!e.data || e.data.__cr !== "test" || e.source !== f.contentWindow) return;
             last = e.data;
+            if (++seen >= 2) fin();      // 두 번째가 레이아웃이 확정된 값이다
           };
           window.addEventListener("message", on);
           document.body.appendChild(f);
-          
-          f.srcdoc = htmlTestDoc(code, x.tests);
-          setTimeout(fin, 1200);   // 하네스의 두 번째 실행까지 넉넉히 기다린다
+          f.srcdoc = reactTestDoc(t.code, x.tests, REACT_LIB);
+          setTimeout(fin, 2500);   // 라이브러리를 심고 마운트할 시간까지
         });
         const sol = await grade(x.sol), src = await grade(x.src);
-        res.push({ k: x.k, unit: x.unit, lang: "html",
+        res.push({ k: x.k, unit: x.unit, lang: "react",
                    solGate: sol ? !!sol.gate : null, srcGate: src ? !!src.gate : null,
-                   solPass: sol ? sol.pass + "/" + sol.total : "?",
-                   srcPass: src ? src.pass + "/" + src.total : "?" });
+                   solPass: sol ? (sol.syntax ? "문법오류: " + sol.syntax : sol.pass + "/" + sol.total) : "?",
+                   srcPass: src ? (src.syntax ? "문법오류: " + src.syntax : src.pass + "/" + src.total) : "?" });
+      } else if (x.lang === "html") {
+        /* 레이아웃 문항은 여기서 재지 않는다 — 중첩 iframe 은 가려지면 렌더가 스킵돼
+           RECT().width 가 0 으로 나온다. 하네스 문서만 만들어 두고, 최상위 페이지에서
+           재도록 밖으로 넘긴다(앱의 미리보기도 실제로 보이는 최상위 렌더다). */
+        res.push({ k: x.k, unit: x.unit, lang: "html", defer: true,
+                   solDoc: htmlTestDoc(x.sol, x.tests), srcDoc: htmlTestDoc(x.src, x.tests) });
       } else {
         const q = { schema: x.schema, sol: x.sol, ordered: !!x.ordered };
         const good = await gradeSql(q, x.sol);
@@ -130,6 +146,27 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
     return res;
   }, items);
 
+  /* 미룬 레이아웃 문항을 최상위 페이지에서 채점한다. 하네스는 결과를 window.__cr_result
+     에도 남기므로 그것을 읽는다 — 채점 규칙은 여전히 앱 것 그대로다. */
+  const page2 = await b.newPage({ viewport: { width: 400, height: 700 } });
+  for (const r of out) {
+    if (!r.defer) continue;
+    for (const [key, doc] of [["sol", r.solDoc], ["src", r.srcDoc]]) {
+      await page2.setContent(doc, { waitUntil: "load" });
+      const v = await page2.evaluate(() => new Promise(res => {
+        const t0 = Date.now();
+        (function poll() {
+          if (window.__cr_result || Date.now() - t0 > 3000) return res(window.__cr_result || null);
+          setTimeout(poll, 50);
+        })();
+      }));
+      r[key + "Gate"] = v ? !!v.gate : null;
+      r[key + "Pass"] = v ? v.pass + "/" + v.total : "?";
+    }
+    delete r.solDoc; delete r.srcDoc;
+  }
+  await page2.close();
+
   await b.close(); srv.close();
 
   const bad = [];
@@ -138,7 +175,7 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
     if (r.srcGate !== false) bad.push(r.k + " [" + r.unit + "]: 시작 코드가 앱에서 이미 통과한다 (" + r.srcPass + ")");
   });
   const cnt = k => out.filter(r => r.lang === k).length;
-  console.log("앱 채점 경로로 확인 · JS " + cnt("js") + " · SQL " + cnt("sql") + " · HTML " + cnt("html") + "문항");
+  console.log("앱 채점 경로로 확인 · JS " + cnt("js") + " · SQL " + cnt("sql") + " · HTML " + cnt("html") + " · React " + cnt("react") + "문항");
   if (errs.length) bad.push("pageerror: " + errs[0]);
   if (bad.length) { bad.forEach(x => console.log("  ✗ " + x)); console.log("\n" + bad.length + "건 실패"); process.exit(1); }
   console.log("전부 통과 — 정답은 앱에서 통과하고, 시작 코드는 앱에서 반드시 막힌다");
