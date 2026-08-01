@@ -17,7 +17,9 @@ Pyodide(파이썬 3.12)와 CPython 3.11 양쪽에서 돈다. 다만 컴프리헨
 import sys, io, json, time
 
 SCHEMA = 1
-MAX_STEPS = 2000        # 이 이상은 잘라 낸다 — 슬라이더로 볼 수 있는 양의 한계이기도 하다
+MAX_STEPS = 1000        # 슬라이더로 훑을 수 있는 현실적 한계. 넘으면 cut 으로 알린다.
+                        # (반복문을 접어 보여 주는 것은 v2 과제다 — 500번 도는 루프를
+                        #  1500 프레임으로 펴 놓는 것은 아무도 못 본다)
 MAX_STR = 200
 MAX_SEQ = 50
 MAX_MAP = 30
@@ -75,11 +77,27 @@ def _locals_of(frame):
     return out
 
 
-def trace(src, max_steps=MAX_STEPS, stdin=""):
+def _diff(old, cur):
+    """직전 지역변수와 비교해 set/del 이벤트를 만든다. from 이 있으면 '이 값에서 저 값으로'."""
+    out = []
+    for k, v in cur.items():
+        if old.get(k) != v:
+            ev = {"e": "set", "name": k, "to": v}
+            if k in old:
+                ev["from"] = old[k]
+            out.append(ev)
+    for k in old:
+        if k not in cur:
+            out.append({"e": "del", "name": k})
+    return out
+
+
+def trace(src, max_steps=MAX_STEPS, stdin="", ctx=None, run_id=None):
     """소스를 실행하며 단계 기록을 만든다. 항상 dict 를 돌려주고 예외를 밖으로 내보내지 않는다."""
     t0 = time.time()
-    steps = []
-    state = {"cut": False, "depth": 0}
+    run_id = run_id or ("r-" + format(int(t0 * 1000), "x") + "-" + format(abs(hash(src)) % 0xfffff, "x"))
+    events = []
+    state = {"cut": False, "depth": 0, "s": -1, "n": 0}
     prev = {}                      # id(frame) -> 직전 지역변수 (재귀에서도 섞이지 않는다)
     buf = io.StringIO()
     seen_out = [0]
@@ -90,19 +108,24 @@ def trace(src, max_steps=MAX_STEPS, stdin=""):
         seen_out[0] = len(s)
         return add
 
-    def push(frame, ev, extra=None):
-        if len(steps) >= max_steps:
+    def emit(**kw):
+        kw["s"] = state["s"]
+        events.append(kw)
+
+    def step(frame, extras):
+        """단계 하나를 연다. step 이벤트가 먼저 나오고 그 단계의 사건들이 뒤에 붙는다."""
+        if state["n"] >= max_steps:
             state["cut"] = True
             sys.settrace(None)
             return False
-        st = {"i": len(steps), "line": frame.f_lineno, "fn": frame.f_code.co_name,
-              "d": state["depth"], "ev": ev}
+        state["s"] = state["n"]
+        state["n"] += 1
+        emit(e="step", line=frame.f_lineno, fn=frame.f_code.co_name, d=state["depth"])
         add = take_out()
         if add:
-            st["out"] = add
-        if extra:
-            st.update(extra)
-        steps.append(st)
+            emit(e="out", text=add[:MAX_STR * 8])
+        for ev in extras:
+            emit(**ev)
         return True
 
     def tr(frame, ev, arg):
@@ -117,21 +140,17 @@ def trace(src, max_steps=MAX_STEPS, stdin=""):
             state["depth"] += 1
             args = _locals_of(frame)
             prev[id(frame)] = args
-            if not push(frame, "call", {"set": args} if args else None):
+            extras = [{"e": "call", "name": frame.f_code.co_name,
+                       "args": [v for v in args.values()]}]
+            extras += [{"e": "set", "name": k, "to": v} for k, v in args.items()]
+            if not step(frame, extras):
                 return None
             return tr
         if ev == "line":
             cur = _locals_of(frame)
             old = prev.get(id(frame), {})
-            changed = {k: v for k, v in cur.items() if old.get(k) != v}
-            gone = [k for k in old if k not in cur]
             prev[id(frame)] = cur
-            extra = {}
-            if changed:
-                extra["set"] = changed
-            if gone:
-                extra["del"] = gone
-            if not push(frame, "line", extra or None):
+            if not step(frame, _diff(old, cur)):
                 return None
             return tr
         if ev == "return":
@@ -141,16 +160,13 @@ def trace(src, max_steps=MAX_STEPS, stdin=""):
                 return tr
             cur = _locals_of(frame)
             old = prev.get(id(frame), {})
-            extra = {"ret": shape(arg)}
-            chg = {k: v for k, v in cur.items() if old.get(k) != v}
-            if chg:
-                extra["set"] = chg
-            push(frame, "return", extra)
+            step(frame, _diff(old, cur) + [{"e": "ret", "to": shape(arg)}])
             prev.pop(id(frame), None)
             state["depth"] = max(0, state["depth"] - 1)
             return tr
         if ev == "exception":
-            push(frame, "exception", {"exc": getattr(arg[0], "__name__", "Error")})
+            step(frame, [{"e": "throw", "name": getattr(arg[0], "__name__", "Error"),
+                          "msg": str(arg[1])[:MAX_STR]}])
             return tr
         return tr
 
@@ -163,7 +179,8 @@ def trace(src, max_steps=MAX_STEPS, stdin=""):
         code = compile(src, FNAME, "exec")
     except SyntaxError as e:
         sys.stdout, sys.stdin = so, si
-        return {"v": SCHEMA, "lang": "python", "steps": [], "out": "",
+        return {"v": SCHEMA, "run": run_id, "lang": "python", "at": int(t0 * 1000),
+                "src": src, "ctx": ctx, "events": [], "steps": 0, "out": "",
                 "err": {"type": "SyntaxError", "msg": str(e.msg), "line": e.lineno or 0},
                 "cut": False, "ms": 0}
     try:
@@ -189,25 +206,35 @@ def trace(src, max_steps=MAX_STEPS, stdin=""):
     old = prev.get(id(modf), {}) if modf is not None else {}
     chg = {k: v for k, v in final.items() if old.get(k) != v}
     tail = take_out()
-    if (chg or tail) and len(steps) < max_steps:
-        last = steps[-1] if steps else None
-        end = {"i": len(steps), "line": (last["line"] if last else 0),
-               "fn": "<module>", "d": 0, "ev": "end"}
-        if chg:
-            end["set"] = chg
+    if (chg or tail) and state["n"] < max_steps:
+        last_line = 0
+        for e in reversed(events):
+            if e["e"] == "step":
+                last_line = e["line"]
+                break
+        state["s"] = state["n"]
+        state["n"] += 1
+        emit(e="step", line=last_line, fn="<module>", d=0)
         if tail:
-            end["out"] = tail
-        steps.append(end)
+            emit(e="out", text=tail[:MAX_STR * 8])
+        for k, v in chg.items():
+            ev = {"e": "set", "name": k, "to": v}
+            if k in old:
+                ev["from"] = old[k]
+            events.append(dict(ev, s=state["s"]))
 
-    return {"v": SCHEMA, "lang": "python", "steps": steps, "out": buf.getvalue(),
-            "err": err, "cut": state["cut"], "ms": int((time.time() - t0) * 1000)}
+    return {"v": SCHEMA, "run": run_id, "lang": "python", "at": int(t0 * 1000),
+            "src": src, "ctx": ctx, "events": events, "steps": state["n"],
+            "out": buf.getvalue(), "err": err, "cut": state["cut"],
+            "ms": int((time.time() - t0) * 1000)}
 
 
-def trace_json(src, max_steps=MAX_STEPS, stdin=""):
+def trace_json(src, max_steps=MAX_STEPS, stdin="", ctx=None, run_id=None):
     """Pyodide 에서 부르는 진입점. 문자열만 오가면 타입 변환 사고가 없다."""
     try:
-        return json.dumps(trace(src, max_steps, stdin), ensure_ascii=False)
+        return json.dumps(trace(src, max_steps, stdin, ctx, run_id), ensure_ascii=False)
     except Exception as e:
-        return json.dumps({"v": SCHEMA, "lang": "python", "steps": [], "out": "",
+        return json.dumps({"v": SCHEMA, "run": run_id or "r-0", "lang": "python",
+                           "at": 0, "src": src, "ctx": ctx, "events": [], "steps": 0, "out": "",
                            "err": {"type": "TracerError", "msg": str(e)[:200], "line": 0},
                            "cut": False, "ms": 0}, ensure_ascii=False)
