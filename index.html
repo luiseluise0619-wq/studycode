@@ -206,6 +206,50 @@
   .th-key-t{font-family:var(--mono); font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--good); margin-bottom:6px}
   .th-key ul{margin:0; padding-left:18px}
   .th-key li{font-size:14px; line-height:1.66; color:var(--ink); margin:3px 0}
+  .tracecard{display:flex; align-items:center; gap:12px; width:100%; text-align:left; margin:0 0 14px; padding:13px 14px; border:1px solid rgba(74,222,128,.42); border-radius:14px; background:linear-gradient(135deg,rgba(74,222,128,.13),rgba(59,125,216,.11)); color:inherit; font:inherit; box-shadow:var(--shadow)}
+  .tracecard:active{border-color:var(--brand)}
+  .tc-em{font-size:24px; line-height:1}
+  .tc-t{flex:1; min-width:0}
+  .tc-t b{display:block; font-size:14.5px; margin-bottom:2px}
+  .tc-t span{display:block; font-size:12px; color:var(--ink-soft); line-height:1.5}
+  .tc-go{font-weight:800; color:#2f9e5e}
+  #tracev .ovcard{max-width:640px; padding:16px 16px 12px}
+  .tv-head{display:flex; align-items:center; gap:10px; margin-bottom:6px}
+  .tv-head b{font-size:16px; flex:1}
+  .tv-x{border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:9px; padding:5px 10px; font:inherit; font-size:12.5px; font-weight:700}
+  .tv-hint{font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0 0 12px}
+  .tv-code{background:var(--bg-soft); border:1px solid var(--line); border-radius:11px; padding:8px 0; overflow-x:auto}
+  .tv-l{display:flex; align-items:center; gap:10px; padding:2px 12px; font-family:var(--mono); font-size:13px; line-height:1.7; white-space:pre}
+  .tv-l.on{background:rgba(74,222,128,.16)}
+  .tv-n{color:var(--ink-soft); opacity:.6; min-width:18px; text-align:right; font-size:11.5px; user-select:none}
+  .tv-c{flex:1}
+  .tv-here{font-family:var(--sans,inherit); font-size:10.5px; font-weight:800; color:#2f9e5e; background:rgba(74,222,128,.2); border-radius:6px; padding:1px 6px}
+  .tv-note{margin:11px 0 4px; font-size:14px; line-height:1.6; color:var(--ink)}
+  .tv-note b{color:var(--brand)}
+  .tv-depth{font-size:12px; color:var(--ink-soft); margin-bottom:4px}
+  .tv-sec{font-size:11.5px; font-weight:800; color:var(--ink-soft); margin:12px 0 5px; letter-spacing:.2px}
+  .tv-vars{display:flex; flex-direction:column; gap:4px}
+  .tv-v{display:flex; align-items:center; gap:9px; padding:6px 10px; border:1px solid var(--line); border-radius:9px; background:var(--card); font-size:13.5px}
+  .tv-v.ch{border-color:rgba(74,222,128,.55); background:rgba(74,222,128,.10)}
+  .tv-k{font-family:var(--mono); font-weight:700; color:var(--brand); min-width:52px}
+  .tv-val{font-family:var(--mono); flex:1; word-break:break-all}
+  .tv-from{opacity:.5; text-decoration:line-through}
+  .tv-arw{opacity:.5; margin:0 5px}
+  .tv-tag{font-size:10.5px; font-weight:800; color:#2f9e5e; white-space:nowrap}
+  .tv-empty{font-size:13px; color:var(--ink-soft); padding:6px 2px}
+  .tv-out{background:#0f1420; color:#d6e2ff; border-radius:9px; padding:9px 11px; font-family:var(--mono); font-size:12.5px; margin:0; white-space:pre-wrap; word-break:break-all}
+  .tv-err{margin-top:10px; padding:9px 11px; border-radius:9px; background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.4); font-size:13px}
+  .tv-eline{opacity:.7}
+  .tv-cut{margin-top:8px; font-size:12px; color:var(--ink-soft)}
+  .tv-bar{display:flex; align-items:center; gap:9px; margin-top:14px; padding-top:11px; border-top:1px solid var(--line)}
+  .tv-btn{border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:9px; padding:7px 13px; font:inherit; font-weight:800}
+  .tv-btn:disabled{opacity:.35}
+  .tv-slider{flex:1; accent-color:var(--brand)}
+  .tv-count{font-size:12px; color:var(--ink-soft); font-weight:700; white-space:nowrap; min-width:76px; text-align:right}
+  .tv-pick{display:block; width:100%; text-align:left; margin-bottom:8px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:inherit; font:inherit}
+  .tv-pick b{display:block; font-size:14.5px; margin-bottom:3px}
+  .tv-pick span{display:block; font-size:12.5px; color:var(--ink-soft); line-height:1.55}
+  .tv-pick:active{border-color:var(--brand)}
   .th-plain{font-size:14.5px; line-height:1.75; color:var(--ink); background:rgba(74,222,128,.10); border:1px solid rgba(74,222,128,.35); border-radius:12px; padding:12px 14px; margin:12px 0}
   .th-plain-t{display:block; font-size:12px; font-weight:800; letter-spacing:.2px; color:#2f9e5e; margin-bottom:6px}
   .th-terms{background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:12px 0}
@@ -1168,6 +1212,7 @@
 </div>
 
 <div class="ovl" id="onboard"><div class="ovcard"></div></div>
+<div class="ovl" id="tracev"><div class="ovcard"></div></div>
 <div class="ovl" id="profile"><div class="ovcard" id="profile-body"></div></div>
 <div class="ovl" id="curr"><div class="ovcard" id="curr-body"></div></div>
 <div class="ovl" id="proj"><div class="ovcard" id="proj-body"></div></div>
@@ -1633,6 +1678,7 @@ function __CR(key, val){
   if(key.indexOf("t:")===0){ mergeTrack(key.slice(2), val); return; }
   if(key==="glossary"){ GLOSSARY=val; GLOSS_KEYS=Object.keys(val).sort(function(x,y){return y.length-x.length;}); return; }
   if(key==="intro"){ TRACK_INTRO=val; return; }
+  if(key==="traceDemo"){ TRACE_DEMO=val; return; }
   if(key==="sims"){ SIMS=val; return; }
   if(key==="diags"){ DIAGS=val; return; }
   if(key==="projects"){ PROJECTS=val; return; }
@@ -4571,11 +4617,159 @@ function todayCount(){ if(S.dayDate!==today()){S.dayCount=0;S.dayDate=today();} 
 function bumpDaily(){ if(S.dayDate!==today()){S.dayCount=0;S.dayDate=today();} S.dayCount++; save(); }
 function renderDaily(){ const el=$("daily"); if(!el)return; const done=todayCount(),t=S.dailyTarget||10; const pct=Math.min(100,Math.round(done/t*100)); const hit=done>=t;
   el.innerHTML=`<div class="dtop"><span>오늘 목표</span><span class="done">${hit?"완료 · 계속 이어가요":done+" / "+t+" 문제"}</span></div><div class="dbar"><i style="width:${pct}%"></i></div>`+missionsHtml(); }
+/* 새 기능 진입 — 코드가 도는 과정을 재생해 본다. 홈에서 바로 닿아야 써 본다. */
+function traceCardHtml(){
+  return '<button class="tracecard" id="trace-open">'
+    +'<span class="tc-em">🔍</span>'
+    +'<span class="tc-t"><b>코드가 어떻게 도는지 보기</b>'
+    +'<span>한 줄씩 넘기며 변수가 언제 생기고 언제 바뀌는지 — 초보자가 막히는 곳으로 예제를 골랐습니다</span></span>'
+    +'<span class="tc-go">→</span></button>';
+}
+function bindTraceCard(){ const b=$("trace-open"); if(b) b.onclick=openTraceDemo; }
 function renderRoadmap(){ const el=$("roadmap"); if(!el)return; const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const path=COURSE_PATHS[g];
-  if(g==="free"||!path.tracks.length){ el.innerHTML=`<div class="rtitle"><span>자유 탐색 중</span><span><button id="diag-btn">진단</button> <button id="chg-goal">코스 선택</button></span></div>`; const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; return; }
+  if(g==="free"||!path.tracks.length){ el.innerHTML=traceCardHtml()+`<div class="rtitle"><span>자유 탐색 중</span><span><button id="diag-btn">진단</button> <button id="chg-goal">코스 선택</button></span></div>`; bindTraceCard(); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; return; }
   const nodes=path.tracks.filter(k=>COURSES[k]).map(k=>{ const c=COURSES[k],pg=trackProg(k); const active=k===curLang?" active":""; return `<button class="rnode${active}" data-k="${k}"><div class="rem">${c.em}</div><div class="rnm">${c.name}</div><div class="rpct">${pg.pct}%</div><div class="rp"><i style="width:${pg.pct}%"></i></div></button>`; }).join("");
-  el.innerHTML=`<div class="rtitle"><span>${path.em} ${path.name} 코스</span><span><button id="curr-btn">커리큘럼</button> <button id="diag-btn">진단</button> <button id="chg-goal">변경</button></span></div><div class="rtrack">${nodes}</div>`;
+  el.innerHTML=traceCardHtml()+`<div class="rtitle"><span>${path.em} ${path.name} 코스</span><span><button id="curr-btn">커리큘럼</button> <button id="diag-btn">진단</button> <button id="chg-goal">변경</button></span></div><div class="rtrack">${nodes}</div>`;
+  bindTraceCard();
   el.querySelectorAll(".rnode").forEach(b=>b.onclick=()=>gotoTrack(b.dataset.k)); const cb=$("chg-goal"); if(cb)cb.onclick=openOnboard; const db=$("diag-btn"); if(db)db.onclick=startDiagnostic; const pb=$("curr-btn"); if(pb)pb.onclick=openCurriculum; }
+/* ===== 실행 재생 — 코드가 한 줄씩 어떻게 도는지 본다 =====
+   데이터는 트레이스 스키마 v1(docs/TRACE_SCHEMA.md). 뷰는 봉투의 순수 함수라
+   Pyodide 로 만든 것이든 미리 만들어 둔 예제든 똑같이 그린다. */
+let TRACE_DEMO=null, TV=null;
+function ensureTraceDemo(){ return __got.traceDemo?Promise.resolve(true):loadChunk("trace-demo.js"); }
+
+/* 이벤트를 단계별로 묶고, 각 단계 시점의 '변수 전체 상태' 를 미리 쌓아 둔다.
+   슬라이더를 아무 데나 놔도 그 시점 상태를 바로 그릴 수 있어야 하기 때문이다. */
+function traceFrames(env){
+  const F=[]; let cur=null; const vars={}; let out="";
+  (env.events||[]).forEach(function(e){
+    if(e.e==="step"){
+      if(cur) F.push(cur);
+      cur={s:e.s, line:e.line, fn:e.fn, d:e.d, changed:{}, gone:[], out:out,
+           vars:Object.assign({},vars), note:null};
+      return;
+    }
+    if(!cur) return;
+    if(e.e==="set"){ vars[e.name]=e.to; cur.vars[e.name]=e.to;
+      cur.changed[e.name]={from:e.from||null, to:e.to}; }
+    else if(e.e==="del"){ delete vars[e.name]; delete cur.vars[e.name]; cur.gone.push(e.name); }
+    else if(e.e==="out"){ out+=e.text; cur.out=out; }
+    else if(e.e==="call"){ cur.note={k:"call", name:e.name}; }
+    else if(e.e==="ret"){ cur.note={k:"ret", to:e.to}; }
+    else if(e.e==="throw"){ cur.note={k:"throw", name:e.name, msg:e.msg||""}; }
+  });
+  if(cur) F.push(cur);
+  return F;
+}
+
+/* 값을 초보자가 읽을 수 있는 짧은 글자로. 모양(k)만 보고 정한다 — 언어를 보지 않는다. */
+function tvVal(v){
+  if(!v) return "";
+  if(v.k==="none") return "None";
+  if(v.k==="bool") return v.v?"True":"False";
+  if(v.k==="int"||v.k==="float") return String(v.v);
+  if(v.k==="str") return '"'+v.v+'"'+(v.cut?"…":"");
+  if(v.k==="list") return "["+v.v.join(", ")+(v.cut?", …":"")+"]";
+  if(v.k==="tuple") return "("+v.v.join(", ")+(v.cut?", …":"")+")";
+  if(v.k==="set") return "{"+v.v.join(", ")+(v.cut?", …":"")+"}";
+  if(v.k==="dict") return "{"+v.v.map(function(p){return p[0]+": "+p[1];}).join(", ")+(v.cut?", …":"")+"}";
+  if(v.k==="fn") return "함수 "+v.v;
+  if(v.k==="ref") return "→ #"+v.id;
+  return v.v;
+}
+/* 지금 무슨 일이 일어나는지 한 문장으로. 전문 용어를 쓰지 않는다. */
+function tvNote(f, last){
+  if(f.note&&f.note.k==="throw") return "여기서 <b>"+escHtml(f.note.name)+"</b> 가 났습니다"+(f.note.msg?" — "+escHtml(f.note.msg):"");
+  if(f.note&&f.note.k==="call") return "함수 <b>"+escHtml(f.note.name)+"</b> 안으로 들어갑니다";
+  if(f.note&&f.note.k==="ret") return "<b>"+escHtml(tvVal(f.note.to))+"</b> 을(를) 돌려주고 함수를 나옵니다";
+  if(last) return "실행이 끝났습니다";
+  return f.line+"번째 줄을 <b>실행하기 직전</b>입니다";
+}
+
+function renderTrace(env, F, i){
+  const f=F[i], last=(i===F.length-1);
+  const lines=String(env.src||"").replace(/\n$/,"").split("\n");
+  const code=lines.map(function(t,n){
+    const on=(n+1)===f.line;
+    return '<div class="tv-l'+(on?" on":"")+'"><span class="tv-n">'+(n+1)+'</span>'
+      +'<span class="tv-c">'+(escHtml(t)||"&nbsp;")+'</span>'+(on?'<span class="tv-here">지금</span>':'')+'</div>';
+  }).join("");
+
+  const names=Object.keys(f.vars);
+  const rows=names.length? names.map(function(k){
+    const ch=f.changed[k], v=f.vars[k];
+    const from=ch&&ch.from?'<span class="tv-from">'+escHtml(tvVal(ch.from))+'</span><span class="tv-arw">→</span>':"";
+    return '<div class="tv-v'+(ch?" ch":"")+'"><span class="tv-k">'+escHtml(k)+'</span>'
+      +'<span class="tv-val">'+from+escHtml(tvVal(v))+'</span>'
+      +(ch?'<span class="tv-tag">'+(ch.from?"방금 바뀜":"방금 생김")+'</span>':'')+'</div>';
+  }).join("") : '<div class="tv-empty">아직 만들어진 변수가 없습니다</div>';
+
+  const depth=f.d>0?'<div class="tv-depth">함수 안 '+f.d+'단계 깊이 · <b>'+escHtml(f.fn)+'</b></div>':"";
+  const outb=f.out?'<div class="tv-sec">출력</div><pre class="tv-out">'+escHtml(f.out)+'</pre>':"";
+  const errb=(last&&env.err)?'<div class="tv-err"><b>'+escHtml(env.err.type)+'</b> '+escHtml(env.err.msg||"")
+    +(env.err.line?' <span class="tv-eline">('+env.err.line+'번째 줄)</span>':'')+'</div>':"";
+  const cutb=(last&&env.cut)?'<div class="tv-cut">단계가 너무 많아 여기서 멈췄습니다 (상한 '+env.steps+'단계)</div>':"";
+
+  return '<div class="tv-code">'+code+'</div>'
+    +'<div class="tv-note">'+tvNote(f,last)+'</div>'+depth
+    +'<div class="tv-sec">변수</div><div class="tv-vars">'+rows+'</div>'
+    +outb+errb+cutb;
+}
+
+function tvGo(i){
+  if(!TV) return;
+  TV.i=Math.max(0, Math.min(TV.F.length-1, i));
+  const body=$("tv-body"); if(body) body.innerHTML=renderTrace(TV.env, TV.F, TV.i);
+  const sl=$("tv-slider"); if(sl) sl.value=TV.i;
+  const c=$("tv-count"); if(c) c.textContent=(TV.i+1)+" / "+TV.F.length+" 단계";
+  const pv=$("tv-prev"), nx=$("tv-next");
+  if(pv) pv.disabled=TV.i===0;
+  if(nx) nx.disabled=TV.i===TV.F.length-1;
+}
+function openTrace(env, title, hint){
+  const F=traceFrames(env);
+  if(!F.length){ toast("보여 줄 실행 단계가 없습니다."); return; }
+  TV={env:env, F:F, i:0};
+  const o=$("tracev"), card=o.querySelector(".ovcard");
+  card.innerHTML='<div class="tv-head"><b>'+escHtml(title||"실행 과정")+'</b>'
+    +'<button class="tv-x" id="tv-close">닫기</button></div>'
+    +(hint?'<p class="tv-hint">'+escHtml(hint)+'</p>':'')
+    +'<div id="tv-body"></div>'
+    +'<div class="tv-bar"><button class="tv-btn" id="tv-prev">◀</button>'
+    +'<input class="tv-slider" id="tv-slider" type="range" min="0" max="'+(F.length-1)+'" value="0" aria-label="실행 단계">'
+    +'<button class="tv-btn" id="tv-next">▶</button><span class="tv-count" id="tv-count"></span></div>';
+  o.classList.add("on"); document.body.style.overflow="hidden";
+  $("tv-close").onclick=closeTrace;
+  $("tv-prev").onclick=function(){ tvGo(TV.i-1); };
+  $("tv-next").onclick=function(){ tvGo(TV.i+1); };
+  $("tv-slider").oninput=function(e){ tvGo(+e.target.value); };
+  tvGo(0);
+}
+function closeTrace(){ const o=$("tracev"); if(o) o.classList.remove("on"); document.body.style.overflow=""; TV=null; }
+document.addEventListener("keydown",function(e){
+  if(!TV) return;
+  if(e.key==="ArrowRight"){ tvGo(TV.i+1); e.preventDefault(); }
+  else if(e.key==="ArrowLeft"){ tvGo(TV.i-1); e.preventDefault(); }
+  else if(e.key==="Escape") closeTrace();
+});
+
+/* 예제 고르기 — Pyodide 없이도 바로 보여 줄 수 있어야 한다 */
+function openTraceDemo(){
+  ensureTraceDemo().then(function(){
+    const o=$("tracev"), card=o.querySelector(".ovcard");
+    card.innerHTML='<div class="tv-head"><b>코드가 어떻게 도는지 보기</b><button class="tv-x" id="tv-close">닫기</button></div>'
+      +'<p class="tv-hint">한 줄씩 넘기며 변수가 언제 생기고 언제 바뀌는지 봅니다. 초보자가 자주 막히는 곳으로 골랐습니다.</p>'
+      +(TRACE_DEMO||[]).map(function(d,i){
+        return '<button class="tv-pick" data-i="'+i+'"><b>'+escHtml(d.title)+'</b><span>'+escHtml(d.hint)+'</span></button>';
+      }).join("");
+    o.classList.add("on"); document.body.style.overflow="hidden";
+    $("tv-close").onclick=closeTrace;
+    card.querySelectorAll(".tv-pick").forEach(function(b){
+      b.onclick=function(){ const d=TRACE_DEMO[+b.dataset.i]; openTrace(d.env, d.title, d.hint); };
+    });
+  }).catch(function(){ toast("예제를 불러오지 못했습니다."); });
+}
+
 function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
   const opts=[["ai","🤖","AI 엔지니어","Python→SQL→NumPy→Pandas→통계→ML→딥러닝"],["ds","📊","데이터 사이언티스트","Python→SQL→통계→NumPy→Pandas→ML→평가"],["fullstack","💻","풀스택 개발자","웹→JS→React→백엔드→DB→배포"],["backend","🖥️","백엔드 개발자","Python→SQL→백엔드→보안→네트워크→DevOps"],["free","🎯","자유 탐색","코스 없이 원하는 트랙을 자유롭게"]];
   card.innerHTML=`<div class="onb-hero">
