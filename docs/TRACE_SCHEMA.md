@@ -178,7 +178,7 @@ create index on runs ((ctx->>'qid'));
 
 | 언어 | 방법 | 상태 |
 |---|---|---|
-| **Python** | `sys.settrace` (Pyodide) | 구현·CPython 검증 완료 · **Pyodide 검증 대기** |
+| **Python** | `sys.settrace` (Pyodide) | 구현·CPython 검증 완료 · **Pyodide 검증 대기** (`pw_pyodide.cjs`) |
 | SQL | sql.js 단계 캡처 + `EXPLAIN QUERY PLAN` | 미착수 |
 | HTML/CSS | 기존 iframe 렌더 재사용 | 미착수 |
 | JavaScript | Sucrase 로 AST 계측 | 미착수 |
