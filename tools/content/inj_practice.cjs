@@ -37,6 +37,11 @@ GROUPS.forEach(g => {
     if (!x.k || !x.src || !x.sol || !x.ex) throw new Error((x.k || "?") + ": 필드 누락");
     /* SQL 은 테스트 목록이 아니라 표(schema)와 기준 쿼리(sol)로 채점한다 */
     if (SPEC.lang === "sql") { if (!x.schema) throw new Error(x.k + ": schema 가 없다"); }
+    /* 러너 언어(go 등)는 그 언어의 테스트 러너가 채점한다 — 테스트를 옮기지 않는다 */
+    else if (SPEC.runner) {
+      if (!x.test || !Object.keys(x.test).length) throw new Error(x.k + ": 테스트 파일이 없다");
+      return;
+    }
     else if (!x.tests || !x.tests.length) throw new Error(x.k + ": tests 가 없다");
     /* html·react 는 DOM 검사({d, js})다 — 입력/기대값 쌍이 아니다 */
     else if (SPEC.lang === "html" || SPEC.lang === "react") {
@@ -57,6 +62,10 @@ GROUPS.forEach(g => {
     if (SPEC.lang === "sql") return Object.assign(base, { t: "sql", schema: x.schema, ordered: !!x.ordered });
     if (SPEC.lang === "html" || SPEC.lang === "react")
       return Object.assign(base, { t: SPEC.lang, lv: x.lv || 1, tests: x.tests });
+    /* 러너 문항: 앱은 rt.lang·rt.test 를 그대로 실행 서버로 보낸다 */
+    if (SPEC.runner)
+      return Object.assign(base, { t: "code", run: SPEC.lang, lv: x.lv || 2,
+                                   rt: { lang: SPEC.lang, test: x.test } });
     return Object.assign(base, {
       t: SPEC.lang === "py" ? "py" : "code",
       run: SPEC.lang === "js" ? "js" : undefined,
