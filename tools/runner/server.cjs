@@ -28,6 +28,14 @@ const REAL_HOME = process.env.HOME || os.homedir();
 const PORT = +(process.env.PORT || 8787);
 const HOST = process.env.HOST || "127.0.0.1";
 const TIMEOUT_MS = +(process.env.RUN_TIMEOUT_MS || 10000);
+/* 빌드 캐시는 실행마다 버리지 않고 공유한다.
+   작업 디렉터리 안에 GOCACHE 를 두면 매 채점이 콜드 빌드가 되어, 표준 라이브러리를
+   처음부터 다시 컴파일한다. 실측: 단순 문항 6.0초, net/http 를 쓰는 문항 11.4초 —
+   10초 제한을 넘겨 정답이 '시간 초과' 로 떨어졌다. 캐시를 공유하면 0.35초다.
+   Go 빌드 캐시는 내용 해시로 열쇠를 만들므로 채점 간에 섞여도 안전하다
+   (사용자 코드가 다르면 열쇠도 다르다). 격리가 필요한 것은 작업 디렉터리이지 캐시가 아니다. */
+const BUILD_CACHE = process.env.BUILD_CACHE_DIR || path.join(os.tmpdir(), "coderun-buildcache");
+try { fs.mkdirSync(path.join(BUILD_CACHE, "go"), { recursive: true }); } catch (e) {}
 const MAX_SRC = 200 * 1024;      // 소스 200KB 상한
 const MAX_OUT = 64 * 1024;       // 출력 64KB 상한 (무한 출력 방어)
 
@@ -65,7 +73,7 @@ function run(cmd, args, cwd, stdin, timeoutMs) {
     maxBuffer: MAX_OUT * 4,
     env: {
       PATH: process.env.PATH, HOME: cwd, LANG: "C.UTF-8",
-      GOCACHE: path.join(cwd, ".gocache"), GOPATH: path.join(cwd, ".gopath"),
+      GOCACHE: path.join(BUILD_CACHE, "go"), GOPATH: path.join(cwd, ".gopath"),
       GOFLAGS: "-mod=mod", GOTOOLCHAIN: "local", JAVA_TOOL_OPTIONS: "",
       /* HOME 을 임시 디렉터리로 바꿔 격리하므로, 툴체인 위치는 따로 알려 줘야 한다.
          rustup 은 $HOME/.rustup 을 보기 때문에 이걸 빼면 "toolchain 을 고를 수 없다" 로 실패한다. */
