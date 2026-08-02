@@ -39,8 +39,9 @@ GROUPS.forEach(g => {
       seen.add(norm(x.qq));
       return;
     }
-    if (seen.has(norm(x.q))) throw new Error("중복 문항 — " + x.k);
-    seen.add(norm(x.q));
+    const body = x.q || x.qq;
+    if (seen.has(norm(body))) throw new Error("중복 문항 — " + x.k);
+    seen.add(norm(body));
     if (!x.k || !x.src || !x.sol || !x.ex) throw new Error((x.k || "?") + ": 필드 누락");
     /* SQL 은 테스트 목록이 아니라 표(schema)와 기준 쿼리(sol)로 채점한다 */
     if (SPEC.lang === "sql") { if (!x.schema) throw new Error(x.k + ": schema 가 없다"); }
@@ -65,7 +66,7 @@ let added = 0;
 GROUPS.forEach(g => {
   const u = arr.find(x => x.t === g.unit);
   const q = g.q.map(x => {
-    const base = { k: x.k, cat: x.cat || "internals", q: x.q, src: x.src, sol: x.sol, ex: x.ex };
+    const base = { k: x.k, cat: x.cat || "internals", q: x.q || x.qq, src: x.src, sol: x.sol, ex: x.ex };
     if (SPEC.lang === "sql") return Object.assign(base, { t: "sql", schema: x.schema, ordered: !!x.ordered });
     /* 배선 문항: 부품·검사·시작배선을 그대로 싣는다. sol 은 참고 답안으로 함께 둔다 */
     if (SPEC.lang === "wire")
