@@ -3804,6 +3804,37 @@ const RUN_LANGS={java:"java", c:"c", cpp:"cpp", go:"go", rust:"rust", python:"py
 const RUN_LABEL={java:"Java", c:"C", cpp:"C++", go:"Go", rust:"Rust", python:"Python", php:"PHP"};
 function runnerCfg(){ if(!S.runner) S.runner={url:""}; return S.runner; }
 function runnerReady(){ return !!(runnerCfg().url||"").trim(); }
+
+/* 로컬 실행 서버 자동 탐지.
+   설계는 '127.0.0.1 자동 탐지' 인데 실제로는 사용자가 설정에 주소를 직접 넣어야 했다.
+   러너를 띄워 두고도 앱이 못 찾아 '실행 서버가 설정되지 않았어요' 만 보게 된다.
+
+   내 컴퓨터의 기본 포트만 찔러 본다. 바깥 주소는 절대 보지 않는다.
+   한 세션에 한 번만 시도하고, 못 찾으면 다시 시도하지 않는다 —
+   문항을 열 때마다 연결 실패를 반복하면 느려지기만 한다. */
+const RUNNER_PORTS=[8787, 8080];
+let runnerProbe=null;
+function runnerDetect(){
+  if(runnerReady()) return Promise.resolve(runnerBase());
+  if(runnerProbe) return runnerProbe;
+  const tryOne=(url)=>{
+    const ac=new AbortController();
+    const t=setTimeout(()=>ac.abort(), 1200);
+    return fetch(url+"/health",{signal:ac.signal})
+      .then(r=>r.json())
+      .then(j=>(j&&j.ok)?url:null)
+      .catch(()=>null)
+      .finally(()=>clearTimeout(t));
+  };
+  runnerProbe=RUNNER_PORTS.reduce(
+    (chain,port)=>chain.then(found=>found||tryOne("http://127.0.0.1:"+port)),
+    Promise.resolve(null)
+  ).then(found=>{
+    if(found){ runnerCfg().url=found; save(); toast("로컬 실행 서버를 찾았어요 ("+found+")"); }
+    return found;
+  });
+  return runnerProbe;
+}
 function runnerBase(){ return (runnerCfg().url||"").trim().replace(/\/+$/,""); }
 function runnerHealth(){
   if(!runnerReady()) return Promise.resolve({ok:false, error:"주소가 설정되지 않았어요"});
@@ -3873,7 +3904,9 @@ function runnerRun(lang, source, stdin){
 /* 러너로 채점한다 — 테스트를 우리 형식으로 번역하지 않고 그 언어의 테스트 러너에 맡긴다.
    go test · cargo test · gcc/g++ 링크 실행. 러너가 없으면 채점하지 않고 그렇게 알린다. */
 function runnerTest(lang, code, test, name, srcName){
-  if(!runnerReady()) return Promise.resolve({needRunner:true});
+  if(!runnerReady()) return runnerDetect().then(f=>f
+    ? runnerTest(lang, code, test, name, srcName)
+    : {needRunner:true});
   return fetch(runnerBase()+"/test",{method:"POST",headers:{"content-type":"application/json"},
     body:JSON.stringify({language:lang, code:code, test:test, name:name, srcName:srcName})})
     .then(r=>r.json())
@@ -4302,7 +4335,9 @@ function onCheck(){
     chk.disabled=true; chk.textContent="컴파일·테스트 중…";
     runnerTest(q.rt.lang, $("livecode").value, q.rt.test, q.rt.name, q.rt.srcName).then(r=>{
       chk.textContent="확인";
-      if(r.needRunner){ chk.disabled=false; toast("실행 서버가 설정되지 않았어요."); return; }
+      if(r.needRunner){ chk.disabled=false;
+        toast("실행 서버를 찾지 못했어요. 터미널에서 node tools/runner/server.cjs 를 켜 주세요.");
+        return; }
       if(r.error){ chk.disabled=false; toast(r.error); return; }
       const out=String(r.stdout||r.stderr||"").trim();
       liveOut = out.slice(0,4000);
