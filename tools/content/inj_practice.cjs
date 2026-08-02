@@ -32,6 +32,13 @@ GROUPS.forEach(g => {
     throw new Error(g.unit + ": 이론 형식이 맞지 않는다");
   if (!g.q.length) throw new Error(g.unit + ": 문항이 없다");
   g.q.forEach(x => {
+    if (SPEC.lang === "wire") {
+      if (!x.k || !x.qq || !x.ex || !x.parts || !x.checks || !x.sol)
+        throw new Error((x.k || "?") + ": 배선 문항 필드 누락");
+      if (seen.has(norm(x.qq))) throw new Error("중복 문항 — " + x.k);
+      seen.add(norm(x.qq));
+      return;
+    }
     if (seen.has(norm(x.q))) throw new Error("중복 문항 — " + x.k);
     seen.add(norm(x.q));
     if (!x.k || !x.src || !x.sol || !x.ex) throw new Error((x.k || "?") + ": 필드 누락");
@@ -60,6 +67,11 @@ GROUPS.forEach(g => {
   const q = g.q.map(x => {
     const base = { k: x.k, cat: x.cat || "internals", q: x.q, src: x.src, sol: x.sol, ex: x.ex };
     if (SPEC.lang === "sql") return Object.assign(base, { t: "sql", schema: x.schema, ordered: !!x.ordered });
+    /* 배선 문항: 부품·검사·시작배선을 그대로 싣는다. sol 은 참고 답안으로 함께 둔다 */
+    if (SPEC.lang === "wire")
+      return Object.assign({ k: x.k, cat: x.cat || "internals", q: x.qq, ex: x.ex },
+        { t: "wire", lv: x.lv || 1, parts: x.parts, checks: x.checks,
+          start: x.start || [], sol: x.sol });
     if (SPEC.lang === "html" || SPEC.lang === "react")
       return Object.assign(base, { t: SPEC.lang, lv: x.lv || 1, tests: x.tests });
     /* 러너 문항: 앱은 rt.lang·rt.test·rt.srcName 을 그대로 실행 서버로 보낸다.

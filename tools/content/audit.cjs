@@ -13,7 +13,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 const DATA = path.join(ROOT, "data");
 
 /* 직접 코드를 쓰고 기계가 채점하는 유형 */
-const HANDS = new Set(["code", "py", "sql", "html", "react", "ts", "sim", "arch"]);
+const HANDS = new Set(["code", "py", "sql", "html", "react", "ts", "sim", "arch", "wire"]);
 
 function load(f) {
   const s = fs.readFileSync(path.join(DATA, f), "utf8");

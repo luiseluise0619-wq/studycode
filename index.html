@@ -815,6 +815,24 @@
   .arc-bar{display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--card); border-bottom:1px solid var(--line)}
   .arc-bar .t{font-family:var(--mono); font-size:11.5px; font-weight:700; color:var(--ink-soft)}
   .arc-stage{padding:12px 10px; min-height:110px; overflow-x:auto}
+  /* 회로 배선 — 손가락으로 핀을 두 번 눌러 잇는다. 끌기(drag)는 모바일에서 잘 안 맞는다 */
+  .wire-wrap{border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--card)}
+  .wire-bar{display:flex; align-items:center; gap:6px; padding:7px 10px; background:var(--bg-soft);
+            border-bottom:1px solid var(--line); font-size:11.5px; color:var(--ink-soft)}
+  .wire-bar .sp{margin-left:auto; display:flex; gap:6px}
+  .wire-bar button{font-size:11px; padding:3px 9px; border:1px solid var(--line); border-radius:7px;
+                   background:var(--card); color:var(--ink); cursor:pointer}
+  .wire-stage{width:100%; display:block; touch-action:manipulation; background:var(--bg-soft)}
+  .wire-pin{cursor:pointer}
+  .wire-pin circle{fill:var(--card); stroke:var(--ink-soft); stroke-width:1.5}
+  .wire-pin.on circle{fill:#ffc773; stroke:#dd8a1e; stroke-width:2.5}
+  .wire-pin text{font-size:9px; fill:var(--ink-soft); pointer-events:none}
+  .wire-part rect{fill:var(--card); stroke:var(--line); stroke-width:1.5}
+  .wire-part text{font-size:10.5px; fill:var(--ink); pointer-events:none}
+  .wire-line{stroke:#47f; stroke-width:3; stroke-linecap:round; cursor:pointer; fill:none}
+  .wire-line:hover{stroke:#e0533d}
+  .wire-res{padding:7px 10px; border-top:1px solid var(--line); font-size:11.5px; line-height:1.7}
+  .wire-res .ok{color:#2f9e5f} .wire-res .no{color:#e0533d}
   .arc-err{color:var(--bad); font-size:12.5px; font-family:var(--mono); white-space:pre-wrap}
   .arc-ent{display:inline-block; vertical-align:top; margin:0 10px 10px 0; min-width:132px;
     border:1px solid var(--line); border-radius:10px; background:var(--card); overflow:hidden}
@@ -1457,7 +1475,7 @@ function qAsText(q){
     s+="\n\n(이 문제는 "+(isLog?"가장 먼저 고쳐야 하는 원인 한 줄을 고르는":"실제 결함인 항목을 모두 고르는")+" 문제다)";
   }
   if(q.t==="input") s+="\n\n(짧은 단답을 직접 입력하는 문제다)";
-  if(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"){
+  if(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"||q.t==="wire"){
     const lang=q.t==="sql"?"SQL":q.t==="py"?"Python":q.t==="html"?"HTML/CSS":q.t==="react"?"React (JSX)":q.t==="ts"?"TypeScript":"JavaScript";
     s+="\n\n(직접 "+lang+" 코드를 작성해 테스트를 통과시키는 문제다)";
     if(q.schema) s+="\n\n[테이블 스키마]\n"+qPlain(q.schema);
@@ -1481,7 +1499,7 @@ function qAnswerText(q){
 function myAnswerText(q){
   if(Array.isArray(q.items)&&run.revsel) return [...run.revsel].map(i=>i+1).sort((a,b)=>a-b).join(", ")+"번";
   if(q.t==="input"){ const f=$("fill"); return f? String(f.value||"") : ""; }
-  if(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch") return askEditorVal(q);
+  if(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"||q.t==="wire") return askEditorVal(q);
   if(Array.isArray(q.o)&&run.picked!=null) return String.fromCharCode(65+run.picked)+". "+qPlain(q.o[run.picked]);
   return "";
 }
@@ -2735,7 +2753,7 @@ function histToday(){ if(!S.hist) S.hist={}; const t=today();
   return h; }
 function qCat(q){ if(!q) return "knowledge";
   if(q.cat) return q.cat;
-  if(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch") return "impl";
+  if(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"||q.t==="wire") return "impl";
   if(q.t==="log") return "logs";
   if(q.t==="review") return "review";
   return "knowledge"; }
@@ -2748,7 +2766,7 @@ function logAnswer(ok,q){
   S.lvN[lv]=(S.lvN[lv]||0)+1; if(ok) S.lvOk[lv]=(S.lvOk[lv]||0)+1;
   const ck=qCat(q);
   S.catN[ck]=(S.catN[ck]||0)+1; if(ok) S.catOk[ck]=(S.catOk[ck]||0)+1;
-  if(ok && (q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch")) hs.impl++;
+  if(ok && (q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"||q.t==="wire")) hs.impl++;
   if(run&&run.lang) S.trkN[run.lang]=(S.trkN[run.lang]||0)+1;
   /* 근거 기록: 트랙별 + 9축별 */
   /* 인출: 보기를 감춘 채 스스로 꺼냈는가 (선택형에만 해당) */
@@ -2758,7 +2776,7 @@ function logAnswer(ok,q){
     if(run.lang){ const tb=evBucket("trk", run.lang);
       if(!tb.rc) tb.rc={n:0,ok:0}; tb.rc.n++; if(run.rcHit) tb.rc.ok++; }
   }
-  const isImpl = q&&(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch");
+  const isImpl = q&&(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"||q.t==="wire");
   if(run&&run.lang) evRecord(evBucket("trk", run.lang), ok, lv, isImpl);
   const axT = (run&&run.lang&&TRACK_AXIS[run.lang]) || "coding";
   evRecord(evBucket("ax", axT), ok, lv, isImpl);
@@ -3428,6 +3446,12 @@ function showQ(){
   const _ql=qLevel(q, run.ui, _ut);
   let html=`<div>${cb}<span class="q-kind">${q.k||"문제"}</span> ${lvBadge(_ql)}</div><div class="q-title">${q.q}</div>`;
   if(q.code) html+=C(q.code);
+  if(q.t==="wire"){
+    html+=`<div class="wire-wrap"><div class="wire-bar">🔌 핀을 눌러 고르고, 다른 핀을 누르면 이어집니다 · 선을 누르면 지워집니다`
+      +`<span class="sp"><button type="button" id="wire-clear">선 모두 지우기</button></span></div>`
+      +`<svg class="wire-stage" id="wire-stage" xmlns="http://www.w3.org/2000/svg"></svg>`
+      +`<div class="wire-res" id="wire-res"></div></div>`;
+  }
   if(q.t==="arch"){
     const kindLabel={erd:"ERD · 데이터 모델", api:"REST API 설계", cloud:"클라우드 구조"}[q.kind||"erd"];
     html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;design.json<span class="hint">🏗️ 설계를 JSON 으로 적으면 아래에 그려집니다</span></div><textarea class="live-code" id="livecode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
@@ -3460,7 +3484,7 @@ function showQ(){
       chk.disabled=f.value.trim()==="";
     });
     setTimeout(()=>f.focus(),50);
-  } else if(q.t==="code"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"){
+  } else if(q.t==="code"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"||q.t==="wire"){
     body.innerHTML=html; body.scrollTop=0;
   } else if(q.t==="sql"){
     body.innerHTML=html; body.scrollTop=0;
@@ -3553,6 +3577,7 @@ function showQ(){
   if(q.t==="sql"){ setupSql(q); chk.disabled=false; mountMonaco("sqlcode","sql"); }
   if(q.t==="py"){ setupPy(q); chk.disabled=false; mountMonaco("pycode","python"); }
   if(q.t==="html"){ setupHtml(q); chk.disabled=false; mountMonaco("livecode","html"); }
+  if(q.t==="wire"){ setupWire(q); chk.disabled=false; }
   if(q.t==="react"){ setupReact(q); chk.disabled=false; mountMonaco("livecode","javascript"); }
   if(q.t==="ts"){ setupTs(q); chk.disabled=false; mountMonaco("livecode","typescript"); }
   if(q.t==="sim"){ simSetup(q); chk.disabled=false; mountMonaco("livecode","javascript"); }
@@ -3990,6 +4015,155 @@ function openRunnerSetup(){
   o.onclick=e=>{ if(e.target===o){ o.classList.remove("on"); document.body.style.overflow=""; } };
   o.classList.add("on"); document.body.style.overflow="hidden";
 }
+/* ===== 회로 배선 채점 엔진 =====
+   부품을 선으로 잇는 문항(t:"wire")을 채점한다. 전기 시뮬레이션은 하지 않는다 —
+   대신 '무엇과 무엇이 전기적으로 이어졌는가' 를 그래프로 본다. 그것만으로도
+   초보자가 실제로 저지르는 사고는 다 걸린다: 저항 없이 LED 연결, 극성 뒤집기,
+   GND 빠뜨리기, 5V 와 GND 를 바로 잇는 합선.
+
+   모델
+     핀 이름은 "부품id.핀이름" 이다 (예: "uno.D13").
+     다리가 둘인 부품(저항·LED·버튼)은 안쪽이 이어져 있다고 본다 — 그래서 전류가
+     '통과' 한다. 보드는 핀끼리 이어져 있지 않다.
+     사용자가 그은 선 하나가 간선 하나다.
+
+   검사 세 가지
+     link  [A,B]            A 와 B 가 같은 그물(net)에 있다
+     apart [A,B]            같은 그물에 있으면 안 된다 (합선 검사)
+     through "부품id"       그 부품의 안쪽 연결을 끊으면 A 와 B 가 갈라진다
+                            = 반드시 그 부품을 거쳐서 이어져 있다
+
+   through 가 핵심이다. '저항을 거쳐야 한다' 를 이것 말고는 표현할 수 없다. */
+function wireEdges(internalParts, wires, skipInternal){
+  var e=[];
+  (internalParts||[]).forEach(function(p){
+    /* 다리가 둘인 부품만 안쪽이 이어진다. 보드는 아니다. */
+    if(p.kind!=="board" && !p.noInternal && (p.pins||[]).length===2 && p.id!==skipInternal)
+      e.push([p.id+"."+p.pins[0], p.id+"."+p.pins[1]]);
+  });
+  (wires||[]).forEach(function(w){ if(w&&w.length===2&&w[0]!==w[1]) e.push([w[0],w[1]]); });
+  return e;
+}
+function wireNets(parts, wires, skipInternal, wiresOnly){
+  var par={};
+  function find(x){ if(par[x]===undefined) par[x]=x; return par[x]===x?x:(par[x]=find(par[x])); }
+  function uni(a,b){ a=find(a); b=find(b); if(a!==b) par[a]=b; }
+  (parts||[]).forEach(function(p){ (p.pins||[]).forEach(function(n){ find(p.id+"."+n); }); });
+  /* wiresOnly: 부품 안쪽 연결을 전부 무시하고 사용자가 그은 선만 본다.
+     '5V 와 GND 가 바로 붙어 있지 않다'(합선) 는 이렇게 봐야 한다 —
+     5V→저항→LED→GND 는 정상 회로인데 그냥 이어짐으로 세면 합선으로 잘못 잡는다. */
+  wireEdges(wiresOnly ? [] : parts, wires, skipInternal).forEach(function(x){ uni(x[0], x[1]); });
+  return function(pin){ return find(pin); };
+}
+function wireCheck(q, wires){
+  var parts=q.parts||[], checks=q.checks||[];
+  var known={};
+  parts.forEach(function(p){ (p.pins||[]).forEach(function(n){ known[p.id+"."+n]=true; }); });
+  var net=wireNets(parts, wires);
+  var det=[], pass=0;
+  checks.forEach(function(c){
+    var ok=false, why="";
+    var A=(c.link||c.apart||[])[0], B=(c.link||c.apart||[])[1];
+    if(!known[A]||!known[B]){ det.push({d:c.d, ok:false}); return; }
+    if(c.apart){
+      /* c.wires 면 선만 보고 판단한다 — 부품을 거친 정상 경로는 합선이 아니다 */
+      var na = c.wires ? wireNets(parts, wires, null, true) : net;
+      ok = na(A)!==na(B);
+    } else {
+      ok = net(A)===net(B);
+      if(ok && c.through){
+        /* 그 부품의 안쪽 연결만 빼고 다시 이어 본다. 여전히 이어져 있으면
+           그 부품을 거치지 않는 다른 길이 있다는 뜻이다. */
+        var net2=wireNets(parts, wires, c.through);
+        ok = net2(A)!==net2(B);
+      }
+    }
+    if(ok) pass++;
+    det.push({d:c.d, ok:ok});
+  });
+  return { pass:pass, total:checks.length, gate:checks.length>0&&pass===checks.length,
+           impl:checks.length?Math.round(pass/checks.length*100):0, detail:det };
+}
+
+/* ===== 회로 배선 UI =====
+   핀을 눌러 고르고 다른 핀을 누르면 선이 생긴다. 선을 누르면 지워진다.
+   끌기(drag) 대신 두 번 누르기로 만든 이유는 손가락과 작은 화면에서 훨씬 정확해서다. */
+let wireQ=null, wireList=[], wireSel=null;
+
+function wireLayout(parts){
+  /* 보드는 왼쪽에 세로로, 나머지 부품은 오른쪽에 쌓는다. 핀 좌표를 미리 계산해 둔다. */
+  const pos={}; let boardH=40, rightY=14;
+  const board=parts.find(p=>p.kind==="board");
+  if(board){
+    boardH=26+board.pins.length*24;
+    board.pins.forEach((n,i)=>{ pos[board.id+"."+n]={x:118, y:32+i*24, lx:112, anchor:"end"}; });
+  }
+  parts.filter(p=>p!==board).forEach(p=>{
+    const h=p.pins.length>2 ? 20+p.pins.length*22 : 42;
+    p._box={x:210, y:rightY, w:118, h:h};
+    if(p.pins.length===2){
+      pos[p.id+"."+p.pins[0]]={x:210, y:rightY+h/2, lx:210, ly:rightY+h/2+15, anchor:"middle"};
+      pos[p.id+"."+p.pins[1]]={x:328, y:rightY+h/2, lx:328, ly:rightY+h/2+15, anchor:"middle"};
+    } else {
+      p.pins.forEach((n,i)=>{ pos[p.id+"."+n]={x:210, y:rightY+22+i*22, lx:216, anchor:"start"}; });
+    }
+    rightY+=h+16;
+  });
+  return { pos, board, boardH, height:Math.max(boardH+20, rightY+6) };
+}
+
+function wireRender(){
+  const st=$("wire-stage"); if(!st||!wireQ) return;
+  const parts=wireQ.parts||[], L=wireLayout(parts);
+  const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  let g="";
+  if(L.board) g+=`<g class="wire-part"><rect x="10" y="12" width="108" height="${L.boardH}" rx="8"></rect>`
+    +`<text x="20" y="28" style="font-weight:700">${esc(L.board.label||"보드")}</text></g>`;
+  parts.filter(p=>p!==L.board).forEach(p=>{
+    g+=`<g class="wire-part"><rect x="${p._box.x}" y="${p._box.y}" width="${p._box.w}" height="${p._box.h}" rx="8"></rect>`
+      +`<text x="${p._box.x+p._box.w/2}" y="${p._box.y+16}" text-anchor="middle">${esc(p.label||p.id)}</text></g>`;
+  });
+  /* 선을 부품보다 위에 그린다 — 눌러서 지울 수 있어야 하므로 */
+  wireList.forEach((w,i)=>{
+    const a=L.pos[w[0]], b=L.pos[w[1]]; if(!a||!b) return;
+    g+=`<line class="wire-line" data-w="${i}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"><title>누르면 지워집니다</title></line>`;
+  });
+  parts.forEach(p=>p.pins.forEach(n=>{
+    const id=p.id+"."+n, c=L.pos[id]; if(!c) return;
+    const on=wireSel===id?" on":"";
+    g+=`<g class="wire-pin${on}" data-pin="${esc(id)}"><circle cx="${c.x}" cy="${c.y}" r="7"></circle>`
+      +`<text x="${c.lx!==undefined?c.lx:c.x}" y="${(c.ly!==undefined?c.ly:c.y+3.5)}" text-anchor="${c.anchor||"middle"}">${esc(n)}</text></g>`;
+  }));
+  st.setAttribute("viewBox","0 0 340 "+L.height);
+  st.style.height=Math.min(L.height*1.05, 420)+"px";
+  st.innerHTML=g;
+
+  const r=wireCheck(wireQ, wireList);
+  const box=$("wire-res");
+  if(box) box.innerHTML=r.detail.map(d=>`<div class="${d.ok?"ok":"no"}">${d.ok?"✓":"✗"} ${esc(d.d)}</div>`).join("");
+  const chk=$("check"); if(chk) chk.disabled=false;
+}
+
+function wireTap(ev){
+  const line=ev.target.closest(".wire-line");
+  if(line){ wireList.splice(+line.getAttribute("data-w"),1); wireSel=null; wireRender(); return; }
+  const pin=ev.target.closest(".wire-pin");
+  if(!pin) return;
+  const id=pin.getAttribute("data-pin");
+  if(wireSel===null){ wireSel=id; wireRender(); return; }
+  if(wireSel===id){ wireSel=null; wireRender(); return; }
+  const dup=wireList.some(w=>(w[0]===wireSel&&w[1]===id)||(w[0]===id&&w[1]===wireSel));
+  if(!dup) wireList.push([wireSel, id]);
+  wireSel=null; wireRender();
+}
+
+function setupWire(q){
+  wireQ=q; wireList=(q.start||[]).map(w=>w.slice()); wireSel=null;
+  const st=$("wire-stage"); if(st) st.onclick=wireTap;
+  const cl=$("wire-clear"); if(cl) cl.onclick=()=>{ wireList=[]; wireSel=null; wireRender(); };
+  wireRender();
+}
+
 /* ===== HTML/CSS 실행 채점 =====
    사용자가 쓴 마크업·스타일을 그대로 렌더한 뒤, 그 문서 안에서 DOM 과 계산된 스타일을
    검사한다. 브라우저가 실제로 레이아웃을 계산한 결과를 보므로 "보이는 것" 을 채점한다.
@@ -4302,6 +4476,14 @@ function onCheck(){
         : ("검사 "+r.pass+"/"+r.total+(miss.length?" — 남은 것: "+miss.slice(0,2).join(" · "):" — 전부 통과해야 정답이에요"));
       applyResult(!!r.gate, msg, q);
     }, 900);
+    return;
+  }
+  if(q.t==="wire"){
+    const r=wireCheck(q, wireList);
+    if(r.impl!=null && q.k) recordImpl(q.k, r.impl);
+    const miss=(r.detail||[]).filter(d=>!d.ok).map(d=>d.d);
+    applyResult(!!r.gate, r.gate ? ("검사 "+r.pass+"/"+r.total+" 통과")
+      : ("검사 "+r.pass+"/"+r.total+" — 남은 것: "+miss.slice(0,2).join(" · ")), q);
     return;
   }
   if(q.t==="html"){
