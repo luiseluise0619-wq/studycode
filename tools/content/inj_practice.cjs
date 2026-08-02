@@ -62,10 +62,17 @@ GROUPS.forEach(g => {
     if (SPEC.lang === "sql") return Object.assign(base, { t: "sql", schema: x.schema, ordered: !!x.ordered });
     if (SPEC.lang === "html" || SPEC.lang === "react")
       return Object.assign(base, { t: SPEC.lang, lv: x.lv || 1, tests: x.tests });
-    /* 러너 문항: 앱은 rt.lang·rt.test 를 그대로 실행 서버로 보낸다 */
-    if (SPEC.runner)
-      return Object.assign(base, { t: "code", run: SPEC.lang, lv: x.lv || 2,
-                                   rt: { lang: SPEC.lang, test: x.test } });
+    /* 러너 문항: 앱은 rt.lang·rt.test·rt.srcName 을 그대로 실행 서버로 보낸다.
+       srcName 을 빠뜨리면 러너가 기본 파일명(java 는 Sol.java)으로 저장한다.
+       공개 클래스 이름이 Bag 인데 Sol.java 로 저장되면 javac 가 거부한다 —
+       검증기는 srcName 을 넘겨서 통과하는데 앱에서만 실패하는, 최악의 어긋남이다. */
+    if (SPEC.runner) {
+      const rt = { lang: SPEC.lang, test: x.test };
+      if (x.name || x.cls) rt.name = x.name || x.cls;
+      const srcName = x.srcName || (SPEC.lang === "java" && x.cls ? x.cls + ".java" : null);
+      if (srcName) rt.srcName = srcName;
+      return Object.assign(base, { t: "code", run: SPEC.lang, lv: x.lv || 2, rt: rt });
+    }
     return Object.assign(base, {
       t: SPEC.lang === "py" ? "py" : "code",
       run: SPEC.lang === "js" ? "js" : undefined,
