@@ -14,7 +14,9 @@ INSERT INTO 직원 VALUES
   (3,'다솜','개발',6100000,'2020-01-20',NULL),
   (4,'라온','개발',5500000,'2023-02-28',3),
   (5,'마루','개발',5500000,'2023-11-05',3),
-  (6,'바다','지원',3900000,'2024-06-10',1);
+  (6,'바다','지원',3900000,'2024-06-10',1),
+  -- 시각이 붙은 값. 이게 없으면 BETWEEN 과 반열림이 같은 결과라 기간 문항이 성립하지 않는다.
+  (7,'사랑','지원',4100000,'2023-12-31 09:00',1);
 CREATE TABLE 실적 (
   id INTEGER PRIMARY KEY, 직원 INTEGER, 월 TEXT, 금액 INTEGER
 );
@@ -221,9 +223,9 @@ module.exports = [
     {
       k: "1부터 5까지 만들기", schema: 판매, ordered: true,
       qq: "테이블 없이 <b>1부터 5까지</b>의 숫자를 만들어 보여 주세요. 열 이름은 <code>n</code> 이고 오름차순입니다.",
-      src: "WITH RECURSIVE 수(n) AS (\n  SELECT 1\n  UNION ALL\n  SELECT n + 1 FROM 수\n)\nSELECT n FROM 수 LIMIT 5;",
+      src: "WITH RECURSIVE 수(n) AS (\n  SELECT 1\n  UNION ALL\n  SELECT n + 1 FROM 수 WHERE n < 6\n)\nSELECT n FROM 수 ORDER BY n;",
       sol: "WITH RECURSIVE 수(n) AS (\n  SELECT 1\n  UNION ALL\n  SELECT n + 1 FROM 수 WHERE n < 5\n)\nSELECT n FROM 수 ORDER BY n;",
-      ex: "멈추는 조건이 없어 재귀가 끝나지 않습니다. LIMIT 이 붙어 있어 결과는 나오지만, 이건 우연히 멈춘 것이지 쿼리가 옳은 게 아니에요 — 재귀 부분 안에 WHERE 로 상한을 걸어야 합니다.",
+      ex: "멈추는 조건의 경계가 한 칸 밀려 6 까지 나옵니다. WHERE n < 5 여야 마지막 값이 5 예요 — 재귀는 '한 걸음 더 갈지' 를 묻는 것이라, 조건의 n 은 지금 값이고 다음 값은 n+1 입니다. 조건을 아예 빼면 영영 끝나지 않습니다.",
     },
   ],
 },

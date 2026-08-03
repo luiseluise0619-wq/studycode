@@ -14,6 +14,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 
 const JS = require("./js_basic.js");
 const SQL = require("./sql_basic.js");
+const SQL2 = require("./sql_mid.js");
 const WEB = require("./web_basic.js");
 const REACT = require("./react_basic.js");
 const ALGO = require("./algo_basic.js");
@@ -54,7 +55,7 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
   await p.goto("http://127.0.0.1:" + srv.address().port + "/index.html");
   await p.waitForFunction(() => typeof testDoc === "function" && typeof gradeSql === "function" && typeof htmlTestDoc === "function" && typeof reactTestDoc === "function", { timeout: 60000 });
 
-  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(SQL, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react"));
+  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react"));
   const out = await p.evaluate(async (items) => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const res = [];

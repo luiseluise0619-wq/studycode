@@ -12,6 +12,7 @@ const os = require("os");
 const { execFileSync } = require("child_process");
 const ROOT = path.resolve(__dirname, "..", "..");
 const GROUPS = require(path.resolve(process.argv[2]));
+/* 문제 본문은 q 또는 qq 로 온다 — 유형마다 필드 이름이 갈렸다 */
 const LANG = process.argv[3] || "py";
 
 function runPy(code, tests) {
