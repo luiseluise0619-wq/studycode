@@ -1,0 +1,183 @@
+/* 함수형 1차 — 실습이 하나도 없던 4개 유닛. 이 트랙의 실습은 JS 로 채점된다. */
+module.exports = [
+/* ── 함수형 사고 ─────────────────────────────────────────── */
+{
+  unit: "함수형 사고",
+  lesson: "직접 짜 보기 — 무엇을 할지 대신 무엇인지 적기",
+  th: {
+    sum: "함수형은 **'어떻게 하라' 대신 '무엇인가' 를 적는 것**이다. 그러면 읽는 사람이 순서를 따라갈 필요가 없다.",
+    body: [
+      { h: "명령형은 순서, 선언형은 관계", t: "`for` 로 인덱스를 올리며 배열에 넣는 코드는 '어떻게' 를 적는다. `map` 은 '각 원소가 이렇게 바뀐 것' 이라는 관계를 적는다. 뒤쪽이 짧아서 좋은 게 아니라, 중간 상태가 없어서 읽기 쉽다." },
+      { h: "중간 변수를 없애면 버그가 줄어든다", t: "`i`, `sum`, `tmp` 같은 변수는 잘못 쓸 여지가 있는 자리다. 그 자리가 없으면 그 버그도 없다." },
+      { h: "작은 함수를 이어 붙인다", t: "거르고 → 바꾸고 → 모으는 세 단계를 각각 이름 붙여 두면, 각 단계를 따로 시험하고 따로 재사용할 수 있다." },
+      { h: "만능은 아니다", t: "성능이 극한으로 중요한 자리나 한 번에 큰 배열을 여러 번 순회하는 곳에서는 반복문이 나을 수 있다. 기본은 선언형으로 두되, 재 보고 필요할 때 바꾼다." },
+    ],
+    code: { c: "// 명령형\nlet out = [];\nfor (let i = 0; i < xs.length; i++)\n  if (xs[i] > 0) out.push(xs[i] * 2);\n\n// 선언형\nxs.filter(x => x > 0).map(x => x * 2)", cap: "순서 대신 관계를 적는다" },
+    key: ["'어떻게' 대신 '무엇인가'", "중간 변수가 없으면 그 버그도 없다", "작은 함수를 이어 붙인다"],
+  },
+  q: [
+    {
+      k: "evenSquares · 거르고 바꾸기",
+      qq: "짝수만 남겨 <b>제곱</b>한 배열을 돌려주세요. 원본은 <b>바뀌면 안 됩니다</b>.",
+      src: "function evenSquares(xs) {\n  for (let i = 0; i < xs.length; i++) xs[i] = xs[i] * xs[i];\n  return xs.filter(x => x % 2 === 0);\n}\n",
+      sol: "function evenSquares(xs) {\n  return xs.filter(x => x % 2 === 0).map(x => x * x);\n}\n",
+      tests: [["evenSquares([1,2,3,4])", "[4,16]"], ["(() => { const a = [1,2,3]; evenSquares(a); return a; })()", "[1,2,3]"], ["evenSquares([])", "[]"]],
+      edge: [["evenSquares([1,3,5])", "[]"], ["evenSquares([0,2])", "[0,4]"]],
+      ex: "먼저 제곱해 버리면 홀수의 제곱도 홀수라 결과는 우연히 비슷해 보이지만, 원본 배열이 통째로 바뀝니다. 부르는 쪽은 자기 데이터가 달라진 줄 모르고 계속 쓰게 돼요 — `filter`·`map` 은 언제나 새 배열을 만듭니다.",
+    },
+    {
+      k: "countBy · 세는 일도 관계로",
+      qq: "값마다 <b>몇 번 나왔는지</b>를 담은 객체를 돌려주세요.",
+      src: "function countBy(xs) {\n  const out = {};\n  for (const x of xs) out[x] = 1;\n  return out;\n}\n",
+      sol: "function countBy(xs) {\n  return xs.reduce((acc, x) => { acc[x] = (acc[x] || 0) + 1; return acc; }, {});\n}\n",
+      tests: [["countBy(['a','b','a'])", "{a:2,b:1}"], ["countBy([])", "{}"], ["countBy(['x'])", "{x:1}"]],
+      edge: [["countBy([1,1,1])", "{1:3}"], ["countBy(['a','b'])", "{a:1,b:1}"]],
+      ex: "`= 1` 로 덮어쓰면 몇 번 나왔든 전부 1 이 됩니다 — 결과의 모양은 맞아서 눈으로 훑으면 지나가기 쉬워요. 세는 일은 '이전 값 + 1' 이라는 관계라, 이전 값을 반드시 읽어야 합니다.",
+    },
+    {
+      k: "pipeline · 단계를 이어 붙이기",
+      qq: "함수 배열을 받아 <b>앞에서부터 차례로</b> 적용하는 함수를 돌려주세요.",
+      src: "function pipeline(fns) {\n  return x => fns.reduceRight((v, f) => f(v), x);\n}\n",
+      sol: "function pipeline(fns) {\n  return x => fns.reduce((v, f) => f(v), x);\n}\n",
+      tests: [["pipeline([x => x + 1, x => x * 10])(0)", "10"], ["pipeline([x => x * 10, x => x + 1])(0)", "1"], ["pipeline([])(5)", "5"]],
+      edge: [["pipeline([x => x + 1])(1)", "2"], ["pipeline([String, s => s.length])(100)", "3"]],
+      ex: "`reduceRight` 는 뒤에서부터 적용합니다 — 더하고 곱하기와 곱하고 더하기는 결과가 다르니 조용히 틀린 값이 나와요. 파이프라인은 적힌 순서대로 흐른다는 약속이고, 그 약속이 깨지면 읽는 사람이 코드를 못 믿습니다.",
+    },
+  ],
+},
+/* ── 순수함수·불변성 ─────────────────────────────────────── */
+{
+  unit: "순수함수, 불변성, 그리고 부수효과",
+  lesson: "직접 짜 보기 — 밖을 건드리지 않기",
+  th: {
+    sum: "순수함수는 **같은 입력이면 같은 출력이고, 밖을 건드리지 않는** 함수다.",
+    body: [
+      { h: "시험하기 쉬워진다", t: "밖에 의존하는 게 없으면 값만 넣어 보면 된다. 데이터베이스도, 시계도, 가짜 객체도 필요 없다 — 테스트가 짧아지는 것은 결과일 뿐이고, 진짜 이득은 '이 함수만 보면 안다' 는 점이다." },
+      { h: "부수효과는 밖으로 몰아 둔다", t: "없앨 수는 없다. 파일도 쓰고 화면도 그려야 한다. 대신 계산은 순수하게 두고, 효과는 가장자리에서 한 번에 처리하면 대부분의 코드가 시험 가능해진다." },
+      { h: "불변성은 복사로 만든다", t: "배열을 바꾸는 대신 새 배열을 만든다. `push` 대신 전개 연산자, `sort` 대신 복사 후 정렬 — `sort` 와 `reverse` 는 원본을 바꾸는 대표적인 함정이다." },
+      { h: "숨은 입력을 조심한다", t: "`Date.now()` 나 전역 설정을 함수 안에서 읽으면, 같은 인자에도 결과가 달라진다. 그런 값은 인자로 받는다 — 그것만으로 함수가 순수해진다." },
+    ],
+    code: { c: "// 원본을 바꾼다\narr.sort();  arr.reverse();  arr.push(x);\n\n// 새로 만든다\n[...arr].sort();  [...arr].reverse();  [...arr, x];\n\n// 숨은 입력을 인자로\nfunction expired(t, now) { return t < now; }", cap: "복사하면 밖이 안 바뀐다" },
+    key: ["같은 입력 → 같은 출력", "`sort`·`reverse` 는 원본을 바꾼다", "숨은 입력은 인자로 받는다"],
+  },
+  q: [
+    {
+      k: "sortedCopy · 정렬해도 원본은 그대로",
+      qq: "오름차순으로 정렬한 <b>새 배열</b>을 돌려주세요. 원본은 <b>그대로</b>여야 합니다.",
+      src: "function sortedCopy(xs) {\n  return xs.sort((a, b) => a - b);\n}\n",
+      sol: "function sortedCopy(xs) {\n  return [...xs].sort((a, b) => a - b);\n}\n",
+      tests: [["sortedCopy([3,1,2])", "[1,2,3]"], ["(() => { const a = [3,1,2]; sortedCopy(a); return a; })()", "[3,1,2]"], ["sortedCopy([])", "[]"]],
+      edge: [["sortedCopy([10,9])", "[9,10]"], ["(() => { const a = [2,1]; const b = sortedCopy(a); return a[0]; })()", "2"]],
+      ex: "`sort` 는 새 배열을 주는 것처럼 보이지만 **원본을 정렬하고 그것을 돌려줍니다**. 반환값만 확인하면 통과해서, 화면 목록이 원래 순서를 잃은 뒤에야 발견돼요. 앞에 `[...xs]` 하나면 끝납니다.",
+    },
+    {
+      k: "isExpired · 시계를 인자로 받기",
+      qq: "만료 시각과 <b>현재 시각</b>을 받아 만료됐으면 true 를 돌려주세요.",
+      src: "function isExpired(t) {\n  return t < Date.now();\n}\n",
+      sol: "function isExpired(t, now) {\n  return t < now;\n}\n",
+      tests: [["isExpired(100, 200)", "true"], ["isExpired(300, 200)", "false"], ["isExpired(200, 200)", "false"]],
+      edge: [["isExpired(0, 1)", "true"], ["isExpired(1, 1)", "false"]],
+      ex: "함수 안에서 시계를 읽으면 같은 인자에도 결과가 달라집니다 — '어제는 통과했는데 오늘은 실패하는 테스트' 의 정체예요. 시간을 인자로 받으면 만료 직전·직후를 마음대로 시험할 수 있습니다.",
+    },
+    {
+      k: "addItem · 새 상태를 만들어 돌려주기",
+      qq: "장바구니 객체 <code>{items: [...]}</code> 에 항목을 더한 <b>새 객체</b>를 돌려주세요. 원본은 그대로입니다.",
+      src: "function addItem(cart, item) {\n  cart.items.push(item);\n  return cart;\n}\n",
+      sol: "function addItem(cart, item) {\n  return { ...cart, items: [...cart.items, item] };\n}\n",
+      tests: [["addItem({items:['a']}, 'b')", "{items:['a','b']}"], ["(() => { const c = {items:['a']}; addItem(c, 'b'); return c.items; })()", "['a']"], ["addItem({items:[]}, 'x')", "{items:['x']}"]],
+      edge: [["(() => { const c = {items:[]}; const d = addItem(c,'x'); return c === d; })()", "false"], ["addItem({items:['a'], id: 1}, 'b')", "{items:['a','b'], id: 1}"]],
+      ex: "원본을 바꿔서 돌려주면 새 객체가 아니라 **같은 객체**입니다. 이전 상태와 견줘 화면을 다시 그리는 프레임워크는 '안 바뀌었다' 고 판단해 갱신을 건너뛰어요 — 리액트에서 '상태를 바꿨는데 화면이 그대로' 인 사고의 대부분이 이것입니다.",
+    },
+  ],
+},
+/* ── 고차함수와 합성 ─────────────────────────────────────── */
+{
+  unit: "고차함수와 함수 합성",
+  lesson: "직접 짜 보기 — 함수를 받고 함수를 돌려주기",
+  th: {
+    sum: "고차함수는 **함수를 값처럼 다루는 함수**다. 그래서 '무엇을 할지' 를 인자로 넘길 수 있다.",
+    body: [
+      { h: "동작을 인자로 넘긴다", t: "정렬 기준, 거를 조건, 바꾸는 방법을 함수로 받으면 하나의 틀로 온갖 경우를 다룰 수 있다. `sort(비교함수)` 가 바로 그것이다." },
+      { h: "reduce 는 나머지를 다 만든다", t: "`map` 도 `filter` 도 `reduce` 로 쓸 수 있다. 초기값과 '한 걸음' 만 정하면 나머지는 같은 모양이다 — 초기값을 빠뜨리면 빈 배열에서 터진다." },
+      { h: "합성은 이어 붙이기", t: "`compose(f, g)(x)` 는 `f(g(x))` 다. 작은 함수 여럿을 이름 붙여 두고 필요할 때 이어 붙이면, 새 조합을 만드는 데 새 코드가 거의 안 든다." },
+      { h: "이름을 붙이면 읽힌다", t: "`xs.filter(x => x.age >= 19)` 보다 `xs.filter(isAdult)` 가 낫다. 조건에 이름을 주는 것만으로 주석이 필요 없어진다." },
+    ],
+    code: { c: "const compose = (f, g) => x => f(g(x));\nconst pipe = (...fns) => x => fns.reduce((v, f) => f(v), x);\n\nxs.reduce((acc, x) => acc + x, 0);   // 초기값 필수", cap: "함수도 값이다" },
+    key: ["동작을 인자로 넘긴다", "`reduce` 는 초기값을 준다", "조건에 이름을 붙인다"],
+  },
+  q: [
+    {
+      k: "sumOf · 무엇을 더할지 넘겨받기",
+      qq: "배열과 <b>값을 꺼내는 함수</b>를 받아 그 값들의 합을 돌려주세요. 빈 배열이면 0 입니다.",
+      src: "function sumOf(xs, f) {\n  return xs.map(f).reduce((a, b) => a + b);\n}\n",
+      sol: "function sumOf(xs, f) {\n  return xs.reduce((acc, x) => acc + f(x), 0);\n}\n",
+      tests: [["sumOf([{n:1},{n:2}], o => o.n)", "3"], ["sumOf([], o => o.n)", "0"], ["sumOf([1,2,3], x => x * 2)", "12"]],
+      edge: [["sumOf([{n:5}], o => o.n)", "5"], ["sumOf([0,0], x => x)", "0"]],
+      ex: "초기값 없는 `reduce` 는 빈 배열에서 예외를 던집니다 — 목록이 비는 것은 예외적인 상황이 아니라 매일 일어나는 일이에요. 초기값 `0` 하나가 그 경계를 없앱니다.",
+    },
+    {
+      k: "compose2 · 두 함수를 이어 붙이기",
+      qq: "<code>compose2(f, g)(x)</code> 가 <code>f(g(x))</code> 가 되게 만드세요.",
+      src: "function compose2(f, g) {\n  return x => g(f(x));\n}\n",
+      sol: "function compose2(f, g) {\n  return x => f(g(x));\n}\n",
+      tests: [["compose2(x => x + 1, x => x * 10)(1)", "11"], ["compose2(x => x * 10, x => x + 1)(1)", "20"], ["compose2(x => x, x => x)(5)", "5"]],
+      edge: [["compose2(s => s.length, n => String(n))(1000)", "4"], ["compose2(x => x - 1, x => x - 1)(10)", "8"]],
+      ex: "`compose` 는 수학의 합성 표기(f∘g)를 따라 **오른쪽부터** 적용합니다. 왼쪽부터 하고 싶으면 그건 `pipe` 예요 — 이름이 다른 이유가 순서라서, 둘을 섞으면 결과가 조용히 뒤집힙니다.",
+    },
+    {
+      k: "byKey · 정렬 기준을 만들어 주기",
+      qq: "키 이름을 받아 <b>그 키로 오름차순 비교하는 함수</b>를 돌려주세요. 정렬에 바로 넘길 수 있어야 합니다.",
+      src: "function byKey(k) {\n  return (a, b) => a[k] > b[k];\n}\n",
+      sol: "function byKey(k) {\n  return (a, b) => (a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0);\n}\n",
+      tests: [["[{n:3},{n:1},{n:2}].sort(byKey('n')).map(o => o.n)", "[1,2,3]"], ["byKey('n')({n:1},{n:2})", "-1"], ["byKey('n')({n:2},{n:2})", "0"]],
+      edge: [["byKey('n')({n:2},{n:1})", "1"], ["[{s:'b'},{s:'a'}].sort(byKey('s')).map(o => o.s)", "['a','b']"]],
+      ex: "비교 함수는 음수·0·양수를 돌려줘야 합니다. `true`/`false` 를 주면 각각 1과 0으로 읽혀 '작다' 를 표현할 방법이 없어져요 — 원소가 적으면 우연히 맞기도 해서 더 나쁩니다.",
+    },
+  ],
+},
+/* ── 커링·부분적용·ADT ───────────────────────────────────── */
+{
+  unit: "커링, 부분적용, 대수적 데이터 타입",
+  lesson: "직접 짜 보기 — 인자를 나눠 받고, 경우를 나눠 담기",
+  th: {
+    sum: "커링은 **인자를 한 번에 다 안 받는 것**이고, ADT 는 **가능한 경우를 타입으로 못 박는 것**이다.",
+    body: [
+      { h: "부분적용은 설정을 미리 고정한다", t: "`log('ERROR')` 로 수준을 고정한 함수를 만들어 두면, 쓰는 자리에서는 메시지만 넘기면 된다. 같은 인자를 반복해 적는 일이 사라진다." },
+      { h: "커링은 합성을 쉽게 한다", t: "인자가 하나인 함수끼리는 그냥 이어 붙일 수 있다. 커링해 두면 `map(add(1))` 처럼 바로 넘길 수 있다." },
+      { h: "합 타입은 '둘 중 하나'", t: "성공이거나 실패, 값이 있거나 없거나. 두 경우를 한 값으로 담고 꺼낼 때 반드시 갈라 보게 하면, '실패인데 값을 읽는' 코드가 아예 안 만들어진다." },
+      { h: "null 대신 경우를 만든다", t: "`null` 은 '없음' 을 뜻하지만 왜 없는지는 말해 주지 않는다. `{ok:false, error:'…'}` 는 이유까지 담아, 부르는 쪽이 제대로 다루게 만든다." },
+    ],
+    code: { c: "const add = a => b => a + b;\nconst add1 = add(1);\n[1,2,3].map(add1);      // [2,3,4]\n\n// 합 타입\n{ ok: true,  value: 5 }\n{ ok: false, error: '없음' }", cap: "나눠 받고, 갈라 담는다" },
+    key: ["부분적용은 설정을 고정", "커링하면 합성이 쉽다", "실패도 값으로 담는다"],
+  },
+  q: [
+    {
+      k: "curry2 · 인자를 나눠 받기",
+      qq: "두 인자 함수를 받아 <code>f(a)(b)</code> 로 부를 수 있게 바꾸세요.",
+      src: "function curry2(f) {\n  return (a, b) => f(a, b);\n}\n",
+      sol: "function curry2(f) {\n  return a => b => f(a, b);\n}\n",
+      tests: [["curry2((a,b) => a + b)(1)(2)", "3"], ["[1,2,3].map(curry2((a,b) => a + b)(10))", "[11,12,13]"], ["curry2((a,b) => a * b)(3)(4)", "12"]],
+      edge: [["typeof curry2((a,b) => a)(1)", "'function'"], ["curry2((a,b) => b)(1)(9)", "9"]],
+      ex: "두 인자를 한 번에 받으면 `map` 에 바로 넘길 수 없습니다 — `map` 은 인자 하나짜리 함수를 기대하거든요. 나눠 받으면 첫 인자를 고정한 함수가 그대로 하나짜리가 되어 어디든 끼워 넣을 수 있습니다.",
+    },
+    {
+      k: "tryParse · 실패도 값으로 담기",
+      qq: "문자열을 정수로 읽어 <code>{ok:true, value:n}</code> 또는 <code>{ok:false, error:'정수가 아님'}</code> 을 돌려주세요. 공백뿐이거나 숫자가 아니면 실패입니다.",
+      src: "function tryParse(s) {\n  return { ok: true, value: parseInt(s, 10) };\n}\n",
+      sol: "function tryParse(s) {\n  const t = s.trim();\n  if (t === '' || !/^-?\\d+$/.test(t)) return { ok: false, error: '정수가 아님' };\n  return { ok: true, value: Number(t) };\n}\n",
+      tests: [["tryParse('42')", "{ok:true, value:42}"], ["tryParse('abc')", "{ok:false, error:'정수가 아님'}"], ["tryParse('  7 ')", "{ok:true, value:7}"]],
+      edge: [["tryParse('')", "{ok:false, error:'정수가 아님'}"], ["tryParse('12abc')", "{ok:false, error:'정수가 아님'}"], ["tryParse('-3')", "{ok:true, value:-3}"]],
+      ex: "`parseInt('12abc')` 는 12 를 돌려줍니다 — 앞에서 읽히는 만큼만 읽고 나머지를 버려요. 실패가 성공처럼 보이는 겁니다. 그리고 `parseInt('abc')` 의 NaN 을 `ok:true` 로 감싸면, 부르는 쪽은 그 NaN 을 계산에 그대로 씁니다.",
+    },
+    {
+      k: "mapOk · 성공일 때만 이어 가기",
+      qq: "<code>{ok, value, error}</code> 와 함수를 받아, <b>성공이면</b> 값에 함수를 적용한 새 결과를, <b>실패면 그대로</b> 돌려주세요.",
+      src: "function mapOk(r, f) {\n  return { ...r, value: f(r.value) };\n}\n",
+      sol: "function mapOk(r, f) {\n  if (!r.ok) return r;\n  return { ok: true, value: f(r.value) };\n}\n",
+      tests: [["mapOk({ok:true, value:2}, x => x * 10)", "{ok:true, value:20}"], ["mapOk({ok:false, error:'없음'}, x => x * 10)", "{ok:false, error:'없음'}"], ["mapOk({ok:true, value:0}, x => x + 1)", "{ok:true, value:1}"]],
+      edge: [["mapOk({ok:false, error:'e'}, () => { throw new Error('불려선 안 됨'); })", "{ok:false, error:'e'}"], ["mapOk({ok:true, value:'a'}, s => s + 'b')", "{ok:true, value:'ab'}"]],
+      ex: "실패한 결과에도 함수를 적용하면 `undefined` 가 계산에 들어가거나 그 자리에서 터집니다. 실패를 만나면 더 진행하지 않고 그대로 흘려보내는 것 — 그게 합 타입을 쓰는 이유예요. 오류 처리가 흐름에서 자연히 빠집니다.",
+    },
+  ],
+},
+];
