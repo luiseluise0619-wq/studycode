@@ -67,6 +67,10 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
   await p.waitForFunction(() => typeof testDoc === "function" && typeof gradeSql === "function" && typeof htmlTestDoc === "function" && typeof reactTestDoc === "function", { timeout: 60000 });
 
   const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(JSASYNC, "js")).concat(flat(JS3, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(SQL3, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react")).concat(flat(REACTA, "react")).concat(flat(REACT3, "react"));
+  /* 한 언어만 다시 보고 싶을 때가 있다 — React 는 한 문항에 최대 24초라
+     전체를 다시 돌리면 15분이 넘는다. PW_ONLY=react 처럼 골라서 돌린다. */
+  const only = process.env.PW_ONLY;
+  const items2 = only ? items.filter(x => x.lang === only) : items;
   const out = await p.evaluate(async (items) => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const res = [];
@@ -161,7 +165,7 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
       await sleep(10);
     }
     return res;
-  }, items);
+  }, items2);
 
   /* 미룬 레이아웃 문항을 최상위 페이지에서 채점한다. 하네스는 결과를 window.__cr_result
      에도 남기므로 그것을 읽는다 — 채점 규칙은 여전히 앱 것 그대로다. */

@@ -196,12 +196,13 @@ module.exports = [
       q: "폼을 제출하면 <b>페이지를 새로 열지 않고</b> <code>.out</code> 에 입력값이 나오게 하세요.",
       src: "function App() {\n  const [v, setV] = React.useState('가');\n  const [out, setOut] = React.useState('');\n  return (\n    <form onSubmit={() => setOut(v)}>\n      <input className=\"in\" value={v} onChange={(e) => setV(e.target.value)} />\n      <button className=\"go\" type=\"submit\">보내기</button>\n      <span className=\"out\">{out}</span>\n    </form>\n  );\n}",
       sol: "function App() {\n  const [v, setV] = React.useState('가');\n  const [out, setOut] = React.useState('');\n  return (\n    <form onSubmit={(e) => { e.preventDefault(); setOut(v); }}>\n      <input className=\"in\" value={v} onChange={(e) => setV(e.target.value)} />\n      <button className=\"go\" type=\"submit\">보내기</button>\n      <span className=\"out\">{out}</span>\n    </form>\n  );\n}",
+      /* 버튼을 눌러 진짜로 제출시키지 않는다. 검사용 iframe 은 샌드박스라 폼 전송이
+         아예 막히고, 그러면 submit 이벤트가 React 까지 오지 않아 정답도 떨어진다.
+         대신 취소 가능한 submit 이벤트를 직접 보내고, 막혔는지를 그 이벤트에서 읽는다. */
       tests: [
         { d: "처음에는 비어 있다", js: "TXT('.out')===''" },
-        { d: "보내면 값이 나온다", js: "(CLICK('.go'), TXT('.out')==='가')" },
-        /* 캡처가 아니라 버블 단계로 듣는다. 캡처는 React 의 처리기보다 먼저 돌아서,
-   막았는지 안 막았는지가 아직 정해지지 않은 시점의 값을 보게 된다. */
-        { d: "기본 동작을 막았다", js: "(function(){var ok=false;var h=function(e){ok=e.defaultPrevented;};document.addEventListener('submit',h);CLICK('.go');document.removeEventListener('submit',h);return ok;})()" },
+        { d: "보내면 값이 나온다", js: "(function(){var ev=new Event('submit',{bubbles:true,cancelable:true});ReactDOM.flushSync(function(){Q('form').dispatchEvent(ev);});return TXT('.out')==='가';})()" },
+        { d: "기본 동작을 막았다", js: "(function(){var ev=new Event('submit',{bubbles:true,cancelable:true});ReactDOM.flushSync(function(){Q('form').dispatchEvent(ev);});return ev.defaultPrevented;})()" },
       ],
       ex: "폼 제출은 브라우저가 페이지를 새로 여는 기본 동작을 갖고 있습니다. React 앱에서는 대개 원하지 않는 동작이라, preventDefault 로 막지 않으면 입력하던 값이 통째로 사라져요.",
     },
@@ -263,7 +264,9 @@ module.exports = [
       sol: "function App() {\n  const [on, setOn] = React.useState(false);\n  const [t, setT] = React.useState(0);\n  React.useEffect(() => {\n    if (!on) return;\n    const id = setInterval(() => setT((v) => v + 1), 20);\n    return () => clearInterval(id);\n  }, [on]);\n  return (\n    <div>\n      <span className=\"tick\">{t}</span>\n      <button className=\"on\" onClick={() => setOn(!on)}>{on ? '끄기' : '켜기'}</button>\n    </div>\n  );\n}",
       tests: [
         { d: "켜면 올라간다", js: "(CLICK('.on'), new Promise(function(r){setTimeout(function(){r(Number(TXT('.tick'))>0);},120);}))" },
-        { d: "끄면 멈춘다", js: "(CLICK('.on'), new Promise(function(r){var a=TXT('.tick');setTimeout(function(){r(TXT('.tick')===a);},200);}))" },
+        /* 끈 직후가 아니라 조금 뒤에 기준값을 잡는다. 바로 읽으면 아직 처리되지 않은
+           마지막 틱이 끼어들어, 제대로 치운 정답도 '아직 도는 중' 으로 보인다. */
+        { d: "끄면 멈춘다", js: "(CLICK('.on'), new Promise(function(r){setTimeout(function(){var a=TXT('.tick');setTimeout(function(){r(TXT('.tick')===a);},200);},80);}))" },
       ],
       ex: "타이머를 걸고 치우지 않으면 껐다고 생각한 뒤에도 계속 돕니다. 켰다 껐다를 반복하면 그만큼 겹쳐서 더 빨리 올라가요. useEffect 가 돌려주는 함수에서 없애야 합니다.",
     },
