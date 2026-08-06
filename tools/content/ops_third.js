@@ -1,0 +1,276 @@
+/* 데브옵스 3차 — 실습이 하나도 없던 6개 유닛. JS 로 채점한다.
+
+   클러스터가 없어도 판단은 연습할 수 있다. 롤아웃 대수 계산, 리소스 요청과
+   한도, 배포 전략 판정, 셸 종료 코드 규약은 전부 규칙이라 함수로 짜진다. */
+module.exports = [
+/* ── Linux 운영·셸 ───────────────────────────────────────── */
+{
+  unit: "Linux 운영·셸 실전",
+  lesson: "직접 짜 보기 — 실패를 조용히 지나치지 않기",
+  th: {
+    sum: "셸 스크립트의 기본 동작은 **실패해도 다음 줄을 실행하는 것**이다. 그게 사고의 근원이다.",
+    body: [
+      { h: "종료 코드 0 만 성공이다", t: "명령은 성공하면 0, 실패하면 0이 아닌 값을 남긴다. 스크립트는 이 값을 안 보면 실패를 못 알아챈다 — `set -e` 는 실패하는 순간 멈추게 해 준다." },
+      { h: "파이프의 실패는 숨는다", t: "`a | b` 의 종료 코드는 기본적으로 마지막 명령 `b` 의 것이다. `a` 가 실패해도 `b` 가 성공하면 전체가 성공으로 보인다 — `set -o pipefail` 로 이걸 뒤집는다." },
+      { h: "정의 안 된 변수는 빈 문자열", t: "오타 난 변수는 조용히 빈 값이 되고, `rm -rf $DIR/` 이 `rm -rf /` 가 된다. `set -u` 는 그런 변수를 오류로 만든다." },
+      { h: "변수는 큰따옴표로 감싼다", t: "공백이 든 경로가 여러 인자로 쪼개진다. `\"$path\"` 로 감싸는 습관 하나가 파일 이름에 공백이 들어간 날의 사고를 막는다." },
+    ],
+    code: { c: "#!/usr/bin/env bash\nset -euo pipefail\n\ncp \"$src\" \"$dst\"        # 따옴표\n\n# 종료 코드: 0 만 성공\ncmd || { echo 실패; exit 1; }", cap: "실패를 소리 나게 만든다" },
+    key: ["0 만 성공이다", "`pipefail` 이 없으면 앞의 실패가 숨는다", "변수는 따옴표로 감싼다"],
+  },
+  q: [
+    {
+      k: "pipelineStatus · 파이프의 진짜 결과",
+      qq: "명령별 종료 코드 배열과 <code>pipefail</code> 여부를 받아 <b>파이프라인의 종료 코드</b>를 돌려주세요. <code>pipefail</code> 이면 <b>0 이 아닌 마지막 값</b>, 아니면 <b>맨 끝 값</b>입니다. 비면 0 입니다.",
+      src: "function pipelineStatus(codes, pipefail) {\n  return codes.length ? codes[codes.length - 1] : 0;\n}\n",
+      sol: "function pipelineStatus(codes, pipefail) {\n  if (!codes.length) return 0;\n  if (!pipefail) return codes[codes.length - 1];\n  const bad = codes.filter(c => c !== 0);\n  return bad.length ? bad[bad.length - 1] : 0;\n}\n",
+      tests: [["pipelineStatus([1, 0], false)", "0"], ["pipelineStatus([1, 0], true)", "1"], ["pipelineStatus([0, 0], true)", "0"]],
+      edge: [["pipelineStatus([], true)", "0"], ["pipelineStatus([2, 3, 0], true)", "3"], ["pipelineStatus([0, 5], false)", "5"]],
+      ex: "`curl … | grep …` 에서 curl 이 실패해도 grep 이 성공하면 스크립트는 성공으로 봅니다 — 빈 파일을 받아 놓고 배포를 이어 가는 거예요. `pipefail` 하나가 그 침묵을 깹니다.",
+    },
+    {
+      k: "quoteArgs · 공백이 든 경로",
+      qq: "인자 배열을 받아 <b>공백이 든 것만</b> 큰따옴표로 감싼 배열을 돌려주세요.",
+      src: "function quoteArgs(args) {\n  return args;\n}\n",
+      sol: "function quoteArgs(args) {\n  return args.map(a => (a.includes(' ') ? '\"' + a + '\"' : a));\n}\n",
+      tests: [["quoteArgs(['a', 'b c'])", "['a', '\"b c\"']"], ["quoteArgs(['x'])", "['x']"], ["quoteArgs([])", "[]"]],
+      edge: [["quoteArgs([' '])", "['\" \"']"], ["quoteArgs(['a b', 'c d'])", "['\"a b\"', '\"c d\"']"]],
+      ex: "`/tmp/my file.log` 를 감싸지 않으면 셸이 `/tmp/my` 와 `file.log` 두 인자로 쪼갭니다. `rm` 이라면 엉뚱한 파일을 지우고, `cp` 라면 '그런 파일 없음' 이 나요 — 파일 이름에 공백이 들어간 그날 처음 터집니다.",
+    },
+    {
+      k: "safePath · 빈 변수는 위험하다",
+      qq: "기준 경로와 하위 경로를 받아 합친 경로를 돌려주세요. <b>어느 하나라도 비어 있으면</b> <code>null</code> 입니다.",
+      src: "function safePath(base, sub) {\n  return base + '/' + sub;\n}\n",
+      sol: "function safePath(base, sub) {\n  if (!base || !sub) return null;\n  return base + '/' + sub;\n}\n",
+      tests: [["safePath('/var/app', 'logs')", "'/var/app/logs'"], ["safePath('', 'logs')", "null"], ["safePath('/var/app', '')", "null"]],
+      edge: [["safePath(undefined, 'x')", "null"], ["safePath('/a', undefined)", "null"]],
+      ex: "변수 이름을 오타 내면 셸에서는 빈 문자열이 됩니다 — `rm -rf $DIR/` 이 `rm -rf /` 가 되는 유명한 사고가 이거예요. 경로를 만들기 전에 '비어 있지 않은가' 를 묻는 한 줄이 그 사고를 막습니다.",
+    },
+  ],
+},
+/* ── CI/CD 파이프라인 설계 ──────────────────────────────── */
+{
+  unit: "CI/CD 파이프라인 설계",
+  lesson: "직접 짜 보기 — 빨리 실패하고 늦게 배포하기",
+  th: {
+    sum: "좋은 파이프라인은 **싼 검사를 먼저 돌려 빨리 실패하고**, 비싼 것은 나중에 한다.",
+    body: [
+      { h: "순서가 피드백 속도를 정한다", t: "린트는 10초, 단위 테스트는 2분, E2E 는 20분이다. 린트를 마지막에 두면 세미콜론 하나 때문에 22분을 기다린다 — 싼 것부터 세우면 대부분의 실패가 몇 초 만에 드러난다." },
+      { h: "캐시는 의존성에만", t: "`node_modules` 처럼 잠금 파일 해시로 키를 잡을 수 있는 것만 캐시한다. 빌드 산출물을 캐시했다가 옛것이 섞이면, 재현되지 않는 실패를 며칠 쫓게 된다." },
+      { h: "같은 커밋은 같은 결과여야 한다", t: "빌드가 시각이나 네트워크 상태에 따라 달라지면 '내 컴퓨터에서는 됐는데' 가 CI 에서도 벌어진다. 버전을 고정하고 시각을 인자로 받는다." },
+      { h: "배포 권한은 파이프라인만", t: "사람이 직접 배포할 수 있으면 기록이 남지 않고, 무엇이 배포됐는지 아무도 모른다. 배포를 파이프라인 하나로 좁혀야 롤백도 한 곳에서 된다." },
+    ],
+    code: { c: "lint(10s) → unit(2m) → build(3m) → e2e(20m) → deploy\n\ncache key = hash(package-lock.json)\n\n같은 커밋 → 같은 산출물", cap: "싼 것부터, 빨리 실패하게" },
+    key: ["싼 검사를 먼저", "캐시 키는 잠금 파일 해시", "배포는 파이프라인만"],
+  },
+  q: [
+    {
+      k: "orderStages · 싼 것부터",
+      qq: "<code>[{name, seconds}]</code> 를 받아 <b>시간이 짧은 순</b>으로 이름 배열을 돌려주세요. 같으면 <b>이름 순</b>입니다.",
+      src: "function orderStages(stages) {\n  return stages.map(s => s.name).sort();\n}\n",
+      sol: "function orderStages(stages) {\n  return [...stages]\n    .sort((a, b) => a.seconds - b.seconds || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))\n    .map(s => s.name);\n}\n",
+      tests: [["orderStages([{name:'e2e',seconds:1200},{name:'lint',seconds:10}])", "['lint','e2e']"], ["orderStages([{name:'b',seconds:5},{name:'a',seconds:5}])", "['a','b']"], ["orderStages([])", "[]"]],
+      edge: [["orderStages([{name:'z',seconds:1}])", "['z']"], ["(() => { const s = [{name:'e2e',seconds:20},{name:'a',seconds:1}]; orderStages(s); return s[0].name; })()", "'e2e'"]],
+      ex: "이름순으로 세우면 e2e 가 lint 보다 앞에 옵니다 — 오타 하나 때문에 20분을 기다리는 파이프라인이 되는 거예요. 그리고 `sort` 는 원본을 정렬하니, 넘겨받은 설정 배열이 조용히 바뀝니다.",
+    },
+    {
+      k: "cacheKeyOf · 무엇으로 키를 잡을까",
+      qq: "파일 이름과 해시를 담은 객체를 받아, <b>잠금 파일</b>(<code>package-lock.json</code>·<code>yarn.lock</code>)의 해시만 이어 붙인 키를 돌려주세요. 없으면 <code>'no-cache'</code> 입니다.",
+      src: "function cacheKeyOf(files) {\n  return Object.values(files).join('-');\n}\n",
+      sol: "function cacheKeyOf(files) {\n  const names = ['package-lock.json', 'yarn.lock'];\n  const parts = names.filter(n => n in files).map(n => files[n]);\n  return parts.length ? parts.join('-') : 'no-cache';\n}\n",
+      tests: [["cacheKeyOf({'package-lock.json':'abc'})", "'abc'"], ["cacheKeyOf({'src/a.js':'x'})", "'no-cache'"], ["cacheKeyOf({'package-lock.json':'a','yarn.lock':'b'})", "'a-b'"]],
+      edge: [["cacheKeyOf({})", "'no-cache'"], ["cacheKeyOf({'yarn.lock':'y','src/a.js':'x'})", "'y'"]],
+      ex: "소스 파일까지 키에 넣으면 커밋마다 키가 달라져 캐시가 한 번도 안 맞습니다 — 캐시를 켜 두고도 매번 처음부터 받는 거예요. 의존성은 잠금 파일이 바뀔 때만 달라지니, 그것만 보면 됩니다.",
+    },
+    {
+      k: "reproducible · 같은 커밋, 같은 산출물",
+      qq: "빌드 기록 <code>[{commit, artifact}]</code> 에서 <b>같은 커밋인데 산출물이 다른</b> 커밋을 정렬해 돌려주세요.",
+      src: "function reproducible(builds) {\n  return [...new Set(builds.map(b => b.commit))].sort();\n}\n",
+      sol: "function reproducible(builds) {\n  const seen = {}, bad = new Set();\n  for (const b of builds) {\n    if (b.commit in seen && seen[b.commit] !== b.artifact) bad.add(b.commit);\n    seen[b.commit] = b.artifact;\n  }\n  return [...bad].sort();\n}\n",
+      tests: [["reproducible([{commit:'a',artifact:'1'},{commit:'a',artifact:'2'}])", "['a']"], ["reproducible([{commit:'a',artifact:'1'},{commit:'a',artifact:'1'}])", "[]"], ["reproducible([])", "[]"]],
+      edge: [["reproducible([{commit:'b',artifact:'1'},{commit:'a',artifact:'1'},{commit:'a',artifact:'9'}])", "['a']"], ["reproducible([{commit:'a',artifact:'1'}])", "[]"]],
+      ex: "같은 커밋에서 다른 결과가 나오면, 빌드가 시각·네트워크·설치된 도구 버전 같은 기록되지 않은 것에 기대고 있다는 뜻입니다. 그 상태에서는 '이 버전이 정말 이 코드인가' 를 아무도 보증할 수 없어요.",
+    },
+  ],
+},
+/* ── Kubernetes 운영 ─────────────────────────────────────── */
+{
+  unit: "Kubernetes 운영",
+  lesson: "직접 짜 보기 — 몇 개를 띄우고 몇 개를 내릴까",
+  th: {
+    sum: "쿠버네티스 운영의 핵심은 **원하는 상태를 적어 두면 알아서 맞춰 준다**는 것이다.",
+    body: [
+      { h: "요청(request)과 한도(limit)는 다르다", t: "요청은 '이만큼은 확보해 달라' 로 스케줄링에 쓰이고, 한도는 '이 이상은 못 쓴다' 로 제한에 쓰인다. 요청을 안 적으면 노드에 과하게 몰려 서로 굶는다." },
+      { h: "메모리 한도를 넘으면 죽는다", t: "CPU 는 한도를 넘으면 느려질 뿐이지만, 메모리는 넘는 순간 OOMKilled 로 컨테이너가 종료된다. 재시작이 반복되면 CrashLoopBackOff 다." },
+      { h: "롤링 업데이트는 여유분으로 굴린다", t: "`maxUnavailable` 만큼 내리고 `maxSurge` 만큼 더 띄우며 교체한다. 둘 다 0이면 아무것도 못 바꾼다 — 실제로 배포가 멈춰 있는 흔한 설정 실수다." },
+      { h: "readiness 와 liveness 는 다른 질문", t: "readiness 는 '지금 트래픽을 받아도 되나', liveness 는 '살아 있나' 다. 시작이 느린 앱에 liveness 를 짧게 걸면, 뜨는 도중에 계속 죽임을 당한다." },
+    ],
+    code: { c: "resources:\n  requests: { cpu: 100m, memory: 128Mi }   # 확보\n  limits:   { cpu: 500m, memory: 256Mi }   # 상한\n\nmaxUnavailable: 1\nmaxSurge: 1        # 둘 다 0이면 배포 불가", cap: "원하는 상태를 적어 둔다" },
+    key: ["요청은 확보, 한도는 상한", "메모리 초과는 즉사", "surge/unavailable 이 0이면 멈춘다"],
+  },
+  q: [
+    {
+      k: "canRoll · 이 설정으로 배포가 되나",
+      qq: "<code>maxUnavailable</code> 과 <code>maxSurge</code> 를 받아, <b>둘 중 하나라도 1 이상</b>이면 true 를 돌려주세요.",
+      src: "function canRoll(maxUnavailable, maxSurge) {\n  return maxUnavailable >= 1 && maxSurge >= 1;\n}\n",
+      sol: "function canRoll(maxUnavailable, maxSurge) {\n  return maxUnavailable >= 1 || maxSurge >= 1;\n}\n",
+      tests: [["canRoll(1, 0)", "true"], ["canRoll(0, 1)", "true"], ["canRoll(0, 0)", "false"]],
+      edge: [["canRoll(1, 1)", "true"], ["canRoll(0, 2)", "true"]],
+      ex: "`maxUnavailable: 0` 은 '하나도 내리지 마라', `maxSurge: 0` 은 '하나도 더 띄우지 마라' 입니다. 둘 다 0이면 교체할 방법이 없어 배포가 영원히 진행 중으로 멈춰요 — 오류도 안 나서 원인을 찾기 어렵습니다.",
+    },
+    {
+      k: "fits · 이 노드에 들어가나",
+      qq: "노드의 남은 CPU·메모리와 파드의 <b>요청</b>을 받아, 둘 다 들어가면 true 를 돌려주세요. 판단은 <b>한도가 아니라 요청</b>으로 합니다.",
+      src: "function fits(freeCpu, freeMem, req, limit) {\n  return freeCpu >= limit.cpu && freeMem >= limit.mem;\n}\n",
+      sol: "function fits(freeCpu, freeMem, req, limit) {\n  return freeCpu >= req.cpu && freeMem >= req.mem;\n}\n",
+      tests: [["fits(200, 256, {cpu:100,mem:128}, {cpu:500,mem:512})", "true"], ["fits(50, 256, {cpu:100,mem:128}, {cpu:100,mem:128})", "false"], ["fits(100, 128, {cpu:100,mem:128}, {cpu:100,mem:128})", "true"]],
+      edge: [["fits(1000, 1000, {cpu:0,mem:0}, {cpu:1,mem:1})", "true"], ["fits(100, 100, {cpu:100,mem:200}, {cpu:100,mem:200})", "false"]],
+      ex: "한도로 자리를 잡으면 노드가 대부분 비어 있는데도 파드가 안 뜹니다 — 한도는 '최악의 경우' 라 실제 사용량보다 훨씬 크게 잡아 두거든요. 스케줄러가 보는 것은 요청이고, 그래서 요청을 적어 두는 것이 중요합니다.",
+    },
+    {
+      k: "podPhase · 왜 계속 재시작하나",
+      qq: "메모리 사용량·한도·재시작 횟수를 받아 <code>'OOMKilled'</code>(한도 <b>이상</b>), <code>'CrashLoop'</code>(재시작 5회 <b>이상</b>), <code>'Running'</code> 을 돌려주세요. <b>OOM 을 먼저 봅니다</b>.",
+      src: "function podPhase(mem, limit, restarts) {\n  if (restarts >= 5) return 'CrashLoop';\n  if (mem >= limit) return 'OOMKilled';\n  return 'Running';\n}\n",
+      sol: "function podPhase(mem, limit, restarts) {\n  if (mem >= limit) return 'OOMKilled';\n  if (restarts >= 5) return 'CrashLoop';\n  return 'Running';\n}\n",
+      tests: [["podPhase(300, 256, 9)", "'OOMKilled'"], ["podPhase(100, 256, 9)", "'CrashLoop'"], ["podPhase(100, 256, 0)", "'Running'"]],
+      edge: [["podPhase(256, 256, 0)", "'OOMKilled'"], ["podPhase(255, 256, 5)", "'CrashLoop'"]],
+      ex: "재시작을 먼저 보면 'CrashLoop' 이라는 증상만 알려 주고 원인은 감춥니다 — 메모리가 넘쳐 죽고 있는데 '계속 죽네요' 로 끝나는 거예요. 원인이 보이면 원인을, 안 보이면 증상을 말하는 순서가 진단에 맞습니다.",
+    },
+  ],
+},
+/* ── 모니터링·관측성 ────────────────────────────────────── */
+{
+  unit: "모니터링·관측성",
+  lesson: "직접 짜 보기 — 무엇을 재고 언제 깨울까",
+  th: {
+    sum: "관측성은 **밖에서 본 것만으로 안에서 무슨 일이 일어나는지 알 수 있는 정도**다.",
+    body: [
+      { h: "사용자가 느끼는 것을 잰다", t: "CPU 사용률이 90% 여도 응답이 빠르면 문제가 아니다. 반대로 CPU 가 한가해도 응답이 느리면 문제다 — 지표는 '사용자가 겪는 것'(지연·오류율·처리량)부터 잡는다." },
+      { h: "알림은 행동으로 이어질 때만", t: "지금 아무도 아무 일도 할 수 없는 알림은 곧 무시된다. 무시되기 시작하면 진짜 장애 때도 아무도 안 본다 — 알림 수를 줄이는 것이 알림을 살리는 길이다." },
+      { h: "오류 예산으로 다툼을 줄인다", t: "'99.9% 가용성' 은 한 달에 43분을 쓸 수 있다는 뜻이다. 남아 있으면 배포를 밀어붙이고 다 썼으면 안정화에 쓴다 — 개발과 운영이 같은 숫자를 보게 된다." },
+      { h: "로그·지표·트레이스는 역할이 다르다", t: "지표는 '무엇이 이상한가', 트레이스는 '어디가 느린가', 로그는 '왜 그런가' 를 답한다. 셋 다 필요하고, 셋을 같은 요청 id 로 이을 수 있어야 한다." },
+    ],
+    code: { c: "오류예산 = (1 - SLO) * 전체요청\n남은예산 = 오류예산 - 실제오류\n\n소진율 = 실제오류율 / (1 - SLO)\n소진율 > 1 이면 예산보다 빨리 쓰는 중", cap: "사용자가 겪는 것을 잰다" },
+    key: ["사용자가 느끼는 것을 잰다", "행동으로 이어지는 알림만", "오류 예산으로 판단한다"],
+  },
+  q: [
+    {
+      k: "errorBudget · 얼마나 남았나",
+      qq: "SLO(0~1)·전체 요청 수·실제 오류 수를 받아 <b>남은 오류 예산</b>을 돌려주세요. 음수면 0 입니다.",
+      src: "function errorBudget(slo, total, errors) {\n  return total * slo - errors;\n}\n",
+      sol: "function errorBudget(slo, total, errors) {\n  const budget = total * (1 - slo);\n  return Math.max(0, budget - errors);\n}\n",
+      tests: [["Math.round(errorBudget(0.99, 1000, 5) * 1e6) / 1e6", "5"], ["errorBudget(0.99, 1000, 20)", "0"], ["Math.round(errorBudget(0.999, 10000, 0) * 1e6) / 1e6", "10"]],
+      edge: [["errorBudget(1, 1000, 0)", "0"], ["errorBudget(0.99, 0, 0)", "0"]],
+      ex: "`total * slo` 는 '성공해야 하는 개수' 이지 예산이 아닙니다 — 1000건에 99% 면 예산은 10건인데 990건으로 계산하는 거예요. 백 배 여유가 있다고 착각하면 안정화해야 할 시점을 놓칩니다.",
+    },
+    {
+      k: "burnRate · 예산을 얼마나 빨리 쓰나",
+      qq: "SLO·실제 오류율을 받아 <b>소진율</b>(<code>오류율 / (1 - SLO)</code>)을 돌려주세요. SLO 가 1이면 오류가 있을 때 <code>Infinity</code>, 없으면 0 입니다.",
+      src: "function burnRate(slo, rate) {\n  return rate / slo;\n}\n",
+      sol: "function burnRate(slo, rate) {\n  const budget = 1 - slo;\n  if (budget === 0) return rate > 0 ? Infinity : 0;\n  return rate / budget;\n}\n",
+      tests: [["Math.round(burnRate(0.99, 0.01) * 1e6) / 1e6", "1"], ["Math.round(burnRate(0.99, 0.02) * 1e6) / 1e6", "2"], ["burnRate(0.99, 0)", "0"]],
+      edge: [["burnRate(1, 0.1)", "Infinity"], ["burnRate(1, 0)", "0"], ["Math.round(burnRate(0.9, 0.05) * 1e6) / 1e6", "0.5"]],
+      ex: "SLO 로 나누면 99% 목표에서 오류율 1% 가 0.0101 로 나옵니다 — '거의 안 쓰고 있다' 로 읽히죠. 실제로는 예산을 정확히 예산 속도로 쓰는 중(1.0)이에요. 나눌 것은 목표가 아니라 **허용된 실패 비율**입니다.",
+    },
+    {
+      k: "shouldPage · 지금 깨워야 하나",
+      qq: "소진율·지속 시간(분)·임계 소진율·최소 지속을 받아, <b>둘 다 넘을 때만</b> true 를 돌려주세요.",
+      src: "function shouldPage(burn, minutes, burnThr, minMinutes) {\n  return burn >= burnThr;\n}\n",
+      sol: "function shouldPage(burn, minutes, burnThr, minMinutes) {\n  return burn >= burnThr && minutes >= minMinutes;\n}\n",
+      tests: [["shouldPage(5, 10, 2, 5)", "true"], ["shouldPage(5, 1, 2, 5)", "false"], ["shouldPage(1, 60, 2, 5)", "false"]],
+      edge: [["shouldPage(2, 5, 2, 5)", "true"], ["shouldPage(100, 0, 2, 5)", "false"]],
+      ex: "순간적으로 튄 값 하나로 사람을 깨우면 새벽에 헛걸음을 하게 됩니다. 그런 알림이 몇 번 반복되면 아무도 안 보게 되고, 그때부터 감시는 있으나 마나예요 — '얼마나 나쁜가' 와 '얼마나 오래' 를 함께 물어야 합니다.",
+    },
+  ],
+},
+/* ── 버전 관리와 배포 ───────────────────────────────────── */
+{
+  unit: "버전 관리와 배포",
+  lesson: "직접 짜 보기 — 되돌릴 수 있게 나가기",
+  th: {
+    sum: "배포의 목표는 '무사히 나가는 것' 이 아니라 **잘못됐을 때 빨리 되돌리는 것**이다.",
+    body: [
+      { h: "버전은 약속이다", t: "시맨틱 버전에서 앞자리가 오르면 '고쳐야 쓸 수 있다', 가운데면 '기능이 늘었다', 끝자리면 '버그만 고쳤다' 는 뜻이다. 이 약속을 지켜야 남이 안심하고 올린다." },
+      { h: "블루그린은 통째로 바꾼다", t: "새 버전을 옆에 다 띄워 두고 트래픽을 한 번에 옮긴다. 롤백이 트래픽을 되돌리는 것뿐이라 가장 빠르지만, 자원이 두 배 필요하다." },
+      { h: "카나리는 조금씩 흘린다", t: "1% → 10% → 50% 로 늘리며 지표를 본다. 문제가 있어도 소수만 겪는다 — 대신 두 버전이 동시에 도니, 데이터 형식이 양쪽에서 다 읽혀야 한다." },
+      { h: "마이그레이션은 두 버전을 견뎌야 한다", t: "컬럼을 지우는 배포는 옛 코드가 아직 도는 동안 터진다. '추가 → 양쪽 쓰기 → 코드 교체 → 제거' 로 나눠야 롤백이 가능하다." },
+    ],
+    code: { c: "MAJOR.MINOR.PATCH\n1.2.3 → 2.0.0  깨지는 변경\n     → 1.3.0  기능 추가\n     → 1.2.4  버그 수정\n\n카나리: 1% → 10% → 50% → 100%", cap: "되돌릴 수 있게 나눠 나간다" },
+    key: ["버전 자리마다 뜻이 있다", "카나리는 두 버전이 공존한다", "스키마 변경은 나눠서"],
+  },
+  q: [
+    {
+      k: "bumpVersion · 어느 자리를 올릴까",
+      qq: "버전 문자열과 변경 종류(<code>'break'</code>·<code>'feature'</code>·<code>'fix'</code>)를 받아 다음 버전을 돌려주세요. 앞자리를 올리면 뒤는 0 이 됩니다.",
+      src: "function bumpVersion(v, kind) {\n  const [a, b, c] = v.split('.').map(Number);\n  if (kind === 'break') return (a + 1) + '.' + b + '.' + c;\n  if (kind === 'feature') return a + '.' + (b + 1) + '.' + c;\n  return a + '.' + b + '.' + (c + 1);\n}\n",
+      sol: "function bumpVersion(v, kind) {\n  const [a, b, c] = v.split('.').map(Number);\n  if (kind === 'break') return (a + 1) + '.0.0';\n  if (kind === 'feature') return a + '.' + (b + 1) + '.0';\n  return a + '.' + b + '.' + (c + 1);\n}\n",
+      tests: [["bumpVersion('1.2.3', 'break')", "'2.0.0'"], ["bumpVersion('1.2.3', 'feature')", "'1.3.0'"], ["bumpVersion('1.2.3', 'fix')", "'1.2.4'"]],
+      edge: [["bumpVersion('0.0.9', 'feature')", "'0.1.0'"], ["bumpVersion('9.9.9', 'break')", "'10.0.0'"]],
+      ex: "`2.2.3` 같은 버전이 나오면 '2.2.3 은 1.2.3 보다 패치가 셋 더 붙은 건가?' 를 아무도 답할 수 없습니다. 앞자리를 올리면 뒤가 0으로 돌아간다는 규칙이 있어야 버전만 보고 관계를 읽을 수 있어요.",
+    },
+    {
+      k: "canaryNext · 다음은 몇 퍼센트",
+      qq: "현재 비율과 단계 배열, <b>지표 이상 여부</b>를 받아 다음 비율을 돌려주세요. 이상이 있으면 <b>0</b>(롤백), 없으면 다음 단계, 마지막이면 100 입니다.",
+      src: "function canaryNext(current, steps, bad) {\n  const i = steps.indexOf(current);\n  return i + 1 < steps.length ? steps[i + 1] : 100;\n}\n",
+      sol: "function canaryNext(current, steps, bad) {\n  if (bad) return 0;\n  const i = steps.indexOf(current);\n  if (i < 0 || i + 1 >= steps.length) return 100;\n  return steps[i + 1];\n}\n",
+      tests: [["canaryNext(1, [1,10,50], false)", "10"], ["canaryNext(1, [1,10,50], true)", "0"], ["canaryNext(50, [1,10,50], false)", "100"]],
+      edge: [["canaryNext(99, [1,10,50], false)", "100"], ["canaryNext(50, [1,10,50], true)", "0"]],
+      ex: "지표를 안 보고 다음 단계로 넘기면 카나리가 아니라 그냥 느린 전체 배포입니다 — 조금씩 흘리는 이유가 '이상하면 멈추기 위해서' 인데 멈출 조건이 없는 거예요. 나쁘면 0으로 돌아가는 것이 이 절차의 전부입니다.",
+    },
+    {
+      k: "migrationSafe · 롤백해도 살아남나",
+      qq: "마이그레이션 종류(<code>'addColumn'</code>·<code>'dropColumn'</code>·<code>'addIndex'</code>·<code>'renameColumn'</code>)를 받아, <b>옛 코드가 아직 돌아도 안전하면</b> true 를 돌려주세요.",
+      src: "function migrationSafe(kind) {\n  return kind !== 'dropColumn';\n}\n",
+      sol: "function migrationSafe(kind) {\n  return kind === 'addColumn' || kind === 'addIndex';\n}\n",
+      tests: [["migrationSafe('addColumn')", "true"], ["migrationSafe('dropColumn')", "false"], ["migrationSafe('renameColumn')", "false"]],
+      edge: [["migrationSafe('addIndex')", "true"], ["migrationSafe('무언가')", "false"]],
+      ex: "이름 바꾸기는 지우기와 추가하기를 한 번에 하는 것이라, 옛 코드가 옛 이름을 찾다 터집니다. 카나리든 롤백이든 두 버전이 잠시 함께 도는 순간이 반드시 있어요 — 안전한 것은 '더하는' 변경뿐이고, 나머지는 여러 배포로 나눠야 합니다.",
+    },
+  ],
+},
+/* ── 배포 전략 실무 ─────────────────────────────────────── */
+{
+  unit: "배포 전략 실무 — 블루그린·카나리·롤백",
+  lesson: "직접 짜 보기 — 언제 멈추고 언제 되돌릴까",
+  th: {
+    sum: "배포 전략을 고르는 기준은 **자원 여유**와 **되돌리는 속도**, 그리고 **두 버전을 함께 굴릴 수 있는가**다.",
+    body: [
+      { h: "롤백 시간이 판단을 정한다", t: "블루그린은 트래픽만 되돌리면 되니 몇 초다. 롤링은 다시 굴려야 하니 배포 시간만큼 걸린다 — 장애의 크기는 결국 '되돌리는 데 걸린 시간' 이다." },
+      { h: "자동 롤백 조건을 미리 적어 둔다", t: "'오류율이 기준의 두 배를 5분 넘으면 되돌린다' 를 코드로 적어 두면, 새벽에 판단할 필요가 없다. 사람이 판단하면 늦고, 늦으면 피해가 커진다." },
+      { h: "기능 플래그는 배포와 공개를 나눈다", t: "코드는 배포하되 기능은 꺼 둔다. 켜고 끄는 것이 배포가 아니라 설정 변경이라 즉시 되돌릴 수 있다 — 다만 꺼진 코드가 쌓이지 않게 치우는 일까지가 한 세트다." },
+      { h: "무엇을 배포했는지 남긴다", t: "버전·커밋·시각·누가 를 기록해 두지 않으면, 장애 시각과 배포 시각을 맞춰 볼 수 없다. 원인을 좁히는 가장 싼 방법이 이 기록이다." },
+    ],
+    code: { c: "블루그린: 자원 2배, 롤백 몇 초\n롤링   : 자원 그대로, 롤백 = 배포 시간\n카나리 : 점진 노출, 두 버전 공존\n\n자동 롤백: 오류율 > 기준*2 가 5분 지속", cap: "되돌리는 속도가 피해를 정한다" },
+    key: ["롤백 시간이 곧 피해 크기", "자동 롤백 조건을 미리 적는다", "플래그로 배포와 공개를 나눈다"],
+  },
+  q: [
+    {
+      k: "pickStrategy · 어떤 방식을 고를까",
+      qq: "여유 자원 배수와 <b>두 버전 공존 가능 여부</b>를 받아 <code>'bluegreen'</code>(2배 이상), <code>'canary'</code>(공존 가능), <code>'rolling'</code> 을 돌려주세요. <b>블루그린을 먼저 봅니다</b>.",
+      src: "function pickStrategy(spare, coexist) {\n  return coexist ? 'canary' : 'rolling';\n}\n",
+      sol: "function pickStrategy(spare, coexist) {\n  if (spare >= 2) return 'bluegreen';\n  if (coexist) return 'canary';\n  return 'rolling';\n}\n",
+      tests: [["pickStrategy(2, true)", "'bluegreen'"], ["pickStrategy(1.2, true)", "'canary'"], ["pickStrategy(1, false)", "'rolling'"]],
+      edge: [["pickStrategy(3, false)", "'bluegreen'"], ["pickStrategy(1.9, false)", "'rolling'"]],
+      ex: "자원이 두 배 있으면 블루그린이 거의 언제나 낫습니다 — 롤백이 트래픽을 되돌리는 것뿐이라 몇 초예요. 자원을 안 보고 고르면, 가장 빨리 되돌릴 수 있는 선택지를 그냥 버리는 셈입니다.",
+    },
+    {
+      k: "autoRollback · 되돌릴 조건",
+      qq: "현재 오류율·기준 오류율·지속 시간(분)·최소 지속을 받아, <b>기준의 2배 이상</b>이 <b>최소 지속 이상</b> 이어지면 true 를 돌려주세요. 기준이 0이면 오류율이 0보다 클 때 지속만 봅니다.",
+      src: "function autoRollback(rate, base, minutes, minMinutes) {\n  return rate >= base * 2;\n}\n",
+      sol: "function autoRollback(rate, base, minutes, minMinutes) {\n  const bad = base === 0 ? rate > 0 : rate >= base * 2;\n  return bad && minutes >= minMinutes;\n}\n",
+      tests: [["autoRollback(0.04, 0.02, 10, 5)", "true"], ["autoRollback(0.04, 0.02, 1, 5)", "false"], ["autoRollback(0.03, 0.02, 10, 5)", "false"]],
+      edge: [["autoRollback(0.01, 0, 10, 5)", "true"], ["autoRollback(0, 0, 10, 5)", "false"]],
+      ex: "지속 시간을 안 보면 배포 직후 잠깐 튄 값 하나로 되돌립니다 — 정상 배포가 계속 롤백되면 아무도 그 자동화를 안 믿게 돼요. 그리고 기준이 0인 서비스에서는 `0 >= 0` 이 참이라 언제나 롤백이 걸립니다.",
+    },
+    {
+      k: "flagOn · 누구에게 켜 줄까",
+      qq: "사용자 id·비율(%)·강제 대상 집합을 받아, <b>강제 대상이면 언제나</b> true, 아니면 <b>id 해시가 비율 안</b>일 때 true 를 돌려주세요.",
+      src: "function flagOn(uid, pct, forced) {\n  return forced.has(uid);\n}\n",
+      sol: "function flagOn(uid, pct, forced) {\n  if (forced.has(uid)) return true;\n  let h = 0;\n  for (const ch of String(uid)) h = (h * 31 + ch.charCodeAt(0)) % 1000003;\n  return h % 100 < pct;\n}\n",
+      tests: [["flagOn('u1', 0, new Set(['u1']))", "true"], ["flagOn('u1', 100, new Set())", "true"], ["flagOn('u1', 0, new Set())", "false"]],
+      edge: [["flagOn('u1', 50, new Set()) === flagOn('u1', 50, new Set())", "true"], ["(() => { const s = new Set(); const r = new Set(); for (let i = 0; i < 60; i++) r.add(flagOn('u' + i, 50, s)); return r.size; })()", "2"]],
+      ex: "강제 대상만 보면 비율 노출이 아예 동작하지 않습니다 — 기능 플래그의 절반이 죽은 거예요. 그리고 같은 사용자가 새로고침마다 다른 화면을 보면 고장으로 느끼니, 비율은 반드시 id 를 해시해 고정합니다.",
+    },
+  ],
+},
+];
