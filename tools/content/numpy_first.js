@@ -1,0 +1,368 @@
+/* NumPy 1차 — 실습이 하나도 없던 8개 유닛.
+   브라우저에서는 Pyodide 가 numpy 를 따로 받아 채점한다(spec 의 pkgs).
+
+   테스트 식은 반드시 스칼라·리스트·튜플로 끝나게 적는다.
+   배열끼리 == 를 하면 배열이 나오고, 그것을 bool() 로 판정하는 순간
+   "truth value of an array is ambiguous" 로 터진다 — .tolist() 로 내린다. */
+module.exports = [
+/* ── ndarray 기초 ─────────────────────────────────────────── */
+{
+  unit: "ndarray 기초",
+  lesson: "직접 짜 보기 — 모양을 만들고, 모양을 바꾸고",
+  th: {
+    sum: "ndarray 는 **같은 타입이 줄 맞춰 붙어 있는 상자**다. 그래서 파이썬 리스트보다 훨씬 빠르다.",
+    body: [
+      { h: "리스트와 무엇이 다른가", t: "파이썬 리스트는 칸마다 다른 것을 담을 수 있어서, 값 하나를 꺼낼 때마다 '이건 뭐지' 를 확인한다. ndarray 는 전부 같은 타입이라 확인이 필요 없고 메모리도 붙어 있다. 백만 개를 더할 때 이 차이가 수십 배가 된다." },
+      { h: "shape 는 '몇 줄 몇 칸'", t: "`shape` 는 각 축의 길이를 담은 튜플이다. `(3, 4)` 는 3줄 4칸이라는 뜻이고, `ndim` 은 그 튜플의 길이 — 즉 축이 몇 개인가다. 모양이 안 맞아서 나는 오류는 대부분 shape 를 안 찍어 봐서 생긴다." },
+      { h: "reshape 는 값을 그대로 두고 칸만 다시 나눈다", t: "값의 개수는 그대로여야 한다. 12개짜리를 `(3, 4)` 로는 바꿔도 `(3, 5)` 로는 못 바꾼다. `-1` 을 한 자리에 쓰면 나머지로 알아서 계산한다 — `reshape(3, -1)` 은 '3줄로 나눠 줘' 다." },
+      { h: "dtype 은 나중에 발목을 잡는다", t: "정수 배열에 0.5 를 넣으면 조용히 0 이 된다. 나눗셈이 필요하면 처음부터 `astype(float)` 로 올려 두는 편이 안전하다." },
+    ],
+    code: { c: "a = np.arange(12)          # 0..11\na.shape        # (12,)\nb = a.reshape(3, -1)       # 3줄, 칸 수는 알아서\nb.shape        # (3, 4)\nb.dtype        # int64", cap: "개수는 그대로, 칸만 다시 나눈다" },
+    key: ["`shape` 는 축마다의 길이", "`reshape` 는 개수가 같아야 한다", "`-1` 은 나머지로 계산해 달라는 뜻"],
+  },
+  q: [
+    {
+      k: "grid · 0부터 순서대로 채운 표",
+      qq: "0부터 <code>n*m-1</code> 까지를 <b>n줄 m칸</b> 표로 만들어 돌려주세요.",
+      src: "import numpy as np\n\ndef grid(n, m):\n    return np.arange(n * m)\n",
+      sol: "import numpy as np\n\ndef grid(n, m):\n    return np.arange(n * m).reshape(n, m)\n",
+      tests: [["grid(2, 3).tolist()", "[[0, 1, 2], [3, 4, 5]]"], ["grid(3, 1).tolist()", "[[0], [1], [2]]"], ["grid(2, 2).shape", "(2, 2)"]],
+      edge: [["grid(1, 4).tolist()", "[[0, 1, 2, 3]]"]],
+      ex: "`arange` 는 한 줄짜리를 만들 뿐입니다. 표로 보려면 `reshape` 로 칸을 다시 나눠야 해요. 값의 개수는 그대로이니 `n*m` 만 맞으면 항상 됩니다.",
+    },
+    {
+      k: "describe · 모양을 말로 풀어 주기",
+      qq: "배열을 받아 <code>(축 개수, 전체 원소 수, 마지막 축의 길이)</code> 를 튜플로 돌려주세요.",
+      src: "import numpy as np\n\ndef describe(a):\n    return (a.ndim, len(a), a.shape[0])\n",
+      sol: "import numpy as np\n\ndef describe(a):\n    return (a.ndim, a.size, a.shape[-1])\n",
+      tests: [["describe(np.zeros((3, 4)))", "(2, 12, 4)"], ["describe(np.arange(5))", "(1, 5, 5)"], ["describe(np.zeros((2, 3, 4)))", "(3, 24, 4)"]],
+      edge: [["describe(np.zeros((1, 7)))", "(2, 7, 7)"]],
+      ex: "`len(a)` 는 첫 축의 길이일 뿐이라 전체 개수가 아닙니다 — 그건 `size` 예요. 그리고 `shape[0]` 은 첫 축, 마지막 축은 `shape[-1]` 입니다. 3차원이 들어오면 이 둘의 차이가 바로 드러나요.",
+    },
+    {
+      k: "halve · 나누면 소수가 된다",
+      qq: "정수 배열의 각 값을 <b>2로 나눈 값</b>을 돌려주세요. 0.5 가 사라지면 안 됩니다.",
+      src: "import numpy as np\n\ndef halve(a):\n    out = np.zeros(a.shape, dtype=a.dtype)\n    out[:] = a / 2\n    return out\n",
+      sol: "import numpy as np\n\ndef halve(a):\n    return a / 2\n",
+      tests: [["halve(np.array([1, 2, 3])).tolist()", "[0.5, 1.0, 1.5]"], ["halve(np.array([4, 6])).tolist()", "[2.0, 3.0]"], ["str(halve(np.array([1, 3])).dtype)", "'float64'"]],
+      edge: [["halve(np.array([0, 5])).tolist()", "[0.0, 2.5]"]],
+      ex: "정수 dtype 상자에 0.5 를 넣으면 잘려서 0 이 됩니다. 계산 결과를 원래 상자에 도로 담지 마세요 — `a / 2` 는 이미 float 배열을 새로 만들어 줍니다.",
+    },
+  ],
+},
+/* ── 벡터화와 브로드캐스팅 ────────────────────────────────── */
+{
+  unit: "벡터화와 브로드캐스팅",
+  lesson: "직접 짜 보기 — 반복문 없이 한 번에",
+  th: {
+    sum: "벡터화는 **반복문을 NumPy 안으로 밀어 넣는 것**이다. 같은 일을 C 속도로 한다.",
+    body: [
+      { h: "반복문을 지우면 빨라진다", t: "`for` 로 원소를 하나씩 만지면 파이썬이 한 번에 하나씩 처리한다. `a + b` 처럼 배열끼리 쓰면 그 반복이 컴파일된 코드 안에서 돌아 수십 배 빠르다. 코드도 짧아진다." },
+      { h: "브로드캐스팅은 '모자란 쪽을 늘려 준다'", t: "모양이 다른 둘을 계산할 때, 길이가 1인 축은 상대 길이만큼 늘어난 것처럼 취급한다. `(3, 1)` 과 `(1, 4)` 를 더하면 `(3, 4)` 가 된다. 실제로 복사하지는 않아서 메모리도 안 늘어난다." },
+      { h: "스칼라도 브로드캐스팅이다", t: "`a * 2` 는 2 를 a 모양으로 늘려 곱하는 것이다. 특별한 규칙이 아니라 같은 규칙의 가장 단순한 경우다." },
+      { h: "안 맞으면 그 자리에서 터진다", t: "늘릴 수 없는 조합이면 `operands could not be broadcast` 로 멈춘다. 조용히 틀린 답을 주는 것보다 훨씬 낫다 — 오류 메시지에 두 shape 가 적혀 있으니 그것부터 읽는다." },
+    ],
+    code: { c: "a = np.arange(3).reshape(3, 1)   # (3, 1)\nb = np.arange(4).reshape(1, 4)   # (1, 4)\n(a + b).shape                    # (3, 4)\n\na * 2      # 스칼라도 같은 규칙", cap: "길이 1 인 축이 상대에 맞춰 늘어난다" },
+    key: ["반복문 대신 배열 연산", "길이 1 인 축만 늘어난다", "못 늘리면 그 자리에서 오류"],
+  },
+  q: [
+    {
+      k: "scale_rows · 줄마다 다른 배수",
+      qq: "표의 <b>i번째 줄</b>에 <code>f[i]</code> 를 곱해 주세요. 반복문 없이 한 번에 합니다.",
+      src: "import numpy as np\n\ndef scale_rows(a, f):\n    return a * f\n",
+      sol: "import numpy as np\n\ndef scale_rows(a, f):\n    return a * f.reshape(-1, 1)\n",
+      tests: [["scale_rows(np.ones((2, 3)), np.array([2.0, 5.0])).tolist()", "[[2.0, 2.0, 2.0], [5.0, 5.0, 5.0]]"], ["scale_rows(np.arange(6).reshape(3, 2), np.array([1, 0, 2])).tolist()", "[[0, 1], [0, 0], [8, 10]]"], ["scale_rows(np.ones((3, 3)), np.array([1.0, 2.0, 3.0])).shape", "(3, 3)"]],
+      edge: [["scale_rows(np.ones((1, 2)), np.array([7.0])).tolist()", "[[7.0, 7.0]]"]],
+      ex: "`a * f` 는 f 를 **칸 방향**으로 늘립니다 — 줄이 아니라 열마다 다른 배수가 되는 거예요. 줄마다 곱하려면 f 를 `(n, 1)` 세로 모양으로 세워야 합니다. 정사각형 배열로만 시험하면 이 차이가 안 보입니다.",
+    },
+    {
+      k: "dist2 · 모든 짝의 거리 제곱",
+      qq: "1차원 좌표 두 묶음을 받아 <b>모든 짝</b>의 차이 제곱 표를 만드세요. 결과는 <code>(len(x), len(y))</code> 모양입니다.",
+      src: "import numpy as np\n\ndef dist2(x, y):\n    return (x - y) ** 2\n",
+      sol: "import numpy as np\n\ndef dist2(x, y):\n    return (x.reshape(-1, 1) - y.reshape(1, -1)) ** 2\n",
+      tests: [["dist2(np.array([0, 1]), np.array([0, 2, 4])).tolist()", "[[0, 4, 16], [1, 1, 9]]"], ["dist2(np.array([1, 2, 3]), np.array([1])).tolist()", "[[0], [1], [4]]"], ["dist2(np.arange(4), np.arange(5)).shape", "(4, 5)"]],
+      edge: [["dist2(np.array([5]), np.array([5])).tolist()", "[[0]]"]],
+      ex: "그냥 빼면 길이가 같을 때만 되고, 그것도 짝끼리가 아니라 자리끼리 뺍니다. 한쪽을 세로로 세우면 `(n,1)` 과 `(1,m)` 이 만나 `(n,m)` 표가 저절로 생겨요 — 이중 반복문을 브로드캐스팅이 대신합니다.",
+    },
+    {
+      k: "center · 열마다 평균 빼기",
+      qq: "각 <b>열</b>에서 그 열의 평균을 빼세요. 결과 모양은 원래와 같아야 합니다.",
+      src: "import numpy as np\n\ndef center(a):\n    return a - a.mean()\n",
+      sol: "import numpy as np\n\ndef center(a):\n    return a - a.mean(axis=0)\n",
+      tests: [["center(np.array([[1.0, 10.0], [3.0, 20.0]])).tolist()", "[[-1.0, -5.0], [1.0, 5.0]]"], ["[round(v, 6) for v in center(np.array([[0.0, 0.0], [2.0, 8.0]])).mean(axis=0).tolist()]", "[0.0, 0.0]"], ["center(np.ones((3, 4))).tolist()", "[[0.0]*4]*3"]],
+      edge: [["center(np.array([[5.0]])).tolist()", "[[0.0]]"]],
+      ex: "`a.mean()` 은 표 전체의 평균 하나입니다. 열마다 빼려면 열 방향으로 접은 평균 — `axis=0` — 이 필요해요. 결과가 `(m,)` 이라 브로드캐스팅이 알아서 줄마다 붙여 줍니다.",
+    },
+  ],
+},
+/* ── 집계와 마스킹 ────────────────────────────────────────── */
+{
+  unit: "집계와 마스킹",
+  lesson: "직접 짜 보기 — 골라내고, 접어서 세기",
+  th: {
+    sum: "마스킹은 **참/거짓 배열로 골라내는 것**이고, 집계는 **축을 접어 하나로 줄이는 것**이다.",
+    body: [
+      { h: "비교하면 참/거짓 배열이 나온다", t: "`a > 3` 은 True/False 가 든 같은 모양의 배열이다. 그것을 `a[a > 3]` 처럼 대괄호에 넣으면 True 자리의 값만 1차원으로 뽑힌다. 몇 개가 뽑힐지는 실행해 봐야 알기 때문에 결과는 항상 1차원이다." },
+      { h: "True 는 1이다", t: "그래서 `(a > 3).sum()` 이 '조건을 만족하는 개수' 가 되고, `.mean()` 이 '비율' 이 된다. 굳이 세는 반복문을 쓸 일이 없다." },
+      { h: "np.where 는 '조건에 따라 골라 담기'", t: "`np.where(조건, 참일때, 거짓일때)` 는 자리마다 둘 중 하나를 고른다. 값을 바꾸되 모양은 유지하고 싶을 때 쓴다. 인자를 하나만 주면 대신 '참인 자리의 번호' 를 돌려주는데, 이 두 쓰임을 헷갈리기 쉽다." },
+      { h: "argmax 는 값이 아니라 자리", t: "`max` 는 가장 큰 값, `argmax` 는 그 값이 있는 번호다. 어떤 항목이 최고였는지 알고 싶으면 argmax 로 번호를 얻어 이름 배열에서 꺼낸다." },
+    ],
+    code: { c: "a = np.array([1, 5, 3, 9])\na > 3            # [False, True, False, True]\na[a > 3]         # [5, 9]\n(a > 3).sum()    # 2  ← True 는 1\nnp.where(a > 3, a, 0)   # [0, 5, 0, 9]\na.argmax()       # 3  ← 값이 아니라 자리", cap: "고르기와 접기" },
+    key: ["비교 결과는 참/거짓 배열", "`True` 는 1 — 세기와 비율이 공짜", "`argmax` 는 자리, `max` 는 값"],
+  },
+  q: [
+    {
+      k: "pass_rate · 넘긴 비율",
+      qq: "점수 배열에서 <code>cut</code> <b>이상</b>인 것의 비율을 0~1 사이 값으로 돌려주세요.",
+      src: "import numpy as np\n\ndef pass_rate(a, cut):\n    return (a >= cut).sum()\n",
+      sol: "import numpy as np\n\ndef pass_rate(a, cut):\n    return float((a >= cut).mean())\n",
+      tests: [["pass_rate(np.array([10, 20, 30, 40]), 25)", "0.5"], ["pass_rate(np.array([1, 2, 3]), 0)", "1.0"], ["pass_rate(np.array([1, 2, 3]), 99)", "0.0"]],
+      edge: [["pass_rate(np.array([5, 5]), 5)", "1.0"]],
+      ex: "`sum()` 은 개수고 `mean()` 이 비율입니다. True 가 1 이라서 평균이 곧 비율이 되는 거예요 — 개수를 전체로 나누는 코드를 따로 쓸 필요가 없습니다.",
+    },
+    {
+      k: "clip_low · 작은 값만 바닥으로 올리기",
+      qq: "<code>lo</code> 보다 작은 값을 전부 <code>lo</code> 로 바꾸세요. <b>모양은 그대로</b>여야 합니다.",
+      src: "import numpy as np\n\ndef clip_low(a, lo):\n    return a[a >= lo]\n",
+      sol: "import numpy as np\n\ndef clip_low(a, lo):\n    return np.where(a < lo, lo, a)\n",
+      tests: [["clip_low(np.array([1, 5, 2, 8]), 3).tolist()", "[3, 5, 3, 8]"], ["clip_low(np.array([[1, 9], [4, 0]]), 2).tolist()", "[[2, 9], [4, 2]]"], ["clip_low(np.array([7, 8]), 3).shape", "(2,)"]],
+      edge: [["clip_low(np.array([0, 0]), 0).tolist()", "[0, 0]"]],
+      ex: "마스킹으로 뽑으면 조건에 안 맞는 값이 **사라져서** 개수가 줄고, 2차원은 1차원이 되어 버립니다. 자리를 지키면서 값만 갈아 끼우려면 `np.where` 예요.",
+    },
+    {
+      k: "best_name · 가장 높은 것의 이름",
+      qq: "점수 배열과 이름 목록을 받아 <b>가장 높은 점수의 이름</b>을 돌려주세요.",
+      src: "import numpy as np\n\ndef best_name(scores, names):\n    return names[int(scores.max())]\n",
+      sol: "import numpy as np\n\ndef best_name(scores, names):\n    return names[int(scores.argmax())]\n",
+      tests: [["best_name(np.array([3, 9, 5]), ['가', '나', '다'])", "'나'"], ["best_name(np.array([100, 2]), ['가', '나'])", "'가'"], ["best_name(np.array([1, 1, 7]), ['가', '나', '다'])", "'다'"]],
+      edge: [["best_name(np.array([4]), ['혼자'])", "'혼자'"]],
+      ex: "`max` 는 점수 자체를 돌려줍니다 — 그걸 번호로 쓰면 엉뚱한 이름이 나오거나 범위를 넘어 터져요. 필요한 것은 '몇 번째였나' 이니 `argmax` 입니다.",
+    },
+  ],
+},
+/* ── 브로드캐스팅 규칙 심화 ───────────────────────────────── */
+{
+  unit: "브로드캐스팅 규칙 — shape가 저절로 맞춰지는 원리",
+  lesson: "직접 짜 보기 — 모양을 손으로 맞춰 본다",
+  th: {
+    sum: "브로드캐스팅은 **오른쪽 끝부터 축을 맞춰 보는 세 줄짜리 규칙**이다. 외우면 오류가 안 무섭다.",
+    body: [
+      { h: "규칙은 딱 세 줄", t: "첫째, 축 개수가 다르면 **모자란 쪽 왼쪽에 1을 채운다**. 둘째, 각 축에서 길이가 같거나 한쪽이 1이면 통과. 셋째, 1인 쪽이 상대 길이만큼 늘어난다. 둘 다 1이 아니면서 다르면 오류다." },
+      { h: "오른쪽 끝부터 본다", t: "`(3, 4)` 와 `(4,)` 를 보면, 뒤쪽 4끼리 맞고 앞은 `(4,)` 에 1이 채워져 `(1, 4)` 가 되니 통과다. 그래서 '열마다 더하기' 는 그냥 되고, '줄마다 더하기' 는 세로로 세워야 한다." },
+      { h: "None 으로 축을 끼워 넣는다", t: "`a[:, None]` 은 `(n,)` 을 `(n, 1)` 로 만든다. `reshape(-1, 1)` 과 같은 뜻인데 더 짧아서 많이 쓴다. 축이 어디에 끼는지가 결과 모양을 정한다." },
+      { h: "결과 모양은 축마다 큰 쪽", t: "`(3, 1)` 과 `(1, 4)` 면 결과는 `(3, 4)` 다. 계산하기 전에 이걸 손으로 적어 보면, 메모리를 잡아먹는 실수를 미리 막을 수 있다 — `(10000,1)` 과 `(1,10000)` 은 1억 칸이다." },
+    ],
+    code: { c: "  (3, 4)\n+    (4,)   → 왼쪽에 1 채움 → (1, 4)\n= (3, 4)\n\n  (3, 1)\n+ (1, 4)\n= (3, 4)   ← 축마다 큰 쪽", cap: "오른쪽 끝부터 맞춰 본다" },
+    key: ["모자란 축은 왼쪽에 1", "같거나 한쪽이 1이면 통과", "결과는 축마다 큰 쪽"],
+  },
+  q: [
+    {
+      k: "result_shape · 계산하기 전에 모양부터",
+      qq: "두 shape 튜플을 받아 <b>브로드캐스팅 결과 모양</b>을 튜플로 돌려주세요. 못 맞추면 <code>None</code> 입니다.",
+      src: "import numpy as np\n\ndef result_shape(s1, s2):\n    if len(s1) != len(s2):\n        return None\n    out = []\n    for a, b in zip(s1, s2):\n        if a != b and a != 1 and b != 1:\n            return None\n        out.append(max(a, b))\n    return tuple(out)\n",
+      sol: "import numpy as np\n\ndef result_shape(s1, s2):\n    n = max(len(s1), len(s2))\n    a = (1,) * (n - len(s1)) + tuple(s1)\n    b = (1,) * (n - len(s2)) + tuple(s2)\n    out = []\n    for x, y in zip(a, b):\n        if x != y and x != 1 and y != 1:\n            return None\n        out.append(max(x, y))\n    return tuple(out)\n",
+      tests: [["result_shape((3, 4), (4,))", "(3, 4)"], ["result_shape((3, 1), (1, 4))", "(3, 4)"], ["result_shape((3, 4), (3,))", "None"]],
+      edge: [["result_shape((2, 3, 4), (4,))", "(2, 3, 4)"], ["result_shape((5,), ())", "(5,)"]],
+      ex: "축 개수가 다르다고 바로 포기하면 안 됩니다 — 그때가 바로 왼쪽에 1을 채우는 경우거든요. `(3,4)` 와 `(4,)` 는 아주 흔한 조합인데 그 코드는 전부 None 을 냅니다.",
+    },
+    {
+      k: "add_col · 칸마다 다른 값 더하기",
+      qq: "표의 <b>j번째 칸</b>에 <code>v[j]</code> 를 더하세요. 축을 억지로 세우지 말고, 규칙대로 그냥 되는 쪽을 고르세요.",
+      src: "import numpy as np\n\ndef add_col(a, v):\n    return a + v[:, None]\n",
+      sol: "import numpy as np\n\ndef add_col(a, v):\n    return a + v\n",
+      tests: [["add_col(np.zeros((2, 3)), np.array([1.0, 2.0, 3.0])).tolist()", "[[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]]"], ["add_col(np.ones((3, 2)), np.array([0.0, 10.0])).tolist()", "[[1.0, 11.0], [1.0, 11.0], [1.0, 11.0]]"], ["add_col(np.zeros((4, 2)), np.array([1.0, 1.0])).shape", "(4, 2)"]],
+      edge: [["add_col(np.zeros((1, 1)), np.array([9.0])).tolist()", "[[9.0]]"]],
+      ex: "`(2,3)` 과 `(3,)` 은 오른쪽 끝이 맞아서 **그냥 됩니다**. 거기에 `[:, None]` 으로 세워 버리면 `(3,1)` 이 되어 줄 방향으로 붙거나, 길이가 안 맞아 터져요. 규칙을 알면 손댈 곳이 줄어듭니다.",
+    },
+    {
+      k: "outer_sum · 표를 만들어 내는 덧셈",
+      qq: "길이 n 과 m 인 두 배열로 <code>out[i][j] = x[i] + y[j]</code> 인 <b>(n, m)</b> 표를 만드세요.",
+      src: "import numpy as np\n\ndef outer_sum(x, y):\n    return x[None, :] + y[:, None]\n",
+      sol: "import numpy as np\n\ndef outer_sum(x, y):\n    return x[:, None] + y[None, :]\n",
+      tests: [["outer_sum(np.array([1, 2, 3]), np.array([10, 20])).tolist()", "[[11, 21], [12, 22], [13, 23]]"], ["outer_sum(np.array([0, 5]), np.array([1, 2, 3])).shape", "(2, 3)"], ["outer_sum(np.array([7]), np.array([1, 2])).tolist()", "[[8, 9]]"]],
+      edge: [["outer_sum(np.array([0]), np.array([0])).tolist()", "[[0]]"]],
+      ex: "축을 어디에 끼우느냐가 결과의 줄과 칸을 정합니다. 반대로 끼우면 표가 전치되어 나와요 — 정사각형으로만 시험하면 절대 안 보이는 버그입니다. 항상 n≠m 으로 확인하세요.",
+    },
+  ],
+},
+/* ── 뷰 vs 복사 ───────────────────────────────────────────── */
+{
+  unit: "뷰(view) vs 복사(copy) — 기본 슬라이싱의 함정",
+  lesson: "직접 짜 보기 — 원본을 지키는 법",
+  th: {
+    sum: "기본 슬라이싱은 **복사가 아니라 창문**이다. 창문에 쓰면 원본이 바뀐다.",
+    body: [
+      { h: "슬라이싱은 값을 옮기지 않는다", t: "`b = a[1:4]` 는 a 의 그 부분을 들여다보는 창문을 만들 뿐이다. 큰 배열을 잘라도 메모리가 안 늘어나는 건 이 덕분이다. 대신 `b[0] = 99` 를 하면 a 도 같이 바뀐다." },
+      { h: "팬시 인덱싱은 복사다", t: "`a[[0, 2]]` 처럼 번호 목록으로 뽑거나 `a[a > 3]` 처럼 참/거짓으로 뽑으면 새 배열이 만들어진다. 어디를 뽑을지 규칙적이지 않아서 창문으로는 표현할 수 없기 때문이다." },
+      { h: "헷갈리면 base 를 본다", t: "`b.base is a` 가 참이면 b 는 a 를 들여다보는 창문이다. `None` 이면 자기 메모리를 가진 복사본이다. 확신이 안 서면 이걸 찍어 본다." },
+      { h: "안전하게 가려면 copy()", t: "함수가 받은 배열을 고칠 참이면 `a = a.copy()` 부터 한다. 부르는 쪽이 넘긴 배열이 몰래 바뀌는 것만큼 찾기 어려운 버그가 없다." },
+    ],
+    code: { c: "a = np.arange(5)\nb = a[1:4]\nb[0] = 99\na          # [0, 99, 2, 3, 4]  ← 원본이 바뀐다\nb.base is a    # True\n\nc = a[[1, 2]]  # 팬시 = 복사\nc.base is None # True", cap: "창문인가 복사본인가" },
+    key: ["기본 슬라이싱은 뷰", "팬시·불리언 인덱싱은 복사", "고칠 거면 `copy()` 부터"],
+  },
+  q: [
+    {
+      k: "zero_head · 원본은 건드리지 않기",
+      qq: "앞 <code>k</code> 개를 0으로 바꾼 <b>새 배열</b>을 돌려주세요. 넘겨받은 배열은 그대로여야 합니다.",
+      src: "import numpy as np\n\ndef zero_head(a, k):\n    a[:k] = 0\n    return a\n",
+      sol: "import numpy as np\n\ndef zero_head(a, k):\n    out = a.copy()\n    out[:k] = 0\n    return out\n",
+      tests: [["zero_head(np.array([1, 2, 3, 4]), 2).tolist()", "[0, 0, 3, 4]"], ["(lambda a: (zero_head(a, 2), a.tolist())[1])(np.array([1, 2, 3, 4]))", "[1, 2, 3, 4]"], ["zero_head(np.array([5, 6]), 0).tolist()", "[5, 6]"]],
+      edge: [["(lambda a: (zero_head(a, 1), a[0].item())[1])(np.array([9, 9]))", "9"]],
+      ex: "받은 배열에 바로 쓰면 부르는 쪽의 데이터가 조용히 바뀝니다. 반환값만 확인하는 테스트는 이걸 못 잡아요 — 그래서 원본까지 같이 확인합니다. 고칠 거면 `copy()` 로 시작하세요.",
+    },
+    {
+      k: "is_view · 창문인지 복사본인지",
+      qq: "두 배열을 받아 <b>둘째가 첫째를 들여다보는 창문</b>이면 True 를 돌려주세요.",
+      src: "import numpy as np\n\ndef is_view(a, b):\n    return a.tolist() == b.tolist()\n",
+      sol: "import numpy as np\n\ndef is_view(a, b):\n    return b.base is a\n",
+      tests: [["is_view(np.arange(5), np.arange(5)[1:3])", "False"], ["(lambda a: is_view(a, a[1:3]))(np.arange(5))", "True"], ["(lambda a: is_view(a, a[[1, 2]]))(np.arange(5))", "False"]],
+      edge: [["(lambda a: is_view(a, a[a > 1]))(np.arange(5))", "False"]],
+      ex: "값이 같다고 같은 메모리를 보는 것은 아닙니다 — 방금 만든 서로 다른 배열도 값은 같을 수 있어요. 연결돼 있는지는 `base` 로만 알 수 있습니다.",
+    },
+    {
+      k: "band · 잘라 낸 조각에 쓰면 어디가 바뀌나",
+      qq: "<code>i</code>번째부터 <code>j</code>번째 앞까지를 잘라 <b>2배</b>로 만들어 돌려주세요. 원본은 그대로여야 합니다.",
+      src: "import numpy as np\n\ndef band(a, i, j):\n    out = a[i:j]\n    out *= 2\n    return out\n",
+      sol: "import numpy as np\n\ndef band(a, i, j):\n    out = a[i:j].copy()\n    out *= 2\n    return out\n",
+      tests: [["band(np.array([1, 2, 3, 4]), 1, 3).tolist()", "[4, 6]"], ["(lambda a: (band(a, 1, 3), a.tolist())[1])(np.array([1, 2, 3, 4]))", "[1, 2, 3, 4]"], ["band(np.array([5, 6, 7]), 0, 3).tolist()", "[10, 12, 14]"]],
+      edge: [["(lambda a: (band(a, 0, 1), a[0].item())[1])(np.array([9, 9]))", "9"]],
+      ex: "`a[i:j]` 는 새 배열이 아니라 a 를 들여다보는 창문입니다. 거기에 `*=` 로 쓰면 원본의 그 구간이 그대로 바뀌어요 — 잘라 냈으니 안전하겠지, 가 정확히 틀리는 자리입니다. `*=` 대신 `out = out * 2` 로 써도 새 배열이 생기지만, 의도를 드러내려면 `copy()` 가 낫습니다.",
+    },
+  ],
+},
+/* ── 축 연산과 keepdims ───────────────────────────────────── */
+{
+  unit: "축(axis) 연산과 차원 축소/유지(keepdims) 중급",
+  lesson: "직접 짜 보기 — 어느 방향으로 접을 것인가",
+  th: {
+    sum: "`axis` 는 **없앨 축**을 가리킨다. 접은 축은 사라지고, `keepdims=True` 면 길이 1로 남는다.",
+    body: [
+      { h: "axis 는 '이 축을 없앤다'", t: "`(3, 4)` 에서 `sum(axis=0)` 은 0번 축을 접어 `(4,)` 가 된다. '세로로 더한다' 로 외우면 3차원에서 헷갈리니, '그 축이 사라진다' 로 외우는 편이 낫다." },
+      { h: "keepdims 는 자리를 남긴다", t: "`sum(axis=1, keepdims=True)` 는 `(3, 4)` 를 `(3, 1)` 로 만든다. 길이 1로 남으니 원래 배열과 바로 브로드캐스팅된다 — 정규화할 때 `reshape` 를 안 써도 되는 이유다." },
+      { h: "축을 여러 개 접을 수도 있다", t: "`axis=(0, 1)` 처럼 튜플을 주면 두 축을 한 번에 없앤다. 이미지 배치에서 '샘플별 평균' 을 낼 때 자주 쓴다." },
+      { h: "axis 를 안 주면 전부 접는다", t: "`a.sum()` 은 스칼라 하나다. 편해 보이지만, 줄별 합을 내려다 실수로 전체 합을 내는 사고가 가장 흔하다." },
+    ],
+    code: { c: "a.shape                       # (3, 4)\na.sum(axis=0).shape           # (4,)   ← 0번 축이 사라짐\na.sum(axis=1).shape           # (3,)\na.sum(axis=1, keepdims=True)  # (3, 1) ← 자리를 남김\n\na / a.sum(axis=1, keepdims=True)   # 줄마다 정규화", cap: "접으면 사라지고, keepdims 면 1로 남는다" },
+    key: ["`axis` 는 없앨 축", "`keepdims=True` 면 길이 1로 남는다", "축을 안 주면 전부 접힌다"],
+  },
+  q: [
+    {
+      k: "row_norm · 줄마다 합이 1이 되게",
+      qq: "각 <b>줄</b>을 그 줄의 합으로 나눠, 줄마다 합이 1이 되게 하세요.",
+      src: "import numpy as np\n\ndef row_norm(a):\n    return a / a.sum(axis=1)\n",
+      sol: "import numpy as np\n\ndef row_norm(a):\n    return a / a.sum(axis=1, keepdims=True)\n",
+      tests: [["row_norm(np.array([[1.0, 1.0], [1.0, 3.0]])).tolist()", "[[0.5, 0.5], [0.25, 0.75]]"], ["[round(v, 6) for v in row_norm(np.array([[1.0, 2.0, 7.0], [4.0, 4.0, 2.0]])).sum(axis=1).tolist()]", "[1.0, 1.0]"], ["row_norm(np.array([[2.0, 2.0], [5.0, 5.0], [1.0, 9.0]])).shape", "(3, 2)"]],
+      edge: [["row_norm(np.array([[4.0]])).tolist()", "[[1.0]]"]],
+      ex: "`sum(axis=1)` 은 `(n,)` 이라, 나눌 때 **칸 방향**으로 붙어 엉뚱한 값이 나옵니다. 정사각형이면 오류도 안 나고 조용히 틀려요. `keepdims=True` 로 `(n,1)` 을 유지하면 줄마다 붙습니다.",
+    },
+    {
+      k: "col_argmax · 칸마다 가장 큰 줄 번호",
+      qq: "각 <b>칸</b>에서 가장 큰 값이 <b>몇 번째 줄</b>에 있는지 목록으로 돌려주세요.",
+      src: "import numpy as np\n\ndef col_argmax(a):\n    return a.argmax(axis=1)\n",
+      sol: "import numpy as np\n\ndef col_argmax(a):\n    return a.argmax(axis=0)\n",
+      tests: [["col_argmax(np.array([[1, 9], [5, 2], [3, 4]])).tolist()", "[1, 0]"], ["col_argmax(np.array([[0, 0, 7], [1, 2, 3]])).tolist()", "[1, 1, 0]"], ["col_argmax(np.arange(6).reshape(2, 3)).tolist()", "[1, 1, 1]"]],
+      edge: [["col_argmax(np.array([[5, 5], [5, 5]])).tolist()", "[0, 0]"]],
+      ex: "'칸마다' 이니 없앨 축은 줄 축, 즉 `axis=0` 입니다. `axis=1` 은 줄마다 가장 큰 칸을 찾는 반대 질문이에요 — 결과 길이부터 다르니 직사각형으로 시험하면 바로 드러납니다.",
+    },
+    {
+      k: "batch_mean · 샘플마다 하나의 값",
+      qq: "<code>(배치, 높이, 너비)</code> 배열에서 <b>샘플마다</b> 전체 평균을 내어 <code>(배치,)</code> 로 돌려주세요.",
+      src: "import numpy as np\n\ndef batch_mean(a):\n    return a.mean(axis=0)\n",
+      sol: "import numpy as np\n\ndef batch_mean(a):\n    return a.mean(axis=(1, 2))\n",
+      tests: [["batch_mean(np.arange(8.0).reshape(2, 2, 2)).tolist()", "[1.5, 5.5]"], ["batch_mean(np.ones((3, 2, 2))).shape", "(3,)"], ["batch_mean(np.array([[[0.0, 4.0]], [[2.0, 2.0]]])).tolist()", "[2.0, 2.0]"]],
+      edge: [["batch_mean(np.zeros((1, 3, 3))).tolist()", "[0.0]"]],
+      ex: "남기고 싶은 축이 0번이니, 없앨 축은 나머지 전부입니다 — `axis=(1, 2)` 처럼 튜플로 한 번에 접어요. `axis=0` 은 정반대로 샘플들을 평균 내 버립니다.",
+    },
+  ],
+},
+/* ── ufunc·난수·수치 함정 ─────────────────────────────────── */
+{
+  unit: "벡터화·유니버설 함수(ufunc)와 난수·시드·재현성 심화",
+  lesson: "직접 짜 보기 — 같은 결과가 나오게, 안 터지게",
+  th: {
+    sum: "난수는 **씨앗을 심으면 매번 같은 값**이 나오고, 수치 함정은 **미리 막아야** 한다.",
+    body: [
+      { h: "재현되지 않는 실험은 실험이 아니다", t: "돌릴 때마다 결과가 달라지면 코드를 고쳐서 좋아진 건지 운이 좋았던 건지 알 수 없다. `rng = np.random.default_rng(0)` 처럼 씨앗을 정해 두면 항상 같은 순서로 나온다." },
+      { h: "전역 시드보다 rng 객체", t: "`np.random.seed` 는 프로그램 전체에 영향을 준다. 다른 라이브러리가 난수를 몇 개 쓰기만 해도 내 결과가 달라진다. `default_rng` 로 만든 객체는 나만 쓴다." },
+      { h: "NaN 은 무엇과 비교해도 거짓", t: "`np.nan == np.nan` 조차 False 다. 그래서 `x == np.nan` 으로는 절대 못 찾고 `np.isnan(x)` 를 써야 한다. 합계에 NaN 이 하나만 섞여도 결과 전체가 NaN 이 되므로 `np.nansum` 같은 것을 쓰거나 미리 걸러 낸다." },
+      { h: "정수는 조용히 넘친다", t: "int64 배열에 큰 수를 곱하면 경고 없이 음수가 되기도 한다. 파이썬 정수는 무한히 커지지만 NumPy 정수는 상자 크기가 정해져 있다 — 큰 수를 다룰 땐 float 로 올리거나 범위를 미리 확인한다." },
+    ],
+    code: { c: "rng = np.random.default_rng(0)\nrng.integers(0, 10, 3)   # 언제 돌려도 같은 값\n\nnp.nan == np.nan   # False!\nnp.isnan(x)        # 이렇게 찾는다\nnp.nansum(x)       # NaN 은 빼고 더한다", cap: "씨앗을 심고, NaN 은 함수로 찾는다" },
+    key: ["`default_rng(seed)` 로 재현", "`np.nan == np.nan` 은 False", "정수는 조용히 넘친다"],
+  },
+  q: [
+    {
+      k: "sample · 매번 같은 뽑기",
+      qq: "<code>seed</code> 를 받아 0~99 사이 정수 <code>n</code> 개를 뽑으세요. <b>같은 seed 면 항상 같은 결과</b>여야 합니다.",
+      src: "import numpy as np\n\ndef sample(seed, n):\n    return np.random.default_rng().integers(0, 100, n)\n",
+      sol: "import numpy as np\n\ndef sample(seed, n):\n    return np.random.default_rng(seed).integers(0, 100, n)\n",
+      tests: [["sample(0, 4).tolist() == sample(0, 4).tolist()", "True"], ["sample(1, 5).tolist() == sample(2, 5).tolist()", "False"], ["len(sample(7, 3))", "3"]],
+      edge: [["bool(((sample(3, 20) >= 0) & (sample(3, 20) < 100)).all())", "True"]],
+      ex: "씨앗을 안 주면 매번 다른 값이 나옵니다. 실험 결과를 남에게 보여 줄 수도, 어제 결과와 비교할 수도 없게 돼요 — 받은 seed 를 꼭 넘기세요.",
+    },
+    {
+      k: "clean_mean · NaN 은 빼고 평균",
+      qq: "NaN 이 섞인 배열에서 <b>NaN 을 뺀 나머지</b>의 평균을 돌려주세요.",
+      src: "import numpy as np\n\ndef clean_mean(a):\n    return float(a[a != np.nan].mean())\n",
+      sol: "import numpy as np\n\ndef clean_mean(a):\n    return float(a[~np.isnan(a)].mean())\n",
+      tests: [["clean_mean(np.array([1.0, np.nan, 3.0]))", "2.0"], ["clean_mean(np.array([2.0, 2.0]))", "2.0"], ["clean_mean(np.array([np.nan, 4.0, np.nan, 6.0]))", "5.0"]],
+      edge: [["clean_mean(np.array([0.0, np.nan]))", "0.0"]],
+      ex: "`a != np.nan` 은 **전부 True** 입니다 — NaN 은 자기 자신과도 다르다고 나오거든요. 그러니 아무것도 안 걸러지고 평균이 NaN 이 됩니다. NaN 은 `np.isnan` 으로만 찾을 수 있어요.",
+    },
+    {
+      k: "safe_square · 넘치지 않게 제곱",
+      qq: "큰 정수 배열의 제곱을 구하세요. <b>int 범위를 넘어도</b> 값이 망가지면 안 됩니다.",
+      src: "import numpy as np\n\ndef safe_square(a):\n    return a * a\n",
+      sol: "import numpy as np\n\ndef safe_square(a):\n    return a.astype(np.float64) ** 2\n",
+      tests: [["safe_square(np.array([2, 3], dtype=np.int32)).tolist()", "[4.0, 9.0]"], ["safe_square(np.array([100000], dtype=np.int32)).tolist()", "[10000000000.0]"], ["safe_square(np.array([0, -4], dtype=np.int32)).tolist()", "[0.0, 16.0]"]],
+      edge: [["bool(safe_square(np.array([50000], dtype=np.int32))[0] > 0)", "True"]],
+      ex: "int32 는 약 21억까지입니다. 10만의 제곱은 100억이라 그 상자에 안 들어가고, 경고도 없이 음수로 돌아 나와요. 넘칠 수 있으면 계산 **전에** float 로 올려 둡니다.",
+    },
+  ],
+},
+/* ── 코드 리뷰 ────────────────────────────────────────────── */
+{
+  unit: "코드 리뷰 — 결함 찾기",
+  lesson: "직접 고쳐 보기 — 리뷰에서 자주 걸리는 세 가지",
+  th: {
+    sum: "리뷰에서 걸리는 NumPy 코드는 대개 **모양·부작용·성능** 셋 중 하나다.",
+    body: [
+      { h: "모양을 안 적어 두면 나중에 못 읽는다", t: "`a.sum(axis=1)` 이 `(n,)` 인지 `(n,1)` 인지 헷갈리는 순간 그 아래 코드는 전부 짐작이 된다. 리뷰할 때는 각 줄의 shape 를 머릿속으로 적으면서 읽는다 — 대부분의 버그가 그 자리에서 보인다." },
+      { h: "받은 배열을 고치면 부작용", t: "함수가 인자를 제자리에서 바꾸면, 부르는 쪽은 자기 데이터가 바뀐 줄 모른다. 이름에 `_inplace` 를 붙이거나 `copy()` 로 시작하는 것 중 하나를 골라야 한다." },
+      { h: "파이썬 반복문은 마지막 수단", t: "배열을 `for` 로 도는 코드가 보이면 대체할 벡터화 표현이 있는지부터 본다. 대개 브로드캐스팅이나 집계 함수 한 줄로 줄어들고, 그게 훨씬 빠르고 읽기도 쉽다." },
+      { h: "'되긴 된다' 와 '맞다' 는 다르다", t: "테스트가 정사각형 배열만 쓰면 축을 바꿔 써도 통과한다. 리뷰어는 n≠m 인 경우와 빈 배열을 물어봐야 한다." },
+    ],
+    code: { c: "# 리뷰 지적 3종\ndef f(a):\n    a[a < 0] = 0        # ① 받은 배열을 고침\n    s = 0\n    for x in a:         # ② 파이썬 반복문\n        s += x\n    return a / a.sum(axis=0)   # ③ 축이 맞는가", cap: "모양·부작용·성능" },
+    key: ["줄마다 shape 를 적으며 읽는다", "받은 배열은 고치지 않는다", "반복문은 벡터화로 바꾼다"],
+  },
+  q: [
+    {
+      k: "relu_clean · 리뷰 지적을 반영해 고치기",
+      qq: "음수를 0으로 만드는 함수입니다. <b>원본을 건드리지 않도록</b> 고쳐 주세요.",
+      src: "import numpy as np\n\ndef relu_clean(a):\n    a[a < 0] = 0\n    return a\n",
+      sol: "import numpy as np\n\ndef relu_clean(a):\n    out = a.copy()\n    out[out < 0] = 0\n    return out\n",
+      tests: [["relu_clean(np.array([-1.0, 2.0, -3.0])).tolist()", "[0.0, 2.0, 0.0]"], ["(lambda a: (relu_clean(a), a.tolist())[1])(np.array([-1.0, 2.0]))", "[-1.0, 2.0]"], ["relu_clean(np.array([[1.0, -1.0]])).tolist()", "[[1.0, 0.0]]"]],
+      edge: [["relu_clean(np.array([0.0])).tolist()", "[0.0]"]],
+      ex: "반환값만 보면 둘 다 맞습니다. 그런데 첫 코드는 부르는 쪽의 배열까지 바꿔 놓아요 — 원본 데이터로 다른 계산을 하려던 사람이 몇 시간을 잃습니다. 리뷰에서 가장 많이 지적되는 유형입니다.",
+    },
+    {
+      k: "moving_avg · 창을 다 채운 것만",
+      qq: "폭 <code>k</code> 인 이동 평균을 구하세요. <b>창이 다 찬 구간만</b> 세어야 하니 결과 길이는 <code>len(a)-k+1</code> 입니다.",
+      src: "import numpy as np\n\ndef moving_avg(a, k):\n    out = []\n    for i in range(len(a)):\n        out.append(a[i:i + k].mean())\n    return np.array(out)\n",
+      sol: "import numpy as np\n\ndef moving_avg(a, k):\n    c = np.cumsum(np.insert(a.astype(float), 0, 0.0))\n    return (c[k:] - c[:-k]) / k\n",
+      tests: [["moving_avg(np.array([1.0, 2.0, 3.0, 4.0]), 2).tolist()", "[1.5, 2.5, 3.5]"], ["len(moving_avg(np.arange(10.0), 3))", "8"], ["moving_avg(np.array([2.0, 4.0, 6.0]), 3).tolist()", "[4.0]"]],
+      edge: [["moving_avg(np.array([5.0, 7.0]), 1).tolist()", "[5.0, 7.0]"]],
+      ex: "반복문 버전은 끝으로 갈수록 창이 짧아지는데도 그대로 평균을 냅니다 — 마지막 값은 원소 하나의 평균이라 '이동 평균' 이 아니에요. 길이도 `len(a)` 가 되어 뒤에 붙는 계산과 어긋납니다. 누적합의 차이로 구하면 창 길이가 항상 k 이고, 반복문도 사라집니다.",
+    },
+    {
+      k: "col_share · 축이 맞는지 다시 보기",
+      qq: "각 값이 <b>자기 칸 합계</b>에서 차지하는 비율을 구하세요. 리뷰어가 '정사각형에서만 시험했다' 고 지적했습니다.",
+      src: "import numpy as np\n\ndef col_share(a):\n    return a / a.sum(axis=1, keepdims=True)\n",
+      sol: "import numpy as np\n\ndef col_share(a):\n    return a / a.sum(axis=0, keepdims=True)\n",
+      tests: [["col_share(np.array([[1.0, 1.0, 2.0], [3.0, 1.0, 2.0]])).tolist()", "[[0.25, 0.5, 0.5], [0.75, 0.5, 0.5]]"], ["[round(v, 6) for v in col_share(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])).sum(axis=0).tolist()]", "[1.0, 1.0, 1.0]"], ["col_share(np.array([[2.0], [2.0], [4.0]])).tolist()", "[[0.25], [0.25], [0.5]]"]],
+      edge: [["col_share(np.array([[5.0, 5.0]])).tolist()", "[[1.0, 1.0]]"]],
+      ex: "'칸 합계' 이니 없앨 축은 줄 축 — `axis=0` 입니다. `axis=1` 로 써도 정사각형에서는 모양이 맞아 오류가 안 나고 값만 틀려요. 그래서 축을 쓰는 코드는 **줄 수와 칸 수가 다른** 데이터로 꼭 확인합니다.",
+    },
+  ],
+},
+];

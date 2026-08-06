@@ -89,6 +89,9 @@ GROUPS.forEach(g => {
     return Object.assign(base, {
       t: SPEC.lang === "py" ? "py" : "code",
       run: SPEC.lang === "js" ? "js" : undefined,
+      /* numpy·pandas 처럼 따로 받아야 하는 꾸러미는 문항에 적어 둔다.
+         앱은 이 목록을 보고 그 문항에서만 내려받는다. */
+      pkgs: (SPEC.pkgs || x.pkgs) && SPEC.lang === "py" ? (x.pkgs || SPEC.pkgs) : undefined,
       tests: x.tests.map(c => ({ in: c[0], out: c[1] })),
       edge: (x.edge || []).map(c => ({ in: c[0], out: c[1] })),
     });

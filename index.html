@@ -4403,13 +4403,36 @@ function ensurePy(){
   });
   return __pyReady;
 }
+/* numpy·pandas 같은 꾸러미는 무거워서 처음부터 받아 두면 파이썬 문항 전부가
+   느려진다. 필요하다고 적어 둔 문항에서만 받고, 한 번 받은 것은 기억해 둔다. */
+const __pyPkgs = {};
+function ensurePyPkgs(py, pkgs){
+  if(!py || !pkgs || !pkgs.length) return Promise.resolve(py);
+  const need = pkgs.filter(function(p){ return !__pyPkgs[p]; });
+  if(!need.length) return Promise.resolve(py);
+  return py.loadPackage(need).then(function(){
+    need.forEach(function(p){ __pyPkgs[p]=true; });
+    return py;
+  }, function(){ return py; });   /* 못 받으면 그냥 진행 — 아래에서 에러로 보인다 */
+}
 function pyHarness(user, tests){
   return user+"\n\n__T="+JSON.stringify(tests.map(function(t){return [t.in,t.out];}))
-    +"\nimport json\n__r=[]\nfor __i,__o in __T:\n    try:\n        __g=eval(__i)\n        __e=eval(__o)\n        __r.append([bool(__g==__e), __i, repr(__g), __o])\n    except Exception as __ex:\n        __r.append([False, __i, '[에러] '+str(__ex), __o])\njson.dumps(__r, ensure_ascii=False)";
+    /* 코루틴이 나오면 기다렸다 판정한다. async 문항의 검사식은 코루틴 객체를
+       돌려주는데, 그것을 그대로 견주면 무엇을 써도 틀렸다고 나온다.
+       Pyodide 안에는 이미 이벤트 루프가 돌고 있어서 asyncio.run 을 못 쓴다 —
+       그래서 검사식이 아니라 여기서 await 해야 한다.
+       끝나지 않는 코루틴은 5초에서 끊는다. */
+    +"\nimport json, inspect\n__r=[]\n"
+    +"async def __await1(v):\n    return await __import__('asyncio').wait_for(v, 5) if inspect.isawaitable(v) else v\n"
+    +"async def __run():\n    for __i,__o in __T:\n        try:\n            __g=await __await1(eval(__i))\n            __e=await __await1(eval(__o))\n            __r.append([bool(__g==__e), __i, repr(__g), __o])\n        except Exception as __ex:\n            __r.append([False, __i, '[에러] '+str(__ex), __o])\n"
+    +"await __run()\njson.dumps(__r, ensure_ascii=False)";
 }
 function gradePy(q, userCode){
   return ensurePy().then(function(py){
     if(!py) return {error:"__nopy__"};
+    return ensurePyPkgs(py, q.pkgs);
+  }).then(function(py){
+    if(!py || py.error) return py || {error:"__nopy__"};
     function run(tests){ if(!tests||!tests.length) return Promise.resolve([]);
       return py.runPythonAsync(pyHarness(userCode, tests)).then(function(s){ return JSON.parse(s); }); }
     return run(q.tests).then(function(cr){
@@ -4425,7 +4448,10 @@ function renderPyRows(cr, er){
 }
 function setupPy(q){ var ta=$("pycode"); if(ta) ta.value=q.src||"";
   var out=$("pyout"); if(out) out.innerHTML='<span style="opacity:.7">🐍 Python 엔진 준비 중… (첫 실행은 조금 걸려요)</span>';
-  ensurePy().then(function(py){ var o=$("pyout"); if(!o)return; if(!py){ o.innerHTML='<span style="opacity:.7">▶ 확인을 누르면 실행됩니다 (오프라인에선 Python 실행이 제한될 수 있어요)</span>'; } else { o.innerHTML='<span style="opacity:.7">▶ 준비 완료 — 확인을 누르면 Python이 실행됩니다.</span>'; } });
+  ensurePy().then(function(py){
+    if(py && q.pkgs && q.pkgs.length){ var o2=$("pyout"); if(o2) o2.innerHTML='<span style="opacity:.7">📦 '+escHtml(q.pkgs.join(", "))+' 받는 중… (처음 한 번만 걸려요)</span>'; }
+    return ensurePyPkgs(py, q.pkgs);
+  }).then(function(py){ var o=$("pyout"); if(!o)return; if(!py){ o.innerHTML='<span style="opacity:.7">▶ 확인을 누르면 실행됩니다 (오프라인에선 Python 실행이 제한될 수 있어요)</span>'; } else { o.innerHTML='<span style="opacity:.7">▶ 준비 완료 — 확인을 누르면 Python이 실행됩니다.</span>'; } });
 }
 function setupLive(q){const ta=$("livecode");if(!ta)return;ta.value=q.src||"";const go=()=>{ if(q.tests) renderTest(q,ta.value); else renderLive(q.run,ta.value); };let tmr;ta.oninput=()=>{clearTimeout(tmr);tmr=setTimeout(go,250);};go();}
 function norm(s){return s.toLowerCase().replace(/\s+/g,'').replace(/;$/,'')}

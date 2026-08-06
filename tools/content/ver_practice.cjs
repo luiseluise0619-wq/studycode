@@ -16,11 +16,15 @@ const GROUPS = require(path.resolve(process.argv[2]));
 const LANG = process.argv[3] || "py";
 
 function runPy(code, tests) {
-  const prog = code + "\n\nimport json\n__T=" + JSON.stringify(tests) + "\n__r=[]\n"
-    + "for __i,__o in __T:\n"
-    + "    try:\n        __g=eval(__i); __e=eval(__o); __r.append(bool(__g==__e))\n"
-    + "    except Exception as __ex:\n        __r.append('ERR: '+str(__ex))\n"
-    + "print(json.dumps(__r))";
+  /* 앱 채점기와 같은 규칙 — 코루틴이 나오면 기다렸다 견준다.
+     여기서만 asyncio.run 을 쓰게 두면, 로컬은 통과하는데 브라우저에서는
+     '이미 루프가 돌고 있다' 로 터지는 문항이 그대로 나간다. 실제로 그랬다. */
+  const prog = code + "\n\nimport json, inspect, asyncio\n__T=" + JSON.stringify(tests) + "\n__r=[]\n"
+    + "async def __await1(v):\n    return await asyncio.wait_for(v, 5) if inspect.isawaitable(v) else v\n"
+    + "async def __run():\n    for __i,__o in __T:\n"
+    + "        try:\n            __g=await __await1(eval(__i)); __e=await __await1(eval(__o)); __r.append(bool(__g==__e))\n"
+    + "        except Exception as __ex:\n            __r.append('ERR: '+str(__ex))\n"
+    + "asyncio.run(__run())\nprint(json.dumps(__r))";
   const f = path.join(os.tmpdir(), "cr_ver_" + process.pid + ".py");
   fs.writeFileSync(f, prog);
   try {

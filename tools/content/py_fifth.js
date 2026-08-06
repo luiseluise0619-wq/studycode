@@ -30,10 +30,13 @@ module.exports = [
       sol: "import asyncio\n\nLOG = []\n\n\nasync def mark(name, delay):\n    LOG.append(\"start:\" + name)\n    await asyncio.sleep(delay)\n    LOG.append(\"end:\" + name)\n    return name\n\n\nasync def gather_all(coros):\n    return list(await asyncio.gather(*coros))",
       /* 결과만 보면 두 방식이 같다. 그래서 '언제 시작했는가' 를 본다 —
          모아서 기다리면 둘 다 먼저 시작하고, 줄줄이 기다리면 앞의 것이 끝나야 시작한다. */
-      tests: [["__import__('asyncio').run(gather_all([mark('a', 0.02), mark('b', 0)]))", "['a', 'b']"],
-              ["(LOG.clear(), __import__('asyncio').run(gather_all([mark('a', 0.02), mark('b', 0)])), LOG)[2]", "['start:a', 'start:b', 'end:b', 'end:a']"],
-              ["__import__('asyncio').run(gather_all([]))", "[]"]],
-      edge: [["__import__('asyncio').run(gather_all([mark('x', 0)]))", "['x']"]],
+      /* 채점기가 코루틴을 대신 기다려 준다 — 검사식에서 asyncio.run 을 부르면
+         브라우저에서는 '이미 루프가 돌고 있다' 로 터진다.
+         아래 두 줄은 짝이다. 앞줄이 LOG 를 비우고 돌린 뒤, 뒷줄이 그 자취를 읽는다. */
+      tests: [["(LOG.clear(), gather_all([mark('a', 0.02), mark('b', 0)]))[1]", "['a', 'b']"],
+              ["LOG", "['start:a', 'start:b', 'end:b', 'end:a']"],
+              ["gather_all([])", "[]"]],
+      edge: [["gather_all([mark('x', 0)])", "['x']"]],
       ex: "await 를 하나씩 줄줄이 쓰면 앞의 것이 끝나야 다음이 시작합니다. 결과는 같지만 걸리는 시간은 전부 더한 만큼이에요. gather 로 넘겨야 실제로 겹쳐서 진행됩니다.",
     },
     {
@@ -41,10 +44,10 @@ module.exports = [
       qq: "코루틴 목록을 받아 성공한 것은 값, <b>실패한 것은 <code>None</code></b> 으로 채운 목록을 돌려주세요. 하나가 실패해도 나머지는 받아야 합니다.",
       src: "import asyncio\n\n\nasync def boom():\n    raise ValueError(\"실패\")\n\n\nasync def safe_gather(coros):\n    return list(await asyncio.gather(*coros))",
       sol: "import asyncio\n\n\nasync def boom():\n    raise ValueError(\"실패\")\n\n\nasync def safe_gather(coros):\n    rs = await asyncio.gather(*coros, return_exceptions=True)\n    return [None if isinstance(r, BaseException) else r for r in rs]",
-      tests: [["__import__('asyncio').run(safe_gather([__import__('asyncio').sleep(0, 1)]))", "[1]"],
-              ["__import__('asyncio').run(safe_gather([boom(), __import__('asyncio').sleep(0, 2)]))", "[None, 2]"],
-              ["__import__('asyncio').run(safe_gather([boom()]))", "[None]"]],
-      edge: [["__import__('asyncio').run(safe_gather([]))", "[]"]],
+      tests: [["safe_gather([__import__('asyncio').sleep(0, 1)])", "[1]"],
+              ["safe_gather([boom(), __import__('asyncio').sleep(0, 2)])", "[None, 2]"],
+              ["safe_gather([boom()])", "[None]"]],
+      edge: [["safe_gather([])", "[]"]],
       ex: "gather 는 기본적으로 하나가 실패하면 그 자리에서 예외를 냅니다. 성공한 것까지 통째로 버려져요. return_exceptions 를 켜면 각각의 결과를 받아 되는 것만이라도 쓸 수 있습니다.",
     },
     {

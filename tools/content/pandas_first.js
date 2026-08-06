@@ -1,0 +1,368 @@
+/* pandas 1차 — 실습이 하나도 없던 8개 유닛.
+   브라우저에서는 Pyodide 가 pandas 를 따로 받아 채점한다(spec 의 pkgs).
+
+   검사식은 반드시 파이썬 기본형으로 끝내야 한다.
+   Series 끼리 == 를 하면 Series 가 나오고, bool() 로 판정하는 순간
+   "truth value of a Series is ambiguous" 로 터진다 — tolist()/to_dict() 로 내린다. */
+module.exports = [
+/* ── Series·DataFrame 기초 ───────────────────────────────── */
+{
+  unit: "Series와 DataFrame",
+  lesson: "직접 짜 보기 — 표를 만들고, 열을 꺼내고",
+  th: {
+    sum: "Series 는 **이름표가 붙은 한 줄**, DataFrame 은 **그 줄을 옆으로 붙인 표**다.",
+    body: [
+      { h: "인덱스가 딸려 다닌다", t: "Series 는 값 배열 하나에 인덱스가 붙어 있는 것이다. 연산할 때 이 인덱스를 기준으로 짝이 맞춰지기 때문에, 순서가 달라도 이름이 같으면 같은 자리로 취급한다 — 편리하지만 모르면 놀란다." },
+      { h: "DataFrame 은 열의 모음", t: "열마다 dtype 이 따로다. `df['a']` 는 Series 하나를 꺼내고, `df[['a']]` 는 열이 하나뿐인 DataFrame 을 꺼낸다. 대괄호가 하나냐 둘이냐로 결과의 차원이 갈린다." },
+      { h: "표의 생김새부터 본다", t: "`df.shape` 는 (행, 열), `df.columns` 는 열 이름, `df.dtypes` 는 열마다의 타입이다. 계산이 이상하면 대개 dtype 이 object 라서 그렇다 — 숫자인 줄 알았는데 문자열인 경우다." },
+      { h: "describe 는 숫자 열만 본다", t: "`df.describe()` 는 기본적으로 숫자 열의 개수·평균·사분위수를 보여 준다. 문자열 열이 빠져 있다고 놀라지 않아도 된다." },
+    ],
+    code: { c: "s = pd.Series([1, 2, 3], index=['가', '나', '다'])\ns['나']          # 2\n\ndf = pd.DataFrame({'a': [1, 2], 'b': [3, 4]})\ndf['a']          # Series\ndf[['a']]        # DataFrame (열 1개)\ndf.shape         # (2, 2)", cap: "대괄호 하나면 Series, 둘이면 DataFrame" },
+    key: ["Series 는 값 + 인덱스", "`df['a']` 는 Series, `df[['a']]` 는 DataFrame", "이상하면 `dtypes` 부터 본다"],
+  },
+  q: [
+    {
+      k: "col_stats · 한 열의 요약",
+      qq: "열 이름을 받아 <code>(개수, 합, 최댓값)</code> 을 튜플로 돌려주세요.",
+      src: "import pandas as pd\n\ndef col_stats(df, name):\n    c = df[[name]]\n    return (len(c), c.sum(), c.max())\n",
+      sol: "import pandas as pd\n\ndef col_stats(df, name):\n    c = df[name]\n    return (int(c.count()), int(c.sum()), int(c.max()))\n",
+      tests: [["col_stats(pd.DataFrame({'a': [1, 2, 3]}), 'a')", "(3, 6, 3)"], ["col_stats(pd.DataFrame({'a': [1], 'b': [9]}), 'b')", "(1, 9, 9)"], ["col_stats(pd.DataFrame({'a': [5, 5]}), 'a')", "(2, 10, 5)"]],
+      edge: [["col_stats(pd.DataFrame({'a': [0, 10, -10]}), 'a')", "(3, 0, 10)"]],
+      ex: "`df[[name]]` 은 열이 하나뿐인 **표**라서 `sum()` 이 숫자가 아니라 Series 를 돌려줍니다. 열 하나를 값으로 다루려면 대괄호 하나 — `df[name]` 이에요.",
+    },
+    {
+      k: "to_number · 숫자인 줄 알았는데 문자열",
+      qq: "문자열로 들어온 열을 <b>숫자로 바꿔</b> 합계를 돌려주세요. 숫자가 아닌 값은 0으로 봅니다.",
+      src: "import pandas as pd\n\ndef to_number(df, name):\n    return int(df[name].sum())\n",
+      sol: "import pandas as pd\n\ndef to_number(df, name):\n    return int(pd.to_numeric(df[name], errors='coerce').fillna(0).sum())\n",
+      tests: [["to_number(pd.DataFrame({'a': ['1', '2', '3']}), 'a')", "6"], ["to_number(pd.DataFrame({'a': ['10', 'x', '5']}), 'a')", "15"], ["to_number(pd.DataFrame({'a': ['0', '0']}), 'a')", "0"]],
+      edge: [["to_number(pd.DataFrame({'a': ['x', 'y']}), 'a')", "0"]],
+      ex: "문자열 열에 `sum()` 을 하면 더해지는 게 아니라 **이어 붙습니다** — '1'+'2'+'3' 이 '123' 이 돼요. `to_numeric` 으로 바꾸고, 실패한 것은 `errors='coerce'` 로 NaN 을 만든 뒤 채웁니다.",
+    },
+    {
+      k: "wide · 표로 꺼내기",
+      qq: "열 이름 목록을 받아 <b>그 열들만 담은 DataFrame</b> 을 돌려주세요. 순서도 받은 그대로입니다.",
+      src: "import pandas as pd\n\ndef wide(df, names):\n    out = pd.DataFrame()\n    for n in names:\n        out[n] = df[n]\n    return out.sort_index(axis=1)\n",
+      sol: "import pandas as pd\n\ndef wide(df, names):\n    return df[names]\n",
+      tests: [["list(wide(pd.DataFrame({'a': [1], 'b': [2], 'c': [3]}), ['c', 'a']).columns)", "['c', 'a']"], ["wide(pd.DataFrame({'a': [1, 2], 'b': [3, 4]}), ['b']).shape", "(2, 1)"], ["wide(pd.DataFrame({'a': [1], 'b': [2]}), ['a', 'b']).to_dict('list')", "{'a': [1], 'b': [2]}"]],
+      edge: [["list(wide(pd.DataFrame({'z': [1], 'a': [2]}), ['z', 'a']).columns)", "['z', 'a']"]],
+      ex: "열 목록을 대괄호에 통째로 넣으면 순서까지 그대로 나옵니다. 하나씩 붙이고 정렬하는 코드는 길기만 한 데다, 요청한 순서를 알파벳순으로 바꿔 버려요 — 시킨 것과 다른 일을 하는 겁니다.",
+    },
+  ],
+},
+/* ── 인덱싱과 결측치 ──────────────────────────────────────── */
+{
+  unit: "선택과 필터링",
+  lesson: "직접 짜 보기 — 이름으로 고르고, 빈칸을 다루고",
+  th: {
+    sum: "`loc` 는 **이름**으로, `iloc` 는 **번호**로 고른다. 헷갈리면 조용히 다른 행이 나온다.",
+    body: [
+      { h: "loc 은 이름, iloc 은 위치", t: "인덱스가 `[10, 20, 30]` 인 표에서 `df.loc[10]` 은 첫 행이지만 `df.iloc[10]` 은 범위를 벗어난다. 인덱스가 0,1,2 일 때는 둘이 똑같이 동작해서, 그때 만든 코드가 나중에 필터링된 표에서 터진다." },
+      { h: "loc 의 슬라이스는 끝을 포함한다", t: "`df.loc[1:3]` 은 3번까지 나오고 `df.iloc[1:3]` 은 2번까지 나온다. 파이썬 슬라이스 습관 때문에 자주 틀리는 자리다 — 이름 기반이라 '어디까지' 를 이름으로 말하는 게 자연스럽기 때문이다." },
+      { h: "조건은 참/거짓 Series 로", t: "`df[df['a'] > 3]` 은 조건이 참인 행만 남긴다. 조건 두 개를 묶을 땐 `and` 가 아니라 `&` 를 쓰고, 각각을 괄호로 감싼다 — 연산자 우선순위 때문이다." },
+      { h: "결측은 값이 아니라 '없음'", t: "`NaN == NaN` 은 False 다. 그래서 `df['a'] == None` 같은 비교로는 못 찾고 `isna()` 를 쓴다. `dropna()` 는 기본이 '한 칸이라도 비면 그 행을 버린다' 라서, 생각보다 많이 지워지는 일이 잦다." },
+    ],
+    code: { c: "df.loc[10]        # 이름이 10인 행\ndf.iloc[0]        # 첫 번째 행\ndf.loc[1:3]       # 3 포함\ndf.iloc[1:3]      # 2 까지\n\ndf[(df.a > 1) & (df.b < 9)]   # and 아님, & 이고 괄호 필수\ndf['a'].isna()    # 결측 찾기", cap: "이름과 번호는 다른 세계다" },
+    key: ["`loc` 는 이름, `iloc` 는 번호", "`loc` 슬라이스는 끝을 포함", "결측은 `isna()` 로만 찾는다"],
+  },
+  q: [
+    {
+      k: "first_row · 언제나 맨 첫 행",
+      qq: "인덱스가 무엇이든 <b>맨 위 행</b>의 <code>'v'</code> 값을 돌려주세요.",
+      src: "import pandas as pd\n\ndef first_row(df):\n    return int(df.loc[0, 'v'])\n",
+      sol: "import pandas as pd\n\ndef first_row(df):\n    return int(df.iloc[0]['v'])\n",
+      tests: [["first_row(pd.DataFrame({'v': [7, 8]}))", "7"], ["first_row(pd.DataFrame({'v': [7, 8]}, index=[10, 20]))", "7"], ["first_row(pd.DataFrame({'v': [1, 2, 3]}, index=[5, 0, 9]))", "1"]],
+      edge: [["first_row(pd.DataFrame({'v': [4]}, index=['가']))", "4"]],
+      ex: "`loc[0]` 은 '이름이 0인 행' 입니다. 인덱스가 0,1,2 일 때만 우연히 맨 위와 같아요. 걸러 낸 표는 인덱스가 듬성듬성해지니, '맨 위' 를 원하면 반드시 `iloc[0]` 입니다.",
+    },
+    {
+      k: "in_range · 두 조건을 한 번에",
+      qq: "<code>'v'</code> 가 <code>lo</code> 이상 <code>hi</code> 이하인 행의 <b>개수</b>를 돌려주세요.",
+      src: "import pandas as pd\n\ndef in_range(df, lo, hi):\n    return int(len(df[df['v'] >= lo and df['v'] <= hi]))\n",
+      sol: "import pandas as pd\n\ndef in_range(df, lo, hi):\n    return int(len(df[(df['v'] >= lo) & (df['v'] <= hi)]))\n",
+      tests: [["in_range(pd.DataFrame({'v': [1, 5, 9]}), 2, 6)", "1"], ["in_range(pd.DataFrame({'v': [1, 2, 3, 4]}), 1, 4)", "4"], ["in_range(pd.DataFrame({'v': [10, 20]}), 0, 5)", "0"]],
+      edge: [["in_range(pd.DataFrame({'v': [3]}), 3, 3)", "1"]],
+      ex: "`and` 는 양쪽을 참/거짓 하나로 보려 하는데, Series 는 '전부 참인가 하나라도 참인가' 를 알 수 없어 그 자리에서 터집니다. 자리마다 따지려면 `&` 이고, `&` 는 비교보다 우선순위가 높아 괄호가 꼭 필요해요.",
+    },
+    {
+      k: "fill_mean · 빈칸은 평균으로",
+      qq: "<code>'v'</code> 열의 빈칸을 <b>그 열의 평균</b>으로 채운 목록을 돌려주세요.",
+      src: "import pandas as pd\n\ndef fill_mean(df):\n    return df.dropna()['v'].tolist()\n",
+      sol: "import pandas as pd\n\ndef fill_mean(df):\n    c = df['v']\n    return c.fillna(c.mean()).tolist()\n",
+      tests: [["fill_mean(pd.DataFrame({'v': [1.0, None, 3.0]}))", "[1.0, 2.0, 3.0]"], ["fill_mean(pd.DataFrame({'v': [2.0, 2.0]}))", "[2.0, 2.0]"], ["len(fill_mean(pd.DataFrame({'v': [1.0, None, None, 5.0]})))", "4"]],
+      edge: [["fill_mean(pd.DataFrame({'v': [4.0, None]}))", "[4.0, 4.0]"]],
+      ex: "`dropna()` 는 채우는 게 아니라 **버리는** 겁니다 — 행 수가 줄어서 옆의 다른 열과 길이가 안 맞게 돼요. 자리를 지키면서 값만 넣으려면 `fillna` 입니다. 평균은 NaN 을 빼고 계산되니 그대로 써도 됩니다.",
+    },
+  ],
+},
+/* ── groupby·merge·pivot ─────────────────────────────────── */
+{
+  unit: "그룹화와 결합",
+  lesson: "직접 짜 보기 — 묶고, 붙이고, 돌려 보고",
+  th: {
+    sum: "groupby 는 **묶어서 접기**, merge 는 **키로 이어 붙이기**, pivot 은 **긴 표를 넓게 펴기**다.",
+    body: [
+      { h: "묶고 → 접는다", t: "`df.groupby('g')['v'].sum()` 은 g 가 같은 행끼리 모아 v 를 더한다. 결과의 인덱스는 그룹 이름이 된다. `reset_index()` 를 붙이면 다시 보통 열로 내려온다 — 뒤에 merge 할 거라면 이게 편하다." },
+      { h: "merge 는 행 수가 변한다", t: "키가 한쪽에서만 한 번씩 나오면 행 수가 그대로지만, 한쪽에 같은 키가 두 번 있으면 행이 늘어난다. merge 뒤에 `len(df)` 를 확인하는 습관이 사고를 막는다." },
+      { h: "how 가 기본은 inner", t: "양쪽에 다 있는 키만 남는다. 왼쪽을 다 지키고 싶으면 `how='left'` 를 써야 하고, 그러면 짝이 없는 자리는 NaN 이 된다. '데이터가 줄었다' 는 사고의 대부분이 이것이다." },
+      { h: "pivot 은 보기 좋게 펴는 것", t: "`pivot_table(index=…, columns=…, values=…, aggfunc=…)` 은 한 축을 열로 펼친다. 같은 칸에 값이 여럿이면 aggfunc 으로 접는데, 기본이 평균이라 합계를 기대하면 틀린 값이 나온다." },
+    ],
+    code: { c: "df.groupby('g')['v'].sum()          # 묶어서 합\ndf.groupby('g')['v'].sum().reset_index()\n\na.merge(b, on='id', how='left')     # 왼쪽을 다 지킨다\n\ndf.pivot_table(index='d', columns='g',\n               values='v', aggfunc='sum')", cap: "접기 · 잇기 · 펴기" },
+    key: ["`groupby` 결과의 인덱스는 그룹 이름", "`merge` 는 행 수가 변한다", "`how` 기본은 inner"],
+  },
+  q: [
+    {
+      k: "group_sum · 묶어서 더하기",
+      qq: "<code>'g'</code> 별 <code>'v'</code> 합계를 <b>{그룹: 합}</b> 사전으로 돌려주세요.",
+      src: "import pandas as pd\n\ndef group_sum(df):\n    return df.groupby('g').sum().to_dict()\n",
+      sol: "import pandas as pd\n\ndef group_sum(df):\n    return {k: int(v) for k, v in df.groupby('g')['v'].sum().items()}\n",
+      tests: [["group_sum(pd.DataFrame({'g': ['a', 'b', 'a'], 'v': [1, 2, 3]}))", "{'a': 4, 'b': 2}"], ["group_sum(pd.DataFrame({'g': ['x'], 'v': [9]}))", "{'x': 9}"], ["group_sum(pd.DataFrame({'g': ['a', 'a'], 'v': [0, 0]}))", "{'a': 0}"]],
+      edge: [["group_sum(pd.DataFrame({'g': ['a', 'b'], 'v': [-1, 1]}))", "{'a': -1, 'b': 1}"]],
+      ex: "열을 안 고르고 `sum()` 하면 모든 숫자 열이 접혀서 표가 나오고, `to_dict()` 는 {열: {그룹: 값}} 이라는 두 겹 사전이 됩니다. 원하는 열을 먼저 골라야 Series 하나로 떨어져요.",
+    },
+    {
+      k: "keep_all · 짝이 없어도 버리지 않기",
+      qq: "왼쪽 표의 <b>모든 행</b>을 지키면서 오른쪽의 <code>'name'</code> 을 붙이세요. 짝이 없으면 <code>'없음'</code> 입니다.",
+      src: "import pandas as pd\n\ndef keep_all(a, b):\n    return a.merge(b, on='id')['name'].tolist()\n",
+      sol: "import pandas as pd\n\ndef keep_all(a, b):\n    m = a.merge(b, on='id', how='left')\n    return m['name'].fillna('없음').tolist()\n",
+      tests: [["keep_all(pd.DataFrame({'id': [1, 2]}), pd.DataFrame({'id': [1], 'name': ['가']}))", "['가', '없음']"], ["keep_all(pd.DataFrame({'id': [1, 2]}), pd.DataFrame({'id': [1, 2], 'name': ['가', '나']}))", "['가', '나']"], ["len(keep_all(pd.DataFrame({'id': [1, 2, 3]}), pd.DataFrame({'id': [9], 'name': ['x']})))", "3"]],
+      edge: [["keep_all(pd.DataFrame({'id': [5]}), pd.DataFrame({'id': pd.Series([], dtype='int64'), 'name': pd.Series([], dtype='object')}))", "['없음']"]],
+      ex: "merge 의 기본은 inner 라, 오른쪽에 없는 id 는 **행째로 사라집니다**. 원본 3행이 1행이 되어도 오류가 안 나요 — 그래서 merge 뒤에는 행 수부터 확인합니다. 왼쪽을 다 지키려면 `how='left'` 입니다.",
+    },
+    {
+      k: "pivot_sum · 펴서 합계로",
+      qq: "<code>'d'</code> 를 행, <code>'g'</code> 를 열로 펴고 값은 <b>합계</b>로 채우세요. 빈칸은 0입니다.",
+      src: "import pandas as pd\n\ndef pivot_sum(df):\n    p = df.pivot_table(index='d', columns='g', values='v', fill_value=0)\n    return p.to_dict('index')\n",
+      sol: "import pandas as pd\n\ndef pivot_sum(df):\n    p = df.pivot_table(index='d', columns='g', values='v', aggfunc='sum', fill_value=0)\n    return {k: {c: int(x) for c, x in row.items()} for k, row in p.to_dict('index').items()}\n",
+      tests: [["pivot_sum(pd.DataFrame({'d': [1, 1, 2], 'g': ['a', 'a', 'a'], 'v': [2, 4, 5]}))", "{1: {'a': 6}, 2: {'a': 5}}"], ["pivot_sum(pd.DataFrame({'d': [1, 1], 'g': ['a', 'b'], 'v': [3, 7]}))", "{1: {'a': 3, 'b': 7}}"], ["pivot_sum(pd.DataFrame({'d': [1, 2], 'g': ['a', 'b'], 'v': [1, 2]}))", "{1: {'a': 1, 'b': 0}, 2: {'a': 0, 'b': 2}}"]],
+      edge: [["pivot_sum(pd.DataFrame({'d': [1], 'g': ['a'], 'v': [0]}))", "{1: {'a': 0}}"]],
+      ex: "`pivot_table` 의 aggfunc 기본값은 **평균**입니다. 같은 칸에 값이 하나뿐이면 합계와 평균이 같아서 테스트가 통과해 버려요 — 한 칸에 값이 둘 이상인 데이터로 확인해야 드러납니다.",
+    },
+  ],
+},
+/* ── 결측치 심화 ─────────────────────────────────────────── */
+{
+  unit: "결측치와 중복 데이터 처리 전략",
+  lesson: "직접 짜 보기 — 빈칸을 정직하게 다루기",
+  th: {
+    sum: "결측을 채우는 방법마다 **거짓말의 종류가 다르다**. 무엇을 속이는지 알고 골라야 한다.",
+    body: [
+      { h: "0으로 채우면 평균이 내려간다", t: "'값이 없음' 과 '값이 0' 은 다른 뜻이다. 매출이 없는 날과 매출을 못 받아온 날을 0으로 합치면, 평균 매출이 실제보다 낮게 나온다. 채우기 전에 '없다는 게 무슨 뜻인가' 를 먼저 정한다." },
+      { h: "ffill 은 과거를 미래로 흘린다", t: "`ffill()` 은 바로 앞의 값으로 채운다. 시계열에서는 자연스럽지만, 맨 앞이 비어 있으면 채울 게 없어 그대로 NaN 이다. 그리고 정렬이 안 된 표에 쓰면 아무 관계 없는 행의 값이 흘러 들어온다 — 정렬부터 확인한다." },
+      { h: "dropna 는 기본이 '행 전체'", t: "`df.dropna()` 는 한 칸이라도 비면 그 행을 버린다. 관심 있는 열만 보려면 `subset=['v']` 를 준다. 안 그러면 상관없는 열의 빈칸 때문에 데이터가 반 토막 난다." },
+      { h: "빈칸이 몇 개인지부터 센다", t: "`df.isna().sum()` 은 열마다 결측 개수를 준다. 채우기 전에 이걸 찍어 보면, '이 열은 90%가 비어 있어서 채울 게 아니라 버려야 한다' 같은 판단이 선다." },
+    ],
+    code: { c: "df.isna().sum()          # 열마다 몇 개나 비었나\n\ndf['v'].fillna(0)        # 0 이라고 단정\ndf['v'].fillna(df['v'].mean())   # 평균으로 눙치기\ndf.sort_values('t')['v'].ffill() # 앞 값으로 (정렬 먼저!)\n\ndf.dropna(subset=['v'])  # 이 열만 보고 버린다", cap: "무엇을 속일지 고르는 일" },
+    key: ["'없음' 과 '0' 은 다른 뜻", "`ffill` 은 정렬이 먼저", "`dropna` 는 `subset` 을 준다"],
+  },
+  q: [
+    {
+      k: "na_report · 어디가 비었나",
+      qq: "열마다 <b>결측 개수</b>를 <code>{열: 개수}</code> 사전으로 돌려주세요.",
+      src: "import pandas as pd\n\ndef na_report(df):\n    return {c: int((df[c] == None).sum()) for c in df.columns}\n",
+      sol: "import pandas as pd\n\ndef na_report(df):\n    return {c: int(df[c].isna().sum()) for c in df.columns}\n",
+      tests: [["na_report(pd.DataFrame({'a': [1.0, None], 'b': [1.0, 2.0]}))", "{'a': 1, 'b': 0}"], ["na_report(pd.DataFrame({'a': [None, None]}))", "{'a': 2}"], ["na_report(pd.DataFrame({'a': [1.0, 2.0]}))", "{'a': 0}"]],
+      edge: [["na_report(pd.DataFrame({'a': ['x', None]}))", "{'a': 1}"]],
+      ex: "`== None` 은 결측을 못 찾습니다 — 결측은 무엇과 비교해도 거짓이라 전부 False 가 나와요. 개수는 항상 0 입니다. 결측은 `isna()` 로만 찾습니다.",
+    },
+    {
+      k: "drop_v · 이 열만 보고 버리기",
+      qq: "<code>'v'</code> 가 빈 행만 버리세요. 다른 열이 비어 있는 것은 <b>그대로 둡니다</b>.",
+      src: "import pandas as pd\n\ndef drop_v(df):\n    return len(df.dropna())\n",
+      sol: "import pandas as pd\n\ndef drop_v(df):\n    return len(df.dropna(subset=['v']))\n",
+      tests: [["drop_v(pd.DataFrame({'v': [1.0, None], 'memo': [None, None]}))", "1"], ["drop_v(pd.DataFrame({'v': [1.0, 2.0], 'memo': [None, None]}))", "2"], ["drop_v(pd.DataFrame({'v': [None, None], 'memo': ['a', 'b']}))", "0"]],
+      edge: [["drop_v(pd.DataFrame({'v': [1.0], 'memo': [None]}))", "1"]],
+      ex: "메모처럼 비어 있어도 괜찮은 열이 하나만 있어도, 그냥 `dropna()` 는 표를 통째로 비워 버립니다. 실무에서 '왜 데이터가 다 사라졌지' 의 절반이 이거예요 — 볼 열을 `subset` 으로 못 박습니다.",
+    },
+    {
+      k: "fill_series · 앞 값으로 흘리기 전에 정렬",
+      qq: "<code>'t'</code> 순으로 정렬한 뒤 <code>'v'</code> 의 빈칸을 <b>바로 앞 값</b>으로 채워 목록으로 돌려주세요.",
+      src: "import pandas as pd\n\ndef fill_series(df):\n    return df['v'].ffill().tolist()\n",
+      sol: "import pandas as pd\n\ndef fill_series(df):\n    return df.sort_values('t')['v'].ffill().tolist()\n",
+      tests: [["fill_series(pd.DataFrame({'t': [2, 1, 3], 'v': [None, 5.0, None]}))", "[5.0, 5.0, 5.0]"], ["fill_series(pd.DataFrame({'t': [1, 2], 'v': [1.0, None]}))", "[1.0, 1.0]"], ["fill_series(pd.DataFrame({'t': [3, 1, 2], 'v': [9.0, 1.0, None]}))", "[1.0, 1.0, 9.0]"]],
+      edge: [["fill_series(pd.DataFrame({'t': [1], 'v': [7.0]}))", "[7.0]"]],
+      ex: "ffill 은 '표에 적힌 순서' 로 앞 값을 흘립니다. 시간순으로 정렬돼 있지 않으면 미래 값이 과거로 흘러 들어가요 — 예측 모델이라면 이게 그대로 데이터 누수입니다. 정렬을 먼저 하세요.",
+    },
+  ],
+},
+/* ── 조인 심화 ───────────────────────────────────────────── */
+{
+  unit: "merge/join과 키 중복에 의한 행 폭증 (중급)",
+  lesson: "직접 짜 보기 — 붙이기 전에 행 수를 센다",
+  th: {
+    sum: "조인은 **행 수가 변하는 연산**이다. 늘어나는지 줄어드는지 먼저 알고 붙인다.",
+    body: [
+      { h: "키가 중복되면 곱해진다", t: "왼쪽에 id=1 이 2행, 오른쪽에 id=1 이 3행이면 결과는 6행이다. 집계 전에 이런 일이 생기면 합계가 뻥튀기된다 — '매출이 왜 3배지' 의 흔한 원인이다." },
+      { h: "validate 로 미리 막는다", t: "`merge(..., validate='one_to_one')` 처럼 적어 두면, 기대와 다를 때 조용히 늘어나는 대신 예외로 알려 준다. 사람이 잊어도 코드가 기억한다." },
+      { h: "indicator 로 어디서 왔는지 본다", t: "`indicator=True` 를 주면 `_merge` 열이 생겨 각 행이 왼쪽에만·오른쪽에만·양쪽에 있었는지 알려 준다. 조인이 이상할 때 가장 먼저 켜 보는 스위치다." },
+      { h: "이름이 겹치면 접미사가 붙는다", t: "양쪽에 `name` 이 있으면 `name_x`, `name_y` 가 된다. `suffixes=('_left','_right')` 로 뜻이 통하게 바꿔 두면 아래 코드가 훨씬 읽힌다." },
+    ],
+    code: { c: "before = len(a)\nm = a.merge(b, on='id', how='left')\nlen(m) == before        # 늘어났는가?\n\na.merge(b, on='id', validate='one_to_one')   # 아니면 예외\na.merge(b, on='id', indicator=True)['_merge']", cap: "붙이기 전과 후의 행 수를 견준다" },
+    key: ["키가 겹치면 행이 곱해진다", "`validate` 로 기대를 적어 둔다", "`indicator` 로 출처를 본다"],
+  },
+  q: [
+    {
+      k: "safe_join · 늘어나면 알려 주기",
+      qq: "두 표를 <code>'id'</code> 로 붙이되, <b>행 수가 늘어나면</b> <code>None</code> 을 돌려주세요. 늘지 않으면 붙인 행 수입니다.",
+      src: "import pandas as pd\n\ndef safe_join(a, b):\n    return len(a.merge(b, on='id', how='left'))\n",
+      sol: "import pandas as pd\n\ndef safe_join(a, b):\n    m = a.merge(b, on='id', how='left')\n    return None if len(m) > len(a) else len(m)\n",
+      tests: [["safe_join(pd.DataFrame({'id': [1, 2]}), pd.DataFrame({'id': [1], 'n': ['가']}))", "2"], ["safe_join(pd.DataFrame({'id': [1]}), pd.DataFrame({'id': [1, 1], 'n': ['가', '나']}))", "None"], ["safe_join(pd.DataFrame({'id': [1, 2]}), pd.DataFrame({'id': [1, 2], 'n': ['가', '나']}))", "2"]],
+      edge: [["safe_join(pd.DataFrame({'id': [1, 1]}), pd.DataFrame({'id': [1, 1], 'n': ['가', '나']}))", "None"]],
+      ex: "`how='left'` 는 행이 줄지 않는다고 보장할 뿐, **늘지 않는다는 보장은 없습니다**. 오른쪽에 키가 두 번 있으면 왼쪽 행이 복제돼요. 그래서 조인 전후의 행 수를 견주는 한 줄이 필요합니다.",
+    },
+    {
+      k: "only_left · 왼쪽에만 있는 것",
+      qq: "왼쪽에만 있고 오른쪽에는 없는 <code>'id'</code> 목록을 돌려주세요.",
+      src: "import pandas as pd\n\ndef only_left(a, b):\n    m = a.merge(b, on='id', how='left')\n    return m[m['n'].isna()]['id'].tolist()\n",
+      sol: "import pandas as pd\n\ndef only_left(a, b):\n    m = a.merge(b, on='id', how='left', indicator=True)\n    return m[m['_merge'] == 'left_only']['id'].tolist()\n",
+      tests: [["only_left(pd.DataFrame({'id': [1, 2, 3]}), pd.DataFrame({'id': [2], 'n': ['가']}))", "[1, 3]"], ["only_left(pd.DataFrame({'id': [1]}), pd.DataFrame({'id': [1], 'n': ['가']}))", "[]"], ["only_left(pd.DataFrame({'id': [1, 2]}), pd.DataFrame({'id': pd.Series([], dtype='int64'), 'n': pd.Series([], dtype='object')}))", "[1, 2]"]],
+      edge: [["only_left(pd.DataFrame({'id': [5]}), pd.DataFrame({'id': [5], 'n': [None]}))", "[]"]],
+      ex: "'n 이 비었다' 와 '짝이 없었다' 는 다릅니다 — 오른쪽에 짝이 있는데 그 값이 원래 NaN 이면 첫 코드는 없는 것으로 셉니다. `indicator=True` 는 값이 아니라 **출처**를 알려 주니 그런 착각이 없어요.",
+    },
+    {
+      k: "tag_cols · 겹치는 이름에 뜻 붙이기",
+      qq: "양쪽에 모두 <code>'name'</code> 이 있습니다. 왼쪽은 <code>'name_주문'</code>, 오른쪽은 <code>'name_고객'</code> 이 되게 붙이세요.",
+      src: "import pandas as pd\n\ndef tag_cols(a, b):\n    return sorted(a.merge(b, on='id').columns)\n",
+      sol: "import pandas as pd\n\ndef tag_cols(a, b):\n    m = a.merge(b, on='id', suffixes=('_주문', '_고객'))\n    return sorted(m.columns)\n",
+      tests: [["tag_cols(pd.DataFrame({'id': [1], 'name': ['가']}), pd.DataFrame({'id': [1], 'name': ['나']}))", "['id', 'name_고객', 'name_주문']"], ["len(tag_cols(pd.DataFrame({'id': [1], 'name': ['가']}), pd.DataFrame({'id': [1], 'name': ['나']})))", "3"], ["tag_cols(pd.DataFrame({'id': [1, 2], 'name': ['가', '나']}), pd.DataFrame({'id': [1, 2], 'name': ['다', '라']}))", "['id', 'name_고객', 'name_주문']"]],
+      edge: [["tag_cols(pd.DataFrame({'id': pd.Series([], dtype='int64'), 'name': pd.Series([], dtype='object')}), pd.DataFrame({'id': pd.Series([], dtype='int64'), 'name': pd.Series([], dtype='object')}))", "['id', 'name_고객', 'name_주문']"]],
+      ex: "기본 접미사는 `_x`, `_y` 라서 석 달 뒤에 보면 어느 쪽이 무엇인지 알 수 없습니다. 붙이는 자리에서 뜻을 적어 두면 아래 코드 전부가 읽기 쉬워져요.",
+    },
+  ],
+},
+/* ── groupby 심화 ────────────────────────────────────────── */
+{
+  unit: "groupby: agg · transform · apply · filter 완전 구분 (중급)",
+  lesson: "직접 짜 보기 — 접을 것인가, 되돌려 붙일 것인가",
+  th: {
+    sum: "`agg` 는 **그룹당 한 줄**로 접고, `transform` 은 **원래 행 수 그대로** 돌려준다.",
+    body: [
+      { h: "모양이 다르다는 것이 핵심", t: "3그룹 10행짜리 표에서 `agg('mean')` 은 3행, `transform('mean')` 은 10행이 나온다. 원본 옆에 새 열로 붙이려면 행 수가 같아야 하니 transform 이다 — 이걸 모르면 merge 를 빙 둘러 하게 된다." },
+      { h: "여러 집계를 한 번에", t: "`agg(['sum','mean'])` 이나 `agg(총합=('v','sum'), 평균=('v','mean'))` 처럼 이름을 붙여 여러 개를 한 번에 낼 수 있다. 열 이름을 직접 정하는 쪽이 나중에 읽기 좋다." },
+      { h: "filter 는 그룹째로 남기거나 버린다", t: "`groupby('g').filter(lambda x: len(x) >= 3)` 은 3행 이상인 그룹의 **행 전부**를 남긴다. 행 단위 조건이 아니라 그룹 단위 조건이라는 점이 다르다." },
+      { h: "키가 NaN 인 행은 조용히 빠진다", t: "groupby 는 기본적으로 그룹 키가 결측인 행을 버린다. 합계가 안 맞을 때 의외로 자주 이것이 범인이다 — 세고 싶으면 `dropna=False` 를 준다." },
+    ],
+    code: { c: "df.groupby('g')['v'].agg('mean')        # 그룹 수만큼\ndf.groupby('g')['v'].transform('mean')  # 원래 행 수만큼\ndf['평균'] = df.groupby('g')['v'].transform('mean')\n\ndf.groupby('g').filter(lambda x: len(x) >= 3)\ndf.groupby('g', dropna=False)['v'].sum()", cap: "접을 것인가 되돌릴 것인가" },
+    key: ["`agg` 는 접고 `transform` 은 유지", "이름 붙인 집계가 읽기 좋다", "키가 NaN 이면 기본으로 빠진다"],
+  },
+  q: [
+    {
+      k: "add_group_mean · 원본 옆에 붙이기",
+      qq: "각 행에 <b>자기 그룹의 평균</b>을 담은 열을 더해, 그 열을 목록으로 돌려주세요.",
+      src: "import pandas as pd\n\ndef add_group_mean(df):\n    return df.groupby('g')['v'].mean().tolist()\n",
+      sol: "import pandas as pd\n\ndef add_group_mean(df):\n    return df.groupby('g')['v'].transform('mean').tolist()\n",
+      tests: [["add_group_mean(pd.DataFrame({'g': ['a', 'a', 'b'], 'v': [1.0, 3.0, 5.0]}))", "[2.0, 2.0, 5.0]"], ["len(add_group_mean(pd.DataFrame({'g': ['a', 'a', 'a'], 'v': [1.0, 2.0, 3.0]})))", "3"], ["add_group_mean(pd.DataFrame({'g': ['x', 'y'], 'v': [4.0, 8.0]}))", "[4.0, 8.0]"]],
+      edge: [["add_group_mean(pd.DataFrame({'g': ['a'], 'v': [9.0]}))", "[9.0]"]],
+      ex: "`mean()` 은 그룹 수만큼으로 접혀서 원본 옆에 못 붙입니다 — 3행짜리 표에 2개짜리 목록을 붙일 수는 없으니까요. `transform` 은 접은 값을 각 행에 되돌려 뿌려 줍니다.",
+    },
+    {
+      k: "big_groups · 그룹째로 남기기",
+      qq: "행이 <code>k</code>개 <b>이상</b>인 그룹만 남기고, 남은 행 수를 돌려주세요.",
+      src: "import pandas as pd\n\ndef big_groups(df, k):\n    return int(len(df[df.groupby('g')['v'].transform('size') >= k]['g'].unique()))\n",
+      sol: "import pandas as pd\n\ndef big_groups(df, k):\n    return int(len(df.groupby('g').filter(lambda x: len(x) >= k)))\n",
+      tests: [["big_groups(pd.DataFrame({'g': ['a', 'a', 'b'], 'v': [1, 2, 3]}), 2)", "2"], ["big_groups(pd.DataFrame({'g': ['a', 'a', 'b', 'b'], 'v': [1, 2, 3, 4]}), 2)", "4"], ["big_groups(pd.DataFrame({'g': ['a', 'b'], 'v': [1, 2]}), 2)", "0"]],
+      edge: [["big_groups(pd.DataFrame({'g': ['a', 'a', 'a'], 'v': [1, 2, 3]}), 1)", "3"]],
+      ex: "묻는 것은 남은 **행** 수인데 그룹 개수를 세면 전혀 다른 값이 나옵니다. `filter` 는 조건을 통과한 그룹의 행을 전부 그대로 돌려주니, 길이만 재면 됩니다.",
+    },
+    {
+      k: "count_all · 빠진 그룹까지 세기",
+      qq: "그룹 키가 <b>비어 있는 행도 하나의 그룹</b>으로 세어, 전체 행 수의 합이 맞게 하세요. 세어진 행 수를 돌려줍니다.",
+      src: "import pandas as pd\n\ndef count_all(df):\n    return int(df.groupby('g')['v'].count().sum())\n",
+      sol: "import pandas as pd\n\ndef count_all(df):\n    return int(df.groupby('g', dropna=False)['v'].count().sum())\n",
+      tests: [["count_all(pd.DataFrame({'g': ['a', None, 'b'], 'v': [1, 2, 3]}))", "3"], ["count_all(pd.DataFrame({'g': ['a', 'a'], 'v': [1, 2]}))", "2"], ["count_all(pd.DataFrame({'g': [None, None], 'v': [1, 2]}))", "2"]],
+      edge: [["count_all(pd.DataFrame({'g': ['a', None], 'v': [1, 2]}))", "2"]],
+      ex: "groupby 는 키가 결측인 행을 말없이 버립니다. 그래서 그룹별 합계를 더해도 전체 합계와 안 맞아요 — 원인을 찾느라 한참 헤매게 됩니다. `dropna=False` 를 주면 결측도 하나의 그룹이 됩니다.",
+    },
+  ],
+},
+/* ── 시계열·성능 ─────────────────────────────────────────── */
+{
+  unit: "시계열 리샘플링·롤링과 성능·메모리 심화",
+  lesson: "직접 짜 보기 — 시간으로 묶고, 누수 없이 굴리기",
+  th: {
+    sum: "시계열은 **시간 인덱스**가 있어야 접을 수 있고, rolling 은 **미래를 보면 안 된다**.",
+    body: [
+      { h: "resample 은 시간 기준 groupby", t: "인덱스가 날짜/시간일 때만 쓸 수 있다. `resample('D').sum()` 은 하루 단위로 접는다. 시간 열이 그냥 문자열이면 먼저 `pd.to_datetime` 으로 바꾸고 인덱스로 올려야 한다." },
+      { h: "rolling 은 창을 굴린다", t: "`rolling(3).mean()` 은 자기 자신을 포함한 최근 3개의 평균이다. 앞의 두 개는 창이 안 차서 NaN 이다 — 이 NaN 은 버그가 아니라 정직함이다." },
+      { h: "미래를 쓰면 누수다", t: "예측에 쓸 특징을 만들 때 `rolling` 창에 오늘 값이 들어가면, 오늘을 맞히는 데 오늘을 쓰는 셈이다. `shift(1)` 로 한 칸 밀어 과거만 보게 한다. 검증 점수만 좋고 실제로는 안 맞는 모델이 대개 이것 때문이다." },
+      { h: "메모리는 dtype 에서 줄인다", t: "반복되는 문자열 열을 `category` 로 바꾸면 메모리가 크게 준다. 큰 정수가 필요 없으면 `int32`, `int8` 로 내린다 — 수백만 행에서는 이 한 줄이 몇 배 차이를 만든다." },
+    ],
+    code: { c: "df['t'] = pd.to_datetime(df['t'])\ndf.set_index('t').resample('D')['v'].sum()\n\ns.rolling(3).mean()        # 앞 2개는 NaN\ns.shift(1).rolling(3).mean()   # 과거만 본다\n\ndf['g'] = df['g'].astype('category')", cap: "시간으로 접고, 과거만 본다" },
+    key: ["`resample` 은 시간 인덱스가 필요", "`rolling` 앞쪽 NaN 은 정직함", "`shift(1)` 로 누수를 막는다"],
+  },
+  q: [
+    {
+      k: "daily · 하루 단위로 접기",
+      qq: "문자열 날짜 열 <code>'t'</code> 를 기준으로 <b>하루</b>씩 <code>'v'</code> 를 더해 목록으로 돌려주세요.",
+      src: "import pandas as pd\n\ndef daily(df):\n    return df.set_index('t').resample('D')['v'].sum().tolist()\n",
+      sol: "import pandas as pd\n\ndef daily(df):\n    d = df.copy()\n    d['t'] = pd.to_datetime(d['t'])\n    return d.set_index('t').resample('D')['v'].sum().tolist()\n",
+      tests: [["daily(pd.DataFrame({'t': ['2024-01-01', '2024-01-01', '2024-01-02'], 'v': [1, 2, 5]}))", "[3, 5]"], ["daily(pd.DataFrame({'t': ['2024-01-01'], 'v': [7]}))", "[7]"], ["len(daily(pd.DataFrame({'t': ['2024-01-01', '2024-01-03'], 'v': [1, 1]})))", "3"]],
+      edge: [["daily(pd.DataFrame({'t': ['2024-01-01', '2024-01-03'], 'v': [1, 1]}))", "[1, 0, 1]"]],
+      ex: "`resample` 은 인덱스가 진짜 시간일 때만 됩니다 — 문자열이면 '시간 인덱스가 아니다' 로 터져요. 그리고 시간으로 바꾸면 빈 날도 0으로 채워져 나옵니다. 원본을 고치지 않도록 `copy()` 로 시작한 것도 눈여겨보세요.",
+    },
+    {
+      k: "past_mean · 과거만 보는 평균",
+      qq: "각 시점에서 <b>그 이전 3개</b>의 평균을 구하세요. 오늘 값은 들어가면 안 됩니다.",
+      src: "import pandas as pd\n\ndef past_mean(s):\n    return s.rolling(3).mean().tolist()\n",
+      sol: "import pandas as pd\n\ndef past_mean(s):\n    return s.shift(1).rolling(3).mean().tolist()\n",
+      tests: [["past_mean(pd.Series([1.0, 2.0, 3.0, 4.0]))[3]", "2.0"], ["str(past_mean(pd.Series([1.0, 2.0, 3.0]))[2])", "'nan'"], ["len(past_mean(pd.Series([1.0, 2.0, 3.0, 4.0, 5.0])))", "5"]],
+      edge: [["past_mean(pd.Series([0.0, 0.0, 0.0, 0.0, 6.0]))[4]", "0.0"]],
+      ex: "`rolling(3)` 은 자기 자신을 포함합니다. 내일을 예측하는 특징에 오늘 값이 섞이면, 검증 점수는 훌륭한데 실제로는 못 맞히는 모델이 나와요. `shift(1)` 한 줄이 그 경계를 긋습니다.",
+    },
+    {
+      k: "shrink · 메모리를 줄이는 dtype",
+      qq: "반복이 많은 문자열 열 <code>'g'</code> 를 <b>category</b> 로 바꿔 dtype 이름을 돌려주세요.",
+      src: "import pandas as pd\n\ndef shrink(df):\n    return str(df['g'].astype('string').dtype)\n",
+      sol: "import pandas as pd\n\ndef shrink(df):\n    return str(df['g'].astype('category').dtype)\n",
+      tests: [["shrink(pd.DataFrame({'g': ['a', 'a', 'b']}))", "'category'"], ["shrink(pd.DataFrame({'g': ['x']}))", "'category'"], ["shrink(pd.DataFrame({'g': ['a', 'b', 'a', 'b']}))", "'category'"]],
+      edge: [["shrink(pd.DataFrame({'g': []}))", "'category'"]],
+      ex: "같은 문자열이 수백만 번 반복되면, category 는 실제 값을 한 벌만 저장하고 나머지는 번호로 가리킵니다. 메모리가 수십 배 줄기도 해요 — `string` 은 여전히 문자열마다 저장하니 그 이득이 없습니다.",
+    },
+  ],
+},
+/* ── 코드 리뷰 ───────────────────────────────────────────── */
+{
+  unit: "코드 리뷰 — 결함 찾기",
+  lesson: "직접 고쳐 보기 — 리뷰에서 자주 걸리는 세 가지",
+  th: {
+    sum: "pandas 리뷰의 단골은 **조용한 사본, 조용한 행 손실, 조용한 반복문**이다. 셋 다 오류를 안 낸다.",
+    body: [
+      { h: "SettingWithCopy — 고쳤는데 안 바뀐다", t: "`df[df.a > 0]['b'] = 1` 은 걸러 낸 사본에 쓰는 것이라 원본이 안 바뀐다. 경고만 뜨고 넘어가서 더 나쁘다. `df.loc[df.a > 0, 'b'] = 1` 처럼 한 번에 지정해야 한다." },
+      { h: "행이 몇 개인지 늘 확인한다", t: "merge, dropna, groupby 는 전부 행 수를 바꾼다. 함수 앞뒤로 `len` 을 찍어 보는 습관 하나가, 절반이 사라진 표로 보고서를 만드는 사고를 막는다." },
+      { h: "iterrows 는 마지막 수단", t: "`for _, row in df.iterrows()` 는 행마다 Series 를 새로 만들어 아주 느리고, dtype 도 뒤섞인다. 대개 벡터화 연산이나 `assign` 한 줄로 대체된다." },
+      { h: "리뷰어는 데이터를 의심한다", t: "'키가 유일한가', '결측이 있나', '정렬돼 있나' — 이 셋을 묻지 않은 코드는 지금 데이터에서만 맞는 코드다." },
+    ],
+    code: { c: "# ① 사본에 쓰기\ndf[df.a > 0]['b'] = 1        # 안 바뀐다\ndf.loc[df.a > 0, 'b'] = 1    # 이렇게\n\n# ② 행 수 확인\nbefore = len(df); ... ; assert len(df) == before\n\n# ③ 반복문 대신\ndf['c'] = df['a'] * 2", cap: "셋 다 오류를 안 낸다" },
+    key: ["`loc` 한 번에 지정한다", "행 수를 앞뒤로 견준다", "`iterrows` 는 벡터화로 바꾼다"],
+  },
+  q: [
+    {
+      k: "bump · 고쳤는데 왜 안 바뀌지",
+      qq: "<code>'a'</code> 가 0보다 큰 행의 <code>'b'</code> 를 <b>100</b> 으로 바꾸세요. 원본 표가 실제로 바뀌어야 합니다.",
+      src: "import pandas as pd\n\ndef bump(df):\n    df[df['a'] > 0]['b'] = 100\n    return df['b'].tolist()\n",
+      sol: "import pandas as pd\n\ndef bump(df):\n    df.loc[df['a'] > 0, 'b'] = 100\n    return df['b'].tolist()\n",
+      tests: [["bump(pd.DataFrame({'a': [1, -1], 'b': [0, 0]}))", "[100, 0]"], ["bump(pd.DataFrame({'a': [-1, -2], 'b': [5, 6]}))", "[5, 6]"], ["bump(pd.DataFrame({'a': [1, 2], 'b': [0, 0]}))", "[100, 100]"]],
+      edge: [["bump(pd.DataFrame({'a': [0], 'b': [7]}))", "[7]"]],
+      ex: "`df[조건]` 은 새 표를 만듭니다. 거기에 값을 넣으면 그 임시 표만 바뀌고 원본은 그대로예요 — 오류도 안 나고 경고 한 줄만 지나갑니다. 고를 것과 고칠 것을 `loc` 하나로 함께 적으면 원본에 직접 닿습니다.",
+    },
+    {
+      k: "add_col_fast · 반복문을 걷어내기",
+      qq: "<code>'a'</code> 와 <code>'b'</code> 를 더한 <code>'c'</code> 열을 만들어 목록으로 돌려주세요. <b>iterrows 없이</b> 씁니다.",
+      src: "import pandas as pd\n\ndef add_col_fast(df):\n    out = []\n    for _, row in df.iterrows():\n        out.append(int(row['a']) + int(row['b']))\n    return out\n",
+      sol: "import pandas as pd\n\ndef add_col_fast(df):\n    return (df['a'] + df['b']).tolist()\n",
+      tests: [["add_col_fast(pd.DataFrame({'a': [1, 2], 'b': [10, 20]}))", "[11, 22]"], ["add_col_fast(pd.DataFrame({'a': [], 'b': []}))", "[]"], ["add_col_fast(pd.DataFrame({'a': [1.5], 'b': [0.5]}))", "[2.0]"]],
+      edge: [["add_col_fast(pd.DataFrame({'a': [0.5, 1.0], 'b': [0.25, 0.0]}))", "[0.75, 1.0]"]],
+      ex: "`iterrows` 는 느린 것도 문제지만, 여기서는 `int()` 로 감싸는 바람에 소수가 잘려 답이 아예 틀립니다. 열끼리 그냥 더하면 dtype 이 알아서 맞고, 빈 표도 자연스럽게 빈 목록이 돼요.",
+    },
+    {
+      k: "report · 사라진 행을 알아채기",
+      qq: "결측 행을 버린 뒤 <code>(남은 행 수, 버려진 행 수)</code> 를 돌려주세요. 리뷰어가 '몇 개가 사라졌는지 모르겠다' 고 했습니다.",
+      src: "import pandas as pd\n\ndef report(df):\n    d = df.dropna()\n    return (len(d), len(d))\n",
+      sol: "import pandas as pd\n\ndef report(df):\n    before = len(df)\n    d = df.dropna()\n    return (len(d), before - len(d))\n",
+      tests: [["report(pd.DataFrame({'v': [1.0, None, 3.0]}))", "(2, 1)"], ["report(pd.DataFrame({'v': [1.0, 2.0]}))", "(2, 0)"], ["report(pd.DataFrame({'v': [None, None]}))", "(0, 2)"]],
+      edge: [["report(pd.DataFrame({'v': []}))", "(0, 0)"]],
+      ex: "버린 개수는 '버리기 전' 을 재 둬야만 알 수 있습니다. 버린 뒤의 값만 두 번 쓰면 항상 같은 숫자가 나와 결측이 없는 데이터에서는 그럴듯해 보여요 — 그래서 결측이 있는 데이터로 꼭 확인합니다.",
+    },
+  ],
+},
+];
