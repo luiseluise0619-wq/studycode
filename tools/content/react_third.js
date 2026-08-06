@@ -199,7 +199,9 @@ module.exports = [
       tests: [
         { d: "처음에는 비어 있다", js: "TXT('.out')===''" },
         { d: "보내면 값이 나온다", js: "(CLICK('.go'), TXT('.out')==='가')" },
-        { d: "기본 동작을 막았다", js: "(function(){var ok=true;var h=function(e){ok=!e.defaultPrevented?false:true;};document.addEventListener('submit',h,true);CLICK('.go');document.removeEventListener('submit',h,true);return ok;})()" },
+        /* 캡처가 아니라 버블 단계로 듣는다. 캡처는 React 의 처리기보다 먼저 돌아서,
+   막았는지 안 막았는지가 아직 정해지지 않은 시점의 값을 보게 된다. */
+        { d: "기본 동작을 막았다", js: "(function(){var ok=false;var h=function(e){ok=e.defaultPrevented;};document.addEventListener('submit',h);CLICK('.go');document.removeEventListener('submit',h);return ok;})()" },
       ],
       ex: "폼 제출은 브라우저가 페이지를 새로 여는 기본 동작을 갖고 있습니다. React 앱에서는 대개 원하지 않는 동작이라, preventDefault 로 막지 않으면 입력하던 값이 통째로 사라져요.",
     },
