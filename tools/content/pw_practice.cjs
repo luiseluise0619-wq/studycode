@@ -25,6 +25,7 @@ const ALGO = require("./algo_basic.js");
 const JSMID = require("./js_mid.js");
 const JSASYNC = require("./js_async.js");
 const JS3 = require("./js_third.js");
+const BE3 = require("./be_third.js");
 
 function serve() {
   const T = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json",
@@ -67,7 +68,7 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
   await p.goto("http://127.0.0.1:" + srv.address().port + "/index.html");
   await p.waitForFunction(() => typeof testDoc === "function" && typeof gradeSql === "function" && typeof htmlTestDoc === "function" && typeof reactTestDoc === "function", { timeout: 60000 });
 
-  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(JSASYNC, "js")).concat(flat(JS3, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(SQL3, "sql")).concat(flat(WEB, "html")).concat(flat(WEB2, "html")).concat(flat(REACT, "react")).concat(flat(REACTA, "react")).concat(flat(REACT3, "react"));
+  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(JSASYNC, "js")).concat(flat(JS3, "js")).concat(flat(BE3, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(SQL3, "sql")).concat(flat(WEB, "html")).concat(flat(WEB2, "html")).concat(flat(REACT, "react")).concat(flat(REACTA, "react")).concat(flat(REACT3, "react"));
   /* 한 언어만 다시 보고 싶을 때가 있다 — React 는 한 문항에 최대 24초라
      전체를 다시 돌리면 15분이 넘는다. PW_ONLY=react 처럼 골라서 돌린다. */
   const only = process.env.PW_ONLY;
