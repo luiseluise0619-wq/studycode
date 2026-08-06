@@ -4197,9 +4197,14 @@ function htmlTestDoc(userHtml, tests){
   +'function W(s){return Math.round(RECT(s).width);}function H(s){return Math.round(RECT(s).height);}'
   /* 사용자가 쓴 CSS 원문. 러너가 넣은 style(#__s)은 빼야 자기 스타일을 검사하는 사고가 안 난다 */
   +'function SRCCSS(){return QA("style").filter(function(e){return e.id!=="__s";}).map(function(e){return e.textContent;}).join(String.fromCharCode(10));}'
-  +'function run(){var pass=0,html="",det=[];'
+  /* 검사식이 프라미스를 돌려주면 기다렸다 판정한다. React 에서 데이터를 불러오는
+     화면은 '조금 뒤에' 바뀌므로, 기다리지 못하면 로딩 상태만 보고 채점하게 된다.
+     끝나지 않는 프라미스는 3초에서 끊는다 — 채점기가 멎으면 아무것도 못 한다. */
+  +'function __rwait(v){if(!v||typeof v.then!=="function")return Promise.resolve(v);'
+  +'return Promise.race([v,new Promise(function(_,rj){setTimeout(function(){rj(new Error("\\uc2dc\\uac04 \\ucd08\\uacfc"));},3000);})]);}'
+  +'async function run(){var pass=0,html="",det=[];'
   +'for(var i=0;i<TS.length;i++){var t=TS[i],ok=false,why="";'
-  +'try{ok=!!eval(t.js);}catch(e){why=" ("+(e&&e.message||e)+")";}'
+  +'try{ok=!!(await __rwait(eval(t.js)));}catch(e){why=" ("+(e&&e.message||e)+")";}'
   +'if(ok)pass++;det.push({d:t.d,ok:ok});'
   +'html+="<div style=\\"color:"+(ok?"#4ade80":"#ff6b6b")+"\\">"+(ok?"\u2713":"\u2717")+" "+esc(t.d)+esc(why)+"</div>";}'
   +'var gate=TS.length>0&&pass===TS.length;'
@@ -4216,7 +4221,7 @@ function htmlTestDoc(userHtml, tests){
      값이 달라질 수 있으니 load 에서 한 번 더 돌린다. 결과는 여러 번 보내도 무방하다 —
      받는 쪽은 마지막 값을 쓰고, 하네스는 첫 값으로 판정한다.
      레이아웃 값(getBoundingClientRect·getComputedStyle)은 페인트 없이도 계산된다. */
-  +'try{run();}catch(e){}'
+  +'try{run().catch(function(){});}catch(e){}'
   +'if(document.readyState!=="complete")window.addEventListener("load",function(){try{run();}catch(e){}});'
   +'})();</scr'+'ipt>';
 }
