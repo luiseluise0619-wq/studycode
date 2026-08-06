@@ -149,10 +149,10 @@ module.exports = [
   q: [
     {
       k: "code_of · 뜻이 있는 숫자 적어 두기",
-      qq: "<code>OK</code>는 200, <code>NOT_FOUND</code>는 404, <code>ERROR</code>는 500을 돌려주게 하세요.",
-      src: "typedef enum { OK, NOT_FOUND, ERROR } Code;\n\nint code_of(Code c) {\n    return (int)c;\n}\n",
-      sol: "typedef enum { OK = 200, NOT_FOUND = 404, ERROR = 500 } Code;\n\nint code_of(Code c) {\n    return (int)c;\n}\n",
-      test: { "test.c": "#include <stdio.h>\n\ntypedef enum { OK = 200, NOT_FOUND = 404, ERROR = 500 } Code;\nint code_of(Code c);\n\nstatic int fails = 0;\nstatic void eq(int got, int want, const char *what) {\n    if (got != want) { printf(\"%s: got %d, want %d\\n\", what, got, want); fails++; }\n}\n\nint main(void) {\n    eq(code_of(OK), 200, \"OK 는 200\");\n    eq(code_of(NOT_FOUND), 404, \"NOT_FOUND 는 404\");\n    eq(code_of(ERROR), 500, \"ERROR 는 500\");\n    return fails ? 1 : 0;\n}\n" },
+      qq: "이름을 받아 <code>OK</code>는 200, <code>NOT_FOUND</code>는 404, <code>ERROR</code>는 500을 돌려주세요. 모르는 이름은 <code>-1</code> 입니다.",
+      src: "#include <string.h>\n\ntypedef enum { OK, NOT_FOUND, ERROR } Code;\n\nint code_of(const char *name) {\n    if (strcmp(name, \"OK\") == 0) return OK;\n    if (strcmp(name, \"NOT_FOUND\") == 0) return NOT_FOUND;\n    if (strcmp(name, \"ERROR\") == 0) return ERROR;\n    return -1;\n}\n",
+      sol: "#include <string.h>\n\ntypedef enum { OK = 200, NOT_FOUND = 404, ERROR = 500 } Code;\n\nint code_of(const char *name) {\n    if (strcmp(name, \"OK\") == 0) return OK;\n    if (strcmp(name, \"NOT_FOUND\") == 0) return NOT_FOUND;\n    if (strcmp(name, \"ERROR\") == 0) return ERROR;\n    return -1;\n}\n",
+      test: { "test.c": "/* 테스트는 이름만 넘긴다. 여기서 enum 을 다시 선언하면 sol.c 의 값이 아니라\n   테스트의 값이 쓰여서, 값을 안 적은 시작 코드도 통과해 버린다 — 실제로 그랬다. */\n#include <stdio.h>\n\nint code_of(const char *name);\n\nstatic int fails = 0;\nstatic void eq(int got, int want, const char *what) {\n    if (got != want) { printf(\"%s: got %d, want %d\\n\", what, got, want); fails++; }\n}\n\nint main(void) {\n    eq(code_of(\"OK\"), 200, \"OK 는 200\");\n    eq(code_of(\"NOT_FOUND\"), 404, \"NOT_FOUND 는 404\");\n    eq(code_of(\"ERROR\"), 500, \"ERROR 는 500\");\n    eq(code_of(\"없음\"), -1, \"모르는 이름은 -1\");\n    return fails ? 1 : 0;\n}\n" },
       ex: "값을 적지 않으면 0, 1, 2 가 됩니다. 뜻이 있는 숫자는 직접 적어야 하고, 그래야 나중에 상수를 가운데 끼워 넣어도 나머지가 밀리지 않아요.",
     },
     {
@@ -197,12 +197,12 @@ module.exports = [
       ex: "멈추는 자리에서 0을 돌려주면 곱셈이 전부 0이 됩니다. 재귀는 기저에서 돌려주는 값이 맞아야 위로 올라가는 계산이 맞아요 — 곱셈의 시작값은 1입니다.",
     },
     {
-      k: "rev_str · 가운데에서 멈추는 재귀",
-      qq: "문자열을 재귀로 <b>제자리에서</b> 뒤집으세요. <code>i</code>는 앞, <code>j</code>는 뒤 자리입니다.",
-      src: "void rev_str(char *s, int i, int j) {\n    if (i > j) return;\n    char t = s[i];\n    s[i] = s[j];\n    s[j] = t;\n    rev_str(s, i + 1, j - 1);\n}\n",
+      k: "rev_str · 양쪽에서 좁혀 오기",
+      qq: "문자열을 재귀로 <b>제자리에서</b> 뒤집으세요. <code>i</code>는 앞, <code>j</code>는 뒤 자리이고 <b>양쪽이 함께</b> 가운데로 와야 합니다.",
+      src: "void rev_str(char *s, int i, int j) {\n    if (i >= j) return;\n    char t = s[i];\n    s[i] = s[j];\n    s[j] = t;\n    rev_str(s, i + 1, j);\n}\n",
       sol: "void rev_str(char *s, int i, int j) {\n    if (i >= j) return;\n    char t = s[i];\n    s[i] = s[j];\n    s[j] = t;\n    rev_str(s, i + 1, j - 1);\n}\n",
       test: { "test.c": "#include <stdio.h>\n#include <string.h>\n\nvoid rev_str(char *s, int i, int j);\n\nstatic int fails = 0;\nstatic void eqs(const char *got, const char *want, const char *what) {\n    if (strcmp(got, want) != 0) { printf(\"%s: got \\\"%s\\\", want \\\"%s\\\"\\n\", what, got, want); fails++; }\n}\n\nint main(void) {\n    char a[] = \"abcd\";\n    rev_str(a, 0, 3);\n    eqs(a, \"dcba\", \"짝수 길이\");\n    char b[] = \"abc\";\n    rev_str(b, 0, 2);\n    eqs(b, \"cba\", \"홀수 길이 — 가운데를 건드리면 안 된다\");\n    char c[] = \"a\";\n    rev_str(c, 0, 0);\n    eqs(c, \"a\", \"한 글자\");\n    return fails ? 1 : 0;\n}\n" },
-      ex: "i > j 로 멈추면 i 와 j 가 같은 자리(가운데)에서 한 번 더 들어가 자기 자신과 바꿉니다. 한 글자짜리에서는 티가 안 나지만, 홀수 길이에서 한 걸음을 더 가서 다음 재귀가 서로 지나쳐요.",
+      ex: "앞쪽만 한 걸음 가고 뒤쪽을 그대로 두면, 같은 뒷자리를 계속 다시 바꿉니다. 두 번 바꾼 자리는 제자리로 돌아와서 결국 뒤집히지 않아요. 한 번에 양쪽이 함께 좁혀 와야 합니다.",
     },
     {
       k: "count_leaves · 잎만 세기",
