@@ -3602,10 +3602,18 @@ function testDoc(code,spec){
   +'try{'+code+'\n'
   /* RS: 어떤 입력이 틀렸는지 — 채점 뒤 그 입력으로 되감기 위해 필요하다 */
   +'var RS=[];'
-  +'var Cp=0,Ch="";for(var i=0;i<TS.length;i++){var t=TS[i],okc=false,got;try{got=eval(t.in);var exp=eval("("+t.out+")");okc=eq(got,exp);}catch(e){got="[\\uc5d0\\ub7ec] "+e.message;}if(okc)Cp++;RS.push([okc,t.in,sh(got),t.out]);Ch+=row(okc,t.in,got,t.out);}'
-  +'var Ep=0,Eh="";for(var i2=0;i2<EG.length;i2++){var t2=EG[i2],ok2=false,g2;try{g2=eval(t2.in);var ex2=eval("("+t2.out+")");ok2=eq(g2,ex2);}catch(e){g2="[\\uc5d0\\ub7ec] "+e.message;}if(ok2)Ep++;RS.push([ok2,t2.in,sh(g2),t2.out]);Eh+=row(ok2,t2.in,g2,t2.out);}'
+  /* 오류 보고는 한 곳에 모은다 — 코드가 터지든 프라미스가 거부되든 같은 모양으로 알린다 */
+  +'function __fail(e){document.body.innerHTML="<div style=\\"color:#ff6b6b\\">[\\ucf54\\ub4dc \\uc5d0\\ub7ec] "+esc(String(e&&e.message||e))+"</div>";var __e={__cr:"test",pass:0,total:(TS.length||0),impl:0,gate:false};try{window.__cr_result=__e;}catch(_){}try{parent.postMessage(__e,"*");}catch(_){}}'
+  /* 여기서부터 비동기다. 테스트 식이 프라미스를 돌려주면 기다렸다가 비교한다.
+     그러지 않으면 async 함수를 채점할 때 Promise 객체와 기대값을 견주게 되어
+     무엇을 써도 통과하지 못한다. 영영 안 끝나는 프라미스는 3초에서 끊는다. */
+  +'function __wait(v){if(!v||typeof v.then!=="function")return Promise.resolve(v);'
+  +'return Promise.race([v,new Promise(function(_,rj){setTimeout(function(){rj(new Error("\\uc2dc\\uac04 \\ucd08\\uacfc"));},3000);})]);}'
+  +'(async function(){'
+  +'var Cp=0,Ch="";for(var i=0;i<TS.length;i++){var t=TS[i],okc=false,got;try{got=await __wait(eval(t.in));var exp=await __wait(eval("("+t.out+")"));okc=eq(got,exp);}catch(e){got="[\\uc5d0\\ub7ec] "+e.message;}if(okc)Cp++;RS.push([okc,t.in,sh(got),t.out]);Ch+=row(okc,t.in,got,t.out);}'
+  +'var Ep=0,Eh="";for(var i2=0;i2<EG.length;i2++){var t2=EG[i2],ok2=false,g2;try{g2=await __wait(eval(t2.in));var ex2=await __wait(eval("("+t2.out+")"));ok2=eq(g2,ex2);}catch(e){g2="[\\uc5d0\\ub7ec] "+e.message;}if(ok2)Ep++;RS.push([ok2,t2.in,sh(g2),t2.out]);Eh+=row(ok2,t2.in,g2,t2.out);}'
   +'var perfScore=null,perfMs=null,perfOk=false;'
-  +'if(PF){var gp;if(PF.setup){try{eval(PF.setup);}catch(e){}}var t0=performance.now();try{gp=eval(PF.in);perfMs=performance.now()-t0;var epv=eval("("+PF.out+")");perfOk=eq(gp,epv);}catch(e){perfMs=null;}var bud=PF.ms||60;if(!perfOk)perfScore=0;else if(perfMs<=bud)perfScore=1;else if(perfMs<=bud*4)perfScore=0.5;else perfScore=0.2;}'
+  +'if(PF){var gp;if(PF.setup){try{eval(PF.setup);}catch(e){}}var t0=performance.now();try{gp=await __wait(eval(PF.in));perfMs=performance.now()-t0;var epv=eval("("+PF.out+")");perfOk=eq(gp,epv);}catch(e){perfMs=null;}var bud=PF.ms||60;if(!perfOk)perfScore=0;else if(perfMs<=bud)perfScore=1;else if(perfMs<=bud*4)perfScore=0.5;else perfScore=0.2;}'
   +'var qr=[];qr.push({ok:!/\\bvar\\s/.test(SRC),t:"var \\ub300\\uc2e0 let/const \\uc0ac\\uc6a9"});'
   +'var ln=SRC.split("\\n").filter(function(l){return l.trim()&&!/^\\s*\\/\\//.test(l);}).length;qr.push({ok:ln<=28,t:"\\uac04\\uacb0\\ud55c \\uad6c\\ud604(\\u226428\\uc904, \\ud604\\uc7ac "+ln+")"});'
   +'qr.push({ok:!/console\\.(log|debug)/.test(SRC),t:"\\ub514\\ubc84\\uadf8 \\ub85c\\uadf8 \\uc81c\\uac70"});'
@@ -3627,7 +3635,8 @@ function testDoc(code,spec){
   /* 검증 하네스가 postMessage 대신 이 값을 직접 읽는다 (html·react 러너와 같은 규약) */
   +'try{window.__cr_result=__out;}catch(e){}'
   +'parent.postMessage(__out,"*");'
-  +'}catch(e){document.body.innerHTML="<div style=\\"color:#ff6b6b\\">[\\ucf54\\ub4dc \\uc5d0\\ub7ec] "+esc(String(e&&e.message||e))+"</div>";var __e={__cr:"test",pass:0,total:(TS.length||0),impl:0,gate:false};try{window.__cr_result=__e;}catch(_){}try{parent.postMessage(__e,"*");}catch(_){}}'
+  +'})().catch(function(e){__fail(e);});'
+  +'}catch(e){__fail(e);}'
   +'</scr'+'ipt></body>';
 }
 /* ===== 아키텍처 설계 (ERD · API · 클라우드 구조) =====
