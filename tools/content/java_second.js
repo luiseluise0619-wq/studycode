@@ -97,7 +97,7 @@ module.exports = [
 },
 /* ── equals·hashCode·Comparable 계약 ──────────────────────── */
 {
-  unit: "equals·hashCode·Comparable 계약",
+  unit: "equals·hashCode·Comparable 계약 (심화)",
   lesson: "직접 짜 보기 — 같다는 약속을 지키기",
   th: {
     sum: "`equals` 를 고쳤으면 `hashCode` 도 같이 고쳐야 한다. 둘은 **한 쌍의 약속**이다.",
@@ -141,7 +141,7 @@ module.exports = [
 },
 /* ── 불변 객체와 방어적 복사 ──────────────────────────────── */
 {
-  unit: "불변 객체와 방어적 복사",
+  unit: "불변 객체와 방어적 복사 (중급)",
   lesson: "직접 짜 보기 — 밖에서 못 바꾸게 하기",
   th: {
     sum: "`final` 은 **참조를 못 바꾼다**는 뜻이지, 그 안의 내용을 못 바꾼다는 뜻이 아니다.",
@@ -185,7 +185,7 @@ module.exports = [
 },
 /* ── 열거형(enum) 실무 ────────────────────────────────────── */
 {
-  unit: "열거형(enum) 실무",
+  unit: "열거형(enum) 실무 (중급)",
   lesson: "직접 써 보기 — 정해진 값만 다니게 하기",
   th: {
     sum: "enum 은 '이 중 하나' 를 **타입으로** 못 박는 것이다. 그 안에 값과 동작도 같이 담을 수 있다.",
