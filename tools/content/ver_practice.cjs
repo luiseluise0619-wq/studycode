@@ -32,10 +32,15 @@ function runPy(code, tests) {
 }
 
 function runJs(code, tests) {
+  /* 앱 채점기와 같은 규칙으로 판정한다. 앱은 프라미스를 기다렸다 비교하는데
+     여기서만 그대로 견주면, 멀쩡한 async 정답이 전부 실패로 나온다.
+     실제로 그랬다 — 앱만 고치고 검사기를 안 고쳐서 8문항이 되돌아왔다. */
   const prog = code + "\n\nconst __T=" + JSON.stringify(tests) + ";const __r=[];\n"
     + "function __eq(a,b){try{return JSON.stringify(a)===JSON.stringify(b);}catch(e){return String(a)===String(b);}}\n"
-    + "for(const [i,o] of __T){ try{ __r.push(__eq(eval(i), eval('('+o+')'))); }catch(e){ __r.push('ERR: '+e.message); } }\n"
-    + "console.log(JSON.stringify(__r));";
+    + "function __wait(v){if(!v||typeof v.then!=='function')return Promise.resolve(v);\n"
+    + "return Promise.race([v,new Promise((_,rj)=>setTimeout(()=>rj(new Error('시간 초과')),3000))]);}\n"
+    + "(async()=>{ for(const [i,o] of __T){ try{ const g=await __wait(eval(i)); const e2=await __wait(eval('('+o+')')); __r.push(__eq(g,e2)); }catch(e){ __r.push('ERR: '+e.message); } }\n"
+    + "console.log(JSON.stringify(__r)); })();";
   const f = path.join(os.tmpdir(), "cr_ver_" + process.pid + ".js");
   fs.writeFileSync(f, prog);
   try {

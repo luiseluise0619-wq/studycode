@@ -19,6 +19,7 @@ const WEB = require("./web_basic.js");
 const REACT = require("./react_basic.js");
 const ALGO = require("./algo_basic.js");
 const JSMID = require("./js_mid.js");
+const JSASYNC = require("./js_async.js");
 
 function serve() {
   const T = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json",
@@ -55,7 +56,7 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
   await p.goto("http://127.0.0.1:" + srv.address().port + "/index.html");
   await p.waitForFunction(() => typeof testDoc === "function" && typeof gradeSql === "function" && typeof htmlTestDoc === "function" && typeof reactTestDoc === "function", { timeout: 60000 });
 
-  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react"));
+  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(JSASYNC, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react"));
   const out = await p.evaluate(async (items) => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const res = [];
@@ -79,16 +80,19 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
         let last = null, done = false, seen = 0;
         const fin = () => { if (done) return; done = true;
           window.removeEventListener("message", on); f.remove(); resolve(last); };
+        /* JS 하네스는 결과를 한 번만 보낸다(html 하네스와 다르다). 그래서 첫 값에 끝낸다.
+           두 번을 기다리면 매번 제한 시간까지 서 있게 되고, 비동기 문항처럼 오래 걸리는
+           것이 제한을 넘겨 '결과 없음' 으로 잘못 판정된다 — 실제로 그렇게 걸렸다. */
         const on = e => {
           if (!e.data || e.data.__cr !== "test" || e.source !== f.contentWindow) return;
-          last = e.data;                       // 마지막 값을 쓴다
-          if (++seen >= 2) fin();
+          last = e.data;
+          fin();
         };
         window.addEventListener("message", on);
         document.body.appendChild(f);
           // load 뒤 한 번 더 오는 값을 기다린다
         f.srcdoc = testDoc(code, { tests: q.tests, edge: q.edge });
-        setTimeout(fin, 2500);   // 두 번째가 끝내 안 오면 마지막 값으로 판정
+        setTimeout(fin, 12000);  // 비동기 문항은 프라미스 제한까지 갈 수 있다
       });
     }
 
