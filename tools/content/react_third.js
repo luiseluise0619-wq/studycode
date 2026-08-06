@@ -263,10 +263,12 @@ module.exports = [
       src: "function App() {\n  const [on, setOn] = React.useState(false);\n  const [t, setT] = React.useState(0);\n  React.useEffect(() => {\n    if (!on) return;\n    const id = setInterval(() => setT((v) => v + 1), 20);\n  }, [on]);\n  return (\n    <div>\n      <span className=\"tick\">{t}</span>\n      <button className=\"on\" onClick={() => setOn(!on)}>{on ? '끄기' : '켜기'}</button>\n    </div>\n  );\n}",
       sol: "function App() {\n  const [on, setOn] = React.useState(false);\n  const [t, setT] = React.useState(0);\n  React.useEffect(() => {\n    if (!on) return;\n    const id = setInterval(() => setT((v) => v + 1), 20);\n    return () => clearInterval(id);\n  }, [on]);\n  return (\n    <div>\n      <span className=\"tick\">{t}</span>\n      <button className=\"on\" onClick={() => setOn(!on)}>{on ? '끄기' : '켜기'}</button>\n    </div>\n  );\n}",
       tests: [
-        { d: "켜면 올라간다", js: "(CLICK('.on'), new Promise(function(r){setTimeout(function(){r(Number(TXT('.tick'))>0);},120);}))" },
-        /* 끈 직후가 아니라 조금 뒤에 기준값을 잡는다. 바로 읽으면 아직 처리되지 않은
-           마지막 틱이 끼어들어, 제대로 치운 정답도 '아직 도는 중' 으로 보인다. */
-        { d: "끄면 멈춘다", js: "(CLICK('.on'), new Promise(function(r){setTimeout(function(){var a=TXT('.tick');setTimeout(function(){r(TXT('.tick')===a);},200);},80);}))" },
+        { d: "켜면 올라간다", js: "(CLICK('.on'), new Promise(function(r){setTimeout(function(){r(Number(TXT('.tick'))>0);},200);}))" },
+        /* 끈 직후가 아니라 한참 뒤에 기준값을 잡는다. 바로 읽으면 아직 처리되지 않은
+           마지막 틱이 끼어들어, 제대로 치운 정답도 '아직 도는 중' 으로 보인다.
+           여유를 넉넉히 둔 이유: 검증기는 문항 수십 개를 잇달아 돌려서 기계가 바쁘다.
+           혼자 돌릴 때만 맞는 간격은 전체 검사에서 무작위로 실패한다 — 실제로 그랬다. */
+        { d: "끄면 멈춘다", js: "(CLICK('.on'), new Promise(function(r){setTimeout(function(){var a=TXT('.tick');setTimeout(function(){r(TXT('.tick')===a);},400);},300);}))" },
       ],
       ex: "타이머를 걸고 치우지 않으면 껐다고 생각한 뒤에도 계속 돕니다. 켰다 껐다를 반복하면 그만큼 겹쳐서 더 빨리 올라가요. useEffect 가 돌려주는 함수에서 없애야 합니다.",
     },
