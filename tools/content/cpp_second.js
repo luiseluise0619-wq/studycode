@@ -9,7 +9,13 @@
    횟수가 다르거나, 결과 벡터의 크기가 다른 식으로 **반드시** 드러나게 했다.
 
    채점은 러너가 깔아 주는 catch2 로 한다. 클래스는 sol.cpp 안에 통째로 있으므로
-   테스트에서 다시 선언하지 않고 그대로 포함해 한 덩어리로 컴파일한다. */
+   테스트에서 다시 선언하지 않고 그대로 포함해 한 덩어리로 컴파일한다.
+   테스트에서 클래스를 다시 적을 수는 없다 — 고쳐야 할 대상이 바로 그 클래스라,
+   답을 미리 적어 두는 셈이 되고 학습자가 고친 것과도 어긋난다.
+
+   그래서 sol.cpp 의 자유 함수와 정적 멤버에는 inline 을 붙였다. 러너가 sol.cpp 와
+   test.cpp 를 함께 컴파일하는데 test.cpp 가 sol.cpp 를 포함하므로, inline 이 없으면
+   정의가 둘이 되어 링크가 거부한다 — 검증기가 7건을 그렇게 잡아 줬다. */
 module.exports = [
 /* ── 이동 의미론과 복사 생략 (심화) ───────────────────────── */
 {
@@ -29,16 +35,16 @@ module.exports = [
     {
       k: "store · 복사하지 말고 옮겨 담기",
       qq: "받은 값을 벡터에 <b>복사 없이</b> 넣으세요. 복사 생성자가 한 번도 불리면 안 됩니다.",
-      src: "#include <vector>\n\nstruct Tracked {\n    int v = 0;\n    static int copies;\n    static int moves;\n    Tracked() {}\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; }\n    Tracked& operator=(const Tracked&) = default;\n    Tracked& operator=(Tracked&&) = default;\n};\n\nint Tracked::copies = 0;\nint Tracked::moves = 0;\n\nvoid store(std::vector<Tracked>& v, Tracked t) {\n    v.push_back(t);\n}\n",
-      sol: "#include <vector>\n#include <utility>\n\nstruct Tracked {\n    int v = 0;\n    static int copies;\n    static int moves;\n    Tracked() {}\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; }\n    Tracked& operator=(const Tracked&) = default;\n    Tracked& operator=(Tracked&&) = default;\n};\n\nint Tracked::copies = 0;\nint Tracked::moves = 0;\n\nvoid store(std::vector<Tracked>& v, Tracked t) {\n    v.push_back(std::move(t));\n}\n",
+      src: "#include <vector>\n\nstruct Tracked {\n    int v = 0;\n    static inline int copies = 0;\n    static inline int moves = 0;\n    Tracked() {}\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; }\n    Tracked& operator=(const Tracked&) = default;\n    Tracked& operator=(Tracked&&) = default;\n};\n\ninline void store(std::vector<Tracked>& v, Tracked t) {\n    v.push_back(t);\n}\n",
+      sol: "#include <vector>\n#include <utility>\n\nstruct Tracked {\n    int v = 0;\n    static inline int copies = 0;\n    static inline int moves = 0;\n    Tracked() {}\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; }\n    Tracked& operator=(const Tracked&) = default;\n    Tracked& operator=(Tracked&&) = default;\n};\n\ninline void store(std::vector<Tracked>& v, Tracked t) {\n    v.push_back(std::move(t));\n}\n",
       test: { "test.cpp": "/* 클래스가 sol.cpp 안에 있으므로 그대로 포함해 한 덩어리로 컴파일한다 */\n#include \"catch.hpp\"\n#include \"sol.cpp\"\n\nTEST_CASE(\"값은 제대로 들어간다\") {\n    std::vector<Tracked> v;\n    v.reserve(4);\n    store(v, Tracked(7));\n    REQUIRE(v.size() == 1);\n    REQUIRE(v[0].v == 7);\n}\n\nTEST_CASE(\"복사가 일어나면 안 된다\") {\n    std::vector<Tracked> v;\n    v.reserve(4);\n    Tracked::copies = 0;\n    Tracked::moves = 0;\n    store(v, Tracked(1));\n    store(v, Tracked(2));\n    REQUIRE(Tracked::copies == 0);\n    REQUIRE(Tracked::moves == 2);\n}\n" },
       ex: "t 는 이름이 붙은 값이라, 어차피 함수가 끝나면 사라질 것인데도 컴파일러는 복사합니다. std::move 로 '옮겨도 된다' 고 표시해 줘야 옮겨 가요. (미리 reserve 해 둔 것은 자리를 늘리며 생기는 이동을 세지 않기 위해서입니다.)",
     },
     {
       k: "Holder · 멤버로 옮겨 담기",
       qq: "받은 벡터를 멤버로 <b>복사 없이</b> 담으세요.",
-      src: "#include <vector>\n\nstruct Tracked {\n    int v = 0;\n    static int copies;\n    static int moves;\n    Tracked() {}\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; }\n};\n\nint Tracked::copies = 0;\nint Tracked::moves = 0;\n\nclass Holder {\npublic:\n    explicit Holder(std::vector<Tracked> d) : data_(d) {}\n\n    int size() const { return static_cast<int>(data_.size()); }\n\nprivate:\n    std::vector<Tracked> data_;\n};\n",
-      sol: "#include <vector>\n#include <utility>\n\nstruct Tracked {\n    int v = 0;\n    static int copies;\n    static int moves;\n    Tracked() {}\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; }\n};\n\nint Tracked::copies = 0;\nint Tracked::moves = 0;\n\nclass Holder {\npublic:\n    explicit Holder(std::vector<Tracked> d) : data_(std::move(d)) {}\n\n    int size() const { return static_cast<int>(data_.size()); }\n\nprivate:\n    std::vector<Tracked> data_;\n};\n",
+      src: "#include <vector>\n\nstruct Tracked {\n    int v = 0;\n    static inline int copies = 0;\n    static inline int moves = 0;\n    Tracked() {}\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; }\n};\n\nclass Holder {\npublic:\n    explicit Holder(std::vector<Tracked> d) : data_(d) {}\n\n    int size() const { return static_cast<int>(data_.size()); }\n\nprivate:\n    std::vector<Tracked> data_;\n};\n",
+      sol: "#include <vector>\n#include <utility>\n\nstruct Tracked {\n    int v = 0;\n    static inline int copies = 0;\n    static inline int moves = 0;\n    Tracked() {}\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked(Tracked&& o) noexcept : v(o.v) { ++moves; }\n};\n\nclass Holder {\npublic:\n    explicit Holder(std::vector<Tracked> d) : data_(std::move(d)) {}\n\n    int size() const { return static_cast<int>(data_.size()); }\n\nprivate:\n    std::vector<Tracked> data_;\n};\n",
       test: { "test.cpp": "#include \"catch.hpp\"\n#include \"sol.cpp\"\n\nTEST_CASE(\"내용은 그대로 담긴다\") {\n    std::vector<Tracked> src;\n    src.reserve(2);\n    src.emplace_back(1);\n    src.emplace_back(2);\n    Holder h(std::move(src));\n    REQUIRE(h.size() == 2);\n}\n\nTEST_CASE(\"멤버로 담을 때 복사가 없어야 한다\") {\n    std::vector<Tracked> src;\n    src.reserve(2);\n    src.emplace_back(1);\n    src.emplace_back(2);\n    Tracked::copies = 0;\n    Holder h(std::move(src));\n    REQUIRE(h.size() == 2);\n    REQUIRE(Tracked::copies == 0);\n}\n" },
       ex: "값으로 받은 매개변수를 멤버 초기화에 그대로 쓰면 한 번 더 복사됩니다. 벡터 안의 원소가 전부 복사돼요. std::move 로 옮겨 담으면 안쪽 버퍼의 주인만 바뀌어 복사가 하나도 없습니다.",
     },
@@ -111,24 +117,24 @@ module.exports = [
     {
       k: "speak · 개는 개 소리를 내야 한다",
       qq: "<code>const Animal&</code> 로 받아도 <b>실제 객체</b>의 소리가 나게 하세요.",
-      src: "#include <string>\n\nstruct Animal {\n    virtual ~Animal() = default;\n    std::string sound() const { return \"...\"; }\n};\n\nstruct Dog : Animal {\n    std::string sound() const { return \"멍멍\"; }\n};\n\nstruct Cat : Animal {\n    std::string sound() const { return \"야옹\"; }\n};\n\nstd::string speak(const Animal& a) {\n    return a.sound();\n}\n",
-      sol: "#include <string>\n\nstruct Animal {\n    virtual ~Animal() = default;\n    virtual std::string sound() const { return \"...\"; }\n};\n\nstruct Dog : Animal {\n    std::string sound() const override { return \"멍멍\"; }\n};\n\nstruct Cat : Animal {\n    std::string sound() const override { return \"야옹\"; }\n};\n\nstd::string speak(const Animal& a) {\n    return a.sound();\n}\n",
+      src: "#include <string>\n\nstruct Animal {\n    virtual ~Animal() = default;\n    std::string sound() const { return \"...\"; }\n};\n\nstruct Dog : Animal {\n    std::string sound() const { return \"멍멍\"; }\n};\n\nstruct Cat : Animal {\n    std::string sound() const { return \"야옹\"; }\n};\n\ninline std::string speak(const Animal& a) {\n    return a.sound();\n}\n",
+      sol: "#include <string>\n\nstruct Animal {\n    virtual ~Animal() = default;\n    virtual std::string sound() const { return \"...\"; }\n};\n\nstruct Dog : Animal {\n    std::string sound() const override { return \"멍멍\"; }\n};\n\nstruct Cat : Animal {\n    std::string sound() const override { return \"야옹\"; }\n};\n\ninline std::string speak(const Animal& a) {\n    return a.sound();\n}\n",
       test: { "test.cpp": "#include \"catch.hpp\"\n#include \"sol.cpp\"\n\nTEST_CASE(\"개\") {\n    Dog d;\n    REQUIRE(speak(d) == \"멍멍\");\n}\n\nTEST_CASE(\"고양이\") {\n    Cat c;\n    REQUIRE(speak(c) == \"야옹\");\n}\n\nTEST_CASE(\"기반은 기반대로\") {\n    Animal a;\n    REQUIRE(speak(a) == \"...\");\n}\n" },
       ex: "virtual 이 없으면 컴파일 시점에 Animal::sound 로 못 박힙니다. 개를 넘겨도 개 소리가 안 나요. 상속을 써 놓고 다형성이 안 되는 가장 흔한 모양입니다.",
     },
     {
       k: "score · const 를 맞춰야 재정의가 된다",
       qq: "파생이 정한 점수가 나오게 하세요. <b>서명이 정확히 같아야</b> 재정의입니다.",
-      src: "struct Base {\n    virtual ~Base() = default;\n    virtual int score() const { return 0; }\n};\n\nstruct Bonus : Base {\n    int score() { return 10; }\n};\n\nint score_of(const Base& b) {\n    return b.score();\n}\n",
-      sol: "struct Base {\n    virtual ~Base() = default;\n    virtual int score() const { return 0; }\n};\n\nstruct Bonus : Base {\n    int score() const override { return 10; }\n};\n\nint score_of(const Base& b) {\n    return b.score();\n}\n",
+      src: "struct Base {\n    virtual ~Base() = default;\n    virtual int score() const { return 0; }\n};\n\nstruct Bonus : Base {\n    int score() { return 10; }\n};\n\ninline int score_of(const Base& b) {\n    return b.score();\n}\n",
+      sol: "struct Base {\n    virtual ~Base() = default;\n    virtual int score() const { return 0; }\n};\n\nstruct Bonus : Base {\n    int score() const override { return 10; }\n};\n\ninline int score_of(const Base& b) {\n    return b.score();\n}\n",
       test: { "test.cpp": "#include \"catch.hpp\"\n#include \"sol.cpp\"\n\nTEST_CASE(\"파생이 정한 점수가 나와야 한다\") {\n    Bonus b;\n    REQUIRE(score_of(b) == 10);\n}\n\nTEST_CASE(\"기반은 0\") {\n    Base b;\n    REQUIRE(score_of(b) == 0);\n}\n" },
       ex: "기반은 const 인데 파생이 const 를 빼면 서명이 달라 아예 다른 함수가 됩니다. 컴파일도 되고 실행도 되는데 기반 것이 불려요. override 를 붙여 두면 컴파일러가 바로 잡아 줍니다.",
     },
     {
       k: "total · 종류를 따지지 않고 더하기",
       qq: "도형들의 넓이를 모두 더하세요. <b>도형이 늘어도</b> 이 함수는 고치지 않아도 되게 하세요.",
-      src: "#include <vector>\n\nstruct Shape {\n    virtual ~Shape() = default;\n    virtual double area() const = 0;\n};\n\nstruct Rect : Shape {\n    double w, h;\n    Rect(double w_, double h_) : w(w_), h(h_) {}\n    double area() const override { return w * h; }\n};\n\nstruct Square : Shape {\n    double a;\n    explicit Square(double a_) : a(a_) {}\n    double area() const override { return a * a; }\n};\n\ndouble total(const std::vector<const Shape*>& ss) {\n    double sum = 0;\n    for (const Shape* s : ss) {\n        if (const Rect* r = dynamic_cast<const Rect*>(s)) sum += r->w * r->h;\n    }\n    return sum;\n}\n",
-      sol: "#include <vector>\n\nstruct Shape {\n    virtual ~Shape() = default;\n    virtual double area() const = 0;\n};\n\nstruct Rect : Shape {\n    double w, h;\n    Rect(double w_, double h_) : w(w_), h(h_) {}\n    double area() const override { return w * h; }\n};\n\nstruct Square : Shape {\n    double a;\n    explicit Square(double a_) : a(a_) {}\n    double area() const override { return a * a; }\n};\n\ndouble total(const std::vector<const Shape*>& ss) {\n    double sum = 0;\n    for (const Shape* s : ss) sum += s->area();\n    return sum;\n}\n",
+      src: "#include <vector>\n\nstruct Shape {\n    virtual ~Shape() = default;\n    virtual double area() const = 0;\n};\n\nstruct Rect : Shape {\n    double w, h;\n    Rect(double w_, double h_) : w(w_), h(h_) {}\n    double area() const override { return w * h; }\n};\n\nstruct Square : Shape {\n    double a;\n    explicit Square(double a_) : a(a_) {}\n    double area() const override { return a * a; }\n};\n\ninline double total(const std::vector<const Shape*>& ss) {\n    double sum = 0;\n    for (const Shape* s : ss) {\n        if (const Rect* r = dynamic_cast<const Rect*>(s)) sum += r->w * r->h;\n    }\n    return sum;\n}\n",
+      sol: "#include <vector>\n\nstruct Shape {\n    virtual ~Shape() = default;\n    virtual double area() const = 0;\n};\n\nstruct Rect : Shape {\n    double w, h;\n    Rect(double w_, double h_) : w(w_), h(h_) {}\n    double area() const override { return w * h; }\n};\n\nstruct Square : Shape {\n    double a;\n    explicit Square(double a_) : a(a_) {}\n    double area() const override { return a * a; }\n};\n\ninline double total(const std::vector<const Shape*>& ss) {\n    double sum = 0;\n    for (const Shape* s : ss) sum += s->area();\n    return sum;\n}\n",
       test: { "test.cpp": "#include \"catch.hpp\"\n#include \"sol.cpp\"\n\nTEST_CASE(\"사각형만\") {\n    Rect r(2, 3);\n    std::vector<const Shape*> v{&r};\n    REQUIRE(total(v) == Approx(6.0));\n}\n\nTEST_CASE(\"정사각형도 세어야 한다\") {\n    Square s(2);\n    std::vector<const Shape*> v{&s};\n    REQUIRE(total(v) == Approx(4.0));\n}\n\nTEST_CASE(\"섞여 있어도\") {\n    Rect r(2, 3);\n    Square s(2);\n    std::vector<const Shape*> v{&r, &s};\n    REQUIRE(total(v) == Approx(10.0));\n}\n" },
       ex: "dynamic_cast 로 종류를 따지면 도형이 하나 늘 때마다 이 함수를 또 고쳐야 하고, 잊으면 조용히 0 으로 세어집니다. 각 도형이 자기 넓이를 아니 그냥 물어보면 돼요.",
     },
@@ -168,8 +174,8 @@ module.exports = [
     {
       k: "operator<< · 한 곳에만 형식을 적기",
       qq: "<code>(x, y)</code> 형식으로 스트림에 나가게 하세요. <code>std::ostringstream</code> 에도 같은 글자가 나와야 합니다.",
-      src: "#include <ostream>\n\nstruct Point {\n    int x = 0, y = 0;\n    Point() {}\n    Point(int x_, int y_) : x(x_), y(y_) {}\n};\n\nstd::ostream& operator<<(std::ostream& os, const Point& p) {\n    os << p.x << \",\" << p.y;\n    return os;\n}\n",
-      sol: "#include <ostream>\n\nstruct Point {\n    int x = 0, y = 0;\n    Point() {}\n    Point(int x_, int y_) : x(x_), y(y_) {}\n};\n\nstd::ostream& operator<<(std::ostream& os, const Point& p) {\n    os << \"(\" << p.x << \", \" << p.y << \")\";\n    return os;\n}\n",
+      src: "#include <ostream>\n\nstruct Point {\n    int x = 0, y = 0;\n    Point() {}\n    Point(int x_, int y_) : x(x_), y(y_) {}\n};\n\ninline std::ostream& operator<<(std::ostream& os, const Point& p) {\n    os << p.x << \",\" << p.y;\n    return os;\n}\n",
+      sol: "#include <ostream>\n\nstruct Point {\n    int x = 0, y = 0;\n    Point() {}\n    Point(int x_, int y_) : x(x_), y(y_) {}\n};\n\ninline std::ostream& operator<<(std::ostream& os, const Point& p) {\n    os << \"(\" << p.x << \", \" << p.y << \")\";\n    return os;\n}\n",
       test: { "test.cpp": "#include \"catch.hpp\"\n#include \"sol.cpp\"\n#include <sstream>\n#include <string>\n\nstatic std::string text(const Point& p) {\n    std::ostringstream os;\n    os << p;\n    return os.str();\n}\n\nTEST_CASE(\"형식이 맞아야 한다\") {\n    REQUIRE(text(Point(1, 2)) == \"(1, 2)\");\n}\n\nTEST_CASE(\"음수도\") {\n    REQUIRE(text(Point(-1, 0)) == \"(-1, 0)\");\n}\n\nTEST_CASE(\"이어서 쓸 수 있어야 한다\") {\n    std::ostringstream os;\n    os << Point(1, 2) << \"!\";\n    REQUIRE(os.str() == \"(1, 2)!\");\n}\n" },
       ex: "형식을 여기 한 곳에만 적어 두면 화면·파일·문자열 어디로 내보내든 같은 모양이 나옵니다. 그리고 스트림을 돌려줘야 << 를 이어서 쓸 수 있어요.",
     },
@@ -250,8 +256,8 @@ module.exports = [
     {
       k: "Box · 두 번 일하지 않기",
       qq: "받은 값을 멤버에 담되, 멤버가 <b>기본 생성되었다가 다시 대입되는</b> 일이 없게 하세요.",
-      src: "struct Tracked {\n    int v = 0;\n    static int defaults;\n    static int copies;\n    Tracked() { ++defaults; }\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked& operator=(const Tracked& o) {\n        v = o.v;\n        return *this;\n    }\n};\n\nint Tracked::defaults = 0;\nint Tracked::copies = 0;\n\nclass Box {\npublic:\n    explicit Box(const Tracked& t) {\n        t_ = t;\n    }\n\n    int value() const { return t_.v; }\n\nprivate:\n    Tracked t_;\n};\n",
-      sol: "struct Tracked {\n    int v = 0;\n    static int defaults;\n    static int copies;\n    Tracked() { ++defaults; }\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked& operator=(const Tracked& o) {\n        v = o.v;\n        return *this;\n    }\n};\n\nint Tracked::defaults = 0;\nint Tracked::copies = 0;\n\nclass Box {\npublic:\n    explicit Box(const Tracked& t) : t_(t) {}\n\n    int value() const { return t_.v; }\n\nprivate:\n    Tracked t_;\n};\n",
+      src: "struct Tracked {\n    int v = 0;\n    static inline int defaults = 0;\n    static inline int copies = 0;\n    Tracked() { ++defaults; }\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked& operator=(const Tracked& o) {\n        v = o.v;\n        return *this;\n    }\n};\n\nclass Box {\npublic:\n    explicit Box(const Tracked& t) {\n        t_ = t;\n    }\n\n    int value() const { return t_.v; }\n\nprivate:\n    Tracked t_;\n};\n",
+      sol: "struct Tracked {\n    int v = 0;\n    static inline int defaults = 0;\n    static inline int copies = 0;\n    Tracked() { ++defaults; }\n    explicit Tracked(int x) : v(x) {}\n    Tracked(const Tracked& o) : v(o.v) { ++copies; }\n    Tracked& operator=(const Tracked& o) {\n        v = o.v;\n        return *this;\n    }\n};\n\nclass Box {\npublic:\n    explicit Box(const Tracked& t) : t_(t) {}\n\n    int value() const { return t_.v; }\n\nprivate:\n    Tracked t_;\n};\n",
       test: { "test.cpp": "#include \"catch.hpp\"\n#include \"sol.cpp\"\n\nTEST_CASE(\"값은 제대로 담긴다\") {\n    Tracked t(7);\n    Box b(t);\n    REQUIRE(b.value() == 7);\n}\n\nTEST_CASE(\"기본 생성이 한 번도 없어야 한다\") {\n    Tracked t(1);\n    Tracked::defaults = 0;\n    Box b(t);\n    REQUIRE(b.value() == 1);\n    REQUIRE(Tracked::defaults == 0);\n}\n" },
       ex: "생성자 몸통에 들어올 때는 멤버가 이미 기본값으로 만들어져 있습니다. 거기에 대입하면 만들고 또 덮어쓰는 셈이라 두 번 일해요. 초기화 리스트에 쓰면 처음부터 그 값으로 만들어집니다.",
     },

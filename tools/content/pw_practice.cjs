@@ -22,6 +22,7 @@ const REACTA = require("./react_async.js");
 const ALGO = require("./algo_basic.js");
 const JSMID = require("./js_mid.js");
 const JSASYNC = require("./js_async.js");
+const JS3 = require("./js_third.js");
 
 function serve() {
   const T = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json",
@@ -64,7 +65,7 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
   await p.goto("http://127.0.0.1:" + srv.address().port + "/index.html");
   await p.waitForFunction(() => typeof testDoc === "function" && typeof gradeSql === "function" && typeof htmlTestDoc === "function" && typeof reactTestDoc === "function", { timeout: 60000 });
 
-  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(JSASYNC, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(SQL3, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react")).concat(flat(REACTA, "react"));
+  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(JSASYNC, "js")).concat(flat(JS3, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(SQL3, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react")).concat(flat(REACTA, "react"));
   const out = await p.evaluate(async (items) => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const res = [];
