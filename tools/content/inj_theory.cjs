@@ -5,14 +5,24 @@
    자기가 지금 배우는 것과 다른 글을 읽는 셈이다.
 
      node tools/content/inj_theory.cjs <spec.js>
+     node tools/content/inj_theory.cjs <source.js> <트랙>
 
    spec: {track, source}  ·  source 는 [{unit, lesson, th}] 를 내보낸다.
+   두 번째 형태는 여러 트랙을 한 파일에 담았을 때 쓴다 — 그때 source 는
+   {트랙: [{unit, lesson, th}]} 꼴이고, 트랙 이름을 인자로 골라 준다.
+   차수마다 트랙 수만큼 spec 파일을 만드는 것이 번거로워 이 길을 열었다.
+
    문항은 건드리지 않는다 — 이론만 바꾼다. 전부 성공해야 쓴다. */
 const fs = require("fs");
 const path = require("path");
 const ROOT = path.resolve(__dirname, "..", "..");
-const SPEC = require(path.resolve(process.argv[2]));
-const ITEMS = require(path.resolve(path.dirname(path.resolve(process.argv[2])), SPEC.source));
+const ARG = require(path.resolve(process.argv[2]));
+const TRACK = process.argv[3];
+const SPEC = TRACK ? { track: TRACK } : ARG;
+const ITEMS = TRACK
+  ? ARG[TRACK]
+  : require(path.resolve(path.dirname(path.resolve(process.argv[2])), SPEC.source));
+if (!Array.isArray(ITEMS)) throw new Error("이 파일에 '" + TRACK + "' 트랙이 없다");
 
 const file = ROOT + "/data/t-" + SPEC.track + ".js";
 const raw = fs.readFileSync(file, "utf8");
