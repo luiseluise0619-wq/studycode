@@ -1,0 +1,276 @@
+/* DB 이론 1차 — 실습이 하나도 없던 6개 유닛.
+
+   인덱스·잠금·격리수준은 '설명은 아는데 판단은 못 하는' 대표 주제다.
+   그래서 실제 DB 대신, 판단이 되는 계산만 순수 파이썬으로 짜게 했다. */
+module.exports = [
+/* ── 인덱스·B-tree ───────────────────────────────────────── */
+{
+  unit: "인덱스·B-tree",
+  lesson: "직접 짜 보기 — 인덱스가 언제 쓸모없어지는가",
+  th: {
+    sum: "인덱스는 **정렬해 둔 목차**다. 목차는 앞에서부터 봐야 쓸모가 있다.",
+    body: [
+      { h: "B-tree 는 정렬된 순서를 담는다", t: "그래서 같음(=), 범위(<, >), 정렬(ORDER BY), 앞부분 일치(LIKE '가%') 에 쓸 수 있다. 반대로 뒷부분 일치('%가')는 목차 순서와 아무 관계가 없어 전부 훑어야 한다." },
+      { h: "복합 인덱스는 왼쪽부터", t: "`(a, b)` 인덱스는 `a` 로 먼저 정렬하고 그 안에서 `b` 로 정렬한다. `a` 조건 없이 `b` 만 찾으면 목차를 처음부터 다 봐야 한다 — 전화번호부에서 성을 모른 채 이름만 찾는 것과 같다." },
+      { h: "컬럼을 가공하면 못 쓴다", t: "`WHERE YEAR(created) = 2024` 는 `created` 인덱스를 못 쓴다. 인덱스에는 원래 값이 들어 있지 가공한 값이 들어 있지 않기 때문이다. 범위 조건으로 바꿔 쓴다." },
+      { h: "선택도가 낮으면 안 쓴다", t: "성별처럼 값의 종류가 둘뿐인 컬럼은 인덱스를 타도 절반을 읽는다. 그럴 바에는 그냥 전부 훑는 편이 빠르다고 옵티마이저가 판단한다 — 인덱스를 만들어 두고도 안 쓰이는 흔한 이유다." },
+    ],
+    code: { c: "-- 인덱스 (a, b)\nWHERE a = 1            -- 쓴다\nWHERE a = 1 AND b = 2  -- 쓴다\nWHERE b = 2            -- 못 쓴다 (왼쪽이 없다)\n\nWHERE YEAR(t) = 2024   -- 못 쓴다\nWHERE t >= '2024-01-01' AND t < '2025-01-01'  -- 쓴다", cap: "목차는 앞에서부터" },
+    key: ["복합 인덱스는 왼쪽부터", "컬럼을 가공하면 못 쓴다", "선택도가 낮으면 안 쓰인다"],
+  },
+  q: [
+    {
+      k: "uses_index · 이 조건이 인덱스를 타는가",
+      qq: "인덱스 컬럼 목록과 <b>조건에 쓰인 컬럼 집합</b>을 받아, <b>맨 왼쪽 컬럼이 조건에 있으면</b> True 를 돌려주세요.",
+      src: "def uses_index(index_cols, where_cols):\n    return any(c in where_cols for c in index_cols)\n",
+      sol: "def uses_index(index_cols, where_cols):\n    if not index_cols:\n        return False\n    return index_cols[0] in where_cols\n",
+      tests: [["uses_index(['a', 'b'], {'a'})", "True"], ["uses_index(['a', 'b'], {'b'})", "False"], ["uses_index(['a', 'b'], {'a', 'b'})", "True"]],
+      edge: [["uses_index([], {'a'})", "False"], ["uses_index(['a'], set())", "False"]],
+      ex: "'인덱스에 있는 컬럼이 조건에 하나라도 있으면 탄다' 는 가장 흔한 오해입니다. `(a, b)` 인덱스는 a 로 먼저 정렬돼 있어서, a 를 모르면 b 가 어디 있는지 알 길이 없어요 — 전화번호부에서 성을 모른 채 이름만 찾는 것과 같습니다.",
+    },
+    {
+      k: "sargable · 가공하면 못 쓴다",
+      qq: "조건 문자열을 받아 <b>인덱스를 쓸 수 있으면</b> True 를 돌려주세요. 왼쪽이 <code>컬럼</code> 하나면 쓸 수 있고, <code>함수(컬럼)</code> 이면 못 씁니다. 왼쪽은 <code>' '</code> 앞부분입니다.",
+      src: "def sargable(cond):\n    return '=' in cond\n",
+      sol: "def sargable(cond):\n    left = cond.split(' ')[0]\n    return '(' not in left\n",
+      tests: [["sargable('created >= 2024')", "True"], ["sargable('YEAR(created) = 2024')", "False"], ["sargable('name = 가')", "True"]],
+      edge: [["sargable('LOWER(name) = 가')", "False"], ["sargable('id < 10')", "True"]],
+      ex: "등호가 있는지로 판단하면 `YEAR(created) = 2024` 를 통과시킵니다 — 인덱스에는 연도가 아니라 날짜 원본이 들어 있어서 못 써요. 판단 기준은 비교 연산자가 아니라 **왼쪽이 컬럼 그대로인가** 입니다.",
+    },
+    {
+      k: "worth_index · 만들 가치가 있나",
+      qq: "전체 행 수와 <b>서로 다른 값의 개수</b>를 받아 선택도(<code>distinct/total</code>)가 <code>thr</code> <b>보다 크면</b> True 를 돌려주세요. 행이 없으면 False 입니다.",
+      src: "def worth_index(total, distinct, thr):\n    return distinct > 1\n",
+      sol: "def worth_index(total, distinct, thr):\n    if total <= 0:\n        return False\n    return distinct / total > thr\n",
+      tests: [["worth_index(1000, 900, 0.1)", "True"], ["worth_index(1000, 2, 0.1)", "False"], ["worth_index(0, 0, 0.1)", "False"]],
+      edge: [["worth_index(10, 1, 0.1)", "False"], ["worth_index(100, 11, 0.1)", "True"]],
+      ex: "'값이 두 종류 이상이면 만들자' 로는 성별 인덱스를 만들게 됩니다 — 타 봐야 절반을 읽으니 전부 훑는 것보다 느려요. 옵티마이저도 그래서 안 씁니다. 쓰기 비용만 늘고 아무도 안 쓰는 인덱스가 이렇게 생깁니다.",
+    },
+  ],
+},
+/* ── 트랜잭션·ACID ───────────────────────────────────────── */
+{
+  unit: "트랜잭션·ACID",
+  lesson: "직접 짜 보기 — 전부 되거나 전부 안 되거나",
+  th: {
+    sum: "트랜잭션은 **여러 변경을 하나로 묶는 약속**이다. 중간 상태가 밖에 보이지 않는다.",
+    body: [
+      { h: "원자성 — 전부 아니면 전무", t: "계좌 이체는 빼기와 더하기 두 개다. 하나만 성공하면 돈이 사라진다. 묶어 두면 실패했을 때 처음 상태로 되돌아간다." },
+      { h: "일관성 — 규칙이 깨지지 않는다", t: "'잔액은 음수가 될 수 없다' 같은 제약이 트랜잭션 앞뒤로 지켜진다. 안에서 잠시 깨지더라도 커밋 시점에는 맞아야 한다." },
+      { h: "격리성 — 남의 중간 과정이 안 보인다", t: "동시에 도는 두 트랜잭션이 서로의 미완성 상태를 보지 않는다. 어디까지 안 보이게 할지가 격리수준이다." },
+      { h: "지속성 — 커밋했으면 살아남는다", t: "커밋 응답을 받은 뒤에는 전원이 나가도 데이터가 남는다. 그래서 커밋은 디스크에 실제로 쓰기를 기다리고, 그만큼 느리다." },
+    ],
+    code: { c: "BEGIN;\n  UPDATE acc SET bal = bal - 100 WHERE id = 1;\n  UPDATE acc SET bal = bal + 100 WHERE id = 2;\nCOMMIT;   -- 실패하면 ROLLBACK\n\n-- 중간 상태는 아무에게도 안 보인다", cap: "묶으면 중간이 없다" },
+    key: ["전부 되거나 전부 안 되거나", "중간 상태는 안 보인다", "커밋은 디스크를 기다린다"],
+  },
+  q: [
+    {
+      k: "apply_all · 하나라도 실패하면 되돌린다",
+      qq: "<code>apply_all(state, ops)</code> 를 만드세요. 각 연산은 <code>(키, 변화량)</code> 이고, 적용 결과 <b>어느 값이든 음수가 되면</b> 원래 상태를 그대로 돌려줍니다. 상태는 사전입니다.",
+      src: "def apply_all(state, ops):\n    s = dict(state)\n    for k, d in ops:\n        s[k] = s.get(k, 0) + d\n        if s[k] < 0:\n            return s\n    return s\n",
+      sol: "def apply_all(state, ops):\n    s = dict(state)\n    for k, d in ops:\n        s[k] = s.get(k, 0) + d\n    if any(v < 0 for v in s.values()):\n        return dict(state)\n    return s\n",
+      tests: [["apply_all({'a': 100, 'b': 0}, [('a', -30), ('b', 30)])", "{'a': 70, 'b': 30}"], ["apply_all({'a': 10, 'b': 0}, [('a', -50), ('b', 50)])", "{'a': 10, 'b': 0}"], ["apply_all({'a': 5}, [])", "{'a': 5}"]],
+      edge: [["apply_all({}, [('a', 1)])", "{'a': 1}"], ["apply_all({'a': 0}, [('a', -1), ('a', 1)])", "{'a': 0}"]],
+      ex: "중간에 멈춰서 그 상태를 돌려주면, 빼기는 됐고 더하기는 안 된 채로 남습니다 — 돈이 사라진 거예요. 되돌린다는 건 '멈춘다' 가 아니라 '처음 상태로 돌아간다' 입니다. 마지막 줄의 `-1` 뒤 `+1` 도 눈여겨보세요. 중간에 음수를 지나도 끝이 맞으면 괜찮습니다.",
+    },
+    {
+      k: "visible · 커밋한 것만 보인다",
+      qq: "<code>[(트랜잭션id, 값, 커밋여부)]</code> 목록에서 <b>커밋된 값</b>만 순서대로 돌려주세요.",
+      src: "def visible(writes):\n    return [v for _, v, _ in writes]\n",
+      sol: "def visible(writes):\n    return [v for _, v, ok in writes if ok]\n",
+      tests: [["visible([(1, 'a', True), (2, 'b', False)])", "['a']"], ["visible([(1, 'a', True), (2, 'b', True)])", "['a', 'b']"], ["visible([(1, 'a', False)])", "[]"]],
+      edge: [["visible([])", "[]"], ["visible([(1, 'x', False), (1, 'y', True)])", "['y']"]],
+      ex: "커밋되지 않은 값까지 보이면 그게 바로 더티 리드입니다. 상대가 롤백하면 내가 읽고 계산한 값이 애초에 없던 것이 돼요 — 그 계산으로 이미 메일을 보냈다면 되돌릴 방법이 없습니다.",
+    },
+    {
+      k: "durable · 커밋 응답을 받은 것만",
+      qq: "<code>[(id, 커밋여부, 디스크기록여부)]</code> 에서 <b>장애 뒤에도 살아남는</b> id 목록을 돌려주세요. <b>둘 다 참</b>이어야 합니다.",
+      src: "def durable(txs):\n    return [i for i, c, d in txs if c]\n",
+      sol: "def durable(txs):\n    return [i for i, c, d in txs if c and d]\n",
+      tests: [["durable([(1, True, True), (2, True, False)])", "[1]"], ["durable([(1, False, True)])", "[]"], ["durable([(1, True, True), (2, True, True)])", "[1, 2]"]],
+      edge: [["durable([])", "[]"], ["durable([(9, False, False)])", "[]"]],
+      ex: "메모리에서만 커밋된 것은 전원이 나가면 사라집니다. DB 가 커밋 응답을 늦게 주는 이유가 이거예요 — 디스크에 실제로 쓰기를 기다립니다. 그 기다림을 끄면(비동기 커밋) 빨라지지만, 마지막 몇 건을 잃을 수 있습니다.",
+    },
+  ],
+},
+/* ── 격리수준·MVCC ───────────────────────────────────────── */
+{
+  unit: "격리수준·MVCC",
+  lesson: "직접 짜 보기 — 어디까지 안 보이게 할 것인가",
+  th: {
+    sum: "격리수준은 **어떤 이상 현상을 허용할지 고르는 손잡이**다. 높일수록 안전하고 느리다.",
+    body: [
+      { h: "세 가지 이상 현상", t: "더티 리드(커밋 안 된 값을 읽음), 반복 불가능한 읽기(같은 행을 두 번 읽었는데 값이 다름), 팬텀(같은 조건으로 두 번 읽었는데 행 개수가 다름). 수준을 올릴수록 하나씩 사라진다." },
+      { h: "READ COMMITTED 가 기본인 경우가 많다", t: "더티 리드만 막는다. 같은 트랜잭션 안에서 두 번 읽으면 값이 달라질 수 있다 — 읽고, 계산하고, 쓰는 코드에서 이게 사고를 만든다." },
+      { h: "MVCC 는 버전을 여럿 둔다", t: "쓰는 사람이 읽는 사람을 막지 않도록, 값을 덮어쓰는 대신 새 버전을 만든다. 각 트랜잭션은 자기 시작 시점에 맞는 버전을 본다 — 읽기 잠금이 거의 필요 없어진다." },
+      { h: "대신 오래된 버전이 쌓인다", t: "긴 트랜잭션이 하나 열려 있으면 그동안의 모든 버전을 지울 수 없다. 테이블이 부풀고 느려진다 — 배치 작업을 트랜잭션 안에 오래 붙잡아 두면 안 되는 이유다." },
+    ],
+    code: { c: "READ UNCOMMITTED : 더티 리드 허용\nREAD COMMITTED   : 더티 리드만 막음\nREPEATABLE READ  : 같은 행은 같은 값\nSERIALIZABLE     : 팬텀까지 막음\n\nMVCC: 덮어쓰지 않고 버전을 만든다", cap: "무엇을 허용할지 고른다" },
+    key: ["수준이 높을수록 느리다", "MVCC 는 읽기가 쓰기를 안 막는다", "긴 트랜잭션은 버전을 쌓는다"],
+  },
+  q: [
+    {
+      k: "allows · 이 수준에서 일어날 수 있나",
+      qq: "격리수준과 현상 이름을 받아 <b>일어날 수 있으면</b> True 를 돌려주세요. 수준은 <code>'RU' &lt; 'RC' &lt; 'RR' &lt; 'S'</code>, 현상은 <code>'dirty'</code>(RU 까지), <code>'nonrepeatable'</code>(RC 까지), <code>'phantom'</code>(RR 까지) 입니다.",
+      src: "def allows(level, phenomenon):\n    return level == 'RU'\n",
+      sol: "def allows(level, phenomenon):\n    order = ['RU', 'RC', 'RR', 'S']\n    last = {'dirty': 'RU', 'nonrepeatable': 'RC', 'phantom': 'RR'}\n    if phenomenon not in last or level not in order:\n        return False\n    return order.index(level) <= order.index(last[phenomenon])\n",
+      tests: [["allows('RU', 'dirty')", "True"], ["allows('RC', 'dirty')", "False"], ["allows('RC', 'nonrepeatable')", "True"]],
+      edge: [["allows('RR', 'phantom')", "True"], ["allows('S', 'phantom')", "False"], ["allows('RC', '없는현상')", "False"]],
+      ex: "RU 만 위험하다고 여기면, 기본값인 READ COMMITTED 에서 같은 행을 두 번 읽었을 때 값이 달라질 수 있다는 사실을 놓칩니다. 재고를 읽고 → 판단하고 → 쓰는 코드가 바로 그 틈에서 깨져요.",
+    },
+    {
+      k: "snapshot · 내 시작 시점의 버전",
+      qq: "<code>[(버전번호, 값)]</code> 과 내 <b>시작 시점</b>을 받아, <b>시작 시점 이하</b>의 버전 중 <b>가장 최근 것</b>의 값을 돌려주세요. 없으면 <code>None</code> 입니다.",
+      src: "def snapshot(versions, at):\n    return versions[-1][1] if versions else None\n",
+      sol: "def snapshot(versions, at):\n    ok = [v for v in versions if v[0] <= at]\n    if not ok:\n        return None\n    return max(ok, key=lambda v: v[0])[1]\n",
+      tests: [["snapshot([(1, 'a'), (5, 'b')], 3)", "'a'"], ["snapshot([(1, 'a'), (5, 'b')], 9)", "'b'"], ["snapshot([(5, 'b')], 1)", "None"]],
+      edge: [["snapshot([], 1)", "None"], ["snapshot([(1, 'a'), (2, 'b'), (3, 'c')], 2)", "'b'"]],
+      ex: "언제나 최신 버전을 보면 그건 스냅샷이 아닙니다 — 내가 트랜잭션을 여는 사이에 남이 바꾼 값을 보게 돼요. MVCC 의 요점은 '내 시작 시점의 세상' 을 일관되게 보여 주는 것입니다.",
+    },
+    {
+      k: "gc_floor · 어디까지 지울 수 있나",
+      qq: "열려 있는 트랜잭션들의 <b>시작 시점 목록</b>을 받아, <b>그보다 오래된 버전은 지울 수 있는 경계</b>(가장 오래된 시작 시점)를 돌려주세요. 열린 것이 없으면 <code>None</code> 입니다.",
+      src: "def gc_floor(open_starts):\n    if not open_starts:\n        return None\n    return max(open_starts)\n",
+      sol: "def gc_floor(open_starts):\n    if not open_starts:\n        return None\n    return min(open_starts)\n",
+      tests: [["gc_floor([10, 20, 30])", "10"], ["gc_floor([5])", "5"], ["gc_floor([])", "None"]],
+      edge: [["gc_floor([100, 1])", "1"], ["gc_floor([7, 7])", "7"]],
+      ex: "가장 최근 것을 기준으로 지우면, 오래 열려 있는 트랜잭션이 보던 버전을 지워 버립니다 — 그 트랜잭션은 읽을 게 없어져요. 그래서 경계는 **가장 오래된** 트랜잭션입니다. 배치 하나가 한 시간 열려 있으면 그 한 시간의 모든 버전이 쌓이는 이유가 이겁니다.",
+    },
+  ],
+},
+/* ── 락·데드락·실행계획 ─────────────────────────────────── */
+{
+  unit: "락·데드락·실행계획",
+  lesson: "직접 짜 보기 — 서로 기다리면 영원히 멈춘다",
+  th: {
+    sum: "데드락은 **서로가 상대가 쥔 것을 기다리는 상태**다. 순환이 생기면 아무도 못 나아간다.",
+    body: [
+      { h: "잠금 순서를 통일하면 안 생긴다", t: "모두가 항상 작은 id 부터 잠그면 순환이 만들어질 수 없다. 데드락 대책 중 가장 확실하고 가장 싸다 — 감지해서 죽이는 것은 그다음이다." },
+      { h: "DB 는 감지해서 하나를 죽인다", t: "순환을 발견하면 한쪽을 롤백시킨다. 그래서 애플리케이션은 '데드락으로 죽었으면 다시 시도' 를 준비해 둬야 한다 — 이건 버그가 아니라 정상 동작이다." },
+      { h: "실행계획은 추정이다", t: "옵티마이저는 통계를 보고 비용을 어림한다. 통계가 낡으면 엉뚱한 계획을 고른다 — 갑자기 느려졌다면 통계 갱신을 먼저 의심한다." },
+      { h: "행 수 추정이 어긋나면 조인이 어긋난다", t: "10만 행을 100행으로 잘못 추정하면 중첩 루프 조인을 고르고, 실제로는 그게 수백 배 느리다. 계획의 '예상 행' 과 '실제 행' 을 나란히 보는 이유다." },
+    ],
+    code: { c: "-- 순환\nT1: lock(A) → lock(B)\nT2: lock(B) → lock(A)     ← 데드락\n\n-- 순서를 통일하면\nT1: lock(A) → lock(B)\nT2: lock(A) → lock(B)     ← 순환 불가", cap: "순서를 통일하면 순환이 없다" },
+    key: ["잠금 순서를 통일한다", "데드락은 재시도로 다룬다", "계획은 추정이라 통계가 중요"],
+  },
+  q: [
+    {
+      k: "has_cycle · 서로 기다리고 있나",
+      qq: "<code>{기다리는쪽: 기다려지는쪽}</code> 사전을 받아 <b>순환이 있으면</b> True 를 돌려주세요.",
+      src: "def has_cycle(waits):\n    return len(waits) >= 2\n",
+      sol: "def has_cycle(waits):\n    for start in waits:\n        seen = set()\n        cur = start\n        while cur in waits:\n            if cur in seen:\n                return True\n            seen.add(cur)\n            cur = waits[cur]\n    return False\n",
+      tests: [["has_cycle({'T1': 'T2', 'T2': 'T1'})", "True"], ["has_cycle({'T1': 'T2'})", "False"], ["has_cycle({'T1': 'T2', 'T2': 'T3', 'T3': 'T1'})", "True"]],
+      edge: [["has_cycle({})", "False"], ["has_cycle({'T1': 'T2', 'T2': 'T3'})", "False"]],
+      ex: "기다리는 쌍이 둘이라고 데드락은 아닙니다 — T1→T2→T3 은 T3 이 끝나면 줄줄이 풀려요. 문제는 **돌아오는** 경우뿐입니다. 실제 DB 도 이 그래프에서 순환을 찾아 한쪽을 죽입니다.",
+    },
+    {
+      k: "order_locks · 순서를 통일해 순환을 없앤다",
+      qq: "잠글 자원 id 목록을 받아 <b>항상 같은 순서</b>(오름차순)로 돌려주세요. 중복은 <b>한 번만</b> 잠급니다.",
+      src: "def order_locks(ids):\n    return list(ids)\n",
+      sol: "def order_locks(ids):\n    return sorted(set(ids))\n",
+      tests: [["order_locks([3, 1, 2])", "[1, 2, 3]"], ["order_locks([2, 1])", "[1, 2]"], ["order_locks([1, 1, 2])", "[1, 2]"]],
+      edge: [["order_locks([])", "[]"], ["order_locks([5])", "[5]"]],
+      ex: "두 트랜잭션이 같은 두 자원을 서로 다른 순서로 잠그면 데드락이 납니다. 잠그기 직전에 정렬 한 번을 넣으면 그 순환이 **구조적으로** 만들어질 수 없어요 — 감지하고 재시도하는 것보다 훨씬 낫습니다.",
+    },
+    {
+      k: "plan_off · 추정이 얼마나 빗나갔나",
+      qq: "예상 행 수와 실제 행 수를 받아 <b>몇 배 빗나갔는지</b>를 돌려주세요. 항상 <b>1 이상</b>이고, 어느 한쪽이 0이면 0.0 입니다.",
+      src: "def plan_off(est, act):\n    if est == 0:\n        return 0.0\n    return act / est\n",
+      sol: "def plan_off(est, act):\n    if est <= 0 or act <= 0:\n        return 0.0\n    return max(act / est, est / act)\n",
+      tests: [["plan_off(100, 100000)", "1000.0"], ["plan_off(100000, 100)", "1000.0"], ["plan_off(100, 100)", "1.0"]],
+      edge: [["plan_off(0, 10)", "0.0"], ["plan_off(10, 0)", "0.0"]],
+      ex: "나눗셈 한 방향만 보면 '과소추정' 은 잡아도 '과대추정' 은 0.001 처럼 작게 나와 눈에 안 띕니다. 둘 다 계획을 망가뜨리는 건 같아요 — 어느 쪽으로 빗나갔든 '몇 배' 로 보면 한 눈에 걸립니다.",
+    },
+  ],
+},
+/* ── 관계형 DB 이론 ──────────────────────────────────────── */
+{
+  unit: "관계형 DB 이론",
+  lesson: "직접 짜 보기 — 중복을 없애면 무엇이 좋아지는가",
+  th: {
+    sum: "정규화는 **같은 사실을 한 곳에만 적는 것**이다. 그래야 고칠 때 한 곳만 고친다.",
+    body: [
+      { h: "중복은 곧 불일치", t: "주소를 주문마다 적어 두면, 고객이 이사했을 때 어떤 행은 새 주소이고 어떤 행은 옛 주소다. 어느 쪽이 맞는지 데이터만 봐서는 알 수 없다 — 이것이 갱신 이상이다." },
+      { h: "함수 종속을 본다", t: "'주문번호를 알면 고객이 정해진다' 처럼, 어떤 값이 다른 값을 결정하는 관계다. 키가 아닌 값이 다른 값을 결정하고 있으면 테이블을 나눌 때가 된 것이다." },
+      { h: "제3정규형이 실무의 기준선", t: "키가 아닌 컬럼이 다른 키 아닌 컬럼을 결정하지 않게 만든다. 대부분의 업무 테이블은 여기까지면 충분하다." },
+      { h: "일부러 되돌리기도 한다", t: "조인이 너무 많아 느리면 자주 읽는 값을 복사해 두기도 한다(역정규화). 대신 '고칠 때 두 곳을 고쳐야 한다' 는 빚을 지는 것이니, 의식적으로 골라야 한다." },
+    ],
+    code: { c: "-- 중복 (갱신 이상)\n주문(번호, 고객명, 고객주소, 상품)\n\n-- 나누면\n고객(id, 이름, 주소)\n주문(번호, 고객id, 상품)", cap: "같은 사실은 한 곳에만" },
+    key: ["중복은 불일치를 낳는다", "키가 아닌 것이 결정하면 나눈다", "역정규화는 의식적으로"],
+  },
+  q: [
+    {
+      k: "inconsistent · 같은 사실이 다르게 적혔나",
+      qq: "<code>[(키, 값)]</code> 목록에서 <b>같은 키에 서로 다른 값</b>이 적힌 키를 정렬해 돌려주세요.",
+      src: "def inconsistent(rows):\n    return sorted({k for k, _ in rows})\n",
+      sol: "def inconsistent(rows):\n    seen = {}\n    bad = set()\n    for k, v in rows:\n        if k in seen and seen[k] != v:\n            bad.add(k)\n        seen[k] = v\n    return sorted(bad)\n",
+      tests: [["inconsistent([('c1', '서울'), ('c1', '부산')])", "['c1']"], ["inconsistent([('c1', '서울'), ('c1', '서울')])", "[]"], ["inconsistent([('c1', '서울'), ('c2', '부산')])", "[]"]],
+      edge: [["inconsistent([])", "[]"], ["inconsistent([('a', 1), ('b', 1), ('a', 2)])", "['a']"]],
+      ex: "고객 주소를 주문마다 복사해 두면 이사 뒤에 어떤 행은 옛 주소로 남습니다. 데이터만 봐서는 어느 쪽이 진짜인지 알 수 없어요 — 정규화가 막으려는 것이 정확히 이 상태입니다.",
+    },
+    {
+      k: "determines · 이 값이 저 값을 정하는가",
+      qq: "<code>[(a, b)]</code> 목록에서 <b>a 가 b 를 결정하면</b>(같은 a 에 항상 같은 b) True 를 돌려주세요.",
+      src: "def determines(pairs):\n    return len({a for a, _ in pairs}) == len(pairs)\n",
+      sol: "def determines(pairs):\n    m = {}\n    for a, b in pairs:\n        if a in m and m[a] != b:\n            return False\n        m[a] = b\n    return True\n",
+      tests: [["determines([('x', 1), ('x', 1), ('y', 2)])", "True"], ["determines([('x', 1), ('x', 2)])", "False"], ["determines([('x', 1)])", "True"]],
+      edge: [["determines([])", "True"], ["determines([('x', 1), ('y', 1)])", "True"]],
+      ex: "'a 가 전부 다르면 결정한다' 는 판단은 반쪽입니다 — 같은 a 가 여러 번 나오면서 b 가 늘 같은 경우가 바로 함수 종속이거든요. 그 경우를 못 잡으면 나눠야 할 테이블을 못 찾습니다.",
+    },
+    {
+      k: "join_rows · 나누면 조인이 필요하다",
+      qq: "두 테이블을 키로 이어 붙였을 때의 <b>행 수</b>를 돌려주세요. 각 테이블은 <code>[(키, 값)]</code> 이고, 짝이 없는 행은 <b>버립니다</b>.",
+      src: "def join_rows(a, b):\n    return min(len(a), len(b))\n",
+      sol: "def join_rows(a, b):\n    n = 0\n    for ka, _ in a:\n        n += sum(1 for kb, _ in b if kb == ka)\n    return n\n",
+      tests: [["join_rows([(1, 'x')], [(1, 'y'), (1, 'z')])", "2"], ["join_rows([(1, 'x'), (2, 'y')], [(1, 'a')])", "1"], ["join_rows([(1, 'x')], [(2, 'y')])", "0"]],
+      edge: [["join_rows([], [(1, 'a')])", "0"], ["join_rows([(1, 'a'), (1, 'b')], [(1, 'c'), (1, 'd')])", "4"]],
+      ex: "조인은 행 수가 **늘어날 수 있는** 연산입니다. 양쪽에 같은 키가 둘씩 있으면 네 행이 나와요 — 그 상태로 합계를 내면 매출이 네 배가 됩니다. 작은 쪽 길이로 짐작하면 이 폭증이 안 보입니다.",
+    },
+  ],
+},
+/* ── 심화 ────────────────────────────────────────────────── */
+{
+  unit: "심화 — 시니어/스태프 난이도",
+  lesson: "직접 짜 보기 — 경합을 설계로 줄인다",
+  th: {
+    sum: "규모가 커지면 문제는 쿼리가 아니라 **같은 자리를 여럿이 동시에 건드리는 것**이 된다.",
+    body: [
+      { h: "핫 로우는 잠금 대기를 만든다", t: "인기 상품의 재고 한 행에 초당 수천 요청이 몰리면, 잠금을 기다리는 줄이 길어져 전체가 느려진다. 재고를 여러 조각으로 나눠 두면 경합이 조각 수만큼 줄어든다." },
+      { h: "낙관적 잠금은 버전으로 견준다", t: "읽을 때 버전을 함께 읽고, 쓸 때 '그 버전일 때만' 쓴다. 그사이 남이 바꿨으면 0행이 갱신되고, 그때 다시 시도한다 — 잠금을 오래 쥐지 않아도 된다." },
+      { h: "멱등키로 중복 실행을 막는다", t: "재시도는 같은 요청을 두 번 보낼 수 있다. 요청마다 키를 두고 이미 처리한 키면 그대로 이전 결과를 돌려주면, 결제가 두 번 되는 일이 없다." },
+      { h: "배치는 잘게 나눈다", t: "백만 행을 한 트랜잭션으로 지우면 그동안 잠금과 버전이 쌓인다. 천 행씩 나눠 커밋하면 다른 요청이 그 사이로 지나갈 수 있다." },
+    ],
+    code: { c: "-- 낙관적 잠금\nUPDATE t SET v = ?, ver = ver + 1\n WHERE id = ? AND ver = ?     -- 0행이면 재시도\n\n-- 핫 로우 나누기\nstock[id % N] 로 흩어 두고 합계로 읽는다", cap: "경합은 구조로 줄인다" },
+    key: ["핫 로우는 나눠 흩는다", "낙관적 잠금은 버전으로", "재시도에는 멱등키"],
+  },
+  q: [
+    {
+      k: "optimistic · 그사이 바뀌었으면 실패",
+      qq: "<code>optimistic(store, key, expected_ver, value)</code> 를 만드세요. 저장소는 <code>{키: (버전, 값)}</code> 입니다. <b>버전이 같을 때만</b> 값을 바꾸고 버전을 1 올린 뒤 True 를, 아니면 False 를 돌려줍니다.",
+      src: "def optimistic(store, key, expected_ver, value):\n    ver, _ = store.get(key, (0, None))\n    store[key] = (ver + 1, value)\n    return True\n",
+      sol: "def optimistic(store, key, expected_ver, value):\n    ver, _ = store.get(key, (0, None))\n    if ver != expected_ver:\n        return False\n    store[key] = (ver + 1, value)\n    return True\n",
+      tests: [["optimistic({'a': (1, 'x')}, 'a', 1, 'y')", "True"], ["optimistic({'a': (2, 'x')}, 'a', 1, 'y')", "False"], ["(lambda s: (optimistic(s, 'a', 2, 'y'), s)[1])({'a': (1, 'x')})", "{'a': (1, 'x')}"]],
+      edge: [["optimistic({}, 'a', 0, 'y')", "True"], ["(lambda s: (optimistic(s, 'a', 1, 'y'), s)[1])({'a': (1, 'x')})", "{'a': (2, 'y')}"]],
+      ex: "버전을 안 보고 그냥 쓰면, 내가 읽은 뒤 남이 바꾼 값을 덮어씁니다 — 남의 수정이 소리 없이 사라져요(로스트 업데이트). 반환값은 True 로 성공처럼 보이니 아무도 모릅니다.",
+    },
+    {
+      k: "idempotent · 같은 요청은 한 번만",
+      qq: "<code>idempotent(done, key, result)</code> 를 만드세요. <code>done</code> 은 <code>{키: 결과}</code> 입니다. 처음 보는 키면 저장하고 <code>result</code> 를, 이미 있으면 <b>저장된 결과</b>를 돌려줍니다.",
+      src: "def idempotent(done, key, result):\n    done[key] = result\n    return result\n",
+      sol: "def idempotent(done, key, result):\n    if key in done:\n        return done[key]\n    done[key] = result\n    return result\n",
+      tests: [["idempotent({}, 'k', 'ok')", "'ok'"], ["idempotent({'k': '이전'}, 'k', 'ok')", "'이전'"], ["(lambda d: (idempotent(d, 'k', 'a'), idempotent(d, 'k', 'b'))[1])({})", "'a'"]],
+      edge: [["(lambda d: (idempotent(d, 'k', 'a'), d)[1])({})", "{'k': 'a'}"], ["idempotent({'x': 1}, 'y', 2)", "2"]],
+      ex: "재시도는 같은 요청을 두 번 보냅니다. 매번 새로 처리하면 결제가 두 번 되고 메일이 두 번 가요 — 네트워크가 불안한 곳에서는 재시도가 예외가 아니라 일상입니다. 키로 한 번만 처리하고, 두 번째는 이전 결과를 그대로 돌려줍니다.",
+    },
+    {
+      k: "shard_total · 흩어 두고 합쳐 읽기",
+      qq: "<code>shard_total(shards, key)</code> 를 만드세요. <code>shards</code> 는 <code>[{키: 수}]</code> 목록입니다. 그 키의 <b>모든 조각을 더한 값</b>을 돌려주세요.",
+      src: "def shard_total(shards, key):\n    return shards[0].get(key, 0)\n",
+      sol: "def shard_total(shards, key):\n    return sum(s.get(key, 0) for s in shards)\n",
+      tests: [["shard_total([{'a': 3}, {'a': 4}], 'a')", "7"], ["shard_total([{'a': 3}, {}], 'a')", "3"], ["shard_total([{'b': 1}], 'a')", "0"]],
+      edge: [["shard_total([], 'a')", "0"], ["shard_total([{'a': 0}, {'a': 0}], 'a')", "0"]],
+      ex: "재고를 N 조각으로 흩어 두면 잠금 경합이 N 분의 1 이 됩니다 — 하지만 읽을 때는 반드시 전부 더해야 해요. 한 조각만 보면 재고를 N 분의 1 로 알려 주게 되고, 팔 수 있는 물건을 품절로 표시합니다.",
+    },
+  ],
+},
+];
