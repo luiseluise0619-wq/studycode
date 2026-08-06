@@ -17,6 +17,7 @@ const SQL = require("./sql_basic.js");
 const SQL2 = require("./sql_mid.js");
 const WEB = require("./web_basic.js");
 const REACT = require("./react_basic.js");
+const REACTA = require("./react_async.js");
 const ALGO = require("./algo_basic.js");
 const JSMID = require("./js_mid.js");
 const JSASYNC = require("./js_async.js");
@@ -50,13 +51,19 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
   const srv = await serve();
   const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
   const p = await b.newPage({ viewport: { width: 390, height: 820 } });
-  const errs = []; p.on("pageerror", e => errs.push(String(e.message)));
+  /* '실패를 화면에 그렸는가' 를 묻는 문항은 일부러 거부되는 프라미스를 넘긴다.
+     .catch 를 안 쓴 시작 코드에서는 그게 처리되지 않은 거부로 새어 나오는데,
+     그건 문항이 노린 바로 그 모습이다. 그래서 그 메시지만 빼고 나머지는 그대로 본다. */
+  const errs = []; p.on("pageerror", e => {
+    if (/의도된 실패/.test(String(e.message))) return;
+    errs.push(String(e.message));
+  });
   await p.addInitScript(s => { try { localStorage.setItem("coderun", JSON.stringify(s)); } catch (e) {} },
     { onboarded: true, goal: "free", freeMode: true });
   await p.goto("http://127.0.0.1:" + srv.address().port + "/index.html");
   await p.waitForFunction(() => typeof testDoc === "function" && typeof gradeSql === "function" && typeof htmlTestDoc === "function" && typeof reactTestDoc === "function", { timeout: 60000 });
 
-  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(JSASYNC, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react"));
+  const items = flat(JS, "js").concat(flat(ALGO, "js")).concat(flat(JSMID, "js")).concat(flat(JSASYNC, "js")).concat(flat(SQL, "sql")).concat(flat(SQL2, "sql")).concat(flat(WEB, "html")).concat(flat(REACT, "react")).concat(flat(REACTA, "react"));
   const out = await p.evaluate(async (items) => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const res = [];
@@ -125,7 +132,7 @@ const flat = (gs, lang) => gs.flatMap(g => g.q.map(x => Object.assign({ lang, un
           window.addEventListener("message", on);
           document.body.appendChild(f);
           f.srcdoc = reactTestDoc(t.code, x.tests, REACT_LIB);
-          setTimeout(fin, 2500);   // 라이브러리를 심고 마운트할 시간까지
+          setTimeout(fin, 12000);  // 비동기 검사식은 프라미스 제한까지 갈 수 있다
         });
         const sol = await grade(x.sol), src = await grade(x.src);
         res.push({ k: x.k, unit: x.unit, lang: "react",

@@ -3608,7 +3608,8 @@ function testDoc(code,spec){
      그러지 않으면 async 함수를 채점할 때 Promise 객체와 기대값을 견주게 되어
      무엇을 써도 통과하지 못한다. 영영 안 끝나는 프라미스는 3초에서 끊는다. */
   +'function __wait(v){if(!v||typeof v.then!=="function")return Promise.resolve(v);'
-  +'return Promise.race([v,new Promise(function(_,rj){setTimeout(function(){rj(new Error("\\uc2dc\\uac04 \\ucd08\\uacfc"));},3000);})]);}'
+  +'var id;var to=new Promise(function(_,rj){id=setTimeout(function(){rj(new Error("\\uc2dc\\uac04 \\ucd08\\uacfc"));},3000);});'
+  +'return Promise.race([v,to]).finally(function(){clearTimeout(id);});}'
   +'(async function(){'
   +'var Cp=0,Ch="";for(var i=0;i<TS.length;i++){var t=TS[i],okc=false,got;try{got=await __wait(eval(t.in));var exp=await __wait(eval("("+t.out+")"));okc=eq(got,exp);}catch(e){got="[\\uc5d0\\ub7ec] "+e.message;}if(okc)Cp++;RS.push([okc,t.in,sh(got),t.out]);Ch+=row(okc,t.in,got,t.out);}'
   +'var Ep=0,Eh="";for(var i2=0;i2<EG.length;i2++){var t2=EG[i2],ok2=false,g2;try{g2=await __wait(eval(t2.in));var ex2=await __wait(eval("("+t2.out+")"));ok2=eq(g2,ex2);}catch(e){g2="[\\uc5d0\\ub7ec] "+e.message;}if(ok2)Ep++;RS.push([ok2,t2.in,sh(g2),t2.out]);Eh+=row(ok2,t2.in,g2,t2.out);}'
@@ -4201,7 +4202,8 @@ function htmlTestDoc(userHtml, tests){
      화면은 '조금 뒤에' 바뀌므로, 기다리지 못하면 로딩 상태만 보고 채점하게 된다.
      끝나지 않는 프라미스는 3초에서 끊는다 — 채점기가 멎으면 아무것도 못 한다. */
   +'function __rwait(v){if(!v||typeof v.then!=="function")return Promise.resolve(v);'
-  +'return Promise.race([v,new Promise(function(_,rj){setTimeout(function(){rj(new Error("\\uc2dc\\uac04 \\ucd08\\uacfc"));},3000);})]);}'
+  +'var id;var to=new Promise(function(_,rj){id=setTimeout(function(){rj(new Error("\\uc2dc\\uac04 \\ucd08\\uacfc"));},3000);});'
+  +'return Promise.race([v,to]).finally(function(){clearTimeout(id);});}'
   +'async function run(){var pass=0,html="",det=[];'
   +'for(var i=0;i<TS.length;i++){var t=TS[i],ok=false,why="";'
   +'try{ok=!!(await __rwait(eval(t.js)));}catch(e){why=" ("+(e&&e.message||e)+")";}'
@@ -4258,14 +4260,21 @@ function reactTestDoc(userJs, tests, libSrc){
   +'if(!C)throw new Error("App 컴포넌트를 찾지 못했습니다 (function App 으로 선언하세요)");'
   +'var root=ReactDOM.createRoot(document.getElementById("root"));'
   +'ReactDOM.flushSync(function(){ root.render(React.createElement(C)); }); }'
-  +'function run(){var pass=0,html="",det=[];'
+  /* 검사식이 프라미스를 돌려주면 기다렸다 판정한다. 데이터를 불러오는 화면은
+     '조금 뒤에' 바뀌므로, 기다리지 못하면 프라미스 객체 자체를 참으로 읽어
+     무엇을 써도 통과해 버린다 — 실제로 그렇게 걸렸다.
+     끝나지 않는 프라미스는 3초에서 끊는다. 끊은 뒤 타이머는 지운다. */
+  +'function __cwait(v){if(!v||typeof v.then!=="function")return Promise.resolve(v);'
+  +'var id;var to=new Promise(function(_,rj){id=setTimeout(function(){rj(new Error("\\uc2dc\\uac04 \\ucd08\\uacfc"));},3000);});'
+  +'return Promise.race([v,to]).finally(function(){clearTimeout(id);});}'
+  +'async function run(){var pass=0,html="",det=[];'
   +'try{mount();}catch(e){'
   +'var r0=document.getElementById("__r");'
   +'if(r0)r0.innerHTML="<div style=\\"color:#ff6b6b;font-weight:700\\">[실행 오류] "+esc(String(e&&e.message||e))+"</div>";'
   +'var o0={__cr:"test",pass:0,total:TS.length,impl:0,gate:false,detail:[{d:String(e&&e.message||e),ok:false}]};'
   +'try{window.__cr_result=o0;}catch(_){}try{parent.postMessage(o0,"*");}catch(_){}return;}'
   +'for(var i=0;i<TS.length;i++){var t=TS[i],ok=false,why="";'
-  +'try{ok=!!eval(t.js);}catch(e){why=" ("+(e&&e.message||e)+")";}'
+  +'try{ok=!!(await __cwait(eval(t.js)));}catch(e){why=" ("+(e&&e.message||e)+")";}'
   +'if(ok)pass++;det.push({d:t.d,ok:ok});'
   +'html+="<div style=\\"color:"+(ok?"#4ade80":"#ff6b6b")+"\\">"+(ok?"✓":"✗")+" "+esc(t.d)+esc(why)+"</div>";}'
   +'var gate=TS.length>0&&pass===TS.length;'
@@ -4274,7 +4283,7 @@ function reactTestDoc(userJs, tests, libSrc){
   +'var r=document.getElementById("__r");if(r)r.innerHTML=head+html;'
   +'var out={__cr:"test",pass:pass,total:TS.length,impl:TS.length?Math.round(pass/TS.length*100):0,gate:gate,detail:det};'
   +'try{window.__cr_result=out;}catch(e){}try{parent.postMessage(out,"*");}catch(e){}}'
-  +'try{run();}catch(e){}'
+  +'try{run().catch(function(){});}catch(e){}'
   +'})();</scr'+'ipt>';
 }
 function renderReactTest(q, code){
