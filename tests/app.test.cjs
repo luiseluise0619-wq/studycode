@@ -1,6 +1,7 @@
 /* 브라우저에서 실제 앱을 열고 확인하는 회귀 테스트.
    PLAYWRIGHT 가 없으면 조용히 건너뛴다(로컬에서 엔진 테스트만 돌릴 수 있게). */
 const path=require("path");
+const fs=require("fs");
 let chromium;
 try { chromium=require("playwright").chromium; }
 catch(e){ console.log("playwright 미설치 — 브라우저 테스트를 건너뜁니다."); process.exit(0); }
@@ -171,6 +172,88 @@ function check(name, cond, detail){
   check("설계 문항의 시작 설계가 올바른 JSON 이다", archChk.badJson===0, archChk);
   check("설계 문항이 요건 검사를 4개 이상 갖는다", archChk.fewTests===0, archChk);
   check("설계 문항의 종류가 erd·api·cloud 중 하나다", archChk.badKind===0, archChk);
+  /* 레슨 제목은 진도 키(유닛제목+레슨제목 해시)의 재료다. 같은 유닛에서 제목이 겹치면
+     한 레슨을 끝냈을 때 겹친 레슨들이 함께 완료로 표시된다 — 조용히 진도가 날아간다.
+     제목 생성기가 로마 숫자를 다 써서 "... undefined" 를 뱉은 적이 있어 함께 막는다. */
+  const titleChk=await p.evaluate(()=>{
+    const undef=[], collide=[];
+    for(const k in COURSES){
+      const seen={};
+      COURSES[k].units.forEach(u=>u.lessons.forEach(l=>{
+        if(/undefined|\[object /.test(l.title)) undef.push(k+" / "+u.title+" / "+l.title);
+        const key=u.title+"  "+l.title;
+        if(seen[key]) collide.push(k+" / "+key); else seen[key]=1;
+      }));
+    }
+    return {undef, collide};
+  });
+  check("레슨 제목에 undefined 가 없다", titleChk.undef.length===0, titleChk.undef.slice(0,5));
+  check("같은 유닛에서 레슨 제목이 겹치지 않는다 (진도 키 충돌)", titleChk.collide.length===0, titleChk.collide.slice(0,5));
+
+  /* cat 값이 CATMAP/CN 밖이면 배지가 사라지고 코치 표에 영어 키가 그대로 나온다 */
+  const catChk=await p.evaluate(()=>{
+    const VALID=new Set(["debug","review","perf","design","ops","interview","internals","logs","security","predict","knowledge","impl"]);
+    const bad={};
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
+      if(q.cat && !VALID.has(q.cat)) bad[q.cat]=(bad[q.cat]||0)+1;
+    })));
+    return bad;
+  });
+  check("모든 cat 값이 앱이 아는 범주다", Object.keys(catChk).length===0, catChk);
+
+  /* 시뮬레이션 채점 계약: 시작 코드는 통과하면 안 되고(통과하면 문제가 성립하지 않는다),
+     테스트 식은 RESULT·FRAMES 만 볼 수 있다(사용자 코드의 const 는 블록 스코프라 안 보인다).
+     iframe 없이 simDoc 과 같은 스코프를 만들어 전부 돌려 본다. */
+  const simChk=await p.evaluate(()=>{
+    const passes=[], throws=[];
+    let n=0;
+    const run=(userCode, tests)=>{
+      const src='var TS='+JSON.stringify(tests||[])+';var FRAMES=[],LOG="";'
+        +'function clone(v){try{return JSON.parse(JSON.stringify(v));}catch(e){return String(v);} }'
+        +'function snap(label, value, opt){ if(FRAMES.length>400) return;'
+        +'FRAMES.push({label:String(label==null?"":label), value:clone(value), opt:clone(opt||{})}); }'
+        +'var RESULT=null, ERR=null;'
+        +'try{'+userCode+'\n}catch(e){ ERR=String(e&&e.message||e); }'
+        +'var pass=0, scopeErr=0;'
+        +'if(!ERR){ for(var i=0;i<TS.length;i++){ var ok=false;'
+        +'try{ ok=!!eval(TS[i].js); }catch(e){ if(/is not defined/.test(String(e&&e.message))) scopeErr++; }'
+        +'if(ok)pass++; } }'
+        +'return {gate:!ERR&&TS.length>0&&pass===TS.length, scopeErr:scopeErr};';
+      try{ return new Function(src)(); }catch(e){ return {gate:false, scopeErr:0, boom:String(e)}; }
+    };
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
+      if(q.t!=="sim"||!q.tests||!q.tests.length) return;
+      n++;
+      const r=run(q.src, q.tests);
+      if(r.gate) passes.push(k+" / "+l.t+" · "+(q.k||""));
+      if(r.scopeErr) throws.push(k+" / "+l.t+" · 테스트가 사용자 코드 이름을 참조("+r.scopeErr+")");
+    })));
+    return {n, passes, throws};
+  });
+  check("시뮬레이션 시작 코드는 통과하지 않는다", simChk.passes.length===0, {n:simChk.n, 통과해버림:simChk.passes.slice(0,5)});
+  check("시뮬레이션 테스트가 RESULT·FRAMES 만 참조한다", simChk.throws.length===0, simChk.throws.slice(0,5));
+
+  /* 트랙 청크는 그 트랙을 열 때 통째로 받는다. 한 파일이 몇 MB 로 불면 첫 화면이 그만큼 늦는다.
+     C 트랙은 테스트 프레임워크가 문항마다 복제돼 11.8MB 까지 갔던 적이 있다 —
+     공용 파일은 data/rt-shared.js 로 빼고 실행 채점 때만 받는다. */
+  const chunkDir=path.join(__dirname,"..","data");
+  const tooBig=fs.readdirSync(chunkDir).filter(f=>/^t-.*\.js$/.test(f))
+    .map(f=>({f, mb:+(fs.statSync(path.join(chunkDir,f)).size/1048576).toFixed(2)}))
+    .filter(x=>x.mb>3);
+  check("트랙 청크가 3MB 를 넘지 않는다", tooBig.length===0, tooBig);
+  const sharedRt=await p.evaluate(async ()=>{
+    if(typeof rtFiles!=="function") return {missing:true};
+    await window.ensureTrack("c");
+    const qs=[]; COURSES.c.units.forEach(u=>u.lessons.forEach(l=>(l.q||[]).forEach(q=>{ if(q.rt) qs.push(q); })));
+    const sh=qs.filter(q=>q.rt.shared);
+    if(!sh.length) return {shared:0};
+    const files=await rtFiles(sh[0].rt);
+    const plain=await rtFiles({test:{"a.c":"x"}});
+    return {shared:sh.length, keys:Object.keys(files).length, hasFramework:!!files["test-framework/unity.c"], plainKeys:Object.keys(plain).length};
+  });
+  check("공용 테스트 프레임워크가 채점 시점에 합쳐진다", sharedRt.hasFramework===true && sharedRt.keys>=4, sharedRt);
+  check("공용 파일이 없는 문항은 그대로 동작한다", sharedRt.plainKeys===1, sharedRt);
+
   check("모든 트랙에 분야 소개가 있다", r.introMissing.length===0, r.introMissing);
   check("Git 미션 12개 이상", r.missions>=12, {missions:r.missions});
 
@@ -416,19 +499,20 @@ function check(name, cond, detail){
   // 손가락을 움직이지 않고 눌렀다 떼면 레슨이 열려야 한다.
   // (.node 에 위치용 translateX 와 :active 의 translateY 가 함께 걸리면
   //  누르는 순간 별이 옆으로 튀어 클릭이 빗나간다 — 그 회귀를 막는다)
+  // 유닛은 접혀 있을 수 있으므로 '화면에 실제로 보이는' 별만 대상으로 한다.
+  const VIS='(()=>[...document.querySelectorAll(".node")].filter(n=>n.offsetParent!==null))()';
   const press=[];
-  for(const idx of [1,2,5,6]){
-    const has=await p.evaluate(i=>{ const n=document.querySelectorAll(".node")[i];
-      if(!n) return false; n.scrollIntoView({block:"center"}); return true; }, idx);
-    if(!has) continue;
+  const visN=await p.evaluate(`${VIS}.length`);
+  for(const idx of [0,1,2,3].filter(i=>i<visN)){
+    await p.evaluate(`${VIS}[${idx}].scrollIntoView({block:"center"})`);
     await p.waitForTimeout(180);
-    const box=await p.evaluate(i=>{ const r=document.querySelectorAll(".node")[i].getBoundingClientRect();
-      return {x:r.x+r.width/2, y:r.y+r.height/2}; }, idx);
+    const box=await p.evaluate(`(()=>{const r=${VIS}[${idx}].getBoundingClientRect();
+      return {x:r.x+r.width/2, y:r.y+r.height/2};})()`);
     await p.mouse.move(box.x, box.y);
     await p.mouse.down();
     await p.waitForTimeout(110);
-    const dx=await p.evaluate(([i,x])=>{ const r=document.querySelectorAll(".node")[i].getBoundingClientRect();
-      return Math.round((r.x+r.width/2)-x); }, [idx, box.x]);
+    const dx=await p.evaluate(`(()=>{const r=${VIS}[${idx}].getBoundingClientRect();
+      return Math.round((r.x+r.width/2)-${box.x});})()`);
     await p.mouse.up();
     await p.waitForTimeout(220);
     const opened=await p.evaluate(()=>{ const on=document.getElementById("lesson").classList.contains("on");
@@ -438,6 +522,33 @@ function check(name, cond, detail){
   }
   check("누르는 동안 별이 옆으로 움직이지 않는다", press.every(x=>Math.abs(x.dx)<=1), press);
   check("별을 그 자리에서 눌러 레슨이 열린다", press.length>0 && press.every(x=>x.opened), press);
+
+  /* 유닛 접기/펼치기 — 처음 온 사람이 40개가 넘는 유닛에 파묻히지 않게 하는 장치라
+     "기본은 지금 할 유닛만 펼침" 이 깨지면 안 된다 */
+  const fold=await p.evaluate(async ()=>{
+    const vis=()=>[...document.querySelectorAll(".path")].filter(x=>getComputedStyle(x).display!=="none").length;
+    const before=vis();
+    const units=document.querySelectorAll(".unit-sec").length;
+    const cur=document.querySelectorAll(".unit-sec.is-current").length;
+    document.getElementById("ub-toggle").click();
+    const afterCollapse=vis();
+    document.getElementById("ub-toggle").click();
+    const afterExpand=vis();
+    document.getElementById("ub-here").click();
+    const afterHere=vis();
+    const heads=document.querySelectorAll(".unit-head");
+    const aria=heads.length? heads[0].getAttribute("aria-expanded") : null;
+    return {units, cur, before, afterCollapse, afterExpand, afterHere, aria};
+  });
+  check("유닛이 기본으로 접혀 있고 '지금 할 유닛' 하나만 펼쳐진다", fold.units>1 && fold.before===1 && fold.cur===1, fold);
+  check("모두 접기·모두 펼치기가 동작한다", fold.afterCollapse===0 && fold.afterExpand===fold.units, fold);
+  check("'지금 할 곳으로' 가 다시 한 유닛만 남긴다", fold.afterHere===1, fold);
+  check("유닛 머리글이 펼침 상태를 스크린리더에 알린다", fold.aria==="true"||fold.aria==="false", fold);
+
+  /* doctype 이 없으면 브라우저가 quirks 모드로 렌더한다 — 박스 모델이 달라진다 */
+  const mode=await p.evaluate(()=>({compat:document.compatMode, lang:document.documentElement.lang}));
+  check("표준 모드로 렌더된다 (quirks 아님)", mode.compat==="CSS1Compat", mode);
+  check("문서 언어가 한국어로 선언돼 있다", mode.lang==="ko", mode);
   await p.close();
  }
 
