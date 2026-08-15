@@ -560,6 +560,27 @@ function check(name, cond, detail){
   check("'지금 할 곳으로' 가 다시 한 유닛만 남긴다", fold.afterHere===1, fold);
   check("유닛 머리글이 펼침 상태를 스크린리더에 알린다", fold.aria==="true"||fold.aria==="false", fold);
 
+  /* 홈에서 첫 레슨까지 가는 거리 — 처음 온 사람이 여기서 이탈한다.
+     기능을 빼지 않고 접어서 줄였으므로, 접힌 것을 펴면 항목이 그대로 다 있어야 한다. */
+  const reach=await p.evaluate(()=>{
+    const first=document.querySelector(".unit-sec");
+    const fold=document.getElementById("msn-fold");
+    const closed=Math.round(document.getElementById("daily").getBoundingClientRect().height);
+    fold.open=true;
+    const rows=document.querySelectorAll("#msn-fold .msn > *").length;
+    const opened=Math.round(document.getElementById("daily").getBoundingClientRect().height);
+    fold.open=false;
+    return {
+      첫유닛까지: first ? Math.round(first.getBoundingClientRect().top+scrollY) : null,
+      접힘높이: closed, 펼침높이: opened, 미션줄: rows,
+      로드맵이레슨뒤: !!(document.getElementById("course").compareDocumentPosition(
+        document.getElementById("roadmap")) & Node.DOCUMENT_POSITION_FOLLOWING)
+    };
+  });
+  check("첫 레슨까지 두 화면 안에 닿는다", reach.첫유닛까지!==null && reach.첫유닛까지<1200, reach);
+  check("미션은 접혀 있고 펼치면 전부 보인다", reach.접힘높이<160 && reach.미션줄>=9 && reach.펼침높이>reach.접힘높이+200, reach);
+  check("성장 로드맵은 레슨 목록 뒤에 있다", reach.로드맵이레슨뒤===true, reach);
+
   /* doctype 이 없으면 브라우저가 quirks 모드로 렌더한다 — 박스 모델이 달라진다 */
   const mode=await p.evaluate(()=>({compat:document.compatMode, lang:document.documentElement.lang}));
   check("표준 모드로 렌더된다 (quirks 아님)", mode.compat==="CSS1Compat", mode);
