@@ -156,6 +156,21 @@ function check(name, cond, detail){
   check("모든 레슨에 이론이 있다", r.noTheory===0, {noTheory:r.noTheory});
   check("이론이 요약·본문2절·예제·요점을 모두 갖춘다", r.badTheory===0, {badTheory:r.badTheory});
   check("선택형은 4개의 서로 다른 보기와 유효한 정답을 갖는다", r.badChoice===0, {badChoice:r.badChoice});
+
+  /* 정답이 특정 자리에 쏠리면 내용을 몰라도 찍어서 맞는다. 한때 0번이 41.7% 였다.
+     자리에 뜻이 있는 보기(위 모두 · 정답 없음)와 번호를 참조하는 문항은 섞지 않으므로
+     정확히 25% 가 되지는 않는다 — 여유를 두고 상한만 건다. */
+  const spread=await p.evaluate(()=>{
+    const c=[0,0,0,0]; let n=0;
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
+      if((q.t||"choice")!=="choice") return;
+      if(!Array.isArray(q.o)||q.o.length!==4) return;
+      if(!(q.a>=0&&q.a<4)) return;
+      c[q.a]++; n++;
+    })));
+    return {n, c, pct:c.map(v=>+(v/n*100).toFixed(1))};
+  });
+  check("선택형 정답 위치가 한 자리에 쏠리지 않는다", spread.pct.every(v=>v>=18&&v<=32), spread);
   check("로그 문항 구조가 올바르다", r.badLog===0, {badLog:r.badLog});
   check("리뷰 문항 구조가 올바르다", r.badReview===0, {badReview:r.badReview});
   /* 설계 문항: 시작 설계가 올바른 JSON 이고, 요건 검사가 4개 이상이어야 한다 */
