@@ -269,6 +269,29 @@ function check(name, cond, detail){
   check("공용 테스트 프레임워크가 채점 시점에 합쳐진다", sharedRt.hasFramework===true && sharedRt.keys>=4, sharedRt);
   check("공용 파일이 없는 문항은 그대로 동작한다", sharedRt.plainKeys===1, sharedRt);
 
+  /* 셸의 유닛·레슨 목록과 데이터 파일을 제목으로 맞춰 붙이는데, 셸 목록에 없는 레슨은
+     그대로 묻힌다. 실제로 '직접 짜 보기' 실습 347레슨 909문항이 데이터에만 있고 앱에서는
+     끝내 안 보였다. 데이터에 넣은 문항은 전부 화면까지 와야 한다.
+     ANSWER_DROP 으로 일부러 뺀 결함 문항만 차이로 인정한다. */
+  const reach=[];
+  for(const f of fs.readdirSync(chunkDir).filter(x=>/^t-.*\.js$/.test(x)).sort()){
+    const m=fs.readFileSync(path.join(chunkDir,f),"utf8").match(/^__CR\('t:([^']+)',(.*)\);\s*$/s);
+    if(!m) continue;
+    let want=0;
+    JSON.parse(m[2]).forEach(u=>u.l.forEach(l=>{ want+=(l.q||[]).length; }));
+    const got=await p.evaluate(async k=>{
+      await window.ensureTrack(k);
+      const c=COURSES[k]; if(!c) return null;
+      let n=0, dropped=0;
+      c.units.forEach(u=>u.lessons.forEach(l=>{ n+=(l.q||[]).length; }));
+      try{ dropped=ANSWER_DROP.size; }catch(e){}
+      return {n, dropped};
+    }, m[1]);
+    if(!got){ reach.push(m[1]+": 셸에 트랙이 없다"); continue; }
+    if(got.n<want-got.dropped) reach.push(m[1]+": 데이터 "+want+" 중 "+got.n+"문항만 보인다");
+  }
+  check("데이터에 있는 문항이 앱에서 전부 보인다", reach.length===0, reach.slice(0,8));
+
   check("모든 트랙에 분야 소개가 있다", r.introMissing.length===0, r.introMissing);
   check("Git 미션 12개 이상", r.missions>=12, {missions:r.missions});
 

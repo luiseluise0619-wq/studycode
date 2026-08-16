@@ -1801,13 +1801,33 @@ function mergeTrack(k, units){
     /* 레슨도 제목이 겹칠 수 있다. 유닛 안에서 레슨 순서는 바뀌지 않으므로 앞에서부터 하나씩 꺼내 쓴다 */
     const lby={};
     src.l.forEach(function(l){ (lby[l.t]=lby[l.t]||[]).push(l); });
-    cu.lessons.forEach(function(cl){
+    const used=new Map();
+    cu.lessons.forEach(function(cl,ci){
       const q=lby[cl.title];
       const sl=q&&q.length? q.shift() : null;
       if(!sl) return;
+      used.set(sl,ci);
       cl.q=sl.q||[];
       if(sl.th) cl.theory=sl.th;
     });
+    /* 셸 목록에 없고 데이터에만 있는 레슨(주로 '직접 짜 보기' 실습)은 그대로 묻힌다.
+       데이터에 있는 문항은 다 보여야 하므로, 데이터 순서를 지켜 제자리에 끼워 넣는다. */
+    const extra=[]; let at=-1;
+    src.l.forEach(function(sl){
+      if(used.has(sl)){ at=used.get(sl); return; }
+      const nl={title:sl.t, xp:0, n:(sl.q||[]).length, q:sl.q||[]};
+      if(sl.th) nl.theory=sl.th;
+      extra.push([at,nl]);
+    });
+    if(extra.length){
+      /* 옆에 놓이는 레슨과 같은 보상으로 맞춘다 */
+      const sib=cu.lessons.length? cu.lessons[cu.lessons.length-1].xp : 0;
+      /* 뒤에서부터 넣어야 앞자리 번호가 밀리지 않는다 */
+      for(let i=extra.length-1;i>=0;i--){
+        extra[i][1].xp=sib||30*extra[i][1].n;
+        cu.lessons.splice(extra[i][0]+1,0,extra[i][1]);
+      }
+    }
   });
   /* 어떤 이유로든 짝을 못 찾은 레슨이 있어도 앱이 죽지는 않게 한다 */
   c.units.forEach(function(u){ u.lessons.forEach(function(l){ if(!Array.isArray(l.q)) l.q=[]; }); });
