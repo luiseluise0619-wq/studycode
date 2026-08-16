@@ -1844,6 +1844,14 @@ function mergeTrack(k, units){
   });
   /* 뒤에서부터 넣어야 앞자리 번호가 밀리지 않는다 */
   for(let i=exU.length-1;i>=0;i--) c.units.splice(exU[i][0]+1,0,exU[i][1]);
+  /* 유닛 순서는 reorderUnits() 가 제목만 보고 짐작한다. 그 짐작이 틀리는 트랙이 있어서
+     — "힙·구간·DP 입문" 이 '입문' 이라는 이유로 맨 앞에 오고, "인덱스·B-tree" 는
+     '인덱스' 때문에 중급으로 밀렸다 — 데이터가 순서를 직접 적어 두면 그것을 따른다.
+     한 트랙이 적기 시작하면 그 트랙의 모든 유닛이 적어야 한다(빠지면 무시). */
+  const ord={}; let declared=0;
+  units.forEach(function(u){ if(typeof u.ord==="number"){ ord[u.t]=u.ord; declared++; } });
+  if(declared>1 && declared===units.length && c.units.every(function(u){ return typeof ord[u.title]==="number"; }))
+    c.units.sort(function(a,b){ return ord[a.title]-ord[b.title]; });
   /* 어떤 이유로든 짝을 못 찾은 레슨이 있어도 앱이 죽지는 않게 한다 */
   c.units.forEach(function(u){ u.lessons.forEach(function(l){ if(!Array.isArray(l.q)) l.q=[]; }); });
   c._loaded=true;

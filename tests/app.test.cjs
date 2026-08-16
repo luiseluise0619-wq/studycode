@@ -360,6 +360,32 @@ function check(name, cond, detail){
   }
   check("데이터에 있는 문항이 앱에서 전부 보인다", reach.length===0, reach.slice(0,8));
 
+  /* 유닛 순서는 제목만 보고 짐작하므로 틀릴 수 있다. 데이터가 순서를 적어 둔 트랙은
+     그 순서가 화면에 그대로 나와야 하고, 적기 시작했으면 빠진 유닛이 없어야 한다. */
+  const ordBad=[];
+  for(const f of fs.readdirSync(chunkDir).filter(x=>/^t-.*\.js$/.test(x)).sort()){
+    const m=fs.readFileSync(path.join(chunkDir,f),"utf8").match(/^__CR\('t:([^']+)',(.*)\);\s*$/s);
+    if(!m) continue;
+    const du=JSON.parse(m[2]);
+    const withOrd=du.filter(u=>typeof u.ord==="number");
+    if(!withOrd.length) continue;
+    if(withOrd.length!==du.length){ ordBad.push(m[1]+": 유닛 "+du.length+"개 중 "+withOrd.length+"개만 순서를 적었다"); continue; }
+    const want=du.slice().sort((a,b)=>a.ord-b.ord).map(u=>u.t);
+    const got=await p.evaluate(async k=>{ await window.ensureTrack(k); return COURSES[k].units.map(u=>u.title); }, m[1]);
+    if(want.join("")!==got.join(""))
+      ordBad.push(m[1]+": 적어 둔 순서와 화면 순서가 다르다 (첫 유닛 기대 '"+want[0]+"' / 실제 '"+got[0]+"')");
+  }
+  check("데이터가 적어 둔 유닛 순서가 화면에 그대로 나온다", ordBad.length===0, ordBad);
+
+  /* 트랙을 처음 열었을 때 만나는 유닛이 심화·리뷰·로그면 초보는 거기서 막힌다 */
+  const badStart=[];
+  for(const k of Object.keys(JSON.parse(fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8")
+      .match(/^const COURSES = (\{.*\});$/m)[1]))){
+    const first=await p.evaluate(async k=>{ await window.ensureTrack(k); const u=COURSES[k].units[0]; return u&&u.title; }, k);
+    if(first&&/심화|시니어|스태프|코드 리뷰|로그 분석/.test(first)) badStart.push(k+" — "+first);
+  }
+  check("트랙의 첫 유닛이 심화·리뷰·로그가 아니다", badStart.length===0, badStart);
+
   check("모든 트랙에 분야 소개가 있다", r.introMissing.length===0, r.introMissing);
   check("Git 미션 12개 이상", r.missions>=12, {missions:r.missions});
 
