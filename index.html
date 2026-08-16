@@ -1784,7 +1784,8 @@ function mergeTrack(k, units){
      레슨 제목이 가장 많이 겹치는 쪽을 고른 뒤, 쓴 원본은 빼서 두 번 쓰이지 않게 한다. */
   const pool={};
   units.forEach(function(u){ (pool[u.t]=pool[u.t]||[]).push(u); });
-  c.units.forEach(function(cu){
+  const uAt=new Map();
+  c.units.forEach(function(cu,ci){
     const cands=pool[cu.title];
     if(!cands||!cands.length) return;
     let src=cands[0];
@@ -1798,6 +1799,7 @@ function mergeTrack(k, units){
       });
     }
     cands.splice(cands.indexOf(src),1);
+    uAt.set(src,ci);
     /* 레슨도 제목이 겹칠 수 있다. 유닛 안에서 레슨 순서는 바뀌지 않으므로 앞에서부터 하나씩 꺼내 쓴다 */
     const lby={};
     src.l.forEach(function(l){ (lby[l.t]=lby[l.t]||[]).push(l); });
@@ -1829,6 +1831,19 @@ function mergeTrack(k, units){
       }
     }
   });
+  /* 유닛도 마찬가지다 — 셸 목록에 이름이 없으면 그 유닛은 통째로 묻힌다.
+     데이터 파일만 고쳐도 새 유닛이 화면에 오도록, 짝을 못 찾은 유닛을 데이터 순서대로 끼워 넣는다. */
+  const exU=[]; let uat=-1;
+  units.forEach(function(su){
+    if(uAt.has(su)){ uat=uAt.get(su); return; }
+    exU.push([uat,{ title:su.t, guide:su.g||"📘", lessons:su.l.map(function(l){
+      const nl={title:l.t, xp:40, n:(l.q||[]).length, q:l.q||[]};
+      if(l.th) nl.theory=l.th;
+      return nl;
+    }) }]);
+  });
+  /* 뒤에서부터 넣어야 앞자리 번호가 밀리지 않는다 */
+  for(let i=exU.length-1;i>=0;i--) c.units.splice(exU[i][0]+1,0,exU[i][1]);
   /* 어떤 이유로든 짝을 못 찾은 레슨이 있어도 앱이 죽지는 않게 한다 */
   c.units.forEach(function(u){ u.lessons.forEach(function(l){ if(!Array.isArray(l.q)) l.q=[]; }); });
   c._loaded=true;
