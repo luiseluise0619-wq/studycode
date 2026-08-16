@@ -256,6 +256,42 @@ function check(name, cond, detail){
     .map(f=>({f, mb:+(fs.statSync(path.join(chunkDir,f)).size/1048576).toFixed(2)}))
     .filter(x=>x.mb>3);
   check("트랙 청크가 3MB 를 넘지 않는다", tooBig.length===0, tooBig);
+
+  /* 실행형(js) 문항도 같은 함정이 있다 — 시작 코드가 이미 모든 테스트를 통과하면
+     그 문항은 아무것도 가르치지 않고 그냥 통과된다. index.html 의 testDoc() 이
+     코드를 인라인한 뒤 각 테스트 식을 eval 하고 JSON 문자열로 비교하므로 같게 흉내 낸다.
+     여기서 확인하려는 것은 '통과하지 않는다' 뿐이라, 앱처럼 프라미스를 기다리지 않고
+     '아직 안 통과' 로 본다 — 다만 거부된 프라미스를 그냥 두면 프로세스가 죽으므로
+     빈 catch 를 붙여 삼킨다. 시작 코드가 찍는 로그도 테스트 출력에 섞이지 않게 막는다. */
+  const jsCode=[];
+  fs.readdirSync(chunkDir).filter(f=>/^t-.*\.js$/.test(f)).forEach(f=>{
+    const m=fs.readFileSync(path.join(chunkDir,f),"utf8").match(/^__CR\('t:([^']+)',(.*)\);\s*$/s);
+    if(!m) return;
+    JSON.parse(m[2]).forEach(u=>u.l.forEach(l=>(l.q||[]).forEach(q=>{
+      if(q.t==="code"&&q.run==="js"&&Array.isArray(q.tests)&&q.tests.length&&q.src)
+        jsCode.push({t:m[1], u:u.t, l:l.t, k:q.k||"", src:q.src, all:[...q.tests,...(q.edge||[])]});
+    })));
+  });
+  const freePass=[];
+  const realLog=console.log, realErr=console.error, realWarn=console.warn, hush=()=>{};
+  jsCode.forEach(x=>{
+    let rows;
+    console.log=hush; console.error=hush; console.warn=hush;
+    try{
+      rows=new Function("__ALL", x.src+"\n"+
+        'const __eq=(a,b)=>{try{return JSON.stringify(a)===JSON.stringify(b);}catch(e){return String(a)===String(b);}};'+
+        'const __no=()=>{};'+
+        'const __sync=(v)=>{ if(v&&typeof v.then==="function"){ v.then(__no,__no); return Symbol("pending"); } return v; };'+
+        'return __ALL.map(t=>{try{'+
+        '  const got=__sync(eval(t.in)), exp=__sync(eval("("+t.out+")"));'+
+        '  return typeof got==="symbol"||typeof exp==="symbol" ? false : __eq(got,exp);'+
+        '}catch(e){return false;}});')(x.all);
+    }catch(e){ rows=null; }   /* 시작 코드가 문법 오류면 통과할 리 없다 */
+    finally{ console.log=realLog; console.error=realErr; console.warn=realWarn; }
+    if(rows&&rows.length&&rows.every(Boolean)) freePass.push(x.t+" / "+x.u+" / "+x.l+" · "+x.k);
+  });
+  check("실행형(js) 시작 코드는 통과하지 않는다", freePass.length===0, {n:jsCode.length, 통과해버림:freePass.slice(0,5)});
+
   const sharedRt=await p.evaluate(async ()=>{
     if(typeof rtFiles!=="function") return {missing:true};
     await window.ensureTrack("c");
