@@ -377,6 +377,19 @@ function check(name, cond, detail){
   }
   check("데이터가 적어 둔 유닛 순서가 화면에 그대로 나온다", ordBad.length===0, ordBad);
 
+  /* 이론 한 절이 너무 길면 읽다 지친다 — 400자를 넘으면 끊을 자리를 찾는다는 신호다 */
+  const longBody=[];
+  fs.readdirSync(chunkDir).filter(x=>/^t-.*\.js$/.test(x)).forEach(f=>{
+    const m=fs.readFileSync(path.join(chunkDir,f),"utf8").match(/^__CR\('t:([^']+)',(.*)\);\s*$/s);
+    if(!m) return;
+    const seen=new Set();
+    JSON.parse(m[2]).forEach(u=>u.l.forEach(l=>((l.th&&l.th.body)||[]).forEach(b=>{
+      const n=String(b.t||"").replace(/<[^>]*>/g,"").length;
+      if(n>400 && !seen.has(b.h)){ seen.add(b.h); longBody.push(m[1]+" · "+String(b.h).slice(0,40)+" ("+n+"자)"); }
+    })));
+  });
+  check("이론 한 절이 400자를 넘지 않는다", longBody.length===0, longBody.slice(0,8));
+
   /* 트랙을 처음 열었을 때 만나는 유닛이 심화·리뷰·로그면 초보는 거기서 막힌다 */
   const badStart=[];
   for(const k of Object.keys(JSON.parse(fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8")
