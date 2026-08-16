@@ -299,7 +299,30 @@ function check(name, cond, detail){
     if(rows&&rows.length&&rows.every(Boolean)) freePass.push(x.t+" / "+x.u+" / "+x.l+" · "+x.k);
   });
   check("실행형(js) 시작 코드는 통과하지 않는다", freePass.length===0,
-    {검사:jsCode.length, 시간재는문항건너뜀:timed.length, 통과해버림:freePass.slice(0,5)});
+    {검사:jsCode.length, 시간으로가르는문항은따로검사:timed.length, 통과해버림:freePass.slice(0,5)});
+
+  /* 시간으로 가르는 문항은 위 검사로 판정할 수 없으니 여기서 따로 본다.
+     느린 시작 코드가 예산을 얼마나 넘는지가 이 문항들의 생명이다 — 여유가 1.3배까지
+     좁아져 있었고, 그래서 조금 빠른 기계에서는 아무것도 고치지 않아도 통과됐다.
+     넉넉히 넘는지(3배 이상) 재서, 부하를 줄이거나 예산을 올리면 바로 드러나게 한다. */
+  const thin=[], margins=[];
+  timed.forEach(x=>{
+    const edge=x.all[x.all.length-1];
+    const bud=+(String(edge.in).match(/Date\.now\(\)\s*-\s*t\s*<\s*(\d+)/)||[])[1];
+    if(!bud) return;
+    const naked=String(edge.in).replace(/,\s*Date\.now\(\)\s*-\s*t\s*<\s*\d+/,"");
+    let ms=-1;
+    console.log=hush; console.error=hush; console.warn=hush;
+    try{
+      ms=new Function("__IN", x.src+"\nconst __t=Date.now(); eval(__IN); return Date.now()-__t;")(naked);
+    }catch(e){ ms=-1; }
+    finally{ console.log=realLog; console.error=realErr; console.warn=realWarn; }
+    if(ms<0) return;
+    margins.push(x.k+" "+(ms/bud).toFixed(1)+"배");
+    if(ms < bud*3) thin.push(x.t+" / "+x.l+" · "+x.k+" — 시작 "+ms+"ms / 예산 "+bud+"ms");
+  });
+  check("복잡도 개선 문항은 시작 코드가 예산을 넉넉히 넘는다", thin.length===0,
+    {검사:margins.length, 여유부족:thin});
 
   const sharedRt=await p.evaluate(async ()=>{
     if(typeof rtFiles!=="function") return {missing:true};
