@@ -262,14 +262,22 @@ function check(name, cond, detail){
      코드를 인라인한 뒤 각 테스트 식을 eval 하고 JSON 문자열로 비교하므로 같게 흉내 낸다.
      여기서 확인하려는 것은 '통과하지 않는다' 뿐이라, 앱처럼 프라미스를 기다리지 않고
      '아직 안 통과' 로 본다 — 다만 거부된 프라미스를 그냥 두면 프로세스가 죽으므로
-     빈 catch 를 붙여 삼킨다. 시작 코드가 찍는 로그도 테스트 출력에 섞이지 않게 막는다. */
-  const jsCode=[];
+     빈 catch 를 붙여 삼킨다. 시작 코드가 찍는 로그도 테스트 출력에 섞이지 않게 막는다.
+
+     복잡도 개선 문항은 예외로 둔다 — 시작 코드도 정답은 맞고, 느리다는 것만이 잘못이라
+     '통과하면 안 된다' 를 정확성으로 판정할 수 없다. 이런 문항은 엣지 테스트 안에서
+     Date.now() 로 시간을 재 통과 여부를 가르는데, 그 판정은 기계 속도에 따라 달라져
+     검사 자체가 들쭉날쭉해진다. 그래서 시간을 재는 문항은 세어서 알리고 건너뛴다. */
+  const jsCode=[], timed=[];
   fs.readdirSync(chunkDir).filter(f=>/^t-.*\.js$/.test(f)).forEach(f=>{
     const m=fs.readFileSync(path.join(chunkDir,f),"utf8").match(/^__CR\('t:([^']+)',(.*)\);\s*$/s);
     if(!m) return;
     JSON.parse(m[2]).forEach(u=>u.l.forEach(l=>(l.q||[]).forEach(q=>{
-      if(q.t==="code"&&q.run==="js"&&Array.isArray(q.tests)&&q.tests.length&&q.src)
-        jsCode.push({t:m[1], u:u.t, l:l.t, k:q.k||"", src:q.src, all:[...q.tests,...(q.edge||[])]});
+      if(!(q.t==="code"&&q.run==="js"&&Array.isArray(q.tests)&&q.tests.length&&q.src)) return;
+      const all=[...q.tests,...(q.edge||[])];
+      const row={t:m[1], u:u.t, l:l.t, k:q.k||"", src:q.src, all};
+      if(all.some(x=>/Date\.now\(\)|performance\.now\(\)/.test(x.in+x.out))) timed.push(row);
+      else jsCode.push(row);
     })));
   });
   const freePass=[];
@@ -290,7 +298,8 @@ function check(name, cond, detail){
     finally{ console.log=realLog; console.error=realErr; console.warn=realWarn; }
     if(rows&&rows.length&&rows.every(Boolean)) freePass.push(x.t+" / "+x.u+" / "+x.l+" · "+x.k);
   });
-  check("실행형(js) 시작 코드는 통과하지 않는다", freePass.length===0, {n:jsCode.length, 통과해버림:freePass.slice(0,5)});
+  check("실행형(js) 시작 코드는 통과하지 않는다", freePass.length===0,
+    {검사:jsCode.length, 시간재는문항건너뜀:timed.length, 통과해버림:freePass.slice(0,5)});
 
   const sharedRt=await p.evaluate(async ()=>{
     if(typeof rtFiles!=="function") return {missing:true};
