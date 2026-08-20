@@ -1050,7 +1050,9 @@ function check(name, cond, detail){
     tryOpen("성장 로드맵", ()=>openPath(), ".pstage");
     tryOpen("학습 코치", ()=>openCoach(), ".cch-days");
     tryOpen("업적", ()=>openAchv(), ".achgrid");
-    tryOpen("프로필", ()=>openProfile2(), ".skb");
+    /* 9축 막대(.skb)는 푼 문제가 없으면 그리지 않는다 — 0 만 아홉 줄 늘어놓지 않으려는 것.
+       그래서 화면이 열렸는지는 항상 있는 등급 상자로 판정한다. */
+    tryOpen("프로필", ()=>openProfile2(), ".rolebox");
     try{ openGitLab(); out["Git 시뮬레이터"]=!!document.querySelector(".glm"); closeGitLab(); }
     catch(e){ out["Git 시뮬레이터"]="ERR "+e.message; }
     try{ openBuildLab(); out["빌드 랩"]=!!document.querySelector(".blp"); closeBuildLab(); }
@@ -1059,6 +1061,24 @@ function check(name, cond, detail){
     return out;
   });
   Object.keys(r).forEach(k=>check(k+" 화면이 열린다", r[k]===true, r[k]));
+
+  /* 역량 분석은 '무엇부터 할지' 를 번호로 알려 주어야 한다. 훈련 모드 11가지를
+     평평하게 늘어놓으면 처음 온 사람이 어디서 시작할지 알 수 없다. */
+  const g=await p.evaluate(()=>{
+    openProfile2();
+    const b=document.getElementById("profile-body");
+    const rows=[...b.querySelectorAll(".hubrow")];
+    const nums=rows.slice(0,3).map(x=>x.querySelector(".hb-em").textContent);
+    const unwired=rows.filter(x=>typeof x.onclick!=="function").length;
+    const heads=[...b.querySelectorAll("p.sub")].map(x=>x.textContent.trim());
+    document.getElementById("profile").classList.remove("on"); document.body.style.overflow="";
+    return {steps:nums.join(""), rows:rows.length, unwired,
+      groups:["① 먼저","② 매일","③ 크게 만들기","④ 도구와 기록"].filter(h=>heads.includes(h)).length,
+      hasOrder:b.innerText.includes("지금 이 순서로")};
+  });
+  check("역량 분석이 할 일을 1·2·3 으로 보여 준다", g.steps==="123" && g.hasOrder, g);
+  check("훈련 모드가 순서대로 묶여 있다", g.groups===4, g);
+  check("역량 분석의 모든 줄이 눌린다", g.unwired===0, g);
   await p.close();
  }
 

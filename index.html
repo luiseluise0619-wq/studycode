@@ -1016,8 +1016,8 @@
   .rankbar{display:flex;align-items:center;gap:10px;margin:10px 0 2px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
   .rankbar .rk-em{font-size:24px;line-height:1}
   .rankbar .rk-m{flex:1;min-width:0}
-  .rankbar .rk-n{font-weight:900;font-size:14.5px}
-  .rankbar .rk-s{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
+  .rankbar .rk-n{display:block;font-weight:900;font-size:14.5px}
+  .rankbar .rk-s{display:block;font-size:11.5px;color:var(--ink-soft);margin-top:1px}
   .rankbar .rk-b{display:block;height:5px;border-radius:3px;background:var(--line);margin-top:5px;overflow:hidden}
   .rankbar .rk-b i{display:block;height:100%;background:linear-gradient(90deg,#dd8a1e,#d6336c);border-radius:3px}
   .achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:8px}
@@ -6120,43 +6120,54 @@ function openPath(){ const o=$("profile"), body=$("profile-body"); ensureSkills(
   $("path-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
   o.classList.add("on"); document.body.style.overflow="hidden";
 }
+function nextSteps(){
+ const due=(typeof dueCount==="function")?dueCount():0, done=Object.keys(S.done||{}).length, bd=blDoneTotal();
+ return [
+  !S.diag ? ["실력 진단으로 시작","5분이면 지금 위치가 나옵니다","diag"]
+  : due>0 ? ["오답 복습 "+due+"문제","새로 배우기 전에 이걸 먼저 비웁니다","review"]
+  : ["레슨 풀기", done?("지금까지 "+done+"개 완료 · 이어서"):"개념을 읽고 문제를 풉니다","close"],
+  bd<BUILD_DAYS ? ["빌드 랩 Day "+(bd+1),"배운 것으로 직접 만들어 통과시키기","build"]
+  : ["프로젝트 미션","요구사항부터 운영·장애까지","proj"],
+  ["학습 코치로 점검","무엇이 약한지 기록으로 확인","coach"]
+ ];
+}
+function hubHtml(rows){ return rows.map(r=>`<button class="hubrow" data-go="${r[3]}"><span class="hb-em">${r[0]}</span><span class="hb-t"><span>${r[1]}</span><span class="hb-s">${r[2]}</span></span><span class="hb-go">→</span></button>`).join(""); }
 function openProfile2(){ const o=$("profile"), body=$("profile-body");
  ensureSkills(); const r=roleOf(skillAvg()); const nx=nextRole(skillAvg());
  const done=Object.keys(S.done).length;
+ const steps=hubHtml(nextSteps().map((x,i)=>[i+1,x[0],x[1],x[2]]));
+ const anal=done?`${radarSVG()}
+  <div class="ovh" style="margin-top:14px">트랙별 역량 <span style="font-weight:700;color:var(--ink-soft)">· 근거와 함께</span></div>${trackScoreHtml()}
+  <div class="ovh" style="margin-top:16px">9축 역량 <span style="font-weight:700;color:var(--ink-soft)">· 눌러서 근거 보기</span></div>${skillBars()}`
+  :`<p class="sub">레슨을 풀면 여기에 9축 역량과 트랙별 근거가 나타납니다.</p>`;
+ const hub=[["① 먼저",[["🩺","실력 진단","짧은 진단으로 현재 위치 확인","diag"],["🧭","학습 코치","내 기록으로 다음 할 일 찾기","coach"]]],
+  ["② 매일",[["🛠","빌드 랩",`요구사항만 보고 만들어 통과 · ${blDoneTotal()}/${BUILD_DAYS} Day`,"build"],
+   ["🐙","Git 시뮬레이터",`${glDoneCount()}/${GIT_MISSIONS.length} 미션 · 브랜치·병합·충돌`,"git"],
+   ["🔍","원인 추적","증상만 보고 근본 원인을 규명","cause"],
+   ["🏢","실무 시뮬레이션","현장의 결정을 반복 — 9축 반영","sim"]]],
+  ["③ 크게 만들기",[["🚀","프로젝트 미션","요구사항부터 운영·장애까지","proj"],
+   ["🗺️","성장 로드맵","입문→시니어 통합 경로","path"]]],
+  ["④ 도구와 기록",[["▶","로컬 실행 서버",runnerReady()?"연결됨 · "+escHtml(runnerBase()):"C·C++·Java·Go 를 진짜 컴파일러로","run"],
+   ["🎓","AI 멘토",aiReady()?"연결됨 · "+escHtml(aiCfg().model):"BYOK 키 연결 · 힌트와 코드 리뷰","ai"],
+   ["🏅","업적 · 활동 랭크",`${Object.keys(S.ach||{}).length}/${ACHV.length} 획득 · ${rankOf(S.xp||0).name}`,"ach"]]]]
+  .map(g=>`<p class="sub" style="margin:14px 0 5px;font-weight:800">${g[0]}</p>`+hubHtml(g[1])).join("");
  body.innerHTML=`<div class="ovh">Developer Passport</div><h2>${r.em} ${r.name}</h2>
   <div class="rolebox"><div class="rolebig">종합 역량 ${r.avg}<span style="font-weight:700;opacity:.8">/100</span></div><div class="rolesub">${nx?`다음 <b>${nx.name}</b>까지 +${nx.need}`:"최고 등급 도달"}</div></div>
-  ${radarSVG()}
-  <div class="ovh" style="margin-top:14px">트랙별 역량 <span style="font-weight:700;color:var(--ink-soft)">· 근거와 함께</span></div>${trackScoreHtml()}
-  <div class="ovh" style="margin-top:16px">9축 역량 <span style="font-weight:700;color:var(--ink-soft)">· 눌러서 근거 보기</span></div>${skillBars()}
+  <div class="ovh" style="margin-top:16px">지금 이 순서로</div>${steps}
+  <div class="ovh" style="margin-top:16px">역량 분석</div>${anal}
   <p class="sub" style="margin:12px 0 6px">완료 레슨 ${done} · ${fmt(S.xp)} XP · 연속 ${S.streak}일 · 오답 ${(S.wrongs||[]).length}</p>
   ${rankBarHtml()}
-  <div class="ovh" style="margin-top:16px">훈련 모드</div>
-  <button class="hubrow" id="p2-build"><span class="hb-em">🛠</span><span class="hb-t"><span>빌드 랩 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">직접 만들기</span></span><span class="hb-s">요구사항만 보고 파일을 쓰고 실행해 통과시키기 · ${blDoneTotal()}/${BUILD_DAYS} Day</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-git"><span class="hb-em">🐙</span><span class="hb-t"><span>Git 시뮬레이터</span><span class="hb-s">${glDoneCount()}/${GIT_MISSIONS.length} 미션 · 브랜치·병합·충돌·리베이스를 직접 실행</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-coach"><span class="hb-em">🧭</span><span class="hb-t"><span>학습 코치</span><span class="hb-s">내 기록으로 진단 — 난이도·유형별 정답률과 다음 할 일</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-ach"><span class="hb-em">🏅</span><span class="hb-t"><span>업적 · 활동 랭크</span><span class="hb-s">${Object.keys(S.ach||{}).length}/${ACHV.length} 획득 · ${rankOf(S.xp||0).name}</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-path"><span class="hb-em">🗺️</span><span class="hb-t"><span>성장 로드맵 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">시니어까지</span></span><span class="hb-s">입문→주니어→미드→시니어→스태프 통합 경로</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-sim"><span class="hb-em">🏢</span><span class="hb-t"><span>실무 시뮬레이션</span><span class="hb-s">현장의 어려운 결정을 반복 — 9축에 반영</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-cause"><span class="hb-em">🔍</span><span class="hb-t"><span>원인 추적</span><span class="hb-s">증상만 보고 근본 원인을 규명</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-diag"><span class="hb-em">🩺</span><span class="hb-t"><span>실력 진단</span><span class="hb-s">짧은 진단으로 현재 위치 확인</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-proj"><span class="hb-em">🚀</span><span class="hb-t"><span>프로젝트 미션</span><span class="hb-s">요구사항부터 운영·장애까지 8단계</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-run"><span class="hb-em">▶</span><span class="hb-t"><span>로컬 실행 서버 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">C·C++·Java·Go</span></span><span class="hb-s">${runnerReady()?"연결됨 · "+escHtml(runnerBase()):"켜면 정적 언어 코드를 진짜 컴파일러로 실행"}</span></span><span class="hb-go">→</span></button>
-  <button class="hubrow" id="p2-ai"><span class="hb-em">🎓</span><span class="hb-t"><span>AI 멘토 <span style="font-family:var(--mono);font-size:10px;color:var(--ink-soft)">V5</span></span><span class="hb-s">${aiReady()?"연결됨 · "+escHtml(aiCfg().model)+" · 모든 문제에서 물어보기":"BYOK 키 연결 · 힌트·개념 질문 + 코드 리뷰"}</span></span><span class="hb-go">→</span></button>
-  <button class="ovclose alt" id="p2-close" style="margin-top:16px">닫기</button>`;
- $("p2-build").onclick=()=>{ o.classList.remove("on"); openBuildLab(); };
- $("p2-git").onclick=()=>{ o.classList.remove("on"); openGitLab(); };
- $("p2-coach").onclick=openCoach;
- $("p2-ach").onclick=openAchv;
- $("p2-path").onclick=openPath;
- $("p2-sim").onclick=openSims;
- $("p2-cause").onclick=openDiags;
- $("p2-diag").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; startDiagnostic(); };
- $("p2-proj").onclick=()=>{ o.classList.remove("on"); openProjects(); };
- $("p2-ai").onclick=()=>{ o.classList.remove("on"); openAiSetup(); };
- if($("p2-run")) $("p2-run").onclick=()=>{ o.classList.remove("on"); openRunnerSetup(); };
- $("p2-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
+  <div class="ovh" style="margin-top:16px">훈련 모드</div>${hub}
+  <button class="ovclose alt" data-go="close" style="margin-top:16px">닫기</button>`;
+ const shut=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
+ const half=f=>()=>{ o.classList.remove("on"); f(); };
+ const GO={close:shut, diag:()=>{shut();startDiagnostic();}, review:()=>{shut();if(typeof startReview==="function")startReview();},
+  build:half(openBuildLab), git:half(openGitLab), proj:half(openProjects), ai:half(openAiSetup), run:half(openRunnerSetup),
+  coach:openCoach, ach:openAchv, path:openPath, sim:openSims, cause:openDiags};
+ body.querySelectorAll("[data-go]").forEach(b=>{ const f=GO[b.dataset.go]; if(f) b.onclick=f; });
  o.classList.add("on"); document.body.style.overflow="hidden";
 }
+
 function renderRole(){ const el=$("rolechip"); if(!el)return; const r=roleOf(skillAvg()); el.innerHTML=`<span class="role-em">${r.em}</span><span class="rolename">${r.name}</span>`; }
 $("profile-btn").onclick=openProfile2;
 $("rolechip").onclick=openProfile2;
