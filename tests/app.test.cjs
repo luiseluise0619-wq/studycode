@@ -282,6 +282,13 @@ function check(name, cond, detail){
   });
   const freePass=[];
   const realLog=console.log, realErr=console.error, realWarn=console.warn, hush=()=>{};
+  /* 시작 코드는 대개 undefined 를 돌려주므로, 테스트 식이 인자로 만든 프라미스가
+     아무에게도 잡히지 않은 채 남을 수 있다 (예: withTimeout(Promise.reject(...), 50)).
+     노드는 그것만으로 프로세스를 죽이지만 브라우저는 경고만 낸다 — 앱과 같은
+     조건에서 판정해야 하므로 삼킨다. 거부가 감지되는 것은 다음 틱이라 검사가
+     끝난 뒤에도 남아 있어야 하고, 대신 몇 건을 삼켰는지 세어 함께 알린다. */
+  let swallowed=0;
+  process.on("unhandledRejection", ()=>{ swallowed++; });
   jsCode.forEach(x=>{
     let rows;
     console.log=hush; console.error=hush; console.warn=hush;
@@ -299,7 +306,7 @@ function check(name, cond, detail){
     if(rows&&rows.length&&rows.every(Boolean)) freePass.push(x.t+" / "+x.u+" / "+x.l+" · "+x.k);
   });
   check("실행형(js) 시작 코드는 통과하지 않는다", freePass.length===0,
-    {검사:jsCode.length, 시간으로가르는문항은따로검사:timed.length, 통과해버림:freePass.slice(0,5)});
+    {검사:jsCode.length, 시간으로가르는문항은따로검사:timed.length, 삼킨거부:swallowed, 통과해버림:freePass.slice(0,5)});
 
   /* 시간으로 가르는 문항은 위 검사로 판정할 수 없으니 여기서 따로 본다.
      느린 시작 코드가 예산을 얼마나 넘는지가 이 문항들의 생명이다 — 여유가 1.3배까지
