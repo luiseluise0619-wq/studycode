@@ -5712,12 +5712,14 @@ function renderPhase(){
   } else if(ph.type==="build"){
     const draft=getDraft(lab.i)||"";
     const blang=ph.lang||"";
-    const canRun=(blang==="javascript"||blang==="python");
+    /* run:false 는 서버·라이브러리가 있어야 도는 코드 — 버튼을 주면 반드시 터진다 */
+    const canRun=(blang==="javascript"||blang==="python")&&ph.run!==false;
     const bph = blang==="javascript" ? "여기에 코드를 작성하고 ▶ 실행으로 결과를 확인하세요 (console.log 로 출력)"
               : blang==="python" ? "여기에 코드를 작성하고 ▶ 실행으로 결과를 확인하세요 (print 로 출력)"
               : blang==="sql" ? "여기에 쿼리를 작성하세요 — 실제 스키마와 방언(MySQL/BigQuery)이 필요해 앱에서는 실행하지 않고, 정답 예시와 비교합니다"
               : "여기에 작성해 보세요";
-    const bnote = blang==="python" ? '<div class="labnote">🐍 로컬 실행 서버(python3)가 켜져 있으면 그쪽에서, 아니면 브라우저 파이썬으로 실행합니다.</div>'
+    const bnote = ph.run===false ? '<div class="labnote">🖥 서버나 외부 라이브러리가 있어야 도는 코드라 앱 안에서는 실행하지 않습니다. 정답 예시와 비교해 보세요.</div>'
+              : blang==="python" ? '<div class="labnote">🐍 로컬 실행 서버(python3)가 켜져 있으면 그쪽에서, 아니면 브라우저 파이썬으로 실행합니다.</div>'
               : blang==="sql" ? '<div class="labnote">🗄 SQL 실행은 <b>SQL 트랙의 실행형 문항</b>에서 sql.js 로 직접 해 볼 수 있어요. 이 단계는 설계·문법 연습입니다.</div>'
               : "";
     inner=`${ph.hint?`<div class="hintline">💡 <b>힌트</b> ${nl2br(ph.hint)}</div>`:""}${ph.acc?`<div class="accbox">✅ 완료 기준 · ${nl2br(ph.acc)}</div>`:""}${bnote}

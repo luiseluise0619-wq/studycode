@@ -639,6 +639,35 @@ function check(name, cond, detail){
   check("선택 단계마다 권장안이 정확히 하나다", pj.bad.best.length===0, {어긋남:pj.bad.best.slice(0,6)});
   check("모든 프로젝트 단계가 빈 화면 없이 그려진다", pj.bad.렌더.length===0, {빈화면:pj.bad.렌더.slice(0,6)});
   check("프로젝트 제목이 겹치지 않는다", pj.dup.length===0, {겹침:pj.dup, 전체:pj.n});
+  check("모든 트랙에 프로젝트 배너가 붙어 있다", cat10.projTracks===cat10.tracks,
+    {붙은트랙:cat10.projTracks, 전체:cat10.tracks, 전용:cat10.projOwn});
+
+  /* javascript 정답 예시는 앱 안에서 ▶ 실행으로 돌아가야 한다.
+     node 에서만 되는 것(process, require)을 쓰면 배우는 사람 화면에서만 터진다. */
+  const jsSol=await p.evaluate(async ()=>{
+    const rows=[];
+    for(const per in PROJECTS) PROJECTS[per].forEach(x=>projPhases(x).forEach((ph,i)=>{
+      if(ph.type==="build"&&ph.lang==="javascript"&&ph.sol&&ph.run!==false) rows.push({at:x.title+" 단계"+(i+1), code:ph.sol});
+    }));
+    const bad=[];
+    for(const r of rows){
+      const logs=[];
+      const cl={log:function(){ logs.push([].slice.call(arguments).join(" ")); }};
+      cl.error=cl.warn=cl.info=cl.log;
+      let err=null;
+      try{
+        const mod={exports:{}};
+        new Function("console","module","exports",r.code)(cl,mod,mod.exports);
+        /* 비동기로 이어지는 것이 있으니 잠깐 기다렸다 다시 본다 */
+        await new Promise(res=>setTimeout(res,400));
+      }catch(e){ err=(e&&e.message)||String(e); }
+      if(err) bad.push({at:r.at, 오류:err});
+      else if(!logs.length) bad.push({at:r.at, 오류:"출력이 없다"});
+    }
+    return {검사:rows.length, bad};
+  });
+  check("javascript 정답 예시가 앱 안에서 그대로 돌아간다", jsSol.bad.length===0,
+    {검사:jsSol.검사, 실패:jsSol.bad.slice(0,5)});
   await p.close();
  }
 
