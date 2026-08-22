@@ -654,7 +654,7 @@ function check(name, cond, detail){
   check("모든 트랙이 150문항 이상이다", Object.keys(underFloor).length===0, {미달:underFloor});
 
   /* 정답만 길면 내용을 몰라도 '가장 긴 보기' 를 고르면 맞는다.
-     처음 쟀을 때 78.0% 였고 근거 꼬리를 해설로 옮겨 74.6% 까지 내렸다.
+     처음 쟀을 때 78.0% 였고 근거 꼬리를 해설로 옮겨 71.4% 까지 내렸다.
      찍기 기준선 25% 와는 아직 멀다 — 오래 쌓인 빚이라 트랙 단위로 갚는다.
      한 번에 못 고치므로 눈금을 박아 두고 더 나빠지지 않게만 막는다.
      새 문항은 tools/qcheck.cjs 가 묶음 단위로 절반을 넘지 못하게 거절한다. */
@@ -669,7 +669,7 @@ function check(name, cond, detail){
     })));
     return {n, longest, pct:+(longest/n*100).toFixed(1)};
   });
-  const BIAS_CEIL=74.6;
+  const BIAS_CEIL=71.4;
   console.log("  정답이 가장 긴 보기: "+bias.longest+"/"+bias.n+" ("+bias.pct+"%) · 눈금 "+BIAS_CEIL+"% · 찍기 기준선 25%");
   check("정답 길이 단서가 더 나빠지지 않았다", bias.pct<=BIAS_CEIL, {지금:bias.pct, 눈금:BIAS_CEIL});
 

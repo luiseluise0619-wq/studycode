@@ -32,6 +32,19 @@ const ONLY = WRITE ? null : ARG;
 const strip = s => String(s || '').replace(/<[^>]*>/g, '').trim();
 const SEP = /\s+—\s+/;
 
+/* 자르면 이번엔 정답만 유난히 짧아져 반대쪽 단서가 된다.
+   오답 평균의 60% 는 넘겨야 자른다. */
+function notTooShort(head, others) {
+  const avg = others.reduce((a, c) => a + c, 0) / others.length;
+  return strip(head).length >= avg * 0.6;
+}
+/* 태그가 잘리는 자리에 걸쳐 있으면 손대지 않는다 */
+function tagsBalanced(h) {
+  return ['b', 'code', 'i', 'em'].every(t =>
+    (h.match(new RegExp('<' + t + '>', 'g')) || []).length ===
+    (h.match(new RegExp('</' + t + '>', 'g')) || []).length);
+}
+
 /* 정답에서 근거 꼬리를 떼어낼 수 있으면 [머리, 꼬리] 를, 아니면 null */
 function split(q) {
   if ((q.t || 'choice') !== 'choice') return null;
@@ -43,32 +56,35 @@ function split(q) {
   if (!(lens[q.a] === max && lens.filter(x => x === max).length === 1)) return null;
 
   const ok = String(q.o[q.a]);
-  if (!SEP.test(ok)) return null;
-  /* 오답에도 같은 구분자가 있으면 그것이 이 문항의 서술 방식이다 */
-  if (q.o.some((o, i) => i !== q.a && SEP.test(String(o)))) return null;
+  const rest = q.o.filter((_, i) => i !== q.a).map(String);
+  const otherLens = lens.filter((_, i) => i !== q.a);
+  const maxOther = Math.max(...otherLens);
+  let head = null, tail = null, kind = null;
 
-  const at = ok.search(SEP);
-  const head = ok.slice(0, at).trim();
-  const tail = ok.slice(at).replace(SEP, '').trim();
-  if (strip(head).length < 6 || strip(tail).length < 8) return null;
-  /* 태그가 머리와 꼬리에 걸쳐 있으면 자르면 깨진다 */
-  for (const t of ['b', 'code', 'i', 'em']) {
-    const o = (head.match(new RegExp('<' + t + '>', 'g')) || []).length;
-    const c = (head.match(new RegExp('</' + t + '>', 'g')) || []).length;
-    if (o !== c) return null;
+  /* 1) 근거를 대시로 붙인 모양: '답 — 근거' */
+  if (SEP.test(ok) && !rest.some(o => SEP.test(o))) {
+    const at = ok.search(SEP);
+    head = ok.slice(0, at).trim();
+    tail = ok.slice(at).replace(SEP, '').trim();
+    kind = 'dash';
   }
-  const maxOther = Math.max(...lens.filter((_, i) => i !== q.a));
-  return { head, tail, fixed: strip(head).length <= maxOther, maxOther };
-}
-
-function apply(q) {
-  const s = split(q);
-  if (!s || !s.fixed) return false;
-  q.o = q.o.slice();
-  q.o[s.a === undefined ? q.a : q.a] = s.head;
-  const add = '\n✅ 왜 그 답인가: ' + s.tail;
-  q.ex = String(q.ex || '') + add;
-  return true;
+  /* 2) 문장으로 붙인 모양: '답이다. 그 이유는 …' */
+  if (head === null) {
+    const m2 = ok.match(/^(.{8,}?[다요]\.)\s+(.{12,})$/s);
+    if (m2) { head = m2[1].trim(); tail = m2[2].trim(); kind = 'sentence'; }
+  }
+  /* 3) 정답에만 붙은 괄호 풀이: 'Cache-aside(Lazy loading)' */
+  if (head === null && /\([^)]{2,}\)/.test(ok) && !rest.some(o => /\([^)]{2,}\)/.test(o))) {
+    const gl = [];
+    const bare = ok.replace(/\s*\(([^)]{2,})\)\s*/g, (mm, g) => { gl.push(g.trim()); return ' '; })
+      .replace(/\s+/g, ' ').trim();
+    if (gl.length) { head = bare; tail = gl.join(' · '); kind = 'gloss'; }
+  }
+  if (head === null) return null;
+  if (strip(head).length < 6 || strip(tail).length < 8) return null;
+  if (!tagsBalanced(head)) return null;
+  if (!notTooShort(head, otherLens)) return null;
+  return { head, tail, kind, fixed: strip(head).length <= maxOther, maxOther };
 }
 
 /* ---------- 대상 파일: 셸과 데이터 청크 둘 다 ---------- */
@@ -96,6 +112,7 @@ function eachQ(t, fn) {
 }
 
 const stat = {};
+const byKind = {};
 const samples = [];
 let total = 0, biased = 0, moved = 0, cantFix = 0;
 
@@ -116,8 +133,9 @@ targets.forEach(t => {
       samples.push({ unit, before: strip(q.o[q.a]), after: strip(s.head), tail: strip(s.tail), maxOther: s.maxOther });
     q.o = q.o.slice();
     q.o[q.a] = s.head;
-    q.ex = String(q.ex || '') + '\n✅ 왜 그 답인가: ' + s.tail;
-    moved++; changed++; stat[trk].moved++;
+    q.ex = String(q.ex || '') +
+      (s.kind === 'gloss' ? '\n✅ 정답에 함께 적혀 있던 표기: ' : '\n✅ 왜 그 답인가: ') + s.tail;
+    moved++; changed++; stat[trk].moved++; byKind[s.kind] = (byKind[s.kind] || 0) + 1;
   });
   t.changed = changed;
 });
@@ -127,6 +145,7 @@ console.log('선택형 ' + total + '문항 · 정답이 최장 ' + biased + ' ('
 console.log('  근거 꼬리를 옮겨 고칠 수 있는 것  ' + moved);
 console.log('  오답을 채워야 하는 것(기계로 불가) ' + cantFix);
 console.log('  고친 뒤 예상 비율 ' + pct(biased - moved, total) + '%');
+console.log('  모양별 ' + JSON.stringify(byKind));
 
 const rows = Object.entries(stat).filter(x => x[1].moved).sort((a, b) => b[1].moved - a[1].moved);
 if (rows.length) {
