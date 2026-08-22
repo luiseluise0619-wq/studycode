@@ -653,6 +653,25 @@ function check(name, cond, detail){
   });
   check("모든 트랙이 150문항 이상이다", Object.keys(underFloor).length===0, {미달:underFloor});
 
+  /* 정답만 길면 내용을 몰라도 '가장 긴 보기' 를 고르면 맞는다.
+     지금 78.0% 로 찍기 기준선 25% 를 크게 넘는다 — 오래 쌓인 빚이다.
+     한 번에 못 고치므로 눈금을 박아 두고 더 나빠지지 않게만 막는다.
+     새 문항은 tools/qcheck.cjs 가 묶음 단위로 절반을 넘지 못하게 거절한다. */
+  const bias=await p.evaluate(()=>{
+    const strip=s2=>String(s2||"").replace(/<[^>]*>/g,"").trim();
+    let n=0, longest=0;
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>(l.q||[]).forEach(q=>{
+      if((q.t||"choice")!=="choice"||!Array.isArray(q.o)||q.o.length!==4) return;
+      n++;
+      const L=q.o.map(o=>strip(o).length), m=Math.max(...L);
+      if(L[q.a]===m && L.filter(x=>x===m).length===1) longest++;
+    })));
+    return {n, longest, pct:+(longest/n*100).toFixed(1)};
+  });
+  const BIAS_CEIL=78.0;
+  console.log("  정답이 가장 긴 보기: "+bias.longest+"/"+bias.n+" ("+bias.pct+"%) · 눈금 "+BIAS_CEIL+"% · 찍기 기준선 25%");
+  check("정답 길이 단서가 더 나빠지지 않았다", bias.pct<=BIAS_CEIL, {지금:bias.pct, 눈금:BIAS_CEIL});
+
   /* 셸의 BUILD_DAYS 는 허브 라벨('빌드 랩 12/46 Day')에 쓰인다.
      데이터에 Day 를 더하고 이 상수를 안 고치면 진도가 영영 안 찬 것처럼 보인다. */
   const blDays=await p.evaluate(()=>({

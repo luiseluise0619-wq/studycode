@@ -30,6 +30,11 @@ if (!TH || !TH.sum || !Array.isArray(TH.body) || TH.body.length < 2 || !TH.code 
 });
 
 const pos = [0, 0, 0, 0], cats = {};
+/* 정답만 길면 내용을 몰라도 '가장 긴 보기' 를 고르면 맞는다.
+   앱 전체를 재 보니 선택형의 78%가 그랬다 — 찍기로 맞는 문제는 실력을 못 잰다.
+   새로 넣는 묶음은 여기서 막는다. */
+let longestOk = 0;
+const gapBad = [];
 Q.forEach((q, i) => {
   const at = '[' + (i + 1) + '] ' + (q.k || '');
   if ((q.t || 'choice') !== 'choice') say(at + ' 유형이 choice 가 아니다');
@@ -40,6 +45,13 @@ Q.forEach((q, i) => {
     if (new Set(norm).size !== 4) say(at + ' 태그를 벗기면 보기가 중복된다');
   }
   if (!(q.a >= 0 && q.a < 4)) say(at + ' 정답 인덱스가 범위 밖'); else pos[q.a]++;
+  if (Array.isArray(q.o) && q.o.length === 4 && q.a >= 0 && q.a < 4) {
+    const lens = q.o.map(o => strip(o).length);
+    const maxOther = Math.max(...lens.filter((_, i) => i !== q.a));
+    if (lens[q.a] === Math.max(...lens) && lens.filter(x => x === lens[q.a]).length === 1) longestOk++;
+    if (lens[q.a] - maxOther > 25)
+      gapBad.push(at + ' 정답이 가장 긴 오답보다 ' + (lens[q.a] - maxOther) + '자 길다');
+  }
   const c = q.cat === undefined ? null : q.cat;
   if (!VALID_CAT.has(c)) say(at + ' cat 값이 앱이 아는 목록에 없다: ' + c);
   cats[String(c)] = (cats[String(c)] || 0) + 1;
@@ -76,7 +88,14 @@ Q.forEach((q, i) => {
 });
 if (new Set(Q.map(q => q.k)).size !== Q.length) say('문항 제목(k)이 중복된다');
 
+gapBad.slice(0, 8).forEach(m => say(m));
+if (gapBad.length > 8) say('… 그리고 ' + (gapBad.length - 8) + '건 더');
+if (longestOk * 2 > Q.length)
+  say('정답이 가장 긴 보기인 문항이 ' + longestOk + '/' + Q.length +
+      ' — 절반을 넘으면 안 된다. 근거는 해설로 옮기고 오답도 그럴듯하게 채우세요');
+
 console.log('\n문항 ' + Q.length + '개 · 정답 위치 ' + pos.join('/') + ' · cat ' + JSON.stringify(cats) +
-  ' · 해설 평균 ' + Math.round(Q.reduce((s, q) => s + q.ex.length, 0) / Q.length) + '자');
+  ' · 해설 평균 ' + Math.round(Q.reduce((s, q) => s + q.ex.length, 0) / Q.length) + '자' +
+  ' · 정답이 최장 ' + longestOk + '/' + Q.length);
 console.log(bad ? bad + '건 문제' : '검사 통과');
 process.exit(bad ? 1 : 0);
