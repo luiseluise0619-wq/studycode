@@ -642,6 +642,17 @@ function check(name, cond, detail){
   check("모든 트랙에 프로젝트 배너가 붙어 있다", cat10.projTracks===cat10.tracks,
     {붙은트랙:cat10.projTracks, 전체:cat10.tracks, 전용:cat10.projOwn});
 
+  /* 트랙 하나가 너무 얇으면 그 트랙만 고른 사람에게는 앱이 비어 보인다.
+     150문항은 '한 트랙을 붙들고 며칠은 갈 수 있다' 의 하한선이다. */
+  const underFloor=await p.evaluate(()=>{
+    const out={};
+    for(const k in COURSES){ let n=0;
+      COURSES[k].units.forEach(u=>u.lessons.forEach(l=>{ n+=l.q.length; }));
+      if(n<150) out[k]=n; }
+    return out;
+  });
+  check("모든 트랙이 150문항 이상이다", Object.keys(underFloor).length===0, {미달:underFloor});
+
   /* javascript 정답 예시는 앱 안에서 ▶ 실행으로 돌아가야 한다.
      node 에서만 되는 것(process, require)을 쓰면 배우는 사람 화면에서만 터진다. */
   const jsSol=await p.evaluate(async ()=>{
