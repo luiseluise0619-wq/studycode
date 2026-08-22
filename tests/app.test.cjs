@@ -669,7 +669,7 @@ function check(name, cond, detail){
     })));
     return {n, longest, pct:+(longest/n*100).toFixed(1)};
   });
-  const BIAS_CEIL=59.0;
+  const BIAS_CEIL=57.6;
   console.log("  정답이 가장 긴 보기: "+bias.longest+"/"+bias.n+" ("+bias.pct+"%) · 눈금 "+BIAS_CEIL+"% · 찍기 기준선 25%");
   check("정답 길이 단서가 더 나빠지지 않았다", bias.pct<=BIAS_CEIL, {지금:bias.pct, 눈금:BIAS_CEIL});
 
