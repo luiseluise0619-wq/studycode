@@ -51,6 +51,9 @@ if (!Array.isArray(SOL) || SOL.length !== (PROJECT.days || []).length)
   if (!Array.isArray(d.tests) || d.tests.length < 4) say(w + ' 수용 기준이 4개 미만');
   (d.tests || []).forEach((t, j) => {
     if (!t.n || !t.c) say(w + ' 기준' + (j + 1) + ' 에 n 또는 c 가 없다');
+    /* 무조건 통과하는 기준은 개수만 채울 뿐 아무것도 안 지킨다 */
+    if (/\bok\s*\(\s*true\b/.test(t.c || '')) say(w + ' 기준' + (j + 1) + ' 이 무조건 통과한다: ' + t.n);
+    if (!/\b(eq|ok|has|arr|throws)\s*\(/.test(t.c || '')) say(w + ' 기준' + (j + 1) + ' 에 단언이 없다: ' + t.n);
   });
   const names = (d.tests || []).map(t => t.n);
   if (new Set(names).size !== names.length) say(w + ' 기준 이름이 겹친다');
