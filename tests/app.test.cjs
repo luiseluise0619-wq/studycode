@@ -569,7 +569,13 @@ function check(name, cond, detail){
       else if(t==="arch") c.arch++;
       else c.code++;
     })));
-    return {c, projects:(typeof PROJECTS!=="undefined"&&PROJECTS?Object.keys(PROJECTS).length:0),
+    const plist=(typeof PROJECTS!=="undefined"&&PROJECTS)?Object.values(PROJECTS).flat():[];
+    return {c, personas:(typeof PROJECTS!=="undefined"&&PROJECTS?Object.keys(PROJECTS).length:0),
+            projects:plist.length,
+            projPhases:plist.reduce((a,x)=>a+projPhaseCount(x),0),
+            tracks:Object.keys(COURSES).length,
+            projTracks:Object.keys(COURSES).filter(k=>!!projectForTrack(k)).length,
+            projOwn:Object.keys(COURSES).filter(k=>{const r=projectForTrack(k);return r&&r.p.skills[0]===(TRACK_ALIAS[k]||k);}).length,
             buildDays:(typeof BUILD_PROJECTS!=="undefined"&&BUILD_PROJECTS?BUILD_PROJECTS.reduce((a,p)=>a+(p.days||[]).length,0):0),
             buildTests:(typeof BUILD_PROJECTS!=="undefined"&&BUILD_PROJECTS?BUILD_PROJECTS.reduce((a,p)=>a+(p.days||[]).reduce((b,d)=>b+(d.tests||[]).length,0),0):0)};
   });
@@ -586,9 +592,53 @@ function check(name, cond, detail){
   const remain10=Object.keys(TARGET10).filter(k=>k!=="choice")
     .reduce((a,k)=>a+Math.max(0,TARGET10[k]-(cat10.c[k]||0)),0);
   console.log("    남은 총량(choice 제외): "+remain10+"문항");
-  console.log("    project  "+cat10.projects+" 프로젝트 · "+cat10.buildDays+" 빌드랩 Day · "+cat10.buildTests+" 수용 기준 (목표 500문항 상당)");
+  console.log("    project  "+cat10.projects+" 프로젝트("+cat10.personas+" 갈래) · 단계 "+cat10.projPhases
+    +" · 빌드랩 "+cat10.buildDays+" Day · 수용 기준 "+cat10.buildTests+" (목표 500문항 상당)");
+  console.log("    프로젝트 배너가 붙은 트랙 "+cat10.projTracks+"/"+cat10.tracks+" (그중 전용 "+cat10.projOwn+")");
 
   console.log("  리뷰 분포: "+JSON.stringify(revNow));
+
+  /* 프로젝트 단계의 계약 — 하나라도 빠지면 그 단계가 빈 화면으로 뜬다.
+     역량 축 이름이 틀리면 조용히 무시되므로 점수가 안 오르는 형태로 나타난다. */
+  const pj=await p.evaluate(()=>{
+    const AX=Object.keys(AXIS_REMEDY);
+    const bad={필수:[],축:[],best:[],렌더:[]};
+    const seen=new Set(), dup=[];
+    for(const per in PROJECTS) PROJECTS[per].forEach((x,idx)=>{
+      if(seen.has(x.title)) dup.push(x.title); seen.add(x.title);
+      const at=per+"/"+idx+" "+x.title;
+      /* 두 형식이 있다 — phases 를 직접 적은 것과 steps 로 적어 projPhases 가
+         앞뒤에 요구사항·회고를 붙여 주는 것(kind:"guide"). 설명 필드 이름이 다르다. */
+      if(!(x.lv>=1&&x.lv<=5)||!x.em||!(x.desc||x.goal)||!x.skills||!x.skills.length) bad.필수.push(at);
+      projPhases(x).forEach((ph,i)=>{
+        const w=at+" 단계"+(i+1);
+        if(!ph.t||!ph.goal) bad.필수.push(w);
+        if(ph.type==="build"&&(!ph.acc||!ph.sol||!ph.lang)) bad.필수.push(w+"(build)");
+        if(ph.type==="note"&&!ph.ph) bad.필수.push(w+"(note)");
+        if(ph.type==="decide"){
+          const o=ph.opts||[];
+          if(o.filter(y=>y.best).length!==1) bad.best.push(w);
+          o.forEach(y=>Object.keys(y.fx||{}).forEach(a=>{ if(!AX.includes(a)) bad.축.push(w+" "+a); }));
+        }
+      });
+    });
+    /* 모든 단계를 실제로 그려 본다 — 빈 화면이 나오면 잡는다 */
+    for(const per in PROJECTS) PROJECTS[per].forEach((x,idx)=>{
+      openLab(per,idx);
+      for(let i=0;i<lab.phases.length;i++){
+        lab.i=i; renderPhase();
+        if(document.getElementById("lab-body").innerText.trim().length<40)
+          bad.렌더.push(per+"/"+idx+" 단계"+(i+1));
+      }
+      closeLab();
+    });
+    return {bad, dup, n:Object.values(PROJECTS).flat().length};
+  });
+  check("프로젝트 단계에 빠진 항목이 없다", pj.bad.필수.length===0, {빠짐:pj.bad.필수.slice(0,6)});
+  check("프로젝트 보기의 역량 축이 앱이 아는 이름이다", pj.bad.축.length===0, {모르는축:pj.bad.축.slice(0,6)});
+  check("선택 단계마다 권장안이 정확히 하나다", pj.bad.best.length===0, {어긋남:pj.bad.best.slice(0,6)});
+  check("모든 프로젝트 단계가 빈 화면 없이 그려진다", pj.bad.렌더.length===0, {빈화면:pj.bad.렌더.slice(0,6)});
+  check("프로젝트 제목이 겹치지 않는다", pj.dup.length===0, {겹침:pj.dup, 전체:pj.n});
   await p.close();
  }
 

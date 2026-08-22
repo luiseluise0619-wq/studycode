@@ -14,6 +14,8 @@
      - 필수 키(lv·em·title·desc·skills·phases)와 skills[0] 이 실제 트랙인지
      - 그 트랙에 이미 프로젝트가 붙어 있지 않은지 (있으면 덮어쓰지 않는다)
      - 단계 유형별 필수 항목 (note: ph · decide: sit·opts·best 하나 · build: hint·acc·sol)
+     - decide 보기의 fx 축이 앱이 아는 역량 축인지 (모르는 축은 점수에 반영되지 않고
+       조용히 사라진다 — AXIS_REMEDY 에 없는 이름을 적으면 그 선택은 무효가 된다)
      - 제목 중복, JSON 왕복 */
 
 const fs = require('fs');
@@ -36,15 +38,22 @@ const TRACKS = Object.keys(JSON.parse(shell.match(/^const COURSES = (\{.*\});$/m
 const ALIAS = JSON.parse('{' + shell.match(/const TRACK_ALIAS=\{([^}]*)\}/)[1]
   .replace(/(\w+):/g, '"$1":') + '}');
 
-/* 이미 프로젝트가 붙은 트랙 — projectForTrack 과 같은 규칙 */
+/* 앱이 아는 역량 축 — 프로젝트 보기의 fx 는 이 이름들만 쓸 수 있다 */
+const AXES = (shell.match(/const AXIS_REMEDY=\{([\s\S]*?)\n\};/)[1]
+  .match(/^\s*(\w+)\s*:/gm) || []).map(s => s.trim().replace(':', ''));
+if (AXES.length < 5) throw new Error('역량 축 목록을 셸에서 읽지 못했다');
+
+/* 이미 프로젝트가 붙은 트랙 — projectForTrack 과 같은 규칙.
+   skills[0] 로 걸린 것(전용)과 skills 안에 끼어 걸린 것(곁다리)을 나눠 둔다.
+   곁다리는 전용 프로젝트가 생기면 밀려나므로 새 프로젝트를 막지 않는다. */
 function covered() {
   const out = {};
   TRACKS.forEach(tk => {
     const key = ALIAS[tk] || tk;
     for (const persona in DATA) for (const p of DATA[persona]) {
       if (!p.skills) continue;
-      if (p.skills[0] === key) { out[tk] = p.title; return; }
-      if (!out[tk] && p.skills.includes(key)) out[tk] = p.title;
+      if (p.skills[0] === key) { out[tk] = { title: p.title, own: true }; return; }
+      if (!out[tk] && p.skills.includes(key)) out[tk] = { title: p.title, own: false };
     }
   });
   return out;
@@ -66,7 +75,7 @@ NEW.forEach((p, i) => {
     const tk = p.skills[0];
     if (!TRACKS.includes(tk) && !Object.values(ALIAS).includes(tk))
       say(at + ' skills[0] 이 트랙 키가 아니다: ' + tk);
-    if (before[tk]) say(at + ' 그 트랙에는 이미 프로젝트가 있다: ' + before[tk]);
+    if (before[tk] && before[tk].own) say(at + ' 그 트랙에는 이미 전용 프로젝트가 있다: ' + before[tk].title);
   }
   if (titles.has(p.title)) say(at + ' 제목이 기존 프로젝트와 같다');
   if (!Array.isArray(p.phases) || p.phases.length < 5) say(at + ' 단계가 5개 미만');
@@ -79,7 +88,12 @@ NEW.forEach((p, i) => {
       const o = ph.opts || [];
       if (o.length < 3) say(w + ' 보기가 3개 미만');
       if (o.filter(x => x.best).length !== 1) say(w + ' best 가 정확히 하나가 아니다');
-      o.forEach((x, k) => { if (!x.label || !x.fb) say(w + ' 보기' + (k + 1) + ' label/fb 누락'); });
+      o.forEach((x, k) => {
+        if (!x.label || !x.fb) say(w + ' 보기' + (k + 1) + ' label/fb 누락');
+        Object.keys(x.fx || {}).forEach(a => {
+          if (!AXES.includes(a)) say(w + ' 보기' + (k + 1) + ' 모르는 역량 축: ' + a + ' (쓸 수 있는 것: ' + AXES.join(' ') + ')');
+        });
+      });
     } else if (ph.type === 'build') {
       ['hint', 'acc', 'sol', 'lang'].forEach(k => { if (!ph[k]) say(w + ' build 에 ' + k + ' 가 없다'); });
     } else say(w + ' 알 수 없는 type: ' + ph.type);
@@ -96,5 +110,8 @@ if (JSON.stringify(back) !== JSON.stringify(DATA)) throw new Error('왕복에서
 const after = covered();
 const gained = TRACKS.filter(t => !before[t] && after[t]);
 console.log('프로젝트 ' + NEW.length + '개 추가 · 단계 ' + NEW.reduce((s, p) => s + p.phases.length, 0) + '개');
-gained.forEach(t => console.log('  ' + t.padEnd(11) + after[t]));
-console.log('프로젝트 없는 트랙: ' + TRACKS.filter(t => !after[t]).length + '개 남음');
+gained.forEach(t => console.log('  ' + t.padEnd(11) + after[t].title + (after[t].own ? '' : '  (곁다리)')));
+const none = TRACKS.filter(t => !after[t]);
+const side = TRACKS.filter(t => after[t] && !after[t].own);
+console.log('배너가 아예 없는 트랙 ' + none.length + '개' + (none.length ? ': ' + none.join(' ') : ''));
+console.log('곁다리로만 걸린 트랙 ' + side.length + '개' + (side.length ? ': ' + side.join(' ') : ''));
