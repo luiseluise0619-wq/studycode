@@ -653,6 +653,14 @@ function check(name, cond, detail){
   });
   check("모든 트랙이 150문항 이상이다", Object.keys(underFloor).length===0, {미달:underFloor});
 
+  /* 셸의 BUILD_DAYS 는 허브 라벨('빌드 랩 12/46 Day')에 쓰인다.
+     데이터에 Day 를 더하고 이 상수를 안 고치면 진도가 영영 안 찬 것처럼 보인다. */
+  const blDays=await p.evaluate(()=>({
+    선언:typeof BUILD_DAYS!=="undefined"?BUILD_DAYS:null,
+    실제:BUILD_PROJECTS.reduce((a,x)=>a+(x.days||[]).length,0)
+  }));
+  check("셸의 BUILD_DAYS 가 실제 Day 수와 같다", blDays.선언===blDays.실제, blDays);
+
   /* javascript 정답 예시는 앱 안에서 ▶ 실행으로 돌아가야 한다.
      node 에서만 되는 것(process, require)을 쓰면 배우는 사람 화면에서만 터진다. */
   const jsSol=await p.evaluate(async ()=>{
