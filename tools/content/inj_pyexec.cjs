@@ -28,15 +28,24 @@ const lessons=SPEC.lessons.map(L=>{
   if(!L.th||!L.th.sum||L.th.body.length!==2||!L.th.code||!L.th.key) throw new Error(L.t+": 이론 형식");
   const qs=Q.slice(cur,cur+L.n).map(x=>{
     if(!x.fn||!x.src||!x.sol||!x.tests||!x.edge) throw new Error(x.k+": 필드 누락");
-    return { t:"py", k:x.k, cat:x.cat||"internals", q:x.q, src:x.src, sol:x.sol,
+    const out = { t:"py", k:x.k, cat:x.cat||"internals", q:x.q, src:x.src, sol:x.sol,
              tests:x.tests.map(c=>({in:c[0],out:c[1]})),
              edge:x.edge.map(c=>({in:c[0],out:c[1]})), ex:x.ex };
+    /* numpy·pandas 처럼 무거운 꾸러미는 문항이 적어 둔 것만 받는다 */
+    if(x.pkgs && x.pkgs.length) out.pkgs = x.pkgs;
+    return out;
   });
   cur+=L.n;
   return { t:L.t, xp, th:L.th, q:qs };
 });
 if(cur!==Q.length) throw new Error("배정 누락");
-arr.push({ t:SPEC.unit, l:lessons });
+/* 트랙이 유닛 순서(ord)를 적어 두었으면 새 유닛에도 자리를 준다.
+   일부만 적혀 있으면 앱이 순서를 통째로 무시한다. */
+const newUnit = { t:SPEC.unit, l:lessons };
+if(arr.length && arr.every(u => typeof u.ord === "number")){
+  newUnit.ord = Math.max(...arr.map(u => u.ord)) + 1;
+}
+arr.push(newUnit);
 fs.writeFileSync(path, raw.slice(0,a)+JSON.stringify(arr)+raw.slice(z+1));
 
 const ih=ROOT+"/index.html";
