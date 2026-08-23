@@ -705,16 +705,44 @@ function check(name, cond, detail){
         const key=w.slice(-2).join(" ");
         cnt[key]=(cnt[key]||0)+1; if(i===q.a) ok[key]=(ok[key]||0)+1; });
     })));
-    let worst=null;
+    let worst=null, best=null;
     for(const k in cnt){ if(cnt[k]<80) continue;
       const r=(ok[k]||0)/cnt[k]*100;
-      if(!worst||r<worst.r) worst={k, n:cnt[k], r:+r.toFixed(1)}; }
-    return worst;
+      if(!worst||r<worst.r) worst={k, n:cnt[k], r:+r.toFixed(1)};
+      if(!best||r>best.r) best={k, n:cnt[k], r:+r.toFixed(1)}; }
+    /* 한 끝맺음이 얼마나 치우쳤나 보는 것만으로는 모자란다.
+       끝맺음마다 정답률을 외워 두고 가장 높은 보기를 찍는 사람이 실제로
+       몇 %를 맞히는지 재야 한다. 절반으로 외우고 나머지 절반으로 시험한다
+       — 같은 문항으로 재면 잡음에 맞춘 몫까지 실력으로 세어진다. */
+    const all=[];
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>(l.q||[]).forEach(q=>{
+      if((q.t||"choice")!=="choice"||!Array.isArray(q.o)||q.o.length!==4) return;
+      all.push(q);
+    })));
+    const fc={}, fo={}, test=[];
+    all.forEach((q,i)=>{ if(i%2){ test.push(q); return; }
+      q.o.forEach((o,j)=>{ const key=strip(o).split(/\s+/).slice(-2).join(" ");
+        fc[key]=(fc[key]||0)+1; if(j===q.a) fo[key]=(fo[key]||0)+1; }); });
+    let sc=0;
+    for(const q of test){
+      const rr=q.o.map(o=>{ const key=strip(o).split(/\s+/).slice(-2).join(" ");
+        return fc[key]>=30 ? (fo[key]||0)/fc[key] : 0.25; });
+      const mx=Math.max(...rr); const pick=[];
+      rr.forEach((v,i)=>{ if(v===mx) pick.push(i); });
+      if(pick.includes(q.a)) sc+=1/pick.length;
+    }
+    return {worst, best, guess:+(sc*100/test.length).toFixed(1)};
   });
-  const TAIL_MIN=5.0;
-  console.log("  가장 오답에 쏠린 끝맺음: '"+tailBias.k+"' "+tailBias.n+"개 중 정답 "+tailBias.r+"%");
-  check("한 끝맺음이 오답에만 몰려 있지 않다(80회 이상)", tailBias.r>=TAIL_MIN,
-        {끝맺음:tailBias.k, 개수:tailBias.n, 정답비율:tailBias.r});
+  const TAIL_MIN=19.0, TAIL_GUESS=25.5;
+  console.log("  가장 오답에 쏠린 끝맺음: '"+tailBias.worst.k+"' "+tailBias.worst.n
+              +"개 중 정답 "+tailBias.worst.r+"% · 가장 정답에 쏠린 끝맺음: '"
+              +tailBias.best.k+"' "+tailBias.best.r+"%");
+  console.log("  끝맺음으로 찍기(반은 외우고 반은 시험): "+tailBias.guess
+              +"% · 눈금 "+TAIL_GUESS+"% · 찍기 기준선 25%");
+  check("한 끝맺음이 오답에만 몰려 있지 않다(80회 이상)", tailBias.worst.r>=TAIL_MIN,
+        {끝맺음:tailBias.worst.k, 개수:tailBias.worst.n, 정답비율:tailBias.worst.r});
+  check("끝맺음으로 찍기가 더 나아지지 않았다", tailBias.guess<=TAIL_GUESS,
+        {지금:tailBias.guess, 눈금:TAIL_GUESS});
 
   /* 셸의 BUILD_DAYS 는 허브 라벨('빌드 랩 12/46 Day')에 쓰인다.
      데이터에 Day 를 더하고 이 상수를 안 고치면 진도가 영영 안 찬 것처럼 보인다. */
