@@ -516,6 +516,17 @@ function check(name, cond, detail){
   if(mxShort.length) console.log("  매트릭스 미달: "+mxShort.join(" · "));
   else check("언어별 유형 매트릭스가 전부 목표에 도달했다", true);
 
+  /* 디버깅은 트랙을 가리지 않는다 — 어떤 언어를 배우든 '고장난 코드를 고치는' 문항이
+     하나도 없으면 그 트랙은 읽기만으로 끝난다. php 가 마지막으로 0 이었고 지금은 없다. */
+  const noDebug=Object.keys(r.perTrack).filter(k=>!(r.perTrack[k]["cat:debug"]||0));
+  check("모든 트랙에 디버깅 문항이 있다", noDebug.length===0, noDebug);
+  /* 마찬가지로 실행형이 없는 트랙도 없어야 한다(콘텐츠 정책의 완료 기준: 트랙마다 exec ≥ 10%). */
+  const lowExec=Object.keys(r.perTrack).filter(k=>{
+    const c=r.perTrack[k], tot=Object.keys(c).filter(x=>!/^cat:|^exec$/.test(x)).reduce((s,x)=>s+c[x],0);
+    return tot>0 && (c.exec||0)/tot < 0.10;
+  });
+  check("모든 트랙이 실행형 10% 이상이다", lowExec.length===0, lowExec);
+
   /* 목표 비율 (docs/CONTENT_POLICY.md). choice 를 5,690 에 고정했을 때의 총량에서 역산한다.
      예전에는 미달을 진행률로만 보고했다 — 달성까지 CI 가 계속 빨간불이면 의미가 없어서였다.
      이제 네 갈래가 모두 하한을 넘겼으므로, 다시 내려가면 실패로 잡는다. */
