@@ -744,6 +744,36 @@ function check(name, cond, detail){
   check("끝맺음으로 찍기가 더 나아지지 않았다", tailBias.guess<=TAIL_GUESS,
         {지금:tailBias.guess, 눈금:TAIL_GUESS});
 
+  /* '항상·언제나·반드시' 같은 단정어가 든 보기는 거의 다 오답이었다.
+     그래서 내용을 몰라도 '단정어가 든 보기를 피한다' 만으로 27.5% 를 맞혔다.
+     단정어를 빼도 여전히 틀린 말인 자리는 빼고, 단정어가 틀림의 근거인
+     짧은 보기만 남겨 정답 쪽 몫과 맞췄다. 다시 벌어지지 않는지 지킨다.
+     '절대값'·'절대 경로' 처럼 이름씨의 일부인 '절대' 는 세지 않는다. */
+  const absBias=await p.evaluate(()=>{
+    const strip=s2=>String(s2||"").replace(/<[^>]*>/g,"").trim();
+    const W=/언제나|항상|반드시|무조건|아예|전혀|결코|하나도|절대/;
+    const NOT=["절대값","절댓값","절대 경로","절대 전압","절대 좌표","절대 시간",
+               "절대 위치","절대 주소","절대적","절대 URL","절대 온도"];
+    const hit=s2=>{ for(const x of NOT) s2=s2.split(x).join("·"); return W.test(s2); };
+    let tot=0, sc=0, n=0, ok=0;
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>(l.q||[]).forEach(q=>{
+      if((q.t||"choice")!=="choice"||!Array.isArray(q.o)||q.o.length!==4) return;
+      tot++;
+      const f=q.o.map(o=>hit(strip(o)));
+      n+=f.filter(Boolean).length;
+      f.forEach((v,i)=>{ if(v&&i===q.a) ok++; });
+      if(!f.some(Boolean)){ sc+=0.25; return; }
+      let rest=[0,1,2,3].filter(i=>!f[i]); if(!rest.length) rest=[0,1,2,3];
+      if(rest.includes(q.a)) sc+=1/rest.length;
+    })));
+    return {n, ok, rate:+(ok*100/Math.max(n,1)).toFixed(1), guess:+(sc*100/tot).toFixed(1)};
+  });
+  const ABS_MAX=25.6;
+  console.log("  단정어 보기 "+absBias.n+"개 중 정답 "+absBias.rate
+              +"% · 단정어 피하기 "+absBias.guess+"% · 눈금 "+ABS_MAX+"% · 찍기 기준선 25%");
+  check("단정어를 피해 찍기가 더 나아지지 않았다", absBias.guess<=ABS_MAX,
+        {지금:absBias.guess, 눈금:ABS_MAX});
+
   /* 셸의 BUILD_DAYS 는 허브 라벨('빌드 랩 12/46 Day')에 쓰인다.
      데이터에 Day 를 더하고 이 상수를 안 고치면 진도가 영영 안 찬 것처럼 보인다. */
   const blDays=await p.evaluate(()=>({
