@@ -517,7 +517,8 @@ function check(name, cond, detail){
   else check("언어별 유형 매트릭스가 전부 목표에 도달했다", true);
 
   /* 목표 비율 (docs/CONTENT_POLICY.md). choice 를 5,690 에 고정했을 때의 총량에서 역산한다.
-     미달은 실패가 아니라 진행률로 보고한다 — 달성까지 CI 가 계속 빨간불이면 의미가 없다. */
+     예전에는 미달을 진행률로만 보고했다 — 달성까지 CI 가 계속 빨간불이면 의미가 없어서였다.
+     이제 네 갈래가 모두 하한을 넘겼으므로, 다시 내려가면 실패로 잡는다. */
   const B={choice:[55,60], input:[18,20], exec:[12,15], review:[5,8], log:[2,4]};
   const now={choice:r.byType.choice||0, input:r.byType.input||0,
              exec:(r.byType.code||0)+(r.byType.py||0)+(r.byType.sql||0)+(r.byType.html||0)+(r.byType.react||0)+(r.byType.ts||0)+(r.byType.sim||0)+(r.byType.arch||0),
@@ -530,6 +531,7 @@ function check(name, cond, detail){
     if(now[k]<floor) gap.push(k+" "+now[k]+"/"+floor+" (+"+(floor-now[k])+")");
   });
   check("문항 유형이 5종 이상 실재한다", Object.keys(r.byType).length>=5, r.byType);
+  check("목표 비율 하한을 지킨다", gap.length===0, gap);
 
   /* 출력 예측(cat=predict)은 실제 컴파일러로 정답을 검증해 넣은 문항이다.
      a[0] 이 실행 결과이므로, 정규화 기준으로 정답 목록에 중복이 있으면 안 된다. */
