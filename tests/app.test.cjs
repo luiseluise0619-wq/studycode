@@ -686,11 +686,35 @@ function check(name, cond, detail){
      기계 눈금은 72.8 → 59.4 로 내려갔고, 사람 눈금만 29.3 → 37.7 로
      올랐다. 남은 일 3952자리를 끝내면 둘 다 25% 근처로 간다.
      이 두 숫자는 작업이 진행되는 동안 계속 내려가야 한다. */
-  const BIAS_EXACT=46.9, BIAS_HUMAN=34.1;
+  const BIAS_EXACT=30.1, BIAS_HUMAN=28.2;
   console.log("  길이로 찍기 최고 정답률: 기계(0자) "+bias.exact+"% · 사람(5자) "+bias.human+
               "% · 눈금 "+BIAS_EXACT+"/"+BIAS_HUMAN+"% · 찍기 기준선 25%");
   check("길이로 찍기(기계 기준)가 더 나빠지지 않았다", bias.exact<=BIAS_EXACT, {지금:bias.exact, 눈금:BIAS_EXACT});
   check("길이로 찍기(사람 기준)가 더 나빠지지 않았다", bias.human<=BIAS_HUMAN, {지금:bias.human, 눈금:BIAS_HUMAN});
+
+  /* 길이를 맞추려고 오답 끝에 '…라고 볼 수 있다' 같은 맺음말을 붙였다.
+     오답에만 붙이면 '맺음말 붙은 보기를 피한다' 가 새 찍기 전략이 된다.
+     그래서 정답에도 같은 맺음말을 같은 비율로 붙였다. 그 비율이 흐트러지지
+     않는지 여기서 지킨다 — 끝 두 낱말이 같은 보기끼리 묶어 정답 비율을 본다. */
+  const tailBias=await p.evaluate(()=>{
+    const strip=s2=>String(s2||"").replace(/<[^>]*>/g,"").trim();
+    const cnt={}, ok={};
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>(l.q||[]).forEach(q=>{
+      if((q.t||"choice")!=="choice"||!Array.isArray(q.o)||q.o.length!==4) return;
+      q.o.forEach((o,i)=>{ const w=strip(o).split(/\s+/);
+        const key=w.slice(-2).join(" ");
+        cnt[key]=(cnt[key]||0)+1; if(i===q.a) ok[key]=(ok[key]||0)+1; });
+    })));
+    let worst=null;
+    for(const k in cnt){ if(cnt[k]<80) continue;
+      const r=(ok[k]||0)/cnt[k]*100;
+      if(!worst||r<worst.r) worst={k, n:cnt[k], r:+r.toFixed(1)}; }
+    return worst;
+  });
+  const TAIL_MIN=5.0;
+  console.log("  가장 오답에 쏠린 끝맺음: '"+tailBias.k+"' "+tailBias.n+"개 중 정답 "+tailBias.r+"%");
+  check("한 끝맺음이 오답에만 몰려 있지 않다(80회 이상)", tailBias.r>=TAIL_MIN,
+        {끝맺음:tailBias.k, 개수:tailBias.n, 정답비율:tailBias.r});
 
   /* 셸의 BUILD_DAYS 는 허브 라벨('빌드 랩 12/46 Day')에 쓰인다.
      데이터에 Day 를 더하고 이 상수를 안 고치면 진도가 영영 안 찬 것처럼 보인다. */
