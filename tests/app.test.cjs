@@ -592,6 +592,11 @@ function check(name, cond, detail){
   const remain10=Object.keys(TARGET10).filter(k=>k!=="choice")
     .reduce((a,k)=>a+Math.max(0,TARGET10[k]-(cat10.c[k]||0)),0);
   console.log("    남은 총량(choice 제외): "+remain10+"문항");
+  /* 여덟 유형이 모두 목표에 닿았다. 여기서 다시 내려간다면 콘텐츠가 지워졌거나
+     cat/t 값이 잘못 바뀐 것이므로 진행률 보고가 아니라 실패로 잡는다. */
+  Object.keys(TARGET10).filter(k=>k!=="choice").forEach(k=>{
+    check("10유형 "+k+" 목표 유지 ("+(cat10.c[k]||0)+" ≥ "+TARGET10[k]+")", (cat10.c[k]||0)>=TARGET10[k]);
+  });
   console.log("    project  "+cat10.projects+" 프로젝트("+cat10.personas+" 갈래) · 단계 "+cat10.projPhases
     +" · 빌드랩 "+cat10.buildDays+" Day · 수용 기준 "+cat10.buildTests+" (목표 500문항 상당)");
   console.log("    프로젝트 배너가 붙은 트랙 "+cat10.projTracks+"/"+cat10.tracks+" (그중 전용 "+cat10.projOwn+")");
