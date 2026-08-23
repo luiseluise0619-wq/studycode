@@ -686,7 +686,7 @@ function check(name, cond, detail){
      기계 눈금은 72.8 → 59.4 로 내려갔고, 사람 눈금만 29.3 → 37.7 로
      올랐다. 남은 일 3952자리를 끝내면 둘 다 25% 근처로 간다.
      이 두 숫자는 작업이 진행되는 동안 계속 내려가야 한다. */
-  const BIAS_EXACT=26.5, BIAS_HUMAN=25.5;
+  const BIAS_EXACT=26.0, BIAS_HUMAN=25.1;
   console.log("  길이로 찍기 최고 정답률: 기계(0자) "+bias.exact+"% · 사람(5자) "+bias.human+
               "% · 눈금 "+BIAS_EXACT+"/"+BIAS_HUMAN+"% · 찍기 기준선 25%");
   check("길이로 찍기(기계 기준)가 더 나빠지지 않았다", bias.exact<=BIAS_EXACT, {지금:bias.exact, 눈금:BIAS_EXACT});
