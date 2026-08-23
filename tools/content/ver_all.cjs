@@ -1,15 +1,17 @@
 /* 주입이 끝난 데이터 전체를 다시 채점한다 — 배치 검증기와 달리 data/t-*.js 만 읽는다.
 
      node tools/content/ver_all.cjs            # 전부
-     node tools/content/ver_all.cjs js         # 갈래를 골라서 (js · py · php)
+     node tools/content/ver_all.cjs js         # 갈래를 골라서
      node tools/content/ver_all.cjs py numpy   # 트랙까지 좁혀서
+   갈래: js · py · c · cpp · java · go · rust · php
 
    왜 필요한가: 배치 검증기는 <b>넣을 때 한 번</b> 볼 뿐이다. 그 뒤에 보기 문구를
    손보거나(37~39차의 답 모양 상환) 주입기를 고치거나 라이브러리가 올라가면,
    앱에서만 깨지는 문항이 조용히 생긴다. 여기서는 실제로 저장된 값만 읽어
    sol 을 tests + edge 로 다시 돌린다.
 
-   php 는 로컬 러너가 필요하다 — 안 떠 있으면 그 갈래만 건너뛴다.
+   컴파일 언어(c·cpp·java·go·rust)와 php 는 로컬 러너가 필요하다 —
+   안 떠 있거나 그 툴체인이 없으면 해당 갈래만 건너뛰고 몇 개를 건너뛰었는지 알린다.
      node tools/runner/server.cjs &  */
 const fs = require("fs");
 const os = require("os");
@@ -18,7 +20,7 @@ const vm = require("vm");
 const { execFile } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..", "..");
-const WANT = (process.argv[2] || "").toLowerCase();       // js | py | php | ""
+const WANT = (process.argv[2] || "").toLowerCase();       // js | py | c | cpp | java | go | rust | php | ""
 const ONLY_TRACK = process.argv[3] || "";
 const RUNNER = process.env.RUNNER || "http://127.0.0.1:8787";
 const TMPDIR = fs.mkdtempSync(path.join(os.tmpdir(), "cr-verall-"));
@@ -36,7 +38,7 @@ for (const f of fs.readdirSync(path.join(ROOT, "data")).filter(x => /^t-.*\.js$/
     const at = { track, unit: u.t, lesson: l.t, k: q.k || q.fn || "(제목 없음)", q };
     if (q.t === "code" && q.run === "js" && q.tests) { at.kind = "js"; items.push(at); }
     else if (q.t === "py" && q.tests) { at.kind = "py"; items.push(at); }
-    else if (q.t === "code" && q.run === "php" && q.rt && q.rt.test) { at.kind = "php"; items.push(at); }
+    else if (q.t === "code" && q.rt && q.rt.test) { at.kind = q.rt.lang || q.run; items.push(at); }
   })));
 }
 const pick = items.filter(x => !WANT || x.kind === WANT);
@@ -120,26 +122,46 @@ async function runPy(q, i) {
   return a.concat(b);
 }
 
-/* ── php: 러너가 그대로 채점한다 ─────────────────────────────────── */
-function runPhp(q) {
-  return fetch(RUNNER + "/test", {
+/* ── 러너 언어(c·cpp·java·go·rust·php): 러너가 그대로 채점한다.
+   테스트를 다른 형식으로 번역하지 않고, 데이터에 든 값을 그대로 보낸다 —
+   주입기가 srcName 을 빠뜨려 공개 클래스 이름이 안 맞는 사고가 실제로 있었다. */
+/* 러너는 spawnSync 로 컴파일한다 — 한 요청을 처리하는 동안 새 연결을 받지 못해,
+   동시에 보내면 접속 자체가 실패한다("fetch failed"). 그래서 이 갈래만 줄을 세운다. */
+let rtChain = Promise.resolve();
+function runRt(q) {
+  const send = () => fetch(RUNNER + "/test", {
     method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ language: "php", test: q.rt.test, code: q.sol }),
-  }).then(r => r.json()).then(r => {
+    body: JSON.stringify({ language: q.rt.lang || q.run, test: q.rt.test, code: q.sol,
+                           name: q.rt.name, srcName: q.rt.srcName }),
+  }).then(r => r.json());
+  const once = () => send().then(r => {
     if (r.error) return ["[실행 오류] " + r.error];
     if (!r.pass) return [String(r.stdout || r.stderr || "").trim().split("\n").slice(0, 4).join(" / ")];
     return [];
-  }).catch(e => ["[러너 오류] " + e.message]);
+  });
+  const job = () => once().catch(() => once())      // 접속 실패는 한 번 더 해 본다
+    .catch(e => ["[러너 오류] " + (e && e.message || e)]);
+  const p = rtChain.then(job, job);
+  rtChain = p.then(() => {}, () => {});
+  return p;
 }
 
 /* ── 동시에 POOL 개씩 돌린다 ─────────────────────────────────────── */
 (async () => {
-  let phpOk = true;
-  if (pick.some(x => x.kind === "php")) {
-    try { await fetch(RUNNER + "/health").then(r => r.json()); }
-    catch (e) { phpOk = false; console.log("러너에 못 붙어 php 갈래는 건너뛴다(" + RUNNER + ")"); }
+  const RT = new Set(["c", "cpp", "java", "go", "rust", "php"]);
+  let rtOk = true, langs = {};
+  if (pick.some(x => RT.has(x.kind))) {
+    try { langs = (await fetch(RUNNER + "/health").then(r => r.json())).langs || {}; }
+    catch (e) { rtOk = false; console.log("러너에 못 붙어 컴파일 언어는 건너뛴다(" + RUNNER + ")"); }
   }
-  const todo = pick.filter(x => x.kind !== "php" || phpOk);
+  const skipped = {};
+  const todo = pick.filter(x => {
+    if (!RT.has(x.kind)) return true;
+    if (rtOk && langs[x.kind]) return true;
+    skipped[x.kind] = (skipped[x.kind] || 0) + 1;
+    return false;
+  });
+  if (Object.keys(skipped).length) console.log("건너뜀: " + JSON.stringify(skipped));
   const fails = [];
   let done = 0, next = 0;
   async function worker() {
@@ -148,7 +170,7 @@ function runPhp(q) {
       let bad = [];
       if (it.kind === "js") bad = await runJs(it.q);
       else if (it.kind === "py") bad = await runPy(it.q, i);
-      else if (it.kind === "php") bad = await runPhp(it.q);
+      else bad = await runRt(it.q);
       if (bad.length) fails.push({ ...it, bad });
       done += 1;
       if (done % 100 === 0) process.stdout.write("  " + done + "/" + todo.length + "\n");

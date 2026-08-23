@@ -75,8 +75,26 @@ grep -h 'fn:"' tools/content/exec_*.cjs | sort   # 실행형 함수 이름
 ## 마무리 검사
 
 ```
-node tests/engine.test.cjs                                                    # 161
+node tests/engine.test.cjs                                                    # 162
 PLAYWRIGHT_CHROMIUM=... node tests/app.test.cjs                               # 141
 ```
 
 두 벌은 따로 돌리세요 — 한 명령으로 묶으면 메모리가 모자라 죽습니다(exit 137).
+
+### 전수 재검증 (`ver_all.cjs`)
+
+배치 검증기는 **넣을 때 한 번** 볼 뿐입니다. 그 뒤에 보기 문구를 손보거나 주입기를
+고치면 앱에서만 깨지는 문항이 조용히 생기므로, `data/t-*.js` 에 **실제로 저장된 값**을
+다시 채점하는 검증기를 따로 둡니다.
+
+```
+node tools/content/ver_all.cjs js         # 673문항 · 1.2초 — engine 테스트에 편입돼 있다
+node tools/content/ver_all.cjs py         # 526문항 · 몇 분
+node tools/runner/server.cjs &            # 컴파일 언어와 php 는 러너가 필요하다
+node tools/content/ver_all.cjs c          # c 67 · cpp 67 · java 70 · go 81 · rust 11 · php 36
+node tools/content/ver_all.cjs            # 전부
+```
+
+러너가 안 떠 있거나 그 툴체인이 없으면 해당 갈래만 건너뛰고 몇 개를 건너뛰었는지
+알립니다. 컴파일 언어는 한 문항에 몇 초씩 걸리므로 **콘텐츠를 크게 손댄 뒤에만**
+돌리면 됩니다.
