@@ -26,37 +26,47 @@ const SAMPLE = Number(process.env.SAMPLE || 6);
     await Promise.all(Object.keys(COURSES).map(k => ensureTrack(k)));
     const strip = s => String(s || '').replace(/<[^>]*>/g, '').trim();
     const per = {}, samples = [];
-    let tot = 0, longest = 0, absol = 0;
+    let tot = 0, absol = 0;
+    const rank = [0, 0, 0, 0];
     for (const k in COURSES) {
-      per[k] = { n: 0, longest: 0, absol: 0, gapSum: 0 };
+      per[k] = { n: 0, rank: [0, 0, 0, 0], absol: 0, gapSum: 0 };
       COURSES[k].units.forEach(u => u.lessons.forEach(l => (l.q || []).forEach(q => {
         if ((q.t || 'choice') !== 'choice' || !Array.isArray(q.o) || q.o.length !== 4) return;
         tot++; per[k].n++;
         const lens = q.o.map(o => strip(o).length);
-        const max = Math.max(...lens);
         const others = lens.filter((_, i) => i !== q.a);
         per[k].gapSum += lens[q.a] - (others.reduce((a, c) => a + c, 0) / 3);
-        if (lens[q.a] === max && lens.filter(x => x === max).length === 1) {
-          longest++; per[k].longest++;
-          if (k === arg.only && samples.length < arg.sample)
-            samples.push({ u: u.title.slice(0, 22), q: strip(q.q).slice(0, 46),
-              ok: strip(q.o[q.a]), no: q.o.filter((_, i) => i !== q.a).map(strip) });
+        // 정답이 길이로 몇 등인가. 같은 길이는 한 묶음으로 나눠 센다.
+        const order = [0, 1, 2, 3].sort((x, y) => lens[y] - lens[x]);
+        for (let i = 0; i < 4;) {
+          let j = i; while (j < 4 && lens[order[j]] === lens[order[i]]) j++;
+          if (order.slice(i, j).indexOf(q.a) >= 0)
+            for (let s = i; s < j; s++) { rank[s] += 1 / (j - i); per[k].rank[s] += 1 / (j - i); }
+          i = j;
         }
+        if (k === arg.only && samples.length < arg.sample)
+          samples.push({ u: u.title.slice(0, 22), q: strip(q.q).slice(0, 46),
+            ok: strip(q.o[q.a]), no: q.o.filter((_, i) => i !== q.a).map(strip) });
         const abs = q.o.map(o => /항상|절대|모든 경우|무조건|반드시/.test(strip(o)));
         if (abs.some(Boolean) && !abs[q.a]) { absol++; per[k].absol++; }
       })));
     }
-    return { tot, longest, absol, per, samples };
+    return { tot, rank, absol, per, samples };
   }, { only: ONLY, sample: SAMPLE });
 
   const pct = (a, b2) => b2 ? (a / b2 * 100).toFixed(1) : '0.0';
+  const worst = v => Math.max(...v.rank.map(x => x / v.n));
   console.log('선택형 ' + r.tot + '문항');
-  console.log('  정답이 가장 긴 보기   ' + r.longest + ' (' + pct(r.longest, r.tot) + '%) — 찍어서 맞을 확률의 기준선은 25%');
+  console.log('  길이 순위별 정답률    ' + r.rank.map((x, i) => (i + 1) + '등 ' + pct(x, r.tot) + '%').join(' · ')
+    + ' — 네 값이 모두 25% 여야 길이가 단서가 아니다');
   console.log('  단정어가 오답에만     ' + r.absol + ' (' + pct(r.absol, r.tot) + '%)');
-  console.log('\n트랙별 (정답이 가장 긴 비율 · 정답이 오답 평균보다 몇 자 긴가)');
-  Object.entries(r.per).filter(x => x[1].n).sort((a, b2) => (b2[1].longest / b2[1].n) - (a[1].longest / a[1].n))
-    .forEach(([k, v]) => console.log('  ' + k.padEnd(11) + String(v.n).padStart(5) + '문항  ' +
-      (pct(v.longest, v.n) + '%').padStart(6) + '  +' + (v.gapSum / v.n).toFixed(0) + '자'));
+  console.log('\n트랙별 (가장 잘 맞는 길이 순위와 그 적중률 · 정답이 오답 평균보다 몇 자 긴가)');
+  Object.entries(r.per).filter(x => x[1].n).sort((a, b2) => worst(b2[1]) - worst(a[1]))
+    .forEach(([k, v]) => {
+      const top = v.rank.indexOf(Math.max(...v.rank));
+      console.log('  ' + k.padEnd(11) + String(v.n).padStart(5) + '문항  ' + (top + 1) + '등 ' +
+        (pct(v.rank[top], v.n) + '%').padStart(6) + '  +' + (v.gapSum / v.n).toFixed(0) + '자');
+    });
 
   if (r.samples.length) {
     console.log('\n' + ONLY + ' 표본');

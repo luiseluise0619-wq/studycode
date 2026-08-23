@@ -654,24 +654,35 @@ function check(name, cond, detail){
   check("모든 트랙이 150문항 이상이다", Object.keys(underFloor).length===0, {미달:underFloor});
 
   /* 정답만 길면 내용을 몰라도 '가장 긴 보기' 를 고르면 맞는다.
-     처음 쟀을 때 78.0% 였고 근거 꼬리 옮기기와 오답 채우기로 70.7% 까지 내렸다.
-     찍기 기준선 25% 와는 아직 멀다 — 오래 쌓인 빚이라 트랙 단위로 갚는다.
-     한 번에 못 고치므로 눈금을 박아 두고 더 나빠지지 않게만 막는다.
-     새 문항은 tools/qcheck.cjs 가 묶음 단위로 절반을 넘지 못하게 거절한다. */
+     처음에는 '정답이 단독 최장인 비율' 만 쟀고 78.0% → 0.0% 로 내렸는데,
+     그 눈금은 속았다. 오답 하나만 정답보다 길게 만들면 최장은 오답이 되지만
+     정답은 언제나 2등이 된다 — '두 번째로 긴 보기' 를 고르면 그대로 78% 다.
+     단서는 사라진 게 아니라 1등에서 2등으로 옮겨 갔을 뿐이었다.
+
+     그래서 눈금을 길이 순위 분포로 바꿨다. 정답의 길이 순위(1~4등)가
+     고르면 길이는 아무것도 알려 주지 않는다 — 네 순위 모두 25% 가 목표다.
+     가장 높은 순위 적중률을 눈금으로 박아 더 나빠지지 않게 막는다. */
   const bias=await p.evaluate(()=>{
     const strip=s2=>String(s2||"").replace(/<[^>]*>/g,"").trim();
-    let n=0, longest=0;
+    let n=0; const rank=[0,0,0,0];
     for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>(l.q||[]).forEach(q=>{
       if((q.t||"choice")!=="choice"||!Array.isArray(q.o)||q.o.length!==4) return;
       n++;
-      const L=q.o.map(o=>strip(o).length), m=Math.max(...L);
-      if(L[q.a]===m && L.filter(x=>x===m).length===1) longest++;
+      const L=q.o.map(o=>strip(o).length);
+      const order=[0,1,2,3].sort((x,y)=>L[y]-L[x]);
+      for(let i=0;i<4;){                      // 길이가 같은 보기는 한 묶음으로 본다
+        let j=i; while(j<4&&L[order[j]]===L[order[i]]) j++;
+        if(order.slice(i,j).indexOf(q.a)>=0) for(let s2=i;s2<j;s2++) rank[s2]+=1/(j-i);
+        i=j;
+      }
     })));
-    return {n, longest, pct:+(longest/n*100).toFixed(1)};
+    const pct=rank.map(x=>+(x/n*100).toFixed(1));
+    return {n, pct, worst:Math.max(...pct)};
   });
-  const BIAS_CEIL=0.0;
-  console.log("  정답이 가장 긴 보기: "+bias.longest+"/"+bias.n+" ("+bias.pct+"%) · 눈금 "+BIAS_CEIL+"% · 찍기 기준선 25%");
-  check("정답 길이 단서가 더 나빠지지 않았다", bias.pct<=BIAS_CEIL, {지금:bias.pct, 눈금:BIAS_CEIL});
+  const BIAS_CEIL=78.0;
+  console.log("  정답 길이 순위 적중률: "+bias.pct.map((x,i)=>(i+1)+"등 "+x+"%").join(" · ")+
+              " · 눈금 "+BIAS_CEIL+"% · 찍기 기준선 25%");
+  check("정답 길이 단서가 더 나빠지지 않았다", bias.worst<=BIAS_CEIL, {지금:bias.worst, 눈금:BIAS_CEIL});
 
   /* 셸의 BUILD_DAYS 는 허브 라벨('빌드 랩 12/46 Day')에 쓰인다.
      데이터에 Day 를 더하고 이 상수를 안 고치면 진도가 영영 안 찬 것처럼 보인다. */
