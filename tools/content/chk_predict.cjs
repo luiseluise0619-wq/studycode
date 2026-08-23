@@ -17,7 +17,8 @@ Q.forEach((q, i) => {
   if (!q.code) return;
   ran += 1;
   const out = [];
-  const ctx = vm.createContext({ console: { log: (...a) => out.push(a.map(String).join(" ")) } });
+  const ctx = vm.createContext({ URL, TextEncoder, TextDecoder,
+    console: { log: (...a) => out.push(a.map(String).join(" ")) } });
   let got;
   try { vm.runInContext(q.code, ctx, { timeout: 2000 }); got = out[out.length - 1]; }
   catch (e) { got = "[에러] " + e.message; }

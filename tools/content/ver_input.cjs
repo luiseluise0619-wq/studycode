@@ -36,7 +36,10 @@ Q.forEach((q, i) => {
   if (qs.length < 20) fail("물음이 20자 미만");
   const st = qs.slice(0, 40);
   if (stems.has(st)) fail("물음 줄기 중복"); stems.add(st);
-  if (!/[(（][^)）]*[)）]\s*$/.test(qs.trim()))
+  /* 괄호 안에 또 괄호가 들어올 수 있어(예: "(예: O(n log n))") 안쪽을 세지 않는다.
+     끝이 닫는 괄호이고 그 앞 어딘가에 여는 괄호가 있으면 힌트가 있는 것으로 본다. */
+  const qt = qs.trim();
+  if (!/[)）]\s*$/.test(qt) || !/[(（]/.test(qt.slice(-40)))
     fail("물음 끝에 답 형식 힌트(괄호)가 없다 — 형식을 모르면 아는 사람도 틀린다");
 
   const a = q.a;

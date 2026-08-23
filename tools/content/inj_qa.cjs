@@ -41,16 +41,22 @@ const lessons = SPEC.lessons.map(L => {
 });
 if (cur !== Q.length) throw new Error("배정 누락");
 
-/* 트랙이 유닛 순서(ord)를 적어 두었으면 새 유닛에도 자리를 준다.
-   일부만 적혀 있으면 앱이 순서를 통째로 무시하므로 반드시 함께 맞춘다. */
+/* 자리 정하기.
+   '해 보는 유닛'(시뮬레이션·실행형 실전·설계 실전)은 배운 뒤에 오는 것이라 트랙 맨 뒤에
+   있어야 하고, app 테스트가 그것을 검사한다. 단답·선택형은 배우는 단계이므로
+   그 무리 <b>앞에</b> 끼운다. 순서(ord)를 적어 둔 트랙이면 전부 다시 매긴다. */
+const TAILU = /시뮬레이션|실행형 실전|실행형 ·|설계 실전|설계 · 직접|직접 구현 —|직접 코딩 —|직접 SQL —|직접 만들며|직접 실행해/;
 const unit = { t: SPEC.unit, l: lessons };
-if (arr.length && arr.every(u => typeof u.ord === "number")) {
-  unit.ord = Math.max(...arr.map(u => u.ord)) + 1;
-}
-arr.push(unit);
-fs.writeFileSync(p, raw.slice(0, a) + JSON.stringify(arr) + raw.slice(z + 1));
+const hasOrd = arr.length > 0 && arr.every(u => typeof u.ord === "number");
+const order = hasOrd ? arr.slice().sort((x, y) => x.ord - y.ord) : arr.slice();
+let at = order.findIndex(u => TAILU.test(u.t));
+if (at < 0) at = order.length;
+order.splice(at, 0, unit);
+if (hasOrd) order.forEach((u, i) => { u.ord = i; });
+fs.writeFileSync(p, raw.slice(0, a) + JSON.stringify(order) + raw.slice(z + 1));
 
 const back = JSON.parse(fs.readFileSync(p, "utf8").match(/^__CR\('[^']+',(.*)\);\s*$/s)[1]);
-const u = back[back.length - 1];
-if (u.t !== SPEC.unit || u.l.length !== SPEC.lessons.length) throw new Error("왕복 검증 실패");
-console.log(SPEC.track + " ← " + Q.length + "문항 / 레슨 " + lessons.length + " · 유닛 '" + SPEC.unit + "'");
+const u = back.find(x => x.t === SPEC.unit);
+if (!u || u.l.length !== SPEC.lessons.length) throw new Error("왕복 검증 실패");
+console.log(SPEC.track + " ← " + Q.length + "문항 / 레슨 " + lessons.length
+  + " · 유닛 '" + SPEC.unit + "' (" + (at + 1) + "/" + order.length + "번째)");
