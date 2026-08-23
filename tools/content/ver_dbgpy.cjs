@@ -8,9 +8,15 @@ if(!SRC){ console.error("문항 파일을 인자로 주세요: node ver_dbgpy.cj
 const Q=require(path.resolve(SRC));
 const TMP="/tmp/claude-0/-home-user-studycode/48297e2f-2aa5-53f1-a08c-af741856ba9b/scratchpad/_py.py";
 
+/* 앱의 pyHarness 와 같게 맞춘다 — 검사식이 코루틴을 돌려주면 기다렸다 견준다.
+   그러지 않으면 async 문항은 코루틴 객체와 기대값을 견주게 되어 무엇을 써도
+   통과하지 못한다. 앱과 같이 5초에서 끊는다. */
 function pyHarness(user, tests){
   return user+"\n\n__T="+JSON.stringify(tests.map(t=>[t[0],t[1]]))
-    +"\nimport json\n__r=[]\nfor __i,__o in __T:\n    try:\n        __g=eval(__i)\n        __e=eval(__o)\n        __r.append([bool(__g==__e), __i, repr(__g), __o])\n    except Exception as __ex:\n        __r.append([False, __i, '[에러] '+str(__ex), __o])\nprint(json.dumps(__r, ensure_ascii=False))";
+    +"\nimport json, inspect, asyncio\n__r=[]\n"
+    +"async def __await1(v):\n    return await asyncio.wait_for(v, 5) if inspect.isawaitable(v) else v\n"
+    +"async def __run():\n    for __i,__o in __T:\n        try:\n            __g=await __await1(eval(__i))\n            __e=await __await1(eval(__o))\n            __r.append([bool(__g==__e), __i, repr(__g), __o])\n        except Exception as __ex:\n            __r.append([False, __i, '[에러] '+str(__ex), __o])\n"
+    +"asyncio.run(__run())\nprint(json.dumps(__r, ensure_ascii=False))";
 }
 function run(user, tests){
   if(!tests||!tests.length) return [];

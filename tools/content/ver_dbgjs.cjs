@@ -14,25 +14,53 @@ const SRC = process.argv[2];
 if (!SRC) { console.error("문항 파일을 인자로 주세요: node ver_dbgjs.cjs ./dbg_be.cjs"); process.exit(2); }
 const Q = require(path.resolve(SRC));
 
-function eq(a, b) { try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return String(a) === String(b); } }
-
-/* 앱의 testDoc 은 tests 와 edge 를 '같은 문서' 안에서 이어서 돌린다 —
-   상태를 가진 핸들러는 그 순서에 의존하므로 검증기도 한 컨텍스트에서 이어 돌린다. */
-function runBoth(code, tests, edge) {
-  const ctx = vm.createContext({ URL, TextEncoder, TextDecoder });
-  try { vm.runInContext(code, ctx, { timeout: 3000 }); }
+/* 앱의 testDoc 을 그대로 흉내 낸다. 세 가지를 맞춰야 결과가 같다.
+     ① 사용자 코드와 채점 코드가 <b>같은 스크립트</b>에 있어야 한다 — 따로 돌리면
+        최상위 const·let·class 가 안 보여 "정의되지 않음" 이 된다.
+     ② tests 와 edge 를 '같은 문서' 안에서 <b>이어서</b> 돌린다 — 상태를 가진
+        핸들러는 그 순서에 의존한다.
+     ③ 검사식이 프라미스를 돌려주면 <b>기다렸다가</b> 견준다 — 안 그러면 async
+        문항은 무엇을 써도 통과하지 못한다(앱과 같이 3초에서 끊는다). */
+const HARNESS = `
+;(async function(){
+  function __eq(a,b){ try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return String(a) === String(b); } }
+  function __sh(v){ try { return typeof v === "undefined" ? "undefined" : JSON.stringify(v); } catch (e) { return String(v); } }
+  function __wait(v){
+    if (!v || typeof v.then !== "function") return Promise.resolve(v);
+    var id; var to = new Promise(function(_, rj){ id = setTimeout(function(){ rj(new Error("시간 초과")); }, 3000); });
+    return Promise.race([v, to]).finally(function(){ clearTimeout(id); });
+  }
+  async function __one(c){
+    try { var g = await __wait(eval(c[0])); var e = await __wait(eval("(" + c[1] + ")"));
+          return { ok: __eq(g, e), in: c[0], got: __sh(g), exp: c[1] }; }
+    catch (e) { return { ok: false, in: c[0], got: "[에러] " + (e && e.message || e), exp: c[1] }; }
+  }
+  var t = [], e = [];
+  for (var i = 0; i < __TS.length; i++) t.push(await __one(__TS[i]));
+  for (var j = 0; j < __EG.length; j++) e.push(await __one(__EG[j]));
+  return { t: t, e: e, boom: null };
+})()`;
+async function runBoth(code, tests, edge) {
+  const ctx = vm.createContext({
+    URL, TextEncoder, TextDecoder, performance, queueMicrotask,
+    setTimeout, clearTimeout, setInterval, clearInterval,
+    console: { log() {}, debug() {}, error() {}, warn() {} },
+    __TS: (tests || []).map(c => [c[0], c[1]]),
+    __EG: (edge || []).map(c => [c[0], c[1]]),
+  });
+  let p;
+  try { p = vm.runInContext(code + "\n" + HARNESS, ctx, { timeout: 10000 }); }
   catch (e) {
     const mk = c => ({ ok: false, in: c[0], got: "[코드 에러] " + e.message, exp: c[1] });
     return { t: (tests || []).map(mk), e: (edge || []).map(mk), boom: e.message };
   }
-  const run = cases => (cases || []).map(c => {
-    try {
-      const got = vm.runInContext(c[0], ctx, { timeout: 3000 });
-      const exp = vm.runInContext("(" + c[1] + ")", ctx, { timeout: 3000 });
-      return { ok: eq(got, exp), in: c[0], got: JSON.stringify(got), exp: c[1] };
-    } catch (e) { return { ok: false, in: c[0], got: "[에러] " + e.message, exp: c[1] }; }
-  });
-  return { t: run(tests), e: run(edge), boom: null };
+  let id;
+  const guard = new Promise(res => { id = setTimeout(() => res({ t: [], e: [], boom: "하네스 시간 초과" }), 20000); });
+  try { return await Promise.race([Promise.resolve(p), guard]); }
+  catch (e) {
+    const mk = c => ({ ok: false, in: c[0], got: "[코드 에러] " + (e && e.message || e), exp: c[1] });
+    return { t: (tests || []).map(mk), e: (edge || []).map(mk), boom: String(e && e.message || e) };
+  } finally { clearTimeout(id); }
 }
 
 function quality(src) {
@@ -52,7 +80,9 @@ const RESERVED = ["SRC", "TS", "EG", "PF", "esc", "sh", "eq", "P", "row", "Cp", 
 
 let bad = 0;
 const stems = new Set(), keys = new Set();
-Q.forEach((q, i) => {
+(async () => {
+for (let i = 0; i < Q.length; i += 1) {
+  const q = Q[i];
   const tag = "[" + (i + 1) + "] " + q.k;
   const fail = m => { bad++; console.log("✗ " + tag + " — " + m); };
 
@@ -74,19 +104,20 @@ Q.forEach((q, i) => {
 
   const qb = quality(q.sol); if (qb.length) fail("sol 품질 감점: " + qb.join(", "));
 
-  const both = runBoth(q.sol, q.tests, q.edge);
+  const both = await runBoth(q.sol, q.tests, q.edge);
   const sf = [...both.t, ...both.e].filter(r => !r.ok);
   if (sf.length) fail("sol 실패: " + sf.map(r => r.in + " → " + r.got + " (기대 " + r.exp + ")").join(" | "));
 
-  const b = runBoth(q.src, q.tests, q.edge);
+  const b = await runBoth(q.src, q.tests, q.edge);
   if (b.boom) fail("src 가 문법·로드 오류다 — 문법 오류 찾기는 디버깅이 아니다: " + b.boom);
   const n = b.t.filter(r => !r.ok).length;
   if (!b.boom && n === 0) fail("고장난 코드가 이미 전부 통과 — 고칠 게 없다");
   else if (!sf.length && !qb.length && !b.boom)
     console.log("✓ " + tag + "  (고장 " + n + "/" + q.tests.length + ")");
-});
+}
 
 const byTrack = {}; Q.forEach(q => { byTrack[q.track] = (byTrack[q.track] || 0) + 1; });
 console.log("\n트랙별: " + Object.keys(byTrack).map(k => k + " " + byTrack[k]).join(" · "));
 console.log(Q.length + "문항 중 " + bad + "건 문제");
 process.exit(bad ? 1 : 0);
+})();

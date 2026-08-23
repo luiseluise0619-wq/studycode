@@ -314,5 +314,18 @@ BUILD_PROJECTS.forEach(p=>{
   });
 });
 
+/* 주입된 JS 실행형·디버깅 문항을 데이터에서 다시 읽어 채점한다.
+   배치 검증기는 '넣을 때 한 번' 볼 뿐이라, 그 뒤에 보기 문구를 손보거나
+   주입기를 고치면 앱에서만 깨지는 문항이 조용히 생긴다. 673문항에 1초 남짓이라
+   여기에 둔다. 파이썬·PHP 갈래는 느리거나 러너가 필요해 따로 돌린다:
+     node tools/content/ver_all.cjs py
+     node tools/runner/server.cjs &  node tools/content/ver_all.cjs php */
+t("주입된 JS 실행형 문항의 정답이 전부 통과한다", ()=>{
+  const r=require("child_process").spawnSync(process.execPath,
+    [path.join(__dirname,"..","tools","content","ver_all.cjs"),"js"],
+    {encoding:"utf8", timeout:300000});
+  if(r.status!==0) throw new Error((r.stdout||"").trim().split("\n").slice(-12).join("\n      "));
+});
+
 console.log((fail?"":"\n")+pass+" passed, "+fail+" failed");
 process.exit(fail?1:0);
