@@ -654,35 +654,36 @@ function check(name, cond, detail){
   check("모든 트랙이 150문항 이상이다", Object.keys(underFloor).length===0, {미달:underFloor});
 
   /* 정답만 길면 내용을 몰라도 '가장 긴 보기' 를 고르면 맞는다.
-     처음에는 '정답이 단독 최장인 비율' 만 쟀고 78.0% → 0.0% 로 내렸는데,
-     그 눈금은 속았다. 오답 하나만 정답보다 길게 만들면 최장은 오답이 되지만
-     정답은 언제나 2등이 된다 — '두 번째로 긴 보기' 를 고르면 그대로 78% 다.
-     단서는 사라진 게 아니라 1등에서 2등으로 옮겨 갔을 뿐이었다.
+     눈금을 두 번 고쳤다. 처음엔 '정답이 단독 최장인 비율' 만 셌는데,
+     오답 하나만 정답보다 길게 만드는 상환에 속아 0% 가 나왔다 — 정답은
+     2등이 됐을 뿐이었다. 그래서 길이 순위로 바꿨더니 이번엔 1자 차이까지
+     순위로 셌다. 사람은 1자 차이를 못 본다.
 
-     그래서 눈금을 길이 순위 분포로 바꿨다. 정답의 길이 순위(1~4등)가
-     고르면 길이는 아무것도 알려 주지 않는다 — 네 순위 모두 25% 가 목표다.
-     가장 높은 순위 적중률을 눈금으로 박아 더 나빠지지 않게 막는다. */
+     지금은 허용오차를 두고 잰다. 길이 차이가 허용오차 안쪽이면 눈으로
+     구분 못 한다고 보고 한 묶음으로 잇고, '몇 번째로 긴 묶음에서 찍는다'
+     전략들의 최고 정답률을 본다. 25% 면 길이가 단서가 아니다.
+     0자는 기계가, 5자는 사람이 쓸 수 있는 단서다 — 둘 다 눈금을 박는다. */
   const bias=await p.evaluate(()=>{
     const strip=s2=>String(s2||"").replace(/<[^>]*>/g,"").trim();
-    let n=0; const rank=[0,0,0,0];
+    const TOLS=[0,5]; let n=0; const hit=TOLS.map(()=>[0,0,0,0]);
     for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>(l.q||[]).forEach(q=>{
       if((q.t||"choice")!=="choice"||!Array.isArray(q.o)||q.o.length!==4) return;
       n++;
       const L=q.o.map(o=>strip(o).length);
-      const order=[0,1,2,3].sort((x,y)=>L[y]-L[x]);
-      for(let i=0;i<4;){                      // 길이가 같은 보기는 한 묶음으로 본다
-        let j=i; while(j<4&&L[order[j]]===L[order[i]]) j++;
-        if(order.slice(i,j).indexOf(q.a)>=0) for(let s2=i;s2<j;s2++) rank[s2]+=1/(j-i);
-        i=j;
-      }
+      TOLS.forEach((tol,ti)=>{
+        const order=[0,1,2,3].sort((x,y)=>L[y]-L[x]); const g=[[order[0]]];
+        for(let i=1;i<4;i++){ const p2=g[g.length-1];
+          if(L[p2[p2.length-1]]-L[order[i]]<=tol) p2.push(order[i]); else g.push([order[i]]); }
+        g.forEach((grp,gi)=>{ if(grp.indexOf(q.a)>=0) hit[ti][gi]+=1/grp.length; });
+      });
     })));
-    const pct=rank.map(x=>+(x/n*100).toFixed(1));
-    return {n, pct, worst:Math.max(...pct)};
+    return {n, exact:+(Math.max(...hit[0])/n*100).toFixed(1), human:+(Math.max(...hit[1])/n*100).toFixed(1)};
   });
-  const BIAS_CEIL=78.0;
-  console.log("  정답 길이 순위 적중률: "+bias.pct.map((x,i)=>(i+1)+"등 "+x+"%").join(" · ")+
-              " · 눈금 "+BIAS_CEIL+"% · 찍기 기준선 25%");
-  check("정답 길이 단서가 더 나빠지지 않았다", bias.worst<=BIAS_CEIL, {지금:bias.worst, 눈금:BIAS_CEIL});
+  const BIAS_EXACT=72.8, BIAS_HUMAN=29.3;
+  console.log("  길이로 찍기 최고 정답률: 기계(0자) "+bias.exact+"% · 사람(5자) "+bias.human+
+              "% · 눈금 "+BIAS_EXACT+"/"+BIAS_HUMAN+"% · 찍기 기준선 25%");
+  check("길이로 찍기(기계 기준)가 더 나빠지지 않았다", bias.exact<=BIAS_EXACT, {지금:bias.exact, 눈금:BIAS_EXACT});
+  check("길이로 찍기(사람 기준)가 더 나빠지지 않았다", bias.human<=BIAS_HUMAN, {지금:bias.human, 눈금:BIAS_HUMAN});
 
   /* 셸의 BUILD_DAYS 는 허브 라벨('빌드 랩 12/46 Day')에 쓰인다.
      데이터에 Day 를 더하고 이 상수를 안 고치면 진도가 영영 안 찬 것처럼 보인다. */
