@@ -3,7 +3,7 @@
      node tools/content/ver_all.cjs            # 전부
      node tools/content/ver_all.cjs js         # 갈래를 골라서
      node tools/content/ver_all.cjs py numpy   # 트랙까지 좁혀서
-   갈래: js · py · c · cpp · java · go · rust · php
+   갈래: js · py · sql · c · cpp · java · go · rust · php
 
    왜 필요한가: 배치 검증기는 <b>넣을 때 한 번</b> 볼 뿐이다. 그 뒤에 보기 문구를
    손보거나(37~39차의 답 모양 상환) 주입기를 고치거나 라이브러리가 올라가면,
@@ -20,7 +20,7 @@ const vm = require("vm");
 const { execFile } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..", "..");
-const WANT = (process.argv[2] || "").toLowerCase();       // js | py | c | cpp | java | go | rust | php | ""
+const WANT = (process.argv[2] || "").toLowerCase();       // js | py | sql | c | cpp | java | go | rust | php | ""
 const ONLY_TRACK = process.argv[3] || "";
 const RUNNER = process.env.RUNNER || "http://127.0.0.1:8787";
 const TMPDIR = fs.mkdtempSync(path.join(os.tmpdir(), "cr-verall-"));
@@ -39,6 +39,7 @@ for (const f of fs.readdirSync(path.join(ROOT, "data")).filter(x => /^t-.*\.js$/
     if (q.t === "code" && q.run === "js" && q.tests) { at.kind = "js"; items.push(at); }
     else if (q.t === "py" && q.tests) { at.kind = "py"; items.push(at); }
     else if (q.t === "code" && q.rt && q.rt.test) { at.kind = q.rt.lang || q.run; items.push(at); }
+    else if (q.t === "sql" && q.schema) { at.kind = "sql"; items.push(at); }
   })));
 }
 const pick = items.filter(x => !WANT || x.kind === WANT);
@@ -122,6 +123,44 @@ async function runPy(q, i) {
   return a.concat(b);
 }
 
+/* ── sql: 앱과 같은 sql.js(vendored WASM)로 채점한다.
+   앱의 gradeSql 은 <b>사용자 쿼리의 결과</b>와 <b>sol 의 결과</b>를 견주므로,
+   여기서 볼 것은 셋이다.
+     ① schema 와 sol 이 오류 없이 돈다
+     ② sol 이 <b>한 행 이상</b>을 낸다 — 빈 결과면 아무 쿼리나 맞다고 나온다
+     ③ 시작 코드(src)가 <b>이미 정답과 같은 결과</b>를 내지 않는다 — 그러면 고칠 게 없다 */
+let sqlLib = null;
+async function ensureSqlLib() {
+  if (sqlLib) return sqlLib;
+  const initSqlJs = require(path.join(ROOT, "data", "sql-lib.js"));
+  const b64 = fs.readFileSync(path.join(ROOT, "data", "sql-wasm.js"), "utf8").match(/__SQL_WASM_B64="([^"]+)"/)[1];
+  sqlLib = await initSqlJs({ wasmBinary: Buffer.from(b64, "base64") });
+  return sqlLib;
+}
+async function runSql(q) {
+  const SQL = await ensureSqlLib();
+  const on = sql => {
+    const db = new SQL.Database();
+    try { if (q.schema) db.run(q.schema); const r = db.exec(sql); db.close();
+          return { rows: r.length ? r[0].values : [], cols: r.length ? r[0].columns : [] }; }
+    catch (e) { try { db.close(); } catch (_) {} return { error: String(e && e.message || e) }; }
+  };
+  const exp = on(q.sol);
+  if (exp.error) return ["기준 쿼리 오류: " + exp.error];
+  if (!exp.rows.length) return ["기준 쿼리가 빈 결과다 — 아무 쿼리나 통과한다"];
+  const bad = [];
+  if (q.src) {
+    const got = on(q.src);
+    if (!got.error) {
+      const norm = rows => rows.map(r => JSON.stringify(r));
+      const same = q.ordered ? JSON.stringify(exp.rows) === JSON.stringify(got.rows)
+        : JSON.stringify(norm(exp.rows).sort()) === JSON.stringify(norm(got.rows).sort());
+      if (same) bad.push("시작 코드가 이미 정답과 같은 결과를 낸다 — 고칠 게 없다");
+    }
+  }
+  return bad;
+}
+
 /* ── 러너 언어(c·cpp·java·go·rust·php): 러너가 그대로 채점한다.
    테스트를 다른 형식으로 번역하지 않고, 데이터에 든 값을 그대로 보낸다 —
    주입기가 srcName 을 빠뜨려 공개 클래스 이름이 안 맞는 사고가 실제로 있었다. */
@@ -170,6 +209,7 @@ function runRt(q) {
       let bad = [];
       if (it.kind === "js") bad = await runJs(it.q);
       else if (it.kind === "py") bad = await runPy(it.q, i);
+      else if (it.kind === "sql") bad = await runSql(it.q);
       else bad = await runRt(it.q);
       if (bad.length) fails.push({ ...it, bad });
       done += 1;
