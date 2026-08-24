@@ -1,0 +1,108 @@
+/* algo 트랙 코드 리뷰 — 알고리즘 코드에 한 줄 지적을 단다.
+   결함 자리를 고르게 흩고, 디스트랙터에도 처방형 말투를 섞었다. */
+module.exports = [
+{
+  t: "review", k: "이진 탐색의 경계", cat: "review", d: 3, track: "algo",
+  q: "이 코드의 결함을 모두 고르세요",
+  code: "function search(arr, target) {\n  let lo = 0, hi = arr.length;\n  while (lo < hi) {\n    const mid = (lo + hi) >> 1;\n    if (arr[mid] === target) return mid;\n    if (arr[mid] < target) lo = mid;\n    else hi = mid;\n  }\n  return -1;\n}",
+  items: [
+    { txt: "<code>arr[mid] &lt; target</code> 일 때 <code>lo = mid</code> 로 두면 구간이 줄지 않는 경우가 생긴다. <code>lo</code> 와 <code>hi</code> 가 붙어 <code>mid === lo</code> 가 되는 순간 같은 값을 무한히 다시 보므로 <code>lo = mid + 1</code> 이어야 한다.", bad: true },
+    { txt: "<code>while (lo &lt; hi)</code> 대신 <code>while (lo &lt;= hi)</code> 를 써야 한다 — 반열린 구간에서는 두 값이 같아지는 순간을 놓쳐 마지막 원소를 검사하지 못한다.", bad: false },
+    { txt: "<code>(lo + hi) &gt;&gt; 1</code> 은 두 값이 아주 클 때 32비트 정수 범위를 넘겨 음수가 될 수 있다. 자바스크립트에서 비트 연산은 32비트로 잘리므로 배열이 그만큼 커질 일이 없더라도 <code>lo + ((hi - lo) &gt;&gt; 1)</code> 이 더 안전한 습관이다.", bad: true },
+    { txt: "찾지 못했을 때 <code>-1</code> 을 돌려주는 것은 호출자가 <code>0</code> 과 헷갈릴 수 있고 조건문에서 <code>if (search(...))</code> 처럼 잘못 쓰이기 쉬우므로, 예외를 던지거나 <code>null</code> 을 돌려주도록 바꿔 실패를 타입으로 드러내야 한다.", bad: false },
+    { txt: "정렬된 배열을 전제한다는 사실이 이름과 시그니처에 드러나지 않지만, 이 함수 자체의 논리 결함은 아니다 — 문서와 호출 규약의 문제다.", bad: false },
+  ],
+  ex: "결함 2가지. (1) <b>구간이 줄지 않는 경우</b>가 있다 — 반열린 구간 <code>[lo, hi)</code> 에서 <code>mid</code> 는 언제나 <code>lo</code> 이상 <code>hi</code> 미만이므로, <code>lo = mid</code> 는 <code>mid === lo</code> 일 때 아무 것도 바꾸지 않아 무한 반복이 된다. (2) 큰 값에서의 <b>중간값 계산</b>은 <code>lo + ((hi - lo) &gt;&gt; 1)</code> 형태가 표준이다 — 언어에 따라 넘침이 실제 버그가 되고, 습관을 통일해 두면 옮겨 쓸 때 안전하다.\n디스트랙터: 반열린 구간에서는 <code>lo &lt; hi</code> 가 <b>맞는 조건</b>이다 — <code>hi</code> 는 검사 대상이 아니므로 <code>&lt;=</code> 로 바꾸면 오히려 범위를 넘는다. 찾지 못했을 때 <code>-1</code> 은 널리 쓰이는 규약이라 그 자체가 결함이 아니다. 정렬 전제는 함수 밖의 계약 문제다.",
+},
+{
+  t: "review", k: "숫자를 사전순으로 정렬한다", cat: "review", d: 2, track: "algo",
+  q: "이 코드의 결함을 모두 고르세요",
+  code: "function topScores(scores, k) {\n  const sorted = scores.sort();\n  return sorted.slice(0, k);\n}",
+  items: [
+    { txt: "상위 k 개만 필요한데 전체를 정렬하므로 <code>O(n log n)</code> 이다 — 크기 k 의 최소 힙을 쓰면 <code>O(n log k)</code> 로 줄지만, 이 코드의 정확성 결함은 아니다.", bad: false },
+    { txt: "인자로 받은 배열에 <code>sort()</code> 를 직접 부르면 <b>호출자의 배열이 그 자리에서 바뀐다</b>. 순수한 조회 함수처럼 보이는데 원본을 흔들므로, <code>scores.slice().sort(...)</code> 처럼 복사본을 정렬해야 한다.", bad: true },
+    { txt: "<code>slice(0, k)</code> 는 <code>k</code> 가 배열 길이보다 크면 예외를 던지므로 <code>Math.min(k, scores.length)</code> 로 감싸야 한다.", bad: false },
+    { txt: "비교 함수 없는 <code>sort()</code> 는 원소를 <b>문자열로 바꿔 사전순</b>으로 비교한다. 그래서 <code>[10, 9, 100]</code> 이 <code>[10, 100, 9]</code> 가 되고, 상위 k 개가 전혀 상위가 아니게 된다. <code>(a, b) =&gt; b - a</code> 를 넘겨야 한다.", bad: true },
+    { txt: "자바스크립트의 <code>sort</code> 는 안정 정렬이 보장되지 않으므로, 같은 점수를 받은 사람의 순서가 실행마다 달라지지 않게 하려면 원래 인덱스를 두 번째 기준으로 함께 비교해야 한다.", bad: false },
+  ],
+  ex: "결함 2가지. (1) <b>제자리 정렬로 원본을 바꾼다</b> — 조회처럼 생긴 함수가 부작용을 남기면, 호출한 쪽에서 나중에 원인을 찾기 어려운 버그가 된다. (2) 비교 함수를 주지 않은 <code>sort()</code> 는 <b>사전순</b>이라 숫자 순서가 아니다 — 이 함수의 결과 자체가 틀린다.\n디스트랙터: 전체 정렬은 성능 개선 여지일 뿐 정확성 결함이 아니다. <code>slice</code> 는 범위를 넘겨도 예외 없이 있는 만큼만 돌려준다. 그리고 최신 명세에서 <code>Array.prototype.sort</code> 는 <b>안정 정렬로 규정</b>돼 있다.",
+},
+{
+  t: "review", k: "큐에서 꺼낼 때 표시하는 BFS", cat: "review", d: 3, track: "algo",
+  q: "이 코드의 결함을 모두 고르세요",
+  code: "function bfs(graph, start) {\n  const q = [start], seen = new Set();\n  const order = [];\n  while (q.length) {\n    const cur = q.shift();\n    if (seen.has(cur)) continue;\n    seen.add(cur);\n    order.push(cur);\n    for (const nx of graph[cur]) q.push(nx);\n  }\n  return order;\n}",
+  items: [
+    { txt: "<code>graph[cur]</code> 가 없는 정점(간선이 하나도 없는 노드)에서 <code>undefined</code> 를 순회하려다 예외가 나므로 <code>graph[cur] ?? []</code> 로 감싸야 한다.", bad: false },
+    { txt: "시작 정점을 큐에 넣기 전에 <code>seen</code> 에 추가하지 않았으므로 시작 정점이 두 번 방문된다.", bad: false },
+    { txt: "결과 <code>order</code> 자체는 올바른 방문 순서다 — 꺼낼 때 검사하므로 중복 방문은 걸러진다. 다만 큐에 같은 정점이 여러 번 들어가므로 <b>큐 길이가 간선 수만큼</b> 부풀어, 밀집 그래프에서 메모리가 크게 늘어난다.", bad: true },
+    { txt: "너비 우선 탐색은 가중치가 없는 그래프에서만 최단 경로를 보장한다 — 이 코드는 거리 배열도 부모 배열도 만들지 않으므로 경로 복원 용도로는 쓸 수 없다. 다만 이름과 반환값이 약속한 것은 방문 순서뿐이므로, 그 계약 안에서는 결함이 아니다.", bad: false },
+    { txt: "<code>q.shift()</code> 는 배열 앞을 지우면서 나머지를 앞으로 당기므로 <b>한 번에 O(n)</b> 이다. 정점 수만큼 반복하면 전체가 <code>O(V²)</code> 가 되므로, 머리 인덱스를 따로 두거나 연결 리스트 기반 큐를 써야 한다.", bad: true },
+  ],
+  ex: "결함 2가지. (1) 이웃을 <b>검사 없이 전부 큐에 넣어</b> 같은 정점이 여러 번 담긴다 — 결과는 맞지만 큐가 간선 수만큼 커진다. 넣을 때 <code>seen</code> 에 표시하면 큐 크기가 정점 수로 묶인다. (2) <code>shift()</code> 는 상수 시간이 아니다 — 큐를 배열로 흉내 낼 때 가장 흔한 성능 함정이고, 머리 인덱스 하나로 해결된다.\n디스트랙터: 인접 목록이 없는 정점을 걱정할 수는 있지만, 그것은 그래프 표현의 계약 문제이지 이 알고리즘의 결함이 아니다. 시작 정점은 꺼낼 때 표시되므로 두 번 방문되지 않는다. 최단 경로는 이 함수가 약속한 적 없는 기능이다.",
+},
+{
+  t: "review", k: "메모이제이션이 안 걸린다", cat: "review", d: 2, track: "algo",
+  q: "이 코드의 결함을 모두 고르세요",
+  code: "function count(n, k, memo = {}) {\n  if (n === 0) return 1;\n  if (n < 0 || k === 0) return 0;\n  const key = n + k;\n  if (memo[key] !== undefined) return memo[key];\n  const r = count(n - k, k, memo) + count(n, k - 1, memo);\n  memo[key] = r;\n  return r;\n}",
+  items: [
+    { txt: "키를 <code>n + k</code> 로 만들면 <code>(3, 1)</code> 과 <code>(1, 3)</code> 이 같은 칸을 쓴다. <b>서로 다른 상태가 한 칸을 덮어써서</b> 답이 조용히 틀리므로, <code>n + \",\" + k</code> 처럼 구분되는 키를 만들어야 한다.", bad: true },
+    { txt: "자바스크립트의 기본 인자는 파이썬처럼 <b>정의 시점에 한 번</b> 만들어지므로, 서로 다른 호출이 같은 <code>memo</code> 를 공유해 결과가 섞인다.", bad: false },
+    { txt: "재귀 깊이가 <code>n</code> 에 비례하므로 입력이 커지면 스택이 넘칠 수 있고, 넘치는 순간 부분 결과도 함께 잃는다 — 아래에서 위로 채우는 반복문 기반 타뷸레이션으로 바꿔야 한다.", bad: false },
+    { txt: "기본 인자 <code>memo = {}</code> 는 <b>호출할 때마다 새로 만들어진다</b> — 재귀 안에서는 넘겨 주므로 공유되지만, 바깥에서 여러 번 부르면 매번 처음부터 계산한다. 이 함수의 계약상 문제는 아니지만 반복 호출이 많은 곳에서는 캐시를 밖에 두어야 한다.", bad: true },
+    { txt: "<code>memo[key] !== undefined</code> 대신 <code>key in memo</code> 를 쓰면 값이 <code>undefined</code> 인 경우까지 구분되지만, 이 함수는 항상 수를 저장하므로 동작에 차이가 없다.", bad: false },
+  ],
+  ex: "결함 2가지. (1) <b>키가 상태를 구분하지 못한다</b> — 합으로 키를 만들면 서로 다른 상태가 충돌해 오답이 나오고, 예외도 나지 않아 발견이 늦다. (2) 캐시가 <b>한 번의 최상위 호출 안에서만</b> 산다 — 같은 인자로 여러 번 부르는 곳에서는 캐시가 없는 것과 같다.\n디스트랙터: 자바스크립트의 기본 인자는 <b>호출할 때마다</b> 평가된다 — 정의 시점에 한 번 만들어지는 것은 파이썬이다. 스택 깊이는 입력 규모에 따라 고려할 사항이지 이 코드의 결함이 아니고, <code>in</code> 과 <code>!== undefined</code> 는 여기서 결과가 같다.",
+},
+{
+  t: "review", k: "정렬을 전제한 투 포인터", cat: "review", d: 2, track: "algo",
+  q: "이 코드의 결함을 모두 고르세요",
+  code: "function hasPair(nums, sum) {\n  let i = 0, j = nums.length - 1;\n  while (i < j) {\n    const s = nums[i] + nums[j];\n    if (s === sum) return true;\n    if (s < sum) i++; else j--;\n  }\n  return false;\n}",
+  items: [
+    { txt: "<code>i &lt; j</code> 조건은 같은 원소를 두 번 쓰지 않게 막아 주므로 적절하다 — 다만 '서로 다른 두 원소' 가 요구사항인지 '같은 값 두 개' 도 되는지는 계약에서 정해야 한다.", bad: false },
+    { txt: "합이 정확히 일치하는 경우만 <code>true</code> 이므로 부동소수 입력에서는 오차 때문에 놓칠 수 있다 — 정수 입력을 전제한다면 결함이 아니다.", bad: false },
+    { txt: "빈 배열이나 원소가 하나뿐인 배열에서 <code>j</code> 가 음수가 되어 <code>nums[-1]</code> 을 읽고 <code>undefined</code> 와 더하면 <code>NaN</code> 이 되므로, <code>if (nums.length &lt; 2) return false;</code> 를 맨 앞에 두어 짧은 입력을 먼저 걸러야 한다.", bad: false },
+    { txt: "해시 집합을 쓰면 정렬 없이 <code>O(n)</code> 에 풀 수 있으므로 투 포인터 대신 항상 해시를 써야 한다.", bad: false },
+    { txt: "투 포인터로 두 수의 합을 찾는 방법은 <b>배열이 정렬돼 있어야</b> 성립한다. 정렬되지 않은 입력에서는 옮겨야 할 방향을 알 수 없어 답이 있는데도 <code>false</code> 를 돌려준다 — 함수 안에서 정렬하거나 정렬을 요구하는 이름·문서가 필요하다.", bad: true },
+  ],
+  ex: "결함 1가지. <b>정렬 전제가 지켜지지 않으면 틀린 답</b>을 돌려준다 — 이 알고리즘이 포인터를 옮기는 근거가 '왼쪽으로 갈수록 작고 오른쪽으로 갈수록 크다' 이기 때문이다. 함수 안에서 정렬하거나(복사본을 정렬해야 한다), 정렬된 입력을 요구한다는 사실을 이름과 문서에 드러내야 한다.\n디스트랙터: <code>i &lt; j</code> 는 올바른 종료 조건이다. 부동소수 비교는 입력 타입에 따른 별개의 주제다. 길이가 0~1 이면 <code>i &lt; j</code> 가 처음부터 거짓이라 루프에 들어가지 않으므로 음수 인덱스를 읽지 않는다. 해시가 더 좋은 경우가 많지만 <b>항상</b> 은 지나치다 — 정렬이 이미 돼 있으면 투 포인터가 메모리를 쓰지 않는다.",
+},
+{
+  t: "review", k: "다익스트라에서 빠진 검사", cat: "review", d: 4, track: "algo",
+  q: "이 코드의 결함을 모두 고르세요",
+  code: "function dijkstra(g, src) {\n  const dist = new Array(g.length).fill(Infinity);\n  dist[src] = 0;\n  const pq = [[0, src]];\n  while (pq.length) {\n    pq.sort((a, b) => a[0] - b[0]);\n    const [d, u] = pq.shift();\n    for (const [v, w] of g[u]) {\n      if (d + w < dist[v]) { dist[v] = d + w; pq.push([d + w, v]); }\n    }\n  }\n  return dist;\n}",
+  items: [
+    { txt: "꺼낸 항목이 <b>이미 낡은 값</b>인지 검사하지 않는다. 같은 정점이 더 짧은 거리로 다시 들어간 뒤에도 옛 항목이 큐에 남아 있어 그 정점의 이웃을 불필요하게 다시 훑는다 — <code>if (d &gt; dist[u]) continue;</code> 한 줄이 필요하다.", bad: true },
+    { txt: "<code>dist</code> 를 <code>Infinity</code> 로 채우면 <code>d + w &lt; Infinity</code> 비교가 항상 참이 되어 도달할 수 없는 정점까지 갱신되므로, 아주 큰 정수 상수로 바꿔야 한다.", bad: false },
+    { txt: "매 반복마다 <code>pq.sort()</code> 를 부르므로 큐 하나를 꺼내는 데 <code>O(m log m)</code> 이 든다. 이진 힙을 쓰면 <code>O(log m)</code> 이고, 지금 형태는 정점 수가 조금만 늘어도 급격히 느려진다.", bad: true },
+    { txt: "다익스트라는 음수 가중치에서 올바른 답을 보장하지 않는다 — 한 번 확정한 최단 거리가 나중에 더 짧아질 수 있기 때문이다. 이 코드는 가중치 부호를 검사하지 않지만, 입력 계약이 비음수라면 그것은 호출 규약의 문제이지 구현의 결함이 아니다.", bad: false },
+    { txt: "시작 정점의 거리를 0 으로 두고 큐에 <code>[0, src]</code> 를 넣은 초기화는 올바르다.", bad: false },
+  ],
+  ex: "결함 2가지. (1) <b>낡은 항목을 건너뛰지 않는다</b> — 게으른 삭제 방식에서는 큐에 옛 거리가 남으므로, 꺼낸 뒤 현재 <code>dist</code> 와 비교해 낡았으면 버려야 한다. 없어도 답은 맞지만 같은 정점의 이웃을 여러 번 훑는다. (2) <b>매번 전체 정렬</b>은 우선순위 큐가 아니다 — 힙으로 바꿔야 이 알고리즘의 복잡도 이점이 살아난다.\n디스트랙터: <code>Infinity</code> 초기화는 정석이다 — 도달할 수 없는 정점은 애초에 <code>d + w</code> 로 갱신되지 않는다(그 정점을 향한 간선이 없으므로). 음수 가중치는 알고리즘 선택의 전제이지 이 구현의 버그가 아니고, 초기화는 올바르다.",
+},
+{
+  t: "review", k: "문자열을 한 글자씩 이어 붙인다", cat: "review", d: 2, track: "algo",
+  q: "이 코드의 결함을 모두 고르세요",
+  code: "function encode(rows) {\n  let out = \"\";\n  for (const r of rows) {\n    out = out + r.id + \":\" + r.name + \"\\n\";\n  }\n  return out;\n}",
+  items: [
+    { txt: "자바스크립트 엔진은 반복적인 문자열 결합을 내부 표현(rope)으로 최적화하므로 이 규모에서는 눈에 띄는 차이가 없다 — 그럼에도 배열에 모아 <code>join</code> 하도록 반드시 바꿔야 성능이 보장된다.", bad: false },
+    { txt: "값에 구분자 <code>:</code> 나 줄바꿈이 들어 있으면 <b>인코딩이 깨진다</b> — 이름에 콜론이 하나만 있어도 읽는 쪽이 필드를 잘못 나눈다. 이스케이프 규칙을 정하거나 JSON 같은 기존 형식을 쓰는 편이 안전하다.", bad: true },
+    { txt: "<code>for...of</code> 대신 인덱스 루프를 쓰면 반복자 생성 비용이 없어져 항상 더 빠르므로 그렇게 바꿔야 한다.", bad: false },
+    { txt: "<code>r.name</code> 이 <code>undefined</code> 면 문자열 <code>\"undefined\"</code> 가 그대로 들어가 조용히 잘못된 데이터가 나간다 — 필수 필드는 인코딩 전에 검사해야 한다.", bad: true },
+    { txt: "끝에도 줄바꿈이 하나 더 붙어 읽는 쪽에서 빈 레코드가 생길 수 있지만, 이것은 형식을 어떻게 정의하느냐의 문제이지 그 자체로 결함은 아니다 — 빈 줄을 무시하기로 약속하면 그만이다.", bad: false },
+  ],
+  ex: "결함 2가지. (1) <b>구분자가 값에 나타날 수 있다</b> — 직접 만든 텍스트 형식의 고전적인 함정이고, 읽는 쪽에서 조용히 어긋난다. (2) <code>undefined</code> 가 문자열로 바뀌어 나간다 — 자바스크립트의 암묵적 변환은 오류 대신 <b>그럴듯한 쓰레기</b>를 만든다.\n디스트랙터: 문자열 결합은 최신 엔진이 잘 처리하므로 이 규모에서 <code>join</code> 이 '반드시' 필요하지는 않다 — 성능이 문제로 확인된 뒤에 바꾸면 된다. <code>for...of</code> 대 인덱스 루프의 차이는 이 코드에서 의미가 없다. 끝의 줄바꿈은 형식 정의의 문제다.",
+},
+{
+  t: "review", k: "중복 제거가 제곱이 된다", cat: "review", d: 2, track: "algo",
+  q: "이 코드의 결함을 모두 고르세요",
+  code: "function uniq(items) {\n  const out = [];\n  for (const it of items) {\n    if (out.indexOf(it) === -1) out.push(it);\n  }\n  return out;\n}",
+  items: [
+    { txt: "입력이 객체 배열이면 <code>Set</code> 도 참조로 비교하므로 내용이 같은 객체는 걸러지지 않는다 — 값 기준 중복 제거가 필요하면 키를 만들어야 하지만, 이 함수의 계약은 그것을 약속하지 않았다.", bad: false },
+    { txt: "결과 배열을 새로 만들지 않고 입력을 제자리에서 걸러야 메모리를 아낄 수 있으므로 <code>splice</code> 로 바꿔야 한다.", bad: false },
+    { txt: "<code>out.indexOf</code> 는 매번 지금까지 담은 것을 처음부터 훑으므로 전체가 <code>O(n²)</code> 이다. 10만 건이면 수십억 번 비교하게 되므로 <code>Set</code> 으로 본 것을 기억하면 <code>O(n)</code> 이 된다.", bad: true },
+    { txt: "<code>for...of</code> 는 입력 순서를 유지하므로 첫 등장 순서가 보존된다 — 대부분의 상황에서 바람직한 동작이다.", bad: false },
+    { txt: "<code>indexOf</code> 는 <code>===</code> 로 비교하므로 <code>NaN</code> 은 자기 자신과도 같지 않아 <b>중복 제거되지 않는다</b>. <code>Set</code> 은 <code>NaN</code> 을 하나로 묶으므로 이 점에서도 동작이 달라진다.", bad: true },
+  ],
+  ex: "결함 2가지. (1) <b>제곱 시간</b>이다 — 작은 입력에서는 보이지 않다가 데이터가 자라면 갑자기 멈춘 것처럼 느려진다. (2) <code>NaN</code> 은 <code>===</code> 로 비교하면 자기 자신과도 같지 않아 <b>중복이 남는다</b>. 둘 다 <code>Set</code> 으로 바꾸면 함께 해결된다.\n디스트랙터: 객체를 값으로 비교하는 것은 이 함수가 약속한 적 없는 기능이다. 제자리 <code>splice</code> 는 뒤 원소를 계속 당기므로 오히려 느려지고 입력을 망가뜨린다. 첫 등장 순서를 유지하는 것은 결함이 아니라 좋은 성질이다.",
+},
+];

@@ -8,7 +8,7 @@
 
 ```
 choice 6,259 (상한 없음) · input 1,878/1,500 · code 2,438/2,000 · debug 1,013/1,000
-review 835/800 · log 513/500 · sim 500/500 · arch 158/150      → 남은 총량 0
+review 883/800 · log 513/500 · sim 500/500 · arch 158/150      → 남은 총량 0
 비율: choice 49.7% · input 14.9% · exec 24.5% · review 6.6% · log 4.1%   → 전부 달성
 ```
 
@@ -38,7 +38,7 @@ log 은 45차에서 919 → 373 으로 줄었습니다. 서비스 이름과 시�
 
 | 유형 | 0 인 트랙 |
 |---|---|
-| review | algo arch arduino code compiler cs dbt dl fp math mobile php security stat |
+| review | arch arduino cs dbt dl math mobile stat |
 | log | algo arch arduino code compiler cs dbt dl fp math mobile numpy pandas php stat |
 | (log 은 어울리는 트랙을 모두 채웠습니다 — 남은 칸은 대부분 억지입니다) | |
 | arch(설계 배치) | algo arduino c code compiler cpp cs dbt dl fp go java javascript math ml mleval mobile numpy pandas php python react rust stat |
@@ -48,8 +48,9 @@ log 은 45차에서 919 → 373 으로 줄었습니다. 서비스 이름과 시�
 - `log` 는 **운영 중 남는 기록을 읽고 원인을 짚는** 트랙에서만 뜻이 있습니다.
   45차에 ml·mleval·react·web·ai 를 채웠고(각 12), 남은 칸은 대부분 억지입니다 —
   math·fp·cs 에 로그를 넣을 이유는 없습니다. numpy·pandas 정도가 그나마 후보입니다.
-- `review` 는 **남의 코드에 한 줄 지적을 다는** 형태라 코드가 있는 트랙에 맞습니다 —
-  algo·code·compiler·fp·php·security 가 후보입니다.
+- `review` 는 **남의 코드에 한 줄 지적을 다는** 형태라 코드가 있는 트랙에 맞습니다.
+  45차에 algo·code·compiler·fp·php·security 를 채웠고(각 8), 남은 칸은 코드가 거의
+  없는 트랙이라 대부분 억지입니다 — mobile 정도가 그나마 후보입니다.
 - `arch` 는 **배치도를 직접 그리는** 유형이라 설계가 실제로 갈리는 트랙에만 —
   ml(학습 파이프라인), mleval(평가 파이프라인), pandas/numpy 는 어울리지 않습니다.
 
@@ -62,6 +63,7 @@ log 은 45차에서 919 → 373 으로 줄었습니다. 서비스 이름과 시�
 | PHP 실행형·디버깅 | `dbg_php.cjs` → `ver_dbgphp.cjs`(러너 필요) → `inj_phpexec.cjs` |
 | 단답형 | `in_*.cjs` → `ver_input.cjs` + `chk_predict{,_py,_php}.cjs` → `inj_qa.cjs` |
 | 로그 분석 | `log_*.cjs` → `ver_log.cjs` → `inj_qa.cjs` |
+| 코드 리뷰 | `rev_*.cjs` → `ver_review.cjs` → `inj_qa.cjs` |
 | 이론 교체 | — → `inj_theory.cjs` |
 | 시뮬레이션 | `sim_*.cjs` → `ver_simgen.cjs` → `inj_sim.cjs` |
 
@@ -117,3 +119,16 @@ node tools/content/ver_all.cjs            # 전부
   45차에 새로 쓴 140문항은 원인을 INFO 에 두고 앞에 붉은 청어를 깔아 1/140 이다.
   옛 문항은 줄을 지어내지 않고는 못 고치므로, **새로 쓸 때** 갚는다.
   `ver_log.cjs` 가 배치마다 60% 상한을 건다.
+
+### 리뷰·로그 배치를 쓸 때
+
+두 유형은 실행으로 채점할 수 없으므로 검증기가 **찍는 길**을 대신 막습니다.
+
+```
+node tools/content/ver_review.cjs ./tools/content/rev_algo.cjs
+node tools/content/ver_log.cjs    ./tools/content/log_ml.cjs
+```
+
+`ver_review.cjs` 가 보는 것 — 결함 자리 쏠림, 가장 긴 보기가 결함인 비율(기대치 ±25%p),
+'…해야 한다' 로 끝나는 보기가 결함에만 몰렸는지, 해설의 자리 표현, 기존 데이터와의 중복.
+**디스트랙터도 길고 처방형으로** 써야 통과합니다 — 그것이 곧 좋은 오답이기도 합니다.
