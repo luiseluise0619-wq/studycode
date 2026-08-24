@@ -7,7 +7,10 @@
      · 자리 — 원인 줄이 늘 같은 자리에 있으면 로그를 안 읽어도 맞힌다
      · 등급 — '첫 WARN 이상' 을 찍는 것만으로 맞으면 읽을 이유가 없다
      · 복제 — 서비스 이름만 바꿔 찍어낸 문항은 새 문항이 아니다
-   그 밖에 시간 순서, 해설의 자리 표현, 기존 데이터와의 중복도 본다. */
+     · 길이 — 원인 줄에만 설명이 길게 붙으면 가장 긴 줄을 찍으면 된다 (46차)
+   그 밖에 시간 순서, 해설의 자리 표현, 기존 데이터와의 중복도 본다.
+
+   이미 실린 문항 전체를 재는 것은 `ver_logguess.cjs` 다. 이 파일은 새 배치 하나를 본다. */
 const fs = require("fs");
 const path = require("path");
 const findEmoji = require("./noemoji.cjs");
@@ -28,6 +31,16 @@ const secs = t => {
   return m ? +m[1] * 3600 + +m[2] * 60 + +m[3] : null;
 };
 const POSWORD = /(첫|두|세|네|다섯|여섯|일곱|여덟|마지막)\s?(번째|줄)|맨\s?(위|아래|앞|뒤)|위에서\s?\d/;
+/* 화면에 보이는 길이로 잰다 — 한글은 라틴 문자의 두 칸을 먹는다 */
+const width = s => {
+  let w = 0;
+  for (const ch of String(s)) {
+    const c = ch.codePointAt(0);
+    w += (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0xA4CF) || (c >= 0xAC00 && c <= 0xD7A3)
+      || (c >= 0xF900 && c <= 0xFAFF) || (c >= 0xFF00 && c <= 0xFF60) ? 2 : 1;
+  }
+  return w;
+};
 
 /* 이미 들어 있는 로그 문항의 뼈대 — 새 배치가 그것을 되풀이하면 안 된다 */
 const already = new Set();
@@ -46,7 +59,7 @@ for (const f of fs.readdirSync(path.join(ROOT, "data")).filter(x => /^t-.*\.js$/
 let bad = 0;
 const keys = new Set(), stems = new Set(), skels = new Set();
 const atIdx = {};
-let firstWarnHit = 0;
+let firstWarnHit = 0, longestHit = 0, baseSum = 0;
 
 Q.forEach((q, i) => {
   const tag = "[" + (i + 1) + "] " + (q.k || "(제목 없음)");
@@ -86,6 +99,11 @@ Q.forEach((q, i) => {
   if (idx === 0) fail("원인 줄이 첫 줄이다 — 정상 상태를 보여 주는 줄이 앞에 있어야 한다");
   if (idx === it.length - 1) fail("원인 줄이 마지막 줄이다 — 증상이 뒤따라야 한다");
 
+  baseSum += 1 / it.length;
+  let mx = 0;
+  it.forEach((x, j) => { if (width(x.txt) > width(it[mx].txt)) mx = j; });
+  if (mx === idx) longestHit++;
+
   const lv = it.map(x => level(x.txt));
   if (lv.findIndex(x => x >= 2) === idx) firstWarnHit++;
   /* 결함이 하나뿐인데 그것이 유일한 WARN 이상이면 등급만 보고 찍힌다.
@@ -107,7 +125,13 @@ if (n >= 6 && worst / n > 0.45)
   { bad++; console.log("✗ 원인 줄이 한 자리에 몰렸다: " + JSON.stringify(atIdx) + " — 자리로 찍힌다"); }
 if (n >= 6 && firstWarnHit / n > 0.6)
   { bad++; console.log("✗ '첫 WARN 이상' 을 찍으면 " + firstWarnHit + "/" + n + " 맞는다 — 앞선 붉은 청어를 섞으세요"); }
+/* 원인 줄에만 설명이 길게 붙는 버릇 — 기준선(아무 줄이나 찍기)보다 25%p 넘게 잘 맞으면 단서다.
+   원인은 로그답게 짧게 쓰고, 증상 줄에 실제 로그가 남길 세부(파일·줄번호·수치)를 붙이세요. */
+const base = baseSum / (n || 1);
+if (n >= 6 && longestHit / n > base + 0.25)
+  { bad++; console.log("✗ '가장 긴 줄' 을 찍으면 " + longestHit + "/" + n + " 맞는다 (기준선 " + (base * 100).toFixed(0) + "%)"); }
 
-console.log("\n자리 분포 " + JSON.stringify(atIdx) + " · '첫 WARN' 적중 " + firstWarnHit + "/" + n);
+console.log("\n자리 분포 " + JSON.stringify(atIdx) + " · '첫 WARN' 적중 " + firstWarnHit + "/" + n
+  + " · '가장 긴 줄' 적중 " + longestHit + "/" + n + " (기준선 " + (base * 100).toFixed(0) + "%)");
 console.log(n + "문항 중 " + bad + "건 문제");
 process.exit(bad ? 1 : 0);

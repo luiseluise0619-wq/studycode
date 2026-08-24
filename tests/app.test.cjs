@@ -589,27 +589,51 @@ function check(name, cond, detail){
      그래서 균등까지는 요구하지 않고, 한 자리에 몰려 그것만 찍으면 되는 상태만 막는다.
      한때 3번을 찍으면 72.0% 였다(44차). 지금은 앞머리 정상 줄 수를 문항마다 달리해 34% 다. */
   const lpos=await p.evaluate(()=>{
-    const hit=[]; let n=0, firstWarn=0, lone=0;
+    const hit=[]; let n=0, lone=0, base=0;
     const RANK={DEBUG:0,TRACE:0,INFO:1,NOTICE:1,WARN:2,WARNING:2,ERROR:3,CRIT:3,FATAL:4};
     const lv=t=>{ const m=String(t).match(/\b(INFO|DEBUG|TRACE|NOTICE|WARN|WARNING|ERROR|FATAL|CRIT)\b/);
       return m?RANK[m[1]]:1; };
+    /* 화면에 보이는 길이로 잰다 — 한글은 라틴 문자의 두 칸을 먹는다 */
+    const W=s=>{ let w=0; for(const ch of String(s)){ const c=ch.codePointAt(0);
+      w += (c>=0x1100&&c<=0x115F)||(c>=0x2E80&&c<=0xA4CF)||(c>=0xAC00&&c<=0xD7A3)
+        ||(c>=0xF900&&c<=0xFAFF)||(c>=0xFF00&&c<=0xFF60) ? 2 : 1; } return w; };
+    /* 로그를 읽지 않고 고르는 방법들 — tools/content/ver_logguess.cjs 와 같은 규칙이다 */
+    const RULES={
+      "첫 WARN 이상": (L)=>L.findIndex(x=>x>=2),
+      "첫 WARN 직전": (L)=>{ const i=L.findIndex(x=>x>=2); return i>0?i-1:-1; },
+      "마지막 INFO": (L)=>{ let k=-1; L.forEach((x,i)=>{ if(x<=1) k=i; }); return k; },
+      "최고 등급": (L)=>L.indexOf(Math.max.apply(null,L)),
+      "가장 긴 줄": (L,it)=>{ let k=0; it.forEach((x,i)=>{ if(W(x.txt)>W(it[k].txt)) k=i; }); return k; },
+      "가장 짧은 줄": (L,it)=>{ let k=0; it.forEach((x,i)=>{ if(W(x.txt)<W(it[k].txt)) k=i; }); return k; },
+    };
+    const rule={}; Object.keys(RULES).forEach(k=>rule[k]=0);
     for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
       if(q.t!=="log" || !Array.isArray(q.items)) return;
       n++;
+      base += 1/q.items.length;
       q.items.forEach((it,i)=>{ if(it.bad) hit[i]=(hit[i]||0)+1; });
       const idx=q.items.findIndex(x=>x.bad);
       const lvs=q.items.map(x=>lv(x.txt));
-      if(lvs.findIndex(x=>x>=2)===idx) firstWarn++;
+      Object.keys(RULES).forEach(k=>{ if(RULES[k](lvs,q.items)===idx) rule[k]++; });
       if(q.items.filter(x=>x.bad).length===1 && lvs.filter(x=>x>=2).length===1 && lvs[idx]>=2) lone++;
     })));
     const rate=hit.map(x=>(x||0)/n);
-    return {n, rate, worst:Math.max(...rate), firstWarn:firstWarn/n, lone};
+    Object.keys(rule).forEach(k=>rule[k]=rule[k]/n);
+    return {n, rate, worst:Math.max.apply(null,rate), base:base/n, rule, lone};
   });
   check("로그 문항을 한 자리로 찍을 수 없다 (최고 45% 미만)", lpos.n===0 || lpos.worst<0.45,
     {최고:(lpos.worst*100).toFixed(1)+"%", 자리별:lpos.rate.map(x=>(x*100).toFixed(1)+"%")});
   check("로그의 원인 줄이 등급만으로 드러나지 않는다", lpos.lone===0, {유일한WARN이정답인문항:lpos.lone});
-  console.log("  로그 "+lpos.n+"문항 · 자리 하나로 찍기 최고 "+(lpos.worst*100).toFixed(1)
-    +"% · '첫 WARN 이상' 찍기 "+(lpos.firstWarn*100).toFixed(1)+"%");
+  /* 기준선은 '아무 줄이나 찍었을 때' 다. 그보다 15%p 넘게 잘 맞는 규칙이 있으면
+     로그를 읽지 않고도 통한다는 뜻이다 — 46차에 '첫 WARN 이상' 54%, '가장 긴 줄' 62% 였다.
+     반대로 기준선보다 낮은 것은 그 줄 하나를 후보에서 빼 주는 정도라 훨씬 약하다.
+     원인이 가장 심각한 줄이거나 가장 짧은 줄인 경우가 드문 것은 장르의 성질이므로 막지 않는다. */
+  const over=Object.keys(lpos.rule).filter(k=>lpos.rule[k] > lpos.base+0.15);
+  check("로그를 읽지 않고 통하는 규칙이 없다 (기준선 +15%p 이내)", lpos.n===0 || over.length===0,
+    {기준선:(lpos.base*100).toFixed(1)+"%", 넘은규칙:over.map(k=>k+" "+(lpos.rule[k]*100).toFixed(1)+"%")});
+  console.log("  로그 "+lpos.n+"문항 · 아무 줄이나 찍기 "+(lpos.base*100).toFixed(1)
+    +"% · 자리 하나 최고 "+(lpos.worst*100).toFixed(1)+"% · "
+    +Object.keys(lpos.rule).map(k=>k+" "+(lpos.rule[k]*100).toFixed(1)+"%").join(" · "));
 
   console.log("  콘텐츠: "+r.qs+"문항 / "+r.units+"유닛 / "+r.lessons+"레슨 · 유형 "+JSON.stringify(r.byType));
   console.log("  비율: "+Object.keys(B).map(k=>k+" "+(now[k]/r.qs*100).toFixed(1)+"%").join(" · "));
