@@ -563,6 +563,27 @@ function check(name, cond, detail){
   check("출력 예측 문항에는 코드가 있다", pred.noCode===0, pred);
   console.log("  출력 예측: "+pred.n+"문항 (Java·C·C++·Go, 실제 컴파일러로 정답 검증)");
 
+  /* 리뷰 문항은 '내용을 몰라도 자리로 찍을 수 있으면' 안 된다.
+     한때 835문항 전부에서 0번 보기가 결함이었다 — 맨 위만 고르면 100% 였다.
+     그래서 자리별 결함 비율이 전체 평균(기준선)에서 크게 벗어나지 않는지 본다. */
+  const rpos=await p.evaluate(()=>{
+    const bad=[], tot=[]; let n=0;
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
+      if(q.t!=="review" || !Array.isArray(q.items)) return;
+      n++;
+      q.items.forEach((it,i)=>{ tot[i]=(tot[i]||0)+1; if(it.bad) bad[i]=(bad[i]||0)+1; });
+    })));
+    const sb=bad.reduce((a,x)=>a+(x||0),0), st=tot.reduce((a,x)=>a+(x||0),0);
+    const base=st?sb/st:0;
+    const rate=tot.map((t,i)=>t?(bad[i]||0)/t:0);
+    return {n, base, rate, worst:Math.max(...rate)};
+  });
+  check("리뷰 문항을 자리로 찍을 수 없다 (자리별 결함 비율이 기준선 ±6%p 안)",
+    rpos.n===0 || rpos.rate.every(x=>Math.abs(x-rpos.base)<=0.06),
+    {기준선:(rpos.base*100).toFixed(1)+"%", 자리별:rpos.rate.map(x=>(x*100).toFixed(1)+"%")});
+  console.log("  리뷰 "+rpos.n+"문항 · 자리 하나로 찍기 최고 정답률 "+(rpos.worst*100).toFixed(1)
+    +"% (기준선 "+(rpos.base*100).toFixed(1)+"%)");
+
   console.log("  콘텐츠: "+r.qs+"문항 / "+r.units+"유닛 / "+r.lessons+"레슨 · 유형 "+JSON.stringify(r.byType));
   console.log("  비율: "+Object.keys(B).map(k=>k+" "+(now[k]/r.qs*100).toFixed(1)+"%").join(" · "));
   console.log("  목표까지(choice 60% 환산 총 "+projected.toLocaleString()+"문항 기준): "+(gap.length?gap.join(" · "):"전부 달성"));
