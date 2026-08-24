@@ -7,10 +7,15 @@
 `docs/CONTENT_POLICY.md` 의 유형별 목표와 비율 하한도 모두 넘겼습니다.
 
 ```
-choice 6,259 (상한 없음) · input 1,878/1,500 · code 2,426/2,000 · debug 1,013/1,000
-review 835/800 · log 919/500 · sim 500/500 · arch 158/150      → 남은 총량 0
-비율: choice 48.2% · input 14.5% · exec 23.7% · review 6.4% · log 7.1%   → 전부 달성
+choice 6,259 (상한 없음) · input 1,878/1,500 · code 2,438/2,000 · debug 1,013/1,000
+review 835/800 · log 513/500 · sim 500/500 · arch 158/150      → 남은 총량 0
+비율: choice 49.7% · input 14.9% · exec 24.5% · review 6.6% · log 4.1%   → 전부 달성
 ```
+
+log 은 45차에서 919 → 453 으로 줄었습니다. 서비스 이름과 시각만 바꾼 <b>복제가 466개</b>
+있었기 때문입니다. 그 자리를 비어 있던 다섯 트랙(ml·mleval·react·web·ai)의 새 문항
+60개로 메워 513 입니다. **수를 채우려고 이름만 바꿔 찍어내지 마세요** —
+`tests/engine.test.cjs` 가 뼈대가 같은 문항을 실패로 잡습니다.
 
 이 수치들은 이제 **진행률 보고가 아니라 회귀 검사**입니다. `tests/app.test.cjs` 가
 아래 넷을 실패로 잡으므로, 콘텐츠를 지우거나 `cat`·`t` 값을 잘못 바꾸면 CI 가 막습니다.
@@ -32,14 +37,14 @@ review 835/800 · log 919/500 · sim 500/500 · arch 158/150      → 남은 총
 | 유형 | 0 인 트랙 |
 |---|---|
 | review | algo arch arduino code compiler cs dbt dl fp math mobile php security stat |
-| log | ai algo arch arduino code compiler cs dbt dl fp math ml mleval mobile numpy pandas php react stat web |
+| log | algo arch arduino code compiler cs dbt dl fp math mobile numpy pandas php stat |
 | arch(설계 배치) | algo arduino c code compiler cpp cs dbt dl fp go java javascript math ml mleval mobile numpy pandas php python react rust stat |
 
 세 유형 모두 **어울리는 트랙에만** 넣어야 합니다.
 
-- `log` 는 **운영 중 남는 기록을 읽고 원인을 짚는** 트랙에서만 뜻이 있습니다 —
-  ml·mleval(학습 로그·평가 리포트), react(브라우저 콘솔·프로파일러), web(네트워크 탭),
-  ai(추론 서버 로그) 정도가 자연스럽고, math·fp·cs 에는 억지입니다.
+- `log` 는 **운영 중 남는 기록을 읽고 원인을 짚는** 트랙에서만 뜻이 있습니다.
+  45차에 ml·mleval·react·web·ai 를 채웠고(각 12), 남은 칸은 대부분 억지입니다 —
+  math·fp·cs 에 로그를 넣을 이유는 없습니다. numpy·pandas 정도가 그나마 후보입니다.
 - `review` 는 **남의 코드에 한 줄 지적을 다는** 형태라 코드가 있는 트랙에 맞습니다 —
   algo·code·compiler·fp·php·security 가 후보입니다.
 - `arch` 는 **배치도를 직접 그리는** 유형이라 설계가 실제로 갈리는 트랙에만 —
@@ -53,6 +58,7 @@ review 835/800 · log 919/500 · sim 500/500 · arch 158/150      → 남은 총
 | 파이썬 실행형·디버깅 | `dbg_*.cjs` → `ver_dbgpy.cjs` → `inj_pyexec.cjs` |
 | PHP 실행형·디버깅 | `dbg_php.cjs` → `ver_dbgphp.cjs`(러너 필요) → `inj_phpexec.cjs` |
 | 단답형 | `in_*.cjs` → `ver_input.cjs` + `chk_predict{,_py,_php}.cjs` → `inj_qa.cjs` |
+| 로그 분석 | `log_*.cjs` → `ver_log.cjs` → `inj_qa.cjs` |
 | 이론 교체 | — → `inj_theory.cjs` |
 | 시뮬레이션 | `sim_*.cjs` → `ver_simgen.cjs` → `inj_sim.cjs` |
 
@@ -75,8 +81,8 @@ grep -h 'fn:"' tools/content/exec_*.cjs | sort   # 실행형 함수 이름
 ## 마무리 검사
 
 ```
-node tests/engine.test.cjs                                                    # 162
-PLAYWRIGHT_CHROMIUM=... node tests/app.test.cjs                               # 141
+node tests/engine.test.cjs                                                    # 163
+PLAYWRIGHT_CHROMIUM=... node tests/app.test.cjs                               # 145
 ```
 
 두 벌은 따로 돌리세요 — 한 명령으로 묶으면 메모리가 모자라 죽습니다(exit 137).
@@ -98,3 +104,13 @@ node tools/content/ver_all.cjs            # 전부
 러너가 안 떠 있거나 그 툴체인이 없으면 해당 갈래만 건너뛰고 몇 개를 건너뛰었는지
 알립니다. 컴파일 언어는 한 문항에 몇 초씩 걸리므로 **콘텐츠를 크게 손댄 뒤에만**
 돌리면 됩니다.
+
+## 찍어서 맞힐 수 있는 길이 없는가
+
+문항을 넣을 때마다 이것부터 봅니다. 37~39차에서 보기 길이·맺음말·단정어를 갚았고,
+44~45차에서 자리를 갚았습니다. 지금 남아 있는 빚은 하나입니다.
+
+- **로그의 '첫 WARN 이상' 적중 57.5%** — 원인이 대개 첫 경고 줄이다.
+  45차에 새로 쓴 60문항은 원인을 INFO 에 두고 앞에 붉은 청어를 깔아 0/60 이다.
+  옛 문항은 줄을 지어내지 않고는 못 고치므로, **새로 쓸 때** 갚는다.
+  `ver_log.cjs` 가 배치마다 60% 상한을 건다.

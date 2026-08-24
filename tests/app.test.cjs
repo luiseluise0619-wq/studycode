@@ -584,6 +584,33 @@ function check(name, cond, detail){
   console.log("  리뷰 "+rpos.n+"문항 · 자리 하나로 찍기 최고 정답률 "+(rpos.worst*100).toFixed(1)
     +"% (기준선 "+(rpos.base*100).toFixed(1)+"%)");
 
+  /* 로그 분석도 같은 검사를 받는다. 다만 로그는 <b>시간 순서</b>라 보기를 섞을 수 없다 —
+     원인은 증상보다 먼저 오므로 앞쪽에 쏠리는 것 자체는 장르의 성질이다.
+     그래서 균등까지는 요구하지 않고, 한 자리에 몰려 그것만 찍으면 되는 상태만 막는다.
+     한때 3번을 찍으면 72.0% 였다(44차). 지금은 앞머리 정상 줄 수를 문항마다 달리해 34% 다. */
+  const lpos=await p.evaluate(()=>{
+    const hit=[]; let n=0, firstWarn=0, lone=0;
+    const RANK={DEBUG:0,TRACE:0,INFO:1,NOTICE:1,WARN:2,WARNING:2,ERROR:3,CRIT:3,FATAL:4};
+    const lv=t=>{ const m=String(t).match(/\b(INFO|DEBUG|TRACE|NOTICE|WARN|WARNING|ERROR|FATAL|CRIT)\b/);
+      return m?RANK[m[1]]:1; };
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
+      if(q.t!=="log" || !Array.isArray(q.items)) return;
+      n++;
+      q.items.forEach((it,i)=>{ if(it.bad) hit[i]=(hit[i]||0)+1; });
+      const idx=q.items.findIndex(x=>x.bad);
+      const lvs=q.items.map(x=>lv(x.txt));
+      if(lvs.findIndex(x=>x>=2)===idx) firstWarn++;
+      if(q.items.filter(x=>x.bad).length===1 && lvs.filter(x=>x>=2).length===1 && lvs[idx]>=2) lone++;
+    })));
+    const rate=hit.map(x=>(x||0)/n);
+    return {n, rate, worst:Math.max(...rate), firstWarn:firstWarn/n, lone};
+  });
+  check("로그 문항을 한 자리로 찍을 수 없다 (최고 45% 미만)", lpos.n===0 || lpos.worst<0.45,
+    {최고:(lpos.worst*100).toFixed(1)+"%", 자리별:lpos.rate.map(x=>(x*100).toFixed(1)+"%")});
+  check("로그의 원인 줄이 등급만으로 드러나지 않는다", lpos.lone===0, {유일한WARN이정답인문항:lpos.lone});
+  console.log("  로그 "+lpos.n+"문항 · 자리 하나로 찍기 최고 "+(lpos.worst*100).toFixed(1)
+    +"% · '첫 WARN 이상' 찍기 "+(lpos.firstWarn*100).toFixed(1)+"%");
+
   console.log("  콘텐츠: "+r.qs+"문항 / "+r.units+"유닛 / "+r.lessons+"레슨 · 유형 "+JSON.stringify(r.byType));
   console.log("  비율: "+Object.keys(B).map(k=>k+" "+(now[k]/r.qs*100).toFixed(1)+"%").join(" · "));
   console.log("  목표까지(choice 60% 환산 총 "+projected.toLocaleString()+"문항 기준): "+(gap.length?gap.join(" · "):"전부 달성"));

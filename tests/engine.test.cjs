@@ -327,5 +327,31 @@ t("주입된 JS 실행형 문항의 정답이 전부 통과한다", ()=>{
   if(r.status!==0) throw new Error((r.stdout||"").trim().split("\n").slice(-12).join("\n      "));
 });
 
+/* 로그 문항이 '이름만 바꾼 복제' 로 불어나지 않는지 본다.
+   한때 919문항 중 466개가 서비스 이름과 시각만 다른 같은 사고였다(44차).
+   검증은 통과하지만 학습 가치가 없으므로, 뼈대가 같은 문항이 한 트랙에 둘 있으면 실패다. */
+t("로그 문항에 이름만 바꾼 복제가 없다", ()=>{
+  const sig=require(path.join(__dirname,"..","tools","content","logsig.cjs"));
+  const dir=path.join(__dirname,"..","data");
+  const dup=[];
+  for(const f of fs.readdirSync(dir).filter(x=>/^t-.*\.js$/.test(x)).sort()){
+    const raw=fs.readFileSync(path.join(dir,f),"utf8");
+    const a=raw.indexOf("["), z=raw.lastIndexOf("]");
+    const seen=new Set();
+    const walk=o=>{
+      if(Array.isArray(o)) return o.forEach(walk);
+      if(!o||typeof o!=="object") return;
+      if(o.q&&o.t==="log"&&Array.isArray(o.items)){
+        const s=sig(o);
+        if(seen.has(s)) dup.push(f+" · "+(o.k||"")+" · "+(o.file||""));
+        seen.add(s);
+      }
+      for(const k in o) walk(o[k]);
+    };
+    walk(JSON.parse(raw.slice(a,z+1)));
+  }
+  if(dup.length) throw new Error(dup.length+"건 복제: "+dup.slice(0,5).join(" | "));
+});
+
 console.log((fail?"":"\n")+pass+" passed, "+fail+" failed");
 process.exit(fail?1:0);
