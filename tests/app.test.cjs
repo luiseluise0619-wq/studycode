@@ -826,6 +826,55 @@ function check(name, cond, detail){
   });
   check("javascript 정답 예시가 앱 안에서 그대로 돌아간다", jsSol.bad.length===0,
     {검사:jsSol.검사, 실패:jsSol.bad.slice(0,5)});
+
+  /* html·react 문항의 참조 해답을 앱의 채점 하네스로 다시 돌린다.
+     이 두 유형은 브라우저가 있어야 채점되므로 tools/content/ver_all.cjs 가 못 본다 —
+     참조 해답이 자기 검사를 통과하지 못하면 그 문항은 풀 수 없는 문항이다. */
+  const liveSol=await p.evaluate(async ()=>{
+    const list=[];
+    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>(l.q||[]).forEach(q=>{
+      if((q.t==="html"||q.t==="react") && q.sol && (q.tests||[]).length)
+        list.push({track:k, name:q.k||String(q.q).slice(0,24), q});
+    })));
+    if(!list.length) return {검사:0, bad:[]};
+    let lib=null;
+    try{ await ensureSucrase(); lib=await ensureReactSrc(); }catch(e){ return {검사:0, bad:["엔진 로드 실패: "+e.message]}; }
+    const host=document.createElement("iframe");
+    host.setAttribute("sandbox","allow-scripts");
+    host.style.cssText="position:fixed;left:-9999px;top:0;width:420px;height:320px;border:0";
+    document.body.appendChild(host);
+    const grade=doc=>new Promise(res=>{
+      let last=null, done=false;
+      const onMsg=e=>{ if(e.data&&e.data.__cr==="test") last=e.data; };
+      const finish=()=>{ if(done)return; done=true; window.removeEventListener("message",onMsg); res(last); };
+      window.addEventListener("message",onMsg);
+      /* 하네스는 결과를 두 번 보낸다 — 파싱 직후, 그리고 load 직후(레이아웃 확정).
+         다만 타이머나 await 를 쓰는 문항은 load 뒤에도 한참 있다가 온다.
+         그래서 load 뒤 250ms 를 기다리되, 아직 아무것도 안 왔으면 계속 기다린다. */
+      const settle=()=>{ if(last!==null||Date.now()-t0>8000) finish(); else setTimeout(settle,100); };
+      const t0=Date.now();
+      host.onload=()=>setTimeout(settle,250);
+      setTimeout(finish,9000);
+      host.srcdoc=doc;
+    });
+    const bad=[];
+    for(const it of list){
+      let doc;
+      if(it.q.t==="html") doc=htmlTestDoc(it.q.sol, it.q.tests);
+      else{ const t=tsToJs(it.q.sol,true);
+            if(t.error){ bad.push(it.track+"/"+it.name+": JSX 문법 오류 "+t.error); continue; }
+            doc=reactTestDoc(t.code, it.q.tests, lib); }
+      const r=await grade(doc);
+      if(!r) bad.push(it.track+"/"+it.name+": 채점 결과가 안 왔다");
+      else if(!r.gate) bad.push(it.track+"/"+it.name+": "+r.pass+"/"+r.total
+        +((r.detail||[]).filter(d=>!d.ok).slice(0,1).map(d=>" — "+d.d).join("")));
+    }
+    host.remove();
+    return {검사:list.length, bad};
+  });
+  check("html·react 참조 해답이 자기 검사를 통과한다", liveSol.bad.length===0,
+    {검사:liveSol.검사, 실패:liveSol.bad.slice(0,6)});
+  console.log("  브라우저 채점 재검증: html·react " + liveSol.검사 + "문항");
   await p.close();
  }
 
