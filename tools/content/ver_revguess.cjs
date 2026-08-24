@@ -121,6 +121,29 @@ if (process.argv.includes("--need")) {
   process.exit(0);
 }
 
+/* --up <트랙> : 반대 방향으로 치우친 것을 되돌린다.
+   '가장 긴 보기는 결함이 아니다' 도 규칙이 되므로, 기준선(40%) 근처까지는 결함이 가장 긴
+   문항도 있어야 한다. 결함 쪽을 조금만 늘리면 되는 문항을 골라 준다.
+   세 번째마다 하나씩만 고른다 — 전부 뒤집으면 처음 상태로 돌아간다. */
+if (process.argv.includes("--up")) {
+  const want = process.argv[process.argv.indexOf("--up") + 1];
+  let k = 0;
+  rows.filter(r => !want || r.track === want).forEach(({ track, i, q }) => {
+    const it = q.items;
+    let mx = 0;
+    it.forEach((x, j) => { if (width(plain(x.txt)) > width(plain(it[mx].txt))) mx = j; });
+    if (it[mx].bad) return;                        // 이미 결함이 가장 길다
+    if (k++ % 3) return;                           // 셋에 하나만
+    let d = -1;
+    it.forEach((x, j) => { if (x.bad && (d < 0 || width(plain(x.txt)) > width(plain(it[d].txt)))) d = j; });
+    if (d < 0) return;
+    const need = width(plain(it[mx].txt)) - width(plain(it[d].txt)) + 4;
+    console.log(track + " #" + i + "  정상 " + width(plain(it[mx].txt)) + " · " + d + "번 결함 "
+      + width(plain(it[d].txt)) + " (+" + need + " 필요)  " + plain(it[d].txt));
+  });
+  process.exit(0);
+}
+
 if (process.argv.includes("--track")) {
   const by = {};
   rows.forEach(r => (by[r.track] = by[r.track] || []).push(r));

@@ -567,22 +567,47 @@ function check(name, cond, detail){
      한때 835문항 전부에서 0번 보기가 결함이었다 — 맨 위만 고르면 100% 였다.
      그래서 자리별 결함 비율이 전체 평균(기준선)에서 크게 벗어나지 않는지 본다. */
   const rpos=await p.evaluate(()=>{
-    const bad=[], tot=[]; let n=0;
+    const bad=[], tot=[]; let n=0, longestBad=0, itemHit=0, itemAll=0, exact=0;
+    /* 화면에 보이는 길이 — 태그를 걷고 엔티티를 되돌린 뒤, 한글은 두 칸으로 센다 */
+    const dec=s=>String(s).replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"')
+      .replace(/&#39;/g,"'").replace(/&nbsp;/g," ").replace(/&amp;/g,"&");
+    const plain=s=>dec(String(s||"").replace(/<[^>]+>/g,"")).replace(/\s+/g," ").trim();
+    const W=s=>{ let w=0; for(const ch of plain(s)){ const c=ch.codePointAt(0);
+      w += (c>=0x1100&&c<=0x115F)||(c>=0x2E80&&c<=0xA4CF)||(c>=0xAC00&&c<=0xD7A3)
+        ||(c>=0xF900&&c<=0xFAFF)||(c>=0xFF00&&c<=0xFF60) ? 2 : 1; } return w; };
     for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>{
       if(q.t!=="review" || !Array.isArray(q.items)) return;
       n++;
       q.items.forEach((it,i)=>{ tot[i]=(tot[i]||0)+1; if(it.bad) bad[i]=(bad[i]||0)+1; });
+      /* '평균보다 긴 보기를 결함이라 찍는' 전략의 성적 */
+      const w=q.items.map(x=>W(x.txt));
+      const mean=w.reduce((a,x)=>a+x,0)/w.length;
+      let mx=0; w.forEach((x,i)=>{ if(x>w[mx]) mx=i; });
+      if(q.items[mx].bad) longestBad++;
+      let ok=0;
+      q.items.forEach((x,i)=>{ if(!!x.bad===(w[i]>mean)) ok++; });
+      itemHit+=ok; itemAll+=q.items.length;
+      if(ok===q.items.length) exact++;
     })));
     const sb=bad.reduce((a,x)=>a+(x||0),0), st=tot.reduce((a,x)=>a+(x||0),0);
     const base=st?sb/st:0;
     const rate=tot.map((t,i)=>t?(bad[i]||0)/t:0);
-    return {n, base, rate, worst:Math.max(...rate)};
+    return {n, base, rate, worst:Math.max(...rate),
+      longest:n?longestBad/n:0, itemHit:itemAll?itemHit/itemAll:0, exact:n?exact/n:0};
   });
   check("리뷰 문항을 자리로 찍을 수 없다 (자리별 결함 비율이 기준선 ±6%p 안)",
     rpos.n===0 || rpos.rate.every(x=>Math.abs(x-rpos.base)<=0.06),
     {기준선:(rpos.base*100).toFixed(1)+"%", 자리별:rpos.rate.map(x=>(x*100).toFixed(1)+"%")});
+  /* 결함 보기에만 근거를 쓰고 정상 보기는 짧은 승인문으로 두면, 길이가 곧 정답이 된다.
+     한때 883문항 중 84.5% 에서 가장 긴 보기가 결함이었다(49차). 기준선은 전체 결함 비율이다. */
+  check("리뷰 문항을 길이로 찍을 수 없다 (가장 긴 보기가 결함일 확률이 기준선 ±25%p 안)",
+    rpos.n===0 || Math.abs(rpos.longest-rpos.base)<=0.25,
+    {기준선:(rpos.base*100).toFixed(1)+"%", 가장긴보기:(rpos.longest*100).toFixed(1)+"%"});
+  check("리뷰 문항을 길이만으로 완주할 수 없다 (15% 미만)", rpos.n===0 || rpos.exact<0.15,
+    {완주:(rpos.exact*100).toFixed(1)+"%", 보기적중:(rpos.itemHit*100).toFixed(1)+"%"});
   console.log("  리뷰 "+rpos.n+"문항 · 자리 하나로 찍기 최고 정답률 "+(rpos.worst*100).toFixed(1)
-    +"% (기준선 "+(rpos.base*100).toFixed(1)+"%)");
+    +"% (기준선 "+(rpos.base*100).toFixed(1)+"%) · 가장 긴 보기가 결함 "+(rpos.longest*100).toFixed(1)
+    +"% · 길이만으로 완주 "+(rpos.exact*100).toFixed(1)+"% (보기 적중 "+(rpos.itemHit*100).toFixed(1)+"%)");
 
   /* 로그 분석도 같은 검사를 받는다. 다만 로그는 <b>시간 순서</b>라 보기를 섞을 수 없다 —
      원인은 증상보다 먼저 오므로 앞쪽에 쏠리는 것 자체는 장르의 성질이다.
