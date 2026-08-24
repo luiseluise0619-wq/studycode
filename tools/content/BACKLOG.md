@@ -12,10 +12,12 @@ review 835/800 · log 513/500 · sim 500/500 · arch 158/150      → 남은 총
 비율: choice 49.7% · input 14.9% · exec 24.5% · review 6.6% · log 4.1%   → 전부 달성
 ```
 
-log 은 45차에서 919 → 453 으로 줄었습니다. 서비스 이름과 시각만 바꾼 <b>복제가 466개</b>
-있었기 때문입니다. 그 자리를 비어 있던 다섯 트랙(ml·mleval·react·web·ai)의 새 문항
-60개로 메워 513 입니다. **수를 채우려고 이름만 바꿔 찍어내지 마세요** —
-`tests/engine.test.cjs` 가 뼈대가 같은 문항을 실패로 잡습니다.
+log 은 45차에서 919 → 373 으로 줄었습니다. 서비스 이름과 시각만 바꾼 <b>복제가 546개</b>
+있었기 때문입니다. 그 자리를 새 문항 140개로 메워 513 입니다 — 비어 있던 다섯 트랙
+(ml·mleval·react·web·ai) 60개와, 복제를 걷어내며 크게 줄어든 여덟 트랙
+(java·python·javascript·go·rust·c·security·backend) 80개입니다.
+**수를 채우려고 이름만 바꿔 찍어내지 마세요** — `tests/engine.test.cjs` 가 뼈대나
+해설이 같은 문항을 실패로 잡습니다.
 
 이 수치들은 이제 **진행률 보고가 아니라 회귀 검사**입니다. `tests/app.test.cjs` 가
 아래 넷을 실패로 잡으므로, 콘텐츠를 지우거나 `cat`·`t` 값을 잘못 바꾸면 CI 가 막습니다.
@@ -38,6 +40,7 @@ log 은 45차에서 919 → 453 으로 줄었습니다. 서비스 이름과 시�
 |---|---|
 | review | algo arch arduino code compiler cs dbt dl fp math mobile php security stat |
 | log | algo arch arduino code compiler cs dbt dl fp math mobile numpy pandas php stat |
+| (log 은 어울리는 트랙을 모두 채웠습니다 — 남은 칸은 대부분 억지입니다) | |
 | arch(설계 배치) | algo arduino c code compiler cpp cs dbt dl fp go java javascript math ml mleval mobile numpy pandas php python react rust stat |
 
 세 유형 모두 **어울리는 트랙에만** 넣어야 합니다.
@@ -110,7 +113,7 @@ node tools/content/ver_all.cjs            # 전부
 문항을 넣을 때마다 이것부터 봅니다. 37~39차에서 보기 길이·맺음말·단정어를 갚았고,
 44~45차에서 자리를 갚았습니다. 지금 남아 있는 빚은 하나입니다.
 
-- **로그의 '첫 WARN 이상' 적중 57.5%** — 원인이 대개 첫 경고 줄이다.
-  45차에 새로 쓴 60문항은 원인을 INFO 에 두고 앞에 붉은 청어를 깔아 0/60 이다.
+- **로그의 '첫 WARN 이상' 적중 54.4%** — 원인이 대개 첫 경고 줄이다.
+  45차에 새로 쓴 140문항은 원인을 INFO 에 두고 앞에 붉은 청어를 깔아 1/140 이다.
   옛 문항은 줄을 지어내지 않고는 못 고치므로, **새로 쓸 때** 갚는다.
   `ver_log.cjs` 가 배치마다 60% 상한을 건다.
