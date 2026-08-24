@@ -97,7 +97,26 @@ if (process.argv.includes("--list")) {
     const L = leak(q);
     if (!L.exact && !L.longestBad) return;
     console.log(track + " #" + i + "  " + (L.exact ? "[길이만으로 전부 맞힘] " : "") + (L.longestBad ? "[가장 긴 보기가 결함]" : ""));
-    q.items.forEach(x => console.log("  " + (x.bad ? "*" : " ") + " (" + width(plain(x.txt)) + ") " + plain(x.txt).slice(0, 90)));
+    q.items.forEach((x, j) => console.log("  " + (x.bad ? "*" : " ") + j + " (" + width(plain(x.txt)) + ") " + plain(x.txt)));
+  });
+  process.exit(0);
+}
+
+/* --need <트랙> : 고쳐야 할 문항마다 <b>한 줄</b>만 찍는다.
+   "가장 긴 정상 보기를 결함보다 길게" 만들면 되므로, 그 보기와 모자란 폭을 알려 준다. */
+if (process.argv.includes("--need")) {
+  const want = process.argv[process.argv.indexOf("--need") + 1];
+  rows.filter(r => !want || r.track === want).forEach(({ track, i, q }) => {
+    const it = q.items;
+    let mx = 0;
+    it.forEach((x, j) => { if (width(plain(x.txt)) > width(plain(it[mx].txt))) mx = j; });
+    if (!it[mx].bad) return;                       // 이미 정상 보기가 가장 길다
+    let d = -1;
+    it.forEach((x, j) => { if (!x.bad && (d < 0 || width(plain(x.txt)) > width(plain(it[d].txt)))) d = j; });
+    if (d < 0) return;
+    const need = width(plain(it[mx].txt)) - width(plain(it[d].txt)) + 4;
+    console.log(track + " #" + i + "  결함 " + width(plain(it[mx].txt)) + " · " + d + "번 정상 "
+      + width(plain(it[d].txt)) + " (+" + need + " 필요)  " + plain(it[d].txt));
   });
   process.exit(0);
 }
