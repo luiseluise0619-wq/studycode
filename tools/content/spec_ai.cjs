@@ -1,5 +1,5 @@
 module.exports={
-  track:"ai", guide:"🤖", xp:80,
+  track:"ai", guide:"", xp:80,
   unit:"실행형 실전 — 추론 파이프라인을 직접 만든다",
   source:"./exec_aidl.cjs", slice:[0,6],
   lessons:[

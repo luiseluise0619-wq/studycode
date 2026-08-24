@@ -1,5 +1,5 @@
 module.exports = {
-  track: "mobile", guide: "🐛", xp: 80,
+  track: "mobile", guide: "", xp: 80,
   unit: "실행형 실전 — 시뮬레이터에서는 안 보이는 버그 고치기",
   source: "./dbg_mobile.cjs",
   lessons: [

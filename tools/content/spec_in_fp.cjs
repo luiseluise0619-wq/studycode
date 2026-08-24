@@ -1,5 +1,5 @@
 module.exports = {
-  track: "fp", guide: "✍️", xp: 60,
+  track: "fp", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 합성·커링·불변성",
   source: "./in_fp.cjs",
   lessons: [

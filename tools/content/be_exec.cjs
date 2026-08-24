@@ -17,7 +17,7 @@ module.exports = [
          ["handle({method:'POST',path:'/users',body:{email:'a@b.c',password:'123'}}).body.fields[0]","{name:'password',reason:'too_short'}"]],
   edge:[["typeof handle({method:'POST',path:'/users',body:{email:'x@y.z',password:'abcdefgh'}}).body.id","'number'"],
         ["handle({method:'POST',path:'/users',body:{email:'a@b.c',password:'abcdefgh'}}).status","201"]],
-  ex:"🎯 검증은 <b>가장 앞</b>에 둡니다. 잘못된 입력이 DB 까지 내려가면 제약 위반 예외가 500 으로 새어 나가고, 사용자는 '서버 오류' 만 보게 됩니다.\n💡 어떤 필드가 왜 틀렸는지 배열로 돌려줘야 프론트가 <b>항목별로</b> 표시할 수 있습니다. 첫 오류에서 멈추고 하나만 알려 주면 사용자는 고치고 다시 제출하기를 반복해야 합니다.\n⚠️ 비밀번호 길이 같은 규칙은 클라이언트에도 두되, <b>서버 검증을 생략하면 안 됩니다</b> — 클라이언트는 우회할 수 있습니다." },
+  ex:"검증은 <b>가장 앞</b>에 둡니다. 잘못된 입력이 DB 까지 내려가면 제약 위반 예외가 500 으로 새어 나가고, 사용자는 '서버 오류' 만 보게 됩니다.\n어떤 필드가 왜 틀렸는지 배열로 돌려줘야 프론트가 <b>항목별로</b> 표시할 수 있습니다. 첫 오류에서 멈추고 하나만 알려 주면 사용자는 고치고 다시 제출하기를 반복해야 합니다.\n비밀번호 길이 같은 규칙은 클라이언트에도 두되, <b>서버 검증을 생략하면 안 됩니다</b> — 클라이언트는 우회할 수 있습니다." },
 
 { k:"메서드와 상태 코드 라우팅", cat:"design",
   q:"글 리소스를 라우팅하세요. <code>GET /posts</code> 는 목록(200), <code>GET /posts/1</code> 은 단건(200, 없으면 404), <code>POST /posts</code> 는 생성(<b>201</b>), <code>DELETE /posts/1</code> 은 삭제(<b>204</b>, 본문 없음, 없으면 404). 정의되지 않은 메서드는 <b>405</b> 입니다.",
@@ -30,7 +30,7 @@ module.exports = [
          ["[handle({method:'DELETE',path:'/posts/1'}).status, handle({method:'DELETE',path:'/posts/1'}).status]","[204,404]"]],
   edge:[["handle({method:'DELETE',path:'/posts/2'}).body","null"],
         ["handle({method:'PATCH',path:'/posts'}).status","405"]],
-  ex:"🎯 상태 코드는 약속입니다. <b>201</b> 은 '만들었다', <b>204</b> 는 '성공했고 본문이 없다', <b>405</b> 는 '경로는 맞는데 그 메서드는 안 된다' 는 뜻입니다.\n💡 전부 200 으로 두면 클라이언트가 빈 본문을 파싱하려다 터지고, 캐시·프록시도 의미를 읽지 못합니다.\n⚠️ 없는 경로(404)와 없는 메서드(405)는 다릅니다. 405 를 받으면 클라이언트는 '경로는 맞구나' 를 알 수 있어 디버깅이 빨라집니다." },
+  ex:"상태 코드는 약속입니다. <b>201</b> 은 '만들었다', <b>204</b> 는 '성공했고 본문이 없다', <b>405</b> 는 '경로는 맞는데 그 메서드는 안 된다' 는 뜻입니다.\n전부 200 으로 두면 클라이언트가 빈 본문을 파싱하려다 터지고, 캐시·프록시도 의미를 읽지 못합니다.\n없는 경로(404)와 없는 메서드(405)는 다릅니다. 405 를 받으면 클라이언트는 '경로는 맞구나' 를 알 수 있어 디버깅이 빨라집니다." },
 
 { k:"401 과 403", cat:"design",
   q:"관리자 전용 <code>GET /admin/reports</code> 를 구현하세요. <code>headers.authorization</code> 이 없으면 <b>401</b>, 토큰은 있지만 <code>role</code> 이 <code>'admin'</code> 이 아니면 <b>403</b>, 통과하면 <b>200</b> 입니다. 토큰은 <code>'Bearer &lt;role&gt;'</code> 형식입니다.",
@@ -42,7 +42,7 @@ module.exports = [
          ["handle({method:'GET',path:'/admin/reports',headers:{authorization:'garbage'}}).status","401"]],
   edge:[["handle({method:'GET',path:'/admin/reports',headers:{authorization:'Bearer admin'}}).body.reports","[]"],
         ["handle({method:'GET',path:'/admin/reports',headers:{}}).body.code","'UNAUTHENTICATED'"]],
-  ex:"🎯 <b>401 은 '누구인지 모른다', 403 은 '누구인지 알지만 안 된다'</b> 입니다. 401 을 받은 클라이언트는 로그인 화면으로 보내야 하고, 403 은 로그인해도 소용없으니 안내를 띄워야 합니다.\n⚠️ 둘을 섞으면 로그인 루프에 빠집니다 — 권한이 없어 403 이어야 할 상황에 401 을 주면, 클라이언트가 재로그인하고 또 401 을 받는 일이 반복됩니다.\n💡 다만 <b>존재 자체가 비밀</b>인 리소스는 403 이 정보 누출입니다(그게 있다는 걸 알려 주므로). 그런 곳은 404 로 통일하는 편이 안전합니다." },
+  ex:"<b>401 은 '누구인지 모른다', 403 은 '누구인지 알지만 안 된다'</b> 입니다. 401 을 받은 클라이언트는 로그인 화면으로 보내야 하고, 403 은 로그인해도 소용없으니 안내를 띄워야 합니다.\n둘을 섞으면 로그인 루프에 빠집니다 — 권한이 없어 403 이어야 할 상황에 401 을 주면, 클라이언트가 재로그인하고 또 401 을 받는 일이 반복됩니다.\n다만 <b>존재 자체가 비밀</b>인 리소스는 403 이 정보 누출입니다(그게 있다는 걸 알려 주므로). 그런 곳은 404 로 통일하는 편이 안전합니다." },
 
 { k:"페이지네이션 상한", cat:"design",
   q:"<code>GET /items?limit=N&amp;offset=M</code> 을 구현하세요. <code>limit</code> 기본값은 <b>20</b>, 최대 <b>100</b> 입니다. 100 을 넘겨 요청하면 거절하지 말고 <b>100 으로 잘라</b> 처리하고, 실제 적용된 값을 <code>body.limit</code> 에 담아 알려 주세요. 숫자가 아니거나 1 미만이면 <b>400</b> 입니다.",
@@ -55,7 +55,7 @@ module.exports = [
          ["handle({method:'GET',path:'/items',query:{limit:'5',offset:'10'}}).body.items","[11,12,13,14,15]"]],
   edge:[["handle({method:'GET',path:'/items',query:{limit:'abc'}}).status","400"],
         ["handle({method:'GET',path:'/items',query:{offset:'-1'}}).status","400"]],
-  ex:"🎯 <code>limit</code> 에 상한이 없으면 <code>limit=1000000</code> 한 번으로 서버가 메모리를 다 씁니다. <b>상한은 선택이 아니라 필수</b>입니다.\n💡 상한을 넘겼을 때 400 으로 거절할지 잘라서 처리할지는 정책입니다. 잘라 준다면 <b>실제 적용된 값을 응답에 알려 줘야</b> 클라이언트가 '요청한 만큼 안 왔다' 를 오류로 오해하지 않습니다.\n⚠️ 오프셋 방식은 목록이 고정된 경우에만 맞습니다. 피드처럼 계속 추가되는 목록은 커서 기반이어야 중복·누락이 없습니다." },
+  ex:"<code>limit</code> 에 상한이 없으면 <code>limit=1000000</code> 한 번으로 서버가 메모리를 다 씁니다. <b>상한은 선택이 아니라 필수</b>입니다.\n상한을 넘겼을 때 400 으로 거절할지 잘라서 처리할지는 정책입니다. 잘라 준다면 <b>실제 적용된 값을 응답에 알려 줘야</b> 클라이언트가 '요청한 만큼 안 왔다' 를 오류로 오해하지 않습니다.\n오프셋 방식은 목록이 고정된 경우에만 맞습니다. 피드처럼 계속 추가되는 목록은 커서 기반이어야 중복·누락이 없습니다." },
 
 { k:"커서 페이지네이션", cat:"design",
   q:"<code>GET /feed?cursor=C&amp;limit=N</code> 을 구현하세요. 항목은 <code>id</code> 내림차순이고, 커서는 <b>마지막으로 본 id</b> 입니다. 응답은 <code>{items, nextCursor}</code> 이고 <b>더 없으면 nextCursor 는 null</b> 입니다. 커서를 이어 따라가면 중복도 누락도 없어야 합니다.",
@@ -68,7 +68,7 @@ module.exports = [
          ["handle({method:'GET',path:'/feed',query:{cursor:'999'}}).status","400"]],
   edge:[["handle({method:'GET',path:'/feed',query:{limit:'5'}}).body.nextCursor","null"],
         ["handle({method:'GET',path:'/feed',query:{cursor:'20'}}).body.items.map(x=>x.id)","[10]"]],
-  ex:"🎯 커서는 '<b>마지막으로 본 지점</b>' 입니다. 페이지 번호와 달리 앞에 새 항목이 끼어들어도 위치가 밀리지 않습니다.\n💡 오프셋 방식에서 1페이지를 읽는 사이 글 하나가 추가되면, 2페이지에서 <b>이미 본 글이 다시 나오고</b> 어떤 글은 영영 안 보입니다. 무한 스크롤에서 같은 카드가 두 번 나오는 흔한 버그가 이것입니다.\n⚠️ <code>nextCursor</code> 를 '마지막 항목의 id' 로만 계산하면 <b>끝에 도달했을 때도 커서가 나옵니다</b>. 다음이 있는지 확인해 null 을 돌려줘야 클라이언트가 멈춥니다.\n🔧 실제로는 커서를 그대로 노출하지 말고 인코딩(base64)해 내부 구조를 숨기고, 정렬이 유일하지 않으면 타이브레이커를 함께 넣습니다." },
+  ex:"커서는 '<b>마지막으로 본 지점</b>' 입니다. 페이지 번호와 달리 앞에 새 항목이 끼어들어도 위치가 밀리지 않습니다.\n오프셋 방식에서 1페이지를 읽는 사이 글 하나가 추가되면, 2페이지에서 <b>이미 본 글이 다시 나오고</b> 어떤 글은 영영 안 보입니다. 무한 스크롤에서 같은 카드가 두 번 나오는 흔한 버그가 이것입니다.\n<code>nextCursor</code> 를 '마지막 항목의 id' 로만 계산하면 <b>끝에 도달했을 때도 커서가 나옵니다</b>. 다음이 있는지 확인해 null 을 돌려줘야 클라이언트가 멈춥니다.\n실제로는 커서를 그대로 노출하지 말고 인코딩(base64)해 내부 구조를 숨기고, 정렬이 유일하지 않으면 타이브레이커를 함께 넣습니다." },
 
 { k:"멱등키로 중복 결제 막기", cat:"design",
   q:"<code>POST /payments</code> 를 구현하세요. <code>headers['idempotency-key']</code> 가 <b>필수</b>(없으면 400)이고, <b>같은 키로 다시 오면 새로 만들지 말고 처음 만든 결제를 200 으로 그대로</b> 돌려줘야 합니다. 처음 생성은 201 입니다.",
@@ -81,7 +81,7 @@ module.exports = [
          ["handle({method:'POST',path:'/payments',headers:{'idempotency-key':'k2'},body:{amount:200}}).body.id","2"]],
   edge:[["handle({method:'POST',path:'/payments',headers:{'idempotency-key':'k2'},body:{amount:200}}).body.amount","200"],
         ["handle({method:'POST',path:'/payments',headers:{'idempotency-key':'k3'},body:{amount:1}}).status","201"]],
-  ex:"🎯 재시도는 <b>정상 동작</b>입니다. 타임아웃이 나면 클라이언트는 성공했는지 알 수 없으므로 다시 보냅니다. 서버가 '같은 요청' 을 알아보지 못하면 두 번 결제됩니다.\n🔧 클라이언트가 요청마다 고유 키를 만들어 보내고, 서버는 그 키로 <b>이미 만든 결과를 그대로 다시</b> 돌려줍니다. Stripe·PayPal 이 쓰는 방식입니다.\n⚠️ 여기서는 메모리 맵을 썼지만 실제로는 <b>DB 의 유니크 제약</b>이어야 합니다 — 서버가 여러 대면 메모리는 공유되지 않고, '조회 후 삽입' 은 동시 요청에 뚫립니다.\n💡 키를 영원히 보관할 수 없으니 만료 시각을 함께 두고 오래된 것부터 지웁니다." },
+  ex:"재시도는 <b>정상 동작</b>입니다. 타임아웃이 나면 클라이언트는 성공했는지 알 수 없으므로 다시 보냅니다. 서버가 '같은 요청' 을 알아보지 못하면 두 번 결제됩니다.\n클라이언트가 요청마다 고유 키를 만들어 보내고, 서버는 그 키로 <b>이미 만든 결과를 그대로 다시</b> 돌려줍니다. Stripe·PayPal 이 쓰는 방식입니다.\n여기서는 메모리 맵을 썼지만 실제로는 <b>DB 의 유니크 제약</b>이어야 합니다 — 서버가 여러 대면 메모리는 공유되지 않고, '조회 후 삽입' 은 동시 요청에 뚫립니다.\n키를 영원히 보관할 수 없으니 만료 시각을 함께 두고 오래된 것부터 지웁니다." },
 
 { k:"레이트 리밋", cat:"design",
   q:"<code>POST /login</code> 에 레이트 리밋을 겁니다. <b>같은 ip 에서 5회를 넘으면 429</b> 를 돌려주고, <code>body.retryAfter</code> 에 남은 대기 초를 넣으세요. 창은 <code>req.now</code>(초 단위) 기준 <b>60초 고정 창</b>입니다. 5회까지는 200 입니다.",
@@ -94,7 +94,7 @@ module.exports = [
          ["handle({method:'POST',path:'/login',ip:'a',now:70}).status","200"]],
   edge:[["handle({method:'POST',path:'/login',ip:'c',now:0}).status","200"],
         ["typeof handle({method:'POST',path:'/login',ip:'a',now:70}).body.ok","'boolean'"]],
-  ex:"🎯 레이트 리밋은 <b>기능이 아니라 방어</b>입니다. 로그인에 걸지 않으면 비밀번호 대입 공격이 초당 수천 번 들어옵니다.\n💡 <code>429</code> 와 함께 <b>언제 다시 시도할지</b>(Retry-After)를 알려 줘야 정상 클라이언트가 백오프할 수 있습니다. 안 알려 주면 즉시 재시도해서 상황을 더 악화시킵니다.\n⚠️ 고정 창은 구현이 쉬운 대신 <b>창 경계에서 두 배</b>가 통과합니다(59초에 5회, 61초에 또 5회). 정밀해야 하면 슬라이딩 윈도우나 토큰 버킷을 씁니다.\n🔧 서버가 여러 대면 카운터는 Redis 같은 공유 저장소에 있어야 합니다 — 메모리에 두면 서버 수만큼 한도가 늘어납니다." },
+  ex:"레이트 리밋은 <b>기능이 아니라 방어</b>입니다. 로그인에 걸지 않으면 비밀번호 대입 공격이 초당 수천 번 들어옵니다.\n<code>429</code> 와 함께 <b>언제 다시 시도할지</b>(Retry-After)를 알려 줘야 정상 클라이언트가 백오프할 수 있습니다. 안 알려 주면 즉시 재시도해서 상황을 더 악화시킵니다.\n고정 창은 구현이 쉬운 대신 <b>창 경계에서 두 배</b>가 통과합니다(59초에 5회, 61초에 또 5회). 정밀해야 하면 슬라이딩 윈도우나 토큰 버킷을 씁니다.\n서버가 여러 대면 카운터는 Redis 같은 공유 저장소에 있어야 합니다 — 메모리에 두면 서버 수만큼 한도가 늘어납니다." },
 
 { k:"N+1 없애기", cat:"design",
   q:"주문 목록에 <b>주문자 이름</b>을 붙여 돌려주세요. <code>db.findUser(id)</code> 는 한 건씩, <code>db.findUsers(ids)</code> 는 여러 건을 한 번에 가져옵니다. <code>db.calls</code> 는 조회 횟수를 셉니다. 주문이 몇 건이든 <b>조회는 2회</b>(주문 1 + 사용자 1)여야 합니다.",
@@ -106,7 +106,7 @@ module.exports = [
          ["handle({method:'GET',path:'/orders'}).body.items[2].name","'김'"]],
   edge:[["handle({method:'GET',path:'/orders'}).body.items[1]","{id:11,name:'박'}"],
         ["handle({method:'GET',path:'/orders'}).body.calls<=2","true"]],
-  ex:"🎯 N+1 은 목록 1회 조회 뒤 <b>각 항목마다 한 번씩 더</b> 조회하는 패턴입니다. 개발 데이터 10건에서는 안 보이다가 운영 1만 건에서 응답이 수십 초가 됩니다.\n🔧 필요한 id 를 <b>먼저 모아 한 번에</b> 가져오고 맵으로 만들어 붙입니다. 중복 id 는 Set 으로 걸러 조회량을 더 줄입니다.\n💡 ORM 을 쓰면 지연 로딩이 이 문제를 <b>보이지 않게</b> 만듭니다. `orders.map(o => o.user.name)` 한 줄이 쿼리 1만 개가 됩니다 — eager loading 이나 DataLoader 로 배치해야 합니다.\n⚠️ 발견하는 방법은 하나입니다. 요청당 <b>쿼리 수를 세는</b> 것 — 이 문항의 db.calls 가 실제 개발에서 해야 할 일입니다." },
+  ex:"N+1 은 목록 1회 조회 뒤 <b>각 항목마다 한 번씩 더</b> 조회하는 패턴입니다. 개발 데이터 10건에서는 안 보이다가 운영 1만 건에서 응답이 수십 초가 됩니다.\n필요한 id 를 <b>먼저 모아 한 번에</b> 가져오고 맵으로 만들어 붙입니다. 중복 id 는 Set 으로 걸러 조회량을 더 줄입니다.\nORM 을 쓰면 지연 로딩이 이 문제를 <b>보이지 않게</b> 만듭니다. `orders.map(o => o.user.name)` 한 줄이 쿼리 1만 개가 됩니다 — eager loading 이나 DataLoader 로 배치해야 합니다.\n발견하는 방법은 하나입니다. 요청당 <b>쿼리 수를 세는</b> 것 — 이 문항의 db.calls 가 실제 개발에서 해야 할 일입니다." },
 
 { k:"부분 수정과 필드 화이트리스트", cat:"design",
   q:"<code>PATCH /profile</code> 을 구현하세요. <b>보낸 필드만</b> 바꾸고 나머지는 유지합니다. 단 <code>nickname</code> 과 <code>bio</code> 만 수정할 수 있고, <b>허용되지 않은 필드가 들어오면 400</b> 입니다(어떤 필드인지 <code>body.rejected</code> 에 담아 주세요).",
@@ -119,7 +119,7 @@ module.exports = [
          ["handle({method:'PATCH',path:'/profile',body:{role:'admin'}}).status===400 && profile.role","'user'"]],
   edge:[["handle({method:'PATCH',path:'/profile',body:{}}).status","200"],
         ["handle({method:'PATCH',path:'/profile',body:{id:99}}).body.rejected","['id']"]],
-  ex:"🎯 요청 본문을 <b>그대로 병합</b>하는 것은 대량 할당(mass assignment) 취약점입니다. <code>{\"role\":\"admin\"}</code> 한 줄로 권한 상승이 일어납니다 — 실제 서비스에서 반복해 터진 사고 유형입니다.\n🔧 방어는 <b>허용 목록</b>입니다. 금지 목록(blacklist)은 필드가 추가될 때마다 빠뜨리게 되지만, 허용 목록은 새 필드가 기본적으로 막힙니다.\n💡 모르는 필드를 조용히 무시할지 400 으로 거절할지는 정책입니다. 거절하는 쪽이 오타를 잡아 주지만, 클라이언트 버전이 앞서 나갈 수 있는 공개 API 에서는 무시가 나을 때도 있습니다.\n⚠️ PATCH 는 부분 수정, PUT 은 전체 교체입니다. 일부만 바꾸려고 PUT 을 쓰면 빠뜨린 필드가 초기화됩니다." },
+  ex:"요청 본문을 <b>그대로 병합</b>하는 것은 대량 할당(mass assignment) 취약점입니다. <code>{\"role\":\"admin\"}</code> 한 줄로 권한 상승이 일어납니다 — 실제 서비스에서 반복해 터진 사고 유형입니다.\n방어는 <b>허용 목록</b>입니다. 금지 목록(blacklist)은 필드가 추가될 때마다 빠뜨리게 되지만, 허용 목록은 새 필드가 기본적으로 막힙니다.\n모르는 필드를 조용히 무시할지 400 으로 거절할지는 정책입니다. 거절하는 쪽이 오타를 잡아 주지만, 클라이언트 버전이 앞서 나갈 수 있는 공개 API 에서는 무시가 나을 때도 있습니다.\nPATCH 는 부분 수정, PUT 은 전체 교체입니다. 일부만 바꾸려고 PUT 을 쓰면 빠뜨린 필드가 초기화됩니다." },
 
 { k:"조건부 요청과 412", cat:"design",
   q:"<code>PUT /doc</code> 을 구현하세요. 문서에는 <code>version</code> 이 있고, 요청은 <code>headers['if-match']</code> 로 자기가 본 버전을 보냅니다. <b>버전이 다르면 412</b>(그 사이 누가 고쳤다), 같으면 저장하고 <b>version 을 1 올려</b> 200 으로 돌려줍니다. <code>if-match</code> 가 없으면 428 입니다.",
@@ -132,7 +132,7 @@ module.exports = [
          ["handle({method:'PUT',path:'/doc',headers:{'if-match':'2'},body:{text:'수정3'}}).body.version","3"]],
   edge:[["doc.text","'수정3'"],
         ["handle({method:'PUT',path:'/doc',headers:{'if-match':'99'},body:{text:'x'}}).status","412"]],
-  ex:"🎯 A 와 B 가 같은 문서를 열어 두고 각자 저장하면, <b>나중 저장이 앞 변경을 통째로 덮어씁니다</b>(lost update). 아무 오류도 안 나서 당사자들은 모릅니다.\n🔧 읽을 때 버전을 함께 주고 쓸 때 되돌려 받으면, 그 사이 바뀌었는지 서버가 알 수 있습니다. HTTP 에서는 <code>ETag</code> + <code>If-Match</code> 가 이 역할이고 불일치는 <b>412 Precondition Failed</b> 입니다.\n💡 <b>428 Precondition Required</b> 는 '조건부 요청을 필수로 하겠다' 는 선언입니다. 조건 없이 덮어쓰는 것을 아예 막습니다.\n⚠️ 412 를 받은 클라이언트는 그냥 재시도하면 안 됩니다 — 최신본을 다시 읽어 <b>사용자에게 충돌을 보여 주고</b> 병합할지 물어야 합니다." },
+  ex:"A 와 B 가 같은 문서를 열어 두고 각자 저장하면, <b>나중 저장이 앞 변경을 통째로 덮어씁니다</b>(lost update). 아무 오류도 안 나서 당사자들은 모릅니다.\n읽을 때 버전을 함께 주고 쓸 때 되돌려 받으면, 그 사이 바뀌었는지 서버가 알 수 있습니다. HTTP 에서는 <code>ETag</code> + <code>If-Match</code> 가 이 역할이고 불일치는 <b>412 Precondition Failed</b> 입니다.\n<b>428 Precondition Required</b> 는 '조건부 요청을 필수로 하겠다' 는 선언입니다. 조건 없이 덮어쓰는 것을 아예 막습니다.\n412 를 받은 클라이언트는 그냥 재시도하면 안 됩니다 — 최신본을 다시 읽어 <b>사용자에게 충돌을 보여 주고</b> 병합할지 물어야 합니다." },
 
 { k:"오류 응답 규격 통일", cat:"design",
   q:"모든 오류를 <code>{code, message, traceId}</code> 형태로 통일하세요. <code>fail(code, message, status)</code> 헬퍼를 만들고, <code>GET /orders/:id</code> 에서 없는 주문은 <code>ORDER_NOT_FOUND</code>(404), 잘못된 id 는 <code>INVALID_ID</code>(400) 로 응답하세요. <code>traceId</code> 는 <code>req.traceId</code> 를 그대로 씁니다.",
@@ -145,7 +145,7 @@ module.exports = [
          ["handle({method:'GET',path:'/orders/abc',traceId:'t3'}).body.code","'INVALID_ID'"]],
   edge:[["typeof handle({method:'GET',path:'/orders/9',traceId:'t'}).body.message","'string'"],
         ["Object.keys(handle({method:'GET',path:'/orders/9',traceId:'t'}).body).sort()","['code','message','traceId']"]],
-  ex:"🎯 클라이언트가 <b>메시지 문자열로 분기</b>하기 시작하면 그때부터 문구 하나 못 고칩니다. 오타를 수정했더니 앱이 깨지는 일이 실제로 벌어집니다.\n🔧 기계가 읽는 안정된 <code>code</code> 와 사람이 읽는 <code>message</code> 를 분리하세요. 다국어도 code 가 있어야 가능합니다.\n💡 <code>traceId</code> 는 지원 업무의 핵심입니다. 사용자가 캡처한 화면의 ID 하나로 서버 로그를 바로 찾을 수 있는지가 장애 대응 시간을 몇 배로 가릅니다.\n⚠️ 오류 형식이 엔드포인트마다 다르면 클라이언트에 분기가 쌓입니다. <b>공통 헬퍼 하나로 강제</b>하는 것이 가장 확실합니다. RFC 9457(Problem Details)이 이런 형식의 표준안입니다." },
+  ex:"클라이언트가 <b>메시지 문자열로 분기</b>하기 시작하면 그때부터 문구 하나 못 고칩니다. 오타를 수정했더니 앱이 깨지는 일이 실제로 벌어집니다.\n기계가 읽는 안정된 <code>code</code> 와 사람이 읽는 <code>message</code> 를 분리하세요. 다국어도 code 가 있어야 가능합니다.\n<code>traceId</code> 는 지원 업무의 핵심입니다. 사용자가 캡처한 화면의 ID 하나로 서버 로그를 바로 찾을 수 있는지가 장애 대응 시간을 몇 배로 가릅니다.\n오류 형식이 엔드포인트마다 다르면 클라이언트에 분기가 쌓입니다. <b>공통 헬퍼 하나로 강제</b>하는 것이 가장 확실합니다. RFC 9457(Problem Details)이 이런 형식의 표준안입니다." },
 
 { k:"응답에서 비밀 필드 지우기", cat:"design",
   q:"<code>GET /me</code> 가 사용자 정보를 돌려줍니다. <b><code>passwordHash</code> 와 <code>ssn</code> 은 응답에 절대 나가면 안 됩니다.</b> 새 필드가 추가돼도 안전하도록, 지울 목록이 아니라 <b>내보낼 목록</b>으로 만드세요.",
@@ -157,7 +157,7 @@ module.exports = [
          ["handle({method:'GET',path:'/me'}).body.email","'a@b.c'"]],
   edge:[["(USER.secretToken='zzz', 'secretToken' in handle({method:'GET',path:'/me'}).body)","false"],
         ["handle({method:'GET',path:'/me'}).body.id","1"]],
-  ex:"🎯 <b>내보낼 목록(allowlist)</b>과 지울 목록(denylist)의 차이가 이 문항의 전부입니다. 지울 목록은 <b>필드가 추가될 때마다 빠뜨립니다</b> — 누가 `ssn2` 를 추가하면 그날부터 새어 나갑니다.\n💡 엣지 케이스가 그걸 보여 줍니다. 나중에 `secretToken` 이 모델에 생겨도 내보낼 목록 방식은 자동으로 막습니다.\n⚠️ 가장 흔한 유출 경로는 `SELECT *` 로 읽어 그대로 `res.json(user)` 하는 코드입니다. 응답 직전에 <b>변환 함수를 반드시 거치도록</b> 만드세요 — DTO·serializer·view model 이 다 같은 이야기입니다.\n🔧 로그도 같습니다. 요청 본문을 통째로 로깅하면 비밀번호가 로그에 남습니다." },
+  ex:"<b>내보낼 목록(allowlist)</b>과 지울 목록(denylist)의 차이가 이 문항의 전부입니다. 지울 목록은 <b>필드가 추가될 때마다 빠뜨립니다</b> — 누가 `ssn2` 를 추가하면 그날부터 새어 나갑니다.\n엣지 케이스가 그걸 보여 줍니다. 나중에 `secretToken` 이 모델에 생겨도 내보낼 목록 방식은 자동으로 막습니다.\n가장 흔한 유출 경로는 `SELECT *` 로 읽어 그대로 `res.json(user)` 하는 코드입니다. 응답 직전에 <b>변환 함수를 반드시 거치도록</b> 만드세요 — DTO·serializer·view model 이 다 같은 이야기입니다.\n로그도 같습니다. 요청 본문을 통째로 로깅하면 비밀번호가 로그에 남습니다." },
 
 { k:"정렬 파라미터 화이트리스트", cat:"design",
   q:"<code>GET /users?sort=field:dir</code> 을 구현하세요. 정렬 가능한 필드는 <code>name</code> 과 <code>age</code> 뿐이고 방향은 <code>asc|desc</code> 입니다. <b>허용되지 않은 값이면 400</b> 이고, 파라미터가 없으면 <code>name:asc</code> 가 기본입니다.",
@@ -170,7 +170,7 @@ module.exports = [
          ["handle({method:'GET',path:'/users',query:{sort:'age:asc'}}).body[0].age","20"]],
   edge:[["handle({method:'GET',path:'/users',query:{sort:'ssn:asc'}}).body.allowed","['name','age']"],
         ["USERS.map(u=>u.name)","['박','김','이']"]],
-  ex:"🎯 정렬 파라미터를 <b>그대로 SQL 에 붙이면</b> SQL 인젝션입니다. `ORDER BY ${sort}` 한 줄이면 `1; DROP TABLE users--` 가 들어옵니다. 값을 이스케이프하는 것으로는 부족합니다 — <b>컬럼명은 바인딩 파라미터로 넘길 수 없기 때문</b>입니다.\n🔧 유일한 안전한 방법은 허용 목록과 대조해 <b>미리 정한 값만</b> 쓰는 것입니다.\n💡 정렬 가능한 필드를 제한하는 데는 성능 이유도 있습니다. 인덱스 없는 컬럼으로 정렬하면 전체 정렬이 일어나 큰 테이블에서 응답이 멈춥니다.\n⚠️ 원본 배열을 정렬하면 안 됩니다 — `sort` 는 제자리 정렬이라 다음 요청의 순서까지 바뀝니다. 엣지 케이스가 그걸 검사합니다." },
+  ex:"정렬 파라미터를 <b>그대로 SQL 에 붙이면</b> SQL 인젝션입니다. `ORDER BY ${sort}` 한 줄이면 `1; DROP TABLE users--` 가 들어옵니다. 값을 이스케이프하는 것으로는 부족합니다 — <b>컬럼명은 바인딩 파라미터로 넘길 수 없기 때문</b>입니다.\n유일한 안전한 방법은 허용 목록과 대조해 <b>미리 정한 값만</b> 쓰는 것입니다.\n정렬 가능한 필드를 제한하는 데는 성능 이유도 있습니다. 인덱스 없는 컬럼으로 정렬하면 전체 정렬이 일어나 큰 테이블에서 응답이 멈춥니다.\n원본 배열을 정렬하면 안 됩니다 — `sort` 는 제자리 정렬이라 다음 요청의 순서까지 바뀝니다. 엣지 케이스가 그걸 검사합니다." },
 
 { k:"지수 백오프 계산", cat:"design",
   q:"실패한 외부 호출을 재시도할 대기 시간을 계산하는 <code>backoff(attempt)</code> 를 만드세요. 기본 1초에서 시작해 시도마다 <b>2배</b>가 되고, <b>최대 30초</b>를 넘지 않습니다(<code>attempt</code> 는 1부터). <code>totalWait(n)</code> 은 n 번 재시도할 때의 총 대기 시간입니다.",
@@ -182,7 +182,7 @@ module.exports = [
          ["totalWait(5)","31"]],
   edge:[["totalWait(1)","1"],
         ["totalWait(7)","91"]],
-  ex:"🎯 즉시 재시도는 <b>장애를 키웁니다</b>. 외부 서비스가 과부하로 실패하는 중인데 모든 클라이언트가 곧바로 다시 두들기면 복구할 틈이 없습니다(retry storm).\n🔧 지수 백오프는 실패가 이어질수록 간격을 벌려 압력을 줄입니다. 다만 <b>상한이 없으면</b> 대기가 몇 시간으로 늘어나므로 캡을 둡니다.\n⚠️ 실무에서는 여기에 <b>지터</b>(무작위 흔들림)를 반드시 더합니다. 같은 시각에 실패한 클라이언트들이 정확히 같은 시각에 재시도하면 백오프를 해도 몰림은 그대로이기 때문입니다.\n💡 재시도 횟수 상한도 함께 필요합니다. 무한 재시도는 큐를 실패 작업으로 채워 정상 작업까지 막습니다." },
+  ex:"즉시 재시도는 <b>장애를 키웁니다</b>. 외부 서비스가 과부하로 실패하는 중인데 모든 클라이언트가 곧바로 다시 두들기면 복구할 틈이 없습니다(retry storm).\n지수 백오프는 실패가 이어질수록 간격을 벌려 압력을 줄입니다. 다만 <b>상한이 없으면</b> 대기가 몇 시간으로 늘어나므로 캡을 둡니다.\n실무에서는 여기에 <b>지터</b>(무작위 흔들림)를 반드시 더합니다. 같은 시각에 실패한 클라이언트들이 정확히 같은 시각에 재시도하면 백오프를 해도 몰림은 그대로이기 때문입니다.\n재시도 횟수 상한도 함께 필요합니다. 무한 재시도는 큐를 실패 작업으로 채워 정상 작업까지 막습니다." },
 
 { k:"멱등 삭제", cat:"design",
   q:"<code>DELETE /files/:id</code> 를 구현하세요. 존재하면 지우고 <b>204</b>, <b>이미 없어도 204</b> 입니다(삭제는 멱등해야 합니다). 단 <code>body.deleted</code> 로 실제로 지웠는지 알 수 있어야 하는데, 204 는 본문이 없으므로 <code>headers['x-deleted']</code> 에 담으세요.",
@@ -194,7 +194,7 @@ module.exports = [
          ["handle({method:'DELETE',path:'/files/b'}).headers['x-deleted']","'true'"]],
   edge:[["handle({method:'DELETE',path:'/files/zzz'}).status","204"],
         ["handle({method:'DELETE',path:'/files/zzz'}).body","null"]],
-  ex:"🎯 <b>멱등</b>은 '여러 번 해도 결과가 같다' 는 뜻입니다. DELETE 는 HTTP 명세상 멱등이어야 하는데, 두 번째 호출에 404 를 주면 <b>클라이언트가 재시도했을 때 실패로 보입니다</b>.\n💡 응답이 타임아웃돼 클라이언트가 다시 지우는 것은 아주 흔한 일입니다. 이때 404 를 받으면 '누가 먼저 지웠나?' 하는 불필요한 오류 처리를 하게 됩니다.\n⚠️ 다만 <b>404 를 주는 것도 정당한 선택</b>입니다 — '없는 것을 지우려 했다' 는 정보가 필요한 도메인도 있습니다. 중요한 것은 정하고 <b>문서에 적는</b> 것입니다.\n🔧 204 는 본문을 보낼 수 없습니다. 부가 정보가 필요하면 헤더를 쓰거나, 애초에 200 + 본문으로 설계하세요." },
+  ex:"<b>멱등</b>은 '여러 번 해도 결과가 같다' 는 뜻입니다. DELETE 는 HTTP 명세상 멱등이어야 하는데, 두 번째 호출에 404 를 주면 <b>클라이언트가 재시도했을 때 실패로 보입니다</b>.\n응답이 타임아웃돼 클라이언트가 다시 지우는 것은 아주 흔한 일입니다. 이때 404 를 받으면 '누가 먼저 지웠나?' 하는 불필요한 오류 처리를 하게 됩니다.\n다만 <b>404 를 주는 것도 정당한 선택</b>입니다 — '없는 것을 지우려 했다' 는 정보가 필요한 도메인도 있습니다. 중요한 것은 정하고 <b>문서에 적는</b> 것입니다.\n204 는 본문을 보낼 수 없습니다. 부가 정보가 필요하면 헤더를 쓰거나, 애초에 200 + 본문으로 설계하세요." },
 
 { k:"장바구니 합계와 반올림", cat:"design",
   q:"장바구니 합계를 계산하는 <code>total(items, couponRate)</code> 를 만드세요. 각 항목은 <code>{price, qty}</code> 이고 금액은 <b>원 단위 정수</b>입니다. 쿠폰은 소계에 대한 할인율(0~1)이고, <b>할인 금액은 원 단위로 내림</b> 합니다. 결과는 <code>{subtotal, discount, payable}</code> 입니다.",
@@ -206,5 +206,5 @@ module.exports = [
          ["total([],0.5)","{subtotal:0,discount:0,payable:0}"]],
   edge:[["total([{price:1,qty:1}],0.99)","{subtotal:1,discount:0,payable:1}"],
         ["total([{price:100,qty:1},{price:200,qty:2}],0.5)","{subtotal:500,discount:250,payable:250}"]],
-  ex:"🎯 금액 계산에서 <b>반올림 규칙을 정하지 않으면</b> 프론트와 백엔드가 1원씩 다른 값을 보여 주고, 정산에서 맞지 않습니다. 어디서 어떻게 깎을지를 명시적으로 정해야 합니다.\n💡 원 단위 정수로 다루는 것이 핵심입니다. 실수(float)로 계산하면 `0.1 * 3` 이 `0.30000000000000004` 가 되어 결제 금액이 흔들립니다. 통화는 <b>최소 단위 정수</b>로 저장·계산하세요.\n⚠️ 내림(floor)을 쓰면 항상 고객에게 유리하고, 반올림은 상황에 따라 1원 더 받게 됩니다. 어느 쪽이든 <b>서버가 최종 금액을 계산</b>해야 합니다 — 클라이언트가 보낸 금액을 믿으면 조작됩니다.\n🔧 항목별로 먼저 할인하고 합칠지, 합친 뒤 할인할지도 결과가 다릅니다. 이 문항은 후자입니다." },
+  ex:"금액 계산에서 <b>반올림 규칙을 정하지 않으면</b> 프론트와 백엔드가 1원씩 다른 값을 보여 주고, 정산에서 맞지 않습니다. 어디서 어떻게 깎을지를 명시적으로 정해야 합니다.\n원 단위 정수로 다루는 것이 핵심입니다. 실수(float)로 계산하면 `0.1 * 3` 이 `0.30000000000000004` 가 되어 결제 금액이 흔들립니다. 통화는 <b>최소 단위 정수</b>로 저장·계산하세요.\n내림(floor)을 쓰면 항상 고객에게 유리하고, 반올림은 상황에 따라 1원 더 받게 됩니다. 어느 쪽이든 <b>서버가 최종 금액을 계산</b>해야 합니다 — 클라이언트가 보낸 금액을 믿으면 조작됩니다.\n항목별로 먼저 할인하고 합칠지, 합친 뒤 할인할지도 결과가 다릅니다. 이 문항은 후자입니다." },
 ];

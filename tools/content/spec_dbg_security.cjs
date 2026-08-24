@@ -1,5 +1,5 @@
 module.exports = {
-  track: "security", guide: "🐛", xp: 80,
+  track: "security", guide: "", xp: 80,
   unit: "실행형 실전 — 검사는 했는데 우회되는 코드 고치기",
   source: "./dbg_security.cjs",
   lessons: [

@@ -1,5 +1,5 @@
 module.exports = {
-  track: "pandas", guide: "✍️", xp: 60,
+  track: "pandas", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 타입·결측·기본 동작",
   source: "./in_pandas.cjs",
   lessons: [

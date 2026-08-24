@@ -132,3 +132,23 @@ node tools/content/ver_log.cjs    ./tools/content/log_ml.cjs
 `ver_review.cjs` 가 보는 것 — 결함 자리 쏠림, 가장 긴 보기가 결함인 비율(기대치 ±25%p),
 '…해야 한다' 로 끝나는 보기가 결함에만 몰렸는지, 해설의 자리 표현, 기존 데이터와의 중복.
 **디스트랙터도 길고 처방형으로** 써야 통과합니다 — 그것이 곧 좋은 오답이기도 합니다.
+
+## 이모지를 쓰지 않는다 (47차)
+
+해설·물음·보기·코드 어디에도 장식용 그림 문자를 넣지 않습니다. 문단을 열 때는
+이름표를 낱말로 씁니다 — `원인:` `해결:` `재발 방지:` `개념:` `실무:`.
+
+남겨도 되는 기호는 뜻을 나르는 것들뿐입니다: `→ ← ↑ ↓ ↔`, `① ② ③`, `✓ ✗ ✕`,
+`▶ ▾ ● ○ □`. 판단은 `tools/content/noemoji.cjs` 한 곳에 있습니다.
+
+`ver_log` · `ver_review` · `ver_input` · `ver_arch` 가 배치에서 이모지를 찾으면
+실패시킵니다. 예전 배치를 다시 쓸 때는 먼저 훑어 주세요.
+
+```
+node tools/content/strip_emoji.cjs --tools --write   # 배치 원본
+node tools/content/strip_emoji.cjs --write           # data/t-*.js
+node tools/content/strip_emoji.cjs --html --write    # index.html
+```
+
+예외는 <b>이모지가 주제인 문항</b>뿐입니다(문자열 길이·접근성). 지우면 문제가
+성립하지 않으므로 그대로 둡니다 — 지금 셋 있습니다.

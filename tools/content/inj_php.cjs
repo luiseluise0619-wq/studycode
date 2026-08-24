@@ -39,8 +39,8 @@ function put(g, obj){ html=html.slice(0,g.start)+JSON.stringify(obj)+html.slice(
 /* COURSES */
 const gc=grab("COURSES = ");
 if(gc.obj.php) throw new Error("COURSES 에 php 가 이미 있다");
-gc.obj.php={ name:"PHP", em:"🐘", color:"#6b7ab8", g:"linear-gradient(135deg,#6b7ab8,#8892bf)",
-  units:UNITS.map(u=>({ title:u.t, guide:"🐘",
+gc.obj.php={ name:"PHP", em:"", color:"#6b7ab8", g:"linear-gradient(135deg,#6b7ab8,#8892bf)",
+  units:UNITS.map(u=>({ title:u.t, guide:"",
     lessons:u.l.map(L=>({ title:L.t, xp:L.xp, n:L.q.length })) })) };
 put(gc, gc.obj);
 
@@ -67,9 +67,9 @@ gi.obj.php={
 put(gi, gi.obj);
 
 /* CATS — php 를 언어 그룹에 넣는다. rust 가 어떤 그룹에도 없어 UI 에서 닿을 수 없었으므로 함께 넣는다. */
-const catMark='{id:"lang",name:"💻 언어",tracks:["python","c","cpp","java","go","arduino"]}';
+const catMark='{id:"lang",name:"언어",tracks:["python","c","cpp","java","go","arduino"]}';
 if(html.indexOf(catMark)<0) throw new Error("CATS 언어 그룹을 찾지 못했다");
-html=html.replace(catMark,'{id:"lang",name:"💻 언어",tracks:["python","c","cpp","java","go","rust","php","arduino"]}');
+html=html.replace(catMark,'{id:"lang",name:"언어",tracks:["python","c","cpp","java","go","rust","php","arduino"]}');
 
 /* 러너 언어 목록 — '직접 실행' 패널과 러너 상태 라벨에 쓰인다 */
 const rl='const RUN_LANGS={java:"java", c:"c", cpp:"cpp", go:"go", rust:"rust", python:"python"};';

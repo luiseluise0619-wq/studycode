@@ -1,5 +1,5 @@
 module.exports = {
-  track: "python", guide: "📜", xp: 70,
+  track: "python", guide: "", xp: 70,
   unit: "로그 분석 II — 조용히 틀리는 자리",
   source: "./log_python.cjs",
   lessons: [

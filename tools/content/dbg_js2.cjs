@@ -13,7 +13,7 @@ module.exports = [
          ["(() => { const v=[3,1]; sortNums(v); return v; })()","[3,1]"]],
   edge:[["sortNums([])","[]"],
         ["sortNums([2, 2, 1])","[1,2,2]"]],
-  ex:"🐛 원인: <code>sort()</code> 는 비교 함수가 없으면 원소를 <b>문자열로 바꿔</b> 사전순 비교합니다. <code>'10' &lt; '2'</code> 라서 10이 2보다 앞에 옵니다 — 한 자리 숫자만으로 테스트하면 <b>정상처럼 보입니다</b>.\n🔧 해결: <code>sort((a, b) =&gt; a - b)</code> 로 숫자 비교를 명시합니다.\n🛡 재발 방지: <code>sort</code> 는 <b>원본을 제자리에서</b> 바꿉니다 — 호출자가 놀라지 않게 <code>slice()</code> 로 복사한 뒤 정렬하세요(ES2023 의 <code>toSorted()</code> 가 이 일을 대신합니다). 음수·소수가 섞이면 문자열 비교의 결과는 더 예측하기 어려워집니다." },
+  ex:"원인: <code>sort()</code> 는 비교 함수가 없으면 원소를 <b>문자열로 바꿔</b> 사전순 비교합니다. <code>'10' &lt; '2'</code> 라서 10이 2보다 앞에 옵니다 — 한 자리 숫자만으로 테스트하면 <b>정상처럼 보입니다</b>.\n해결: <code>sort((a, b) =&gt; a - b)</code> 로 숫자 비교를 명시합니다.\n재발 방지: <code>sort</code> 는 <b>원본을 제자리에서</b> 바꿉니다 — 호출자가 놀라지 않게 <code>slice()</code> 로 복사한 뒤 정렬하세요(ES2023 의 <code>toSorted()</code> 가 이 일을 대신합니다). 음수·소수가 섞이면 문자열 비교의 결과는 더 예측하기 어려워집니다." },
 
 { track:"javascript", k:"배열의 구멍은 순회되지 않는다", fn:"seq",
   q:"0부터 n−1 까지의 배열을 만드는 함수인데 <code>[undefined, undefined, undefined]</code> 가 나옵니다.",
@@ -25,7 +25,7 @@ module.exports = [
          ["seq(3).length","3"]],
   edge:[["seq(0)","[]"],
         ["seq(2)","[0,1]"]],
-  ex:"🐛 원인: <code>new Array(3)</code> 은 길이만 3이고 <b>원소가 없는(구멍 뚫린) 배열</b>입니다. <code>map</code>·<code>forEach</code>·<code>filter</code> 는 <b>구멍을 건너뛰므로</b> 콜백이 한 번도 실행되지 않습니다 — 길이는 3인데 값은 채워지지 않습니다.\n🔧 해결: <code>Array.from({length: n}, (_, i) =&gt; i)</code> 는 처음부터 실제 원소를 만듭니다. <code>new Array(n).fill(0).map(...)</code> 도 되지만 두 번 도는 셈입니다.\n🛡 재발 방지: 구멍의 유무는 <b>메서드마다 다르게</b> 취급됩니다 — <code>map</code> 은 건너뛰지만 <code>join</code> 은 빈 문자열로, <code>Array.from</code> 은 undefined 로 채웁니다. <code>delete arr[1]</code> 도 구멍을 만드니, 원소를 지울 때는 <code>splice</code> 를 쓰세요." },
+  ex:"원인: <code>new Array(3)</code> 은 길이만 3이고 <b>원소가 없는(구멍 뚫린) 배열</b>입니다. <code>map</code>·<code>forEach</code>·<code>filter</code> 는 <b>구멍을 건너뛰므로</b> 콜백이 한 번도 실행되지 않습니다 — 길이는 3인데 값은 채워지지 않습니다.\n해결: <code>Array.from({length: n}, (_, i) =&gt; i)</code> 는 처음부터 실제 원소를 만듭니다. <code>new Array(n).fill(0).map(...)</code> 도 되지만 두 번 도는 셈입니다.\n재발 방지: 구멍의 유무는 <b>메서드마다 다르게</b> 취급됩니다 — <code>map</code> 은 건너뛰지만 <code>join</code> 은 빈 문자열로, <code>Array.from</code> 은 undefined 로 채웁니다. <code>delete arr[1]</code> 도 구멍을 만드니, 원소를 지울 때는 <code>splice</code> 를 쓰세요." },
 
 { track:"javascript", k:"this 를 잃어버리는 메서드 전달", fn:"makeCounter",
   q:"카운터 객체의 메서드를 콜백으로 넘겼더니 값이 올라가지 않거나 오류가 납니다. <code>run(fn)</code> 은 넘겨받은 함수를 그대로 호출합니다.",
@@ -37,7 +37,7 @@ module.exports = [
          ["(() => { const a=makeCounter(), b=makeCounter(); run(a.handler()); return [a.n, b.n]; })()","[1,0]"]],
   edge:[["(() => { const c=makeCounter(); return c.n; })()","0"],
         ["(() => { const c=makeCounter(); const f=c.inc; return run(f); })()","1"]],
-  ex:"🐛 원인: 자바스크립트의 <code>this</code> 는 <b>호출하는 방법</b>으로 정해집니다. <code>c.inc()</code> 는 c 가 this 지만, <code>const f = c.inc; f()</code> 는 this 가 undefined(엄격 모드)라 오류가 납니다 — <b>함수를 꺼내는 순간 주인을 잃습니다</b>.\n🔧 해결: 클로저로 <b>객체 자신을 이름으로 붙잡아</b> this 에 의존하지 않게 만듭니다. 대안은 <code>bind(this)</code> 나 화살표 함수 프로퍼티입니다.\n🛡 재발 방지: 이벤트 핸들러·<code>setTimeout</code>·배열 콜백에 메서드를 그대로 넘길 때 항상 생깁니다 — <code>onClick={obj.method}</code> 가 대표적입니다. this 를 아예 쓰지 않는 설계(클로저·순수 함수)가 가장 튼튼합니다." },
+  ex:"원인: 자바스크립트의 <code>this</code> 는 <b>호출하는 방법</b>으로 정해집니다. <code>c.inc()</code> 는 c 가 this 지만, <code>const f = c.inc; f()</code> 는 this 가 undefined(엄격 모드)라 오류가 납니다 — <b>함수를 꺼내는 순간 주인을 잃습니다</b>.\n해결: 클로저로 <b>객체 자신을 이름으로 붙잡아</b> this 에 의존하지 않게 만듭니다. 대안은 <code>bind(this)</code> 나 화살표 함수 프로퍼티입니다.\n재발 방지: 이벤트 핸들러·<code>setTimeout</code>·배열 콜백에 메서드를 그대로 넘길 때 항상 생깁니다 — <code>onClick={obj.method}</code> 가 대표적입니다. this 를 아예 쓰지 않는 설계(클로저·순수 함수)가 가장 튼튼합니다." },
 
 { track:"javascript", k:"객체 비교와 얕은 복사", fn:"mergeSettings",
   q:"기본 설정에 사용자 설정을 덮어쓰는 함수인데, 중첩된 값이 통째로 사라지고 원본까지 바뀝니다.",
@@ -49,7 +49,7 @@ module.exports = [
          ["mergeSettings({},{a:1})","{a:1}"]],
   edge:[["mergeSettings({a:{b:1}},{})","{a:{b:1}}"],
         ["(() => { const b={ui:{n:1}}; mergeSettings(b,{ui:{n:2}}); return b.ui.n; })()","1"]],
-  ex:"🐛 원인: 두 가지가 겹쳐 있습니다 — <b>원본을 제자리에서 수정</b>하고(호출자의 기본 설정이 오염됨), 중첩 객체를 <b>통째로 교체</b>해 안쪽의 다른 키가 사라집니다.\n🔧 해결: 새 객체를 만들어 담고, 양쪽이 모두 객체인 키는 <b>재귀적으로 병합</b>합니다.\n🛡 재발 방지: <code>Object.assign</code> 과 스프레드(<code>{...a, ...b}</code>)는 <b>한 겹만</b> 복사합니다 — 이름이 'shallow' 인 이유입니다. 깊은 병합은 배열을 어떻게 다룰지(교체/연결) 정해야 하므로, 설정 병합은 라이브러리를 쓰거나 규칙을 문서에 적어 두세요." },
+  ex:"원인: 두 가지가 겹쳐 있습니다 — <b>원본을 제자리에서 수정</b>하고(호출자의 기본 설정이 오염됨), 중첩 객체를 <b>통째로 교체</b>해 안쪽의 다른 키가 사라집니다.\n해결: 새 객체를 만들어 담고, 양쪽이 모두 객체인 키는 <b>재귀적으로 병합</b>합니다.\n재발 방지: <code>Object.assign</code> 과 스프레드(<code>{...a, ...b}</code>)는 <b>한 겹만</b> 복사합니다 — 이름이 'shallow' 인 이유입니다. 깊은 병합은 배열을 어떻게 다룰지(교체/연결) 정해야 하므로, 설정 병합은 라이브러리를 쓰거나 규칙을 문서에 적어 두세요." },
 
 { track:"javascript", k:"부동소수점 반올림", fn:"toPrice",
   q:"금액을 소수점 둘째 자리로 반올림하는 함수인데, 1.005 를 넣으면 1 이 나옵니다. 1.01 이 나오도록 고치세요.",
@@ -61,7 +61,7 @@ module.exports = [
          ["toPrice(10)","10"]],
   edge:[["toPrice(0)","0"],
         ["toPrice(1.0049)","1"]],
-  ex:"🐛 원인: <code>1.005</code> 는 2진 부동소수점으로 정확히 <b>1.00499999999999989</b> 입니다. 100을 곱해도 100.49999… 라 <code>Math.round</code> 가 내림합니다 — 계산이 틀린 게 아니라 <b>애초에 그 값이 아니었습니다</b>.\n🔧 해결: 지수 표기 문자열(<code>'1.005e2'</code>)로 만들어 소수점을 <b>자릿수 이동</b>으로 처리하면 곱셈 오차가 끼지 않습니다.\n🛡 재발 방지: 돈은 <b>정수 최소 단위</b>(원·센트)로 저장하는 것이 근본 해결입니다. 표시용 반올림은 <code>toFixed</code> 도 같은 함정이 있으므로(<code>(1.005).toFixed(2) === '1.00'</code>), 정확성이 중요하면 decimal 라이브러리를 쓰세요." },
+  ex:"원인: <code>1.005</code> 는 2진 부동소수점으로 정확히 <b>1.00499999999999989</b> 입니다. 100을 곱해도 100.49999… 라 <code>Math.round</code> 가 내림합니다 — 계산이 틀린 게 아니라 <b>애초에 그 값이 아니었습니다</b>.\n해결: 지수 표기 문자열(<code>'1.005e2'</code>)로 만들어 소수점을 <b>자릿수 이동</b>으로 처리하면 곱셈 오차가 끼지 않습니다.\n재발 방지: 돈은 <b>정수 최소 단위</b>(원·센트)로 저장하는 것이 근본 해결입니다. 표시용 반올림은 <code>toFixed</code> 도 같은 함정이 있으므로(<code>(1.005).toFixed(2) === '1.00'</code>), 정확성이 중요하면 decimal 라이브러리를 쓰세요." },
 
 { track:"javascript", k:"== 의 타입 변환", fn:"isBlank",
   q:"값이 '비어 있는지'(<code>null</code>·<code>undefined</code>·빈 문자열) 판정하는 함수인데, 숫자 0 과 <code>false</code> 까지 비어 있다고 나옵니다.",
@@ -73,7 +73,7 @@ module.exports = [
          ["isBlank(null)","true"]],
   edge:[["isBlank(undefined)","true"],
         ["isBlank([])","false"]],
-  ex:"🐛 원인: <code>==</code> 는 <b>타입을 변환한 뒤</b> 비교합니다. <code>0 == ''</code> 도 <code>false == ''</code> 도 true 라, '비어 있음' 판정에 0과 false 가 걸려듭니다 — 수량 0이나 체크 해제 상태를 <b>미입력으로 오인</b>하는 버그입니다.\n🔧 해결: <code>===</code> 로 각각을 명시적으로 비교합니다. 길어 보여도 <b>의도가 코드에 드러납니다</b>.\n🛡 재발 방지: <code>v == null</code> 은 null 과 undefined 를 <b>동시에</b> 잡는 관용구로 널리 쓰입니다 — 이것만은 예외로 인정하는 린터 설정(<code>eqeqeq: smart</code>)이 많습니다. 다만 빈 문자열까지 묶으려면 <code>==</code> 를 확장하지 말고 조건을 나열하세요. <code>[] == ''</code> 도 true 라는 사실이 이 연산자의 예측 불가능함을 잘 보여 줍니다." },
+  ex:"원인: <code>==</code> 는 <b>타입을 변환한 뒤</b> 비교합니다. <code>0 == ''</code> 도 <code>false == ''</code> 도 true 라, '비어 있음' 판정에 0과 false 가 걸려듭니다 — 수량 0이나 체크 해제 상태를 <b>미입력으로 오인</b>하는 버그입니다.\n해결: <code>===</code> 로 각각을 명시적으로 비교합니다. 길어 보여도 <b>의도가 코드에 드러납니다</b>.\n재발 방지: <code>v == null</code> 은 null 과 undefined 를 <b>동시에</b> 잡는 관용구로 널리 쓰입니다 — 이것만은 예외로 인정하는 린터 설정(<code>eqeqeq: smart</code>)이 많습니다. 다만 빈 문자열까지 묶으려면 <code>==</code> 를 확장하지 말고 조건을 나열하세요. <code>[] == ''</code> 도 true 라는 사실이 이 연산자의 예측 불가능함을 잘 보여 줍니다." },
 
 { track:"javascript", k:"reduce 의 초기값", fn:"totalOf",
   q:"장바구니 금액을 합산하는 함수인데, 항목이 하나면 객체가 그대로 나오고 <b>빈 배열이면 예외</b>가 납니다.",
@@ -85,7 +85,7 @@ module.exports = [
          ["totalOf([{price:1},{price:2},{price:3}])","6"]],
   edge:[["totalOf([{price:0}])","0"],
         ["totalOf([{price:-50},{price:50}])","0"]],
-  ex:"🐛 원인: 초기값이 없으면 <code>reduce</code> 는 <b>첫 원소를 누적값으로</b> 삼고 두 번째부터 돕니다. 항목이 하나면 콜백이 <b>한 번도 실행되지 않아</b> 객체가 그대로 나오고, 빈 배열이면 <code>TypeError: Reduce of empty array with no initial value</code> 입니다.\n🔧 해결: 누적값의 타입이 원소와 다르면 <b>초기값을 반드시</b> 줍니다 — 여기서는 <code>0</code>.\n🛡 재발 방지: 초기값 생략이 안전한 경우는 '<b>원소와 누적값의 타입이 같고 배열이 비지 않음이 보장될 때</b>' 뿐입니다(최댓값 찾기 등). 항목 1개와 0개 테스트는 reduce 를 쓴 모든 코드에 넣을 값어치가 있습니다." },
+  ex:"원인: 초기값이 없으면 <code>reduce</code> 는 <b>첫 원소를 누적값으로</b> 삼고 두 번째부터 돕니다. 항목이 하나면 콜백이 <b>한 번도 실행되지 않아</b> 객체가 그대로 나오고, 빈 배열이면 <code>TypeError: Reduce of empty array with no initial value</code> 입니다.\n해결: 누적값의 타입이 원소와 다르면 <b>초기값을 반드시</b> 줍니다 — 여기서는 <code>0</code>.\n재발 방지: 초기값 생략이 안전한 경우는 '<b>원소와 누적값의 타입이 같고 배열이 비지 않음이 보장될 때</b>' 뿐입니다(최댓값 찾기 등). 항목 1개와 0개 테스트는 reduce 를 쓴 모든 코드에 넣을 값어치가 있습니다." },
 
 { track:"javascript", k:"문자열을 숫자로 바꿀 때", fn:"toQty",
   q:"수량 입력을 숫자로 바꾸되 <b>숫자가 아니면 <code>null</code></b> 을 돌려줘야 하는데, 빈 문자열과 공백이 0 으로 통과합니다.",
@@ -97,7 +97,7 @@ module.exports = [
          ["toQty('abc')","null"]],
   edge:[["toQty('0')","0"],
         ["toQty('3.5')","3.5"]],
-  ex:"🐛 원인: <code>Number('')</code> 과 <code>Number('  ')</code> 는 NaN 이 아니라 <b>0</b> 입니다 — 빈 입력이 '0개 주문' 으로 조용히 통과합니다. <code>Number(null)</code> 도 0, <code>Number([])</code> 도 0 이라 같은 함정이 여러 경로로 들어옵니다.\n🔧 해결: 변환 <b>전에</b> 빈 값을 걸러냅니다. 타입 검사까지 하면 숫자·배열·null 이 섞여 들어와도 안전합니다.\n🛡 재발 방지: <code>isNaN</code>(전역)은 인자를 먼저 숫자로 변환하므로 <code>isNaN('abc')</code> 가 true 지만 <code>isNaN('')</code> 은 false 입니다 — <b><code>Number.isNaN</code></b> 은 변환 없이 판정하니 더 예측 가능합니다. 사용자 입력은 항상 <b>경계에서 한 번</b> 검증하고 넘기세요." },
+  ex:"원인: <code>Number('')</code> 과 <code>Number('  ')</code> 는 NaN 이 아니라 <b>0</b> 입니다 — 빈 입력이 '0개 주문' 으로 조용히 통과합니다. <code>Number(null)</code> 도 0, <code>Number([])</code> 도 0 이라 같은 함정이 여러 경로로 들어옵니다.\n해결: 변환 <b>전에</b> 빈 값을 걸러냅니다. 타입 검사까지 하면 숫자·배열·null 이 섞여 들어와도 안전합니다.\n재발 방지: <code>isNaN</code>(전역)은 인자를 먼저 숫자로 변환하므로 <code>isNaN('abc')</code> 가 true 지만 <code>isNaN('')</code> 은 false 입니다 — <b><code>Number.isNaN</code></b> 은 변환 없이 판정하니 더 예측 가능합니다. 사용자 입력은 항상 <b>경계에서 한 번</b> 검증하고 넘기세요." },
 
 { track:"javascript", k:"클로저와 setTimeout 루프", fn:"delayedIds",
   q:"인덱스별 지연 작업을 등록하는 함수인데, 모든 작업이 같은 값(마지막 값)을 기록합니다.",
@@ -109,7 +109,7 @@ module.exports = [
          ["delayedIds(0)","[]"]],
   edge:[["delayedIds(2)","[0,1]"],
         ["delayedIds(3).length","3"]],
-  ex:"🐛 원인: 루프 밖에서 선언한 <code>i</code> 는 루프 전체가 <b>변수 하나를 공유</b>합니다. 클로저들이 그 <b>변수 자체</b>를 캡처하므로, 나중에 실행되면 전부 마지막 값(n)을 봅니다.\n🔧 해결: <code>for (let i = 0; …)</code> 처럼 <b>루프 안에서 선언</b>하면 반복마다 새 바인딩이 생겨 각 클로저가 자기 값을 갖습니다.\n🛡 재발 방지: ES6 이전에는 즉시실행함수(IIFE)로 스코프를 만들어야 했습니다. 같은 함정이 Go 1.21 이하의 루프 변수에도 있었고, 언어들이 차례로 '반복마다 새 변수' 로 바꾼 이유가 이 버그의 빈도입니다. <code>var</code> 로 선언하면 루프 안에 써도 같은 버그가 나므로, 앱의 품질 검사가 <code>var</code> 를 감점합니다." },
+  ex:"원인: 루프 밖에서 선언한 <code>i</code> 는 루프 전체가 <b>변수 하나를 공유</b>합니다. 클로저들이 그 <b>변수 자체</b>를 캡처하므로, 나중에 실행되면 전부 마지막 값(n)을 봅니다.\n해결: <code>for (let i = 0; …)</code> 처럼 <b>루프 안에서 선언</b>하면 반복마다 새 바인딩이 생겨 각 클로저가 자기 값을 갖습니다.\n재발 방지: ES6 이전에는 즉시실행함수(IIFE)로 스코프를 만들어야 했습니다. 같은 함정이 Go 1.21 이하의 루프 변수에도 있었고, 언어들이 차례로 '반복마다 새 변수' 로 바꾼 이유가 이 버그의 빈도입니다. <code>var</code> 로 선언하면 루프 안에 써도 같은 버그가 나므로, 앱의 품질 검사가 <code>var</code> 를 감점합니다." },
 
 { track:"javascript", k:"정규식 캡처와 replace", fn:"maskCard",
   q:"카드 번호의 앞 12자리를 <code>*</code> 로 가리고 마지막 4자리만 남기는 함수인데, 결과가 <code>$1</code> 같은 문자로 나옵니다.",
@@ -121,7 +121,7 @@ module.exports = [
          ["maskCard('12345')","'*2345'"]],
   edge:[["maskCard('')","''"],
         ["maskCard('999')","'999'"]],
-  ex:"🐛 원인: 치환 문자열에서 <code>$</code> 는 <b>특별한 뜻</b>을 갖습니다 — <code>$1</code> 은 첫 캡처 그룹, <code>$&amp;</code> 는 매칭 전체입니다. 리터럴 <code>$</code> 를 넣으려면 <code>$$</code> 로 써야 하고, 그걸 모르면 엉뚱한 문자열이 섞입니다.\n🔧 해결: 애초에 두 번째 <code>replace</code> 가 필요 없습니다. <b>전방 탐색</b> <code>\\d(?=\\d{4})</code> 이 '뒤에 숫자 4개가 더 있는 숫자' 만 골라 <b>마지막 4자리를 자동으로 남깁니다</b>.\n🛡 재발 방지: 사용자 입력을 치환 문자열로 쓸 때는 <code>$</code> 를 <b>반드시 이스케이프</b>하세요 — 검색어에 <code>$&amp;</code> 가 들어가면 예상 못 한 결과가 나옵니다. 함수형 치환(<code>replace(re, (m) =&gt; ...)</code>)을 쓰면 이 문제가 아예 없습니다." },
+  ex:"원인: 치환 문자열에서 <code>$</code> 는 <b>특별한 뜻</b>을 갖습니다 — <code>$1</code> 은 첫 캡처 그룹, <code>$&amp;</code> 는 매칭 전체입니다. 리터럴 <code>$</code> 를 넣으려면 <code>$$</code> 로 써야 하고, 그걸 모르면 엉뚱한 문자열이 섞입니다.\n해결: 애초에 두 번째 <code>replace</code> 가 필요 없습니다. <b>전방 탐색</b> <code>\\d(?=\\d{4})</code> 이 '뒤에 숫자 4개가 더 있는 숫자' 만 골라 <b>마지막 4자리를 자동으로 남깁니다</b>.\n재발 방지: 사용자 입력을 치환 문자열로 쓸 때는 <code>$</code> 를 <b>반드시 이스케이프</b>하세요 — 검색어에 <code>$&amp;</code> 가 들어가면 예상 못 한 결과가 나옵니다. 함수형 치환(<code>replace(re, (m) =&gt; ...)</code>)을 쓰면 이 문제가 아예 없습니다." },
 
 { track:"javascript", k:"배열 메서드의 부수효과", fn:"topThree",
   q:"점수 상위 3개를 돌려주는 함수인데, 호출하고 나면 <b>원본 배열의 순서가 바뀌어</b> 다른 곳의 계산이 틀어집니다.",
@@ -133,7 +133,7 @@ module.exports = [
          ["topThree([4,4,4,1])","[4,4,4]"]],
   edge:[["topThree([])","[]"],
         ["(() => { const v=[3,1,2]; const t=topThree(v); return [t, v]; })()","[[3,2,1],[3,1,2]]"]],
-  ex:"🐛 원인: <code>sort</code>·<code>reverse</code>·<code>splice</code>·<code>push</code> 는 <b>원본을 제자리에서 바꿉니다</b>. 조회만 할 것처럼 생긴 함수가 인자를 변형하면, 호출한 쪽에서는 <b>전혀 관계없어 보이는 곳</b>이 틀어집니다.\n🔧 해결: <code>slice()</code>(또는 <code>[...xs]</code>)로 복사한 뒤 정렬합니다. ES2023 의 <code>toSorted</code>·<code>toReversed</code>·<code>with</code> 는 아예 새 배열을 돌려줍니다.\n🛡 재발 방지: '<b>인자를 바꾸는가</b>' 를 함수의 계약으로 정하고 이름에 드러내세요(<code>sortInPlace</code> vs <code>sorted</code>). React 에서는 상태 배열을 제자리에서 정렬하면 참조가 그대로라 <b>리렌더가 아예 안 일어납니다</b> — 증상이 '정렬이 안 된다' 로 보여 원인을 찾기 어렵습니다." },
+  ex:"원인: <code>sort</code>·<code>reverse</code>·<code>splice</code>·<code>push</code> 는 <b>원본을 제자리에서 바꿉니다</b>. 조회만 할 것처럼 생긴 함수가 인자를 변형하면, 호출한 쪽에서는 <b>전혀 관계없어 보이는 곳</b>이 틀어집니다.\n해결: <code>slice()</code>(또는 <code>[...xs]</code>)로 복사한 뒤 정렬합니다. ES2023 의 <code>toSorted</code>·<code>toReversed</code>·<code>with</code> 는 아예 새 배열을 돌려줍니다.\n재발 방지: '<b>인자를 바꾸는가</b>' 를 함수의 계약으로 정하고 이름에 드러내세요(<code>sortInPlace</code> vs <code>sorted</code>). React 에서는 상태 배열을 제자리에서 정렬하면 참조가 그대로라 <b>리렌더가 아예 안 일어납니다</b> — 증상이 '정렬이 안 된다' 로 보여 원인을 찾기 어렵습니다." },
 
 { track:"javascript", k:"옵셔널 체이닝과 기본값", fn:"pageSize",
   q:"설정에서 페이지 크기를 읽되 없으면 20을 쓰는 함수인데, 사용자가 <code>0</code> 을 지정해도 20이 됩니다. <code>0</code> 은 그대로 존중하되 <code>null</code>·<code>undefined</code>·없는 경로만 기본값이 되도록 고치세요.",
@@ -145,5 +145,5 @@ module.exports = [
          ["pageSize(null)","20"]],
   edge:[["pageSize({ui:{pageSize:null}})","20"],
         ["pageSize({ui:{}})","20"]],
-  ex:"🐛 원인: <code>||</code> 는 <b>거짓 같은 값 전부</b>(0·''·false·NaN)를 기본값으로 대체합니다. '값이 없음' 과 '값이 0' 을 구분하지 못해, 사용자가 명시적으로 고른 0·빈 문자열·false 가 조용히 무시됩니다.\n🔧 해결: <b>널 병합 연산자</b> <code>??</code> 는 <code>null</code>·<code>undefined</code> 에만 반응합니다. 경로 접근은 <code>?.</code> 로 짧게 씁니다.\n🛡 재발 방지: 기본값을 줄 때는 매번 '<b>0이나 빈 값이 올 수 있는가</b>' 를 물으세요 — 수량·오프셋·플래그·검색어에서 특히 자주 물립니다. <code>||</code> 가 맞는 경우는 '거짓 같은 값 전부를 대체하고 싶을 때' 뿐이고, 그때도 의도를 주석으로 남기는 편이 낫습니다." },
+  ex:"원인: <code>||</code> 는 <b>거짓 같은 값 전부</b>(0·''·false·NaN)를 기본값으로 대체합니다. '값이 없음' 과 '값이 0' 을 구분하지 못해, 사용자가 명시적으로 고른 0·빈 문자열·false 가 조용히 무시됩니다.\n해결: <b>널 병합 연산자</b> <code>??</code> 는 <code>null</code>·<code>undefined</code> 에만 반응합니다. 경로 접근은 <code>?.</code> 로 짧게 씁니다.\n재발 방지: 기본값을 줄 때는 매번 '<b>0이나 빈 값이 올 수 있는가</b>' 를 물으세요 — 수량·오프셋·플래그·검색어에서 특히 자주 물립니다. <code>||</code> 가 맞는 경우는 '거짓 같은 값 전부를 대체하고 싶을 때' 뿐이고, 그때도 의도를 주석으로 남기는 편이 낫습니다." },
 ];

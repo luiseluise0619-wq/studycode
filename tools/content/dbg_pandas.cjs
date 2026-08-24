@@ -14,7 +14,7 @@ module.exports = [
          ["sorted(total_by_col(pd.DataFrame({'p': [1], 'q': [2], 'r': [3]})).keys())","['p', 'q', 'r']"]],
   edge:[["total_by_col(pd.DataFrame({'a': [1, 2, 3]}))","{'a': 6}"],
         ["total_by_col(pd.DataFrame({'a': [-1, 1], 'b': [2, 2]}))","{'a': 0, 'b': 4}"]],
-  ex:"🐛 원인: <code>axis</code> 는 '<b>없어지는 축</b>' 을 가리킵니다. 열별 합계는 행을 접는 것이므로 <code>axis=0</code>(기본값)이고, <code>axis=1</code> 은 행별 합계라 결과의 인덱스가 <b>행 번호</b>가 됩니다. 열과 행의 개수가 같으면 길이도 같아 눈으로는 구분되지 않습니다.\n🔧 해결: <code>axis=0</code> 으로 바꿉니다. 결과의 인덱스가 <b>무엇이어야 하는가</b>를 먼저 적어 보면 축이 저절로 정해집니다.\n🛡 재발 방지: 판다스의 <code>axis</code> 는 넘파이와 같은 규칙이지만, <code>drop</code>·<code>apply</code>·<code>concat</code> 에서 <b>기본값이 제각각</b>이라 매번 확인해야 합니다. 테스트는 행과 열의 개수가 <b>다른</b> 표로 짜세요 — 정사각 표는 축 실수를 통째로 숨깁니다." },
+  ex:"원인: <code>axis</code> 는 '<b>없어지는 축</b>' 을 가리킵니다. 열별 합계는 행을 접는 것이므로 <code>axis=0</code>(기본값)이고, <code>axis=1</code> 은 행별 합계라 결과의 인덱스가 <b>행 번호</b>가 됩니다. 열과 행의 개수가 같으면 길이도 같아 눈으로는 구분되지 않습니다.\n해결: <code>axis=0</code> 으로 바꿉니다. 결과의 인덱스가 <b>무엇이어야 하는가</b>를 먼저 적어 보면 축이 저절로 정해집니다.\n재발 방지: 판다스의 <code>axis</code> 는 넘파이와 같은 규칙이지만, <code>drop</code>·<code>apply</code>·<code>concat</code> 에서 <b>기본값이 제각각</b>이라 매번 확인해야 합니다. 테스트는 행과 열의 개수가 <b>다른</b> 표로 짜세요 — 정사각 표는 축 실수를 통째로 숨깁니다." },
 
 { track:"pandas", cat:"debug", fn:"attach_names",
   k:"이너 조인이 조용히 행을 버린다",
@@ -28,7 +28,7 @@ module.exports = [
          ["len(attach_names(pd.DataFrame({'uid': [1, 2, 3]}), pd.DataFrame({'uid': [2], 'name': ['B']})))","3"]],
   edge:[["attach_names(pd.DataFrame({'uid': []}), pd.DataFrame({'uid': [1], 'name': ['A']}))","[]"],
         ["attach_names(pd.DataFrame({'uid': [1, 1]}), pd.DataFrame({'uid': [1], 'name': ['A']}))","['A', 'A']"]],
-  ex:"🐛 원인: <code>how='inner'</code> 는 <b>양쪽에 다 있는 키만</b> 남깁니다. 왼쪽 표를 기준으로 정보를 '붙이려던' 의도와 달리 행이 조용히 사라지고, 합계·개수 같은 집계가 전부 작아집니다. 오류도 경고도 없어서 <b>숫자가 이상하다</b>는 말이 나올 때까지 모릅니다.\n🔧 해결: 기준 표를 지키려면 <code>how='left'</code> 입니다. 못 찾은 자리는 <code>NaN</code> 이 되므로 <code>fillna</code> 로 뜻을 채워 줍니다.\n🛡 재발 방지: 조인 전후로 <b>행 수를 확인</b>하는 습관을 들이세요 — <code>assert len(m) == len(orders)</code> 한 줄이 이 버그를 영원히 막습니다. 반대로 왼쪽 조인인데 행이 늘었다면 오른쪽 키에 <b>중복</b>이 있다는 뜻이고, 그것도 같은 검사로 잡힙니다." },
+  ex:"원인: <code>how='inner'</code> 는 <b>양쪽에 다 있는 키만</b> 남깁니다. 왼쪽 표를 기준으로 정보를 '붙이려던' 의도와 달리 행이 조용히 사라지고, 합계·개수 같은 집계가 전부 작아집니다. 오류도 경고도 없어서 <b>숫자가 이상하다</b>는 말이 나올 때까지 모릅니다.\n해결: 기준 표를 지키려면 <code>how='left'</code> 입니다. 못 찾은 자리는 <code>NaN</code> 이 되므로 <code>fillna</code> 로 뜻을 채워 줍니다.\n재발 방지: 조인 전후로 <b>행 수를 확인</b>하는 습관을 들이세요 — <code>assert len(m) == len(orders)</code> 한 줄이 이 버그를 영원히 막습니다. 반대로 왼쪽 조인인데 행이 늘었다면 오른쪽 키에 <b>중복</b>이 있다는 뜻이고, 그것도 같은 검사로 잡힙니다." },
 
 { track:"pandas", cat:"debug", fn:"count_by_cat",
   k:"그룹바이가 결측 키를 버린다",
@@ -42,7 +42,7 @@ module.exports = [
          ["count_by_cat(pd.DataFrame({'cat': [None, None]}))","{'(none)': 2}"]],
   edge:[["count_by_cat(pd.DataFrame({'cat': ['z']}))","{'z': 1}"],
         ["sum(count_by_cat(pd.DataFrame({'cat': ['a', 'b', None, 'b']})).values())","4"]],
-  ex:"🐛 원인: <code>groupby</code> 는 기본값이 <code>dropna=True</code> 라 <b>키가 결측인 행을 버립니다</b>. 그래서 그룹별 개수를 다 더해도 전체 행 수가 되지 않고, '어디로 갔는지 모를 행' 이 생깁니다.\n🔧 해결: 결측을 <b>뜻이 있는 값으로 먼저 채운 뒤</b> 묶습니다. <code>groupby(..., dropna=False)</code> 도 있지만, 키가 <code>NaN</code> 인 그룹은 이후 정렬·직렬화에서 다시 문제가 되므로 명시적인 라벨을 주는 편이 안전합니다.\n🛡 재발 방지: 집계 뒤에는 '<b>합이 전체와 같은가</b>' 를 확인하세요 — 위 세 번째 테스트가 그 검사입니다. 결측을 버리는 기본값은 판다스 곳곳에 있습니다(<code>value_counts</code>·<code>pivot_table</code>·<code>merge</code>), 그때마다 '버려도 되는가' 를 물어야 합니다." },
+  ex:"원인: <code>groupby</code> 는 기본값이 <code>dropna=True</code> 라 <b>키가 결측인 행을 버립니다</b>. 그래서 그룹별 개수를 다 더해도 전체 행 수가 되지 않고, '어디로 갔는지 모를 행' 이 생깁니다.\n해결: 결측을 <b>뜻이 있는 값으로 먼저 채운 뒤</b> 묶습니다. <code>groupby(..., dropna=False)</code> 도 있지만, 키가 <code>NaN</code> 인 그룹은 이후 정렬·직렬화에서 다시 문제가 되므로 명시적인 라벨을 주는 편이 안전합니다.\n재발 방지: 집계 뒤에는 '<b>합이 전체와 같은가</b>' 를 확인하세요 — 위 세 번째 테스트가 그 검사입니다. 결측을 버리는 기본값은 판다스 곳곳에 있습니다(<code>value_counts</code>·<code>pivot_table</code>·<code>merge</code>), 그때마다 '버려도 되는가' 를 물어야 합니다." },
 
 { track:"pandas", cat:"debug", fn:"top_rows",
   k:"정렬 방향이 기본값 그대로다",
@@ -56,7 +56,7 @@ module.exports = [
          ["top_rows(pd.DataFrame({'name': ['a', 'b'], 'amt': [1, 2]}), 1)","['b']"]],
   edge:[["top_rows(pd.DataFrame({'name': [], 'amt': []}), 3)","[]"],
         ["top_rows(pd.DataFrame({'name': ['a', 'b', 'c'], 'amt': [2, 2, 1]}), 2)","['a', 'b']"]],
-  ex:"🐛 원인: <code>sort_values</code> 의 기본은 <b>오름차순</b>입니다. '상위' 를 뽑는 코드에서 방향을 안 적으면 정확히 반대가 나오는데, 값이 한두 개면 결과가 같아 보이기도 해서 놓치기 쉽습니다.\n🔧 해결: 열마다 방향을 배열로 줍니다 — 금액은 내림차순, 동점 처리용 이름은 오름차순. 방향이 섞인 정렬은 <code>ascending</code> 에 <b>열 수만큼의 리스트</b>를 넘겨야 합니다.\n🛡 재발 방지: 상위 k 개는 <code>nlargest(k, 'amt')</code> 로도 되지만 동점 규칙이 다릅니다. 어느 쪽이든 <b>동점 자료</b>를 테스트에 넣어 순서가 흔들리지 않는지 확인하세요 — 동점 기준이 없으면 페이지네이션에서 같은 행이 두 번 나오거나 빠집니다." },
+  ex:"원인: <code>sort_values</code> 의 기본은 <b>오름차순</b>입니다. '상위' 를 뽑는 코드에서 방향을 안 적으면 정확히 반대가 나오는데, 값이 한두 개면 결과가 같아 보이기도 해서 놓치기 쉽습니다.\n해결: 열마다 방향을 배열로 줍니다 — 금액은 내림차순, 동점 처리용 이름은 오름차순. 방향이 섞인 정렬은 <code>ascending</code> 에 <b>열 수만큼의 리스트</b>를 넘겨야 합니다.\n재발 방지: 상위 k 개는 <code>nlargest(k, 'amt')</code> 로도 되지만 동점 규칙이 다릅니다. 어느 쪽이든 <b>동점 자료</b>를 테스트에 넣어 순서가 흔들리지 않는지 확인하세요 — 동점 기준이 없으면 페이지네이션에서 같은 행이 두 번 나오거나 빠집니다." },
 
 { track:"pandas", cat:"debug", fn:"fill_gaps",
   k:"결측을 0 으로 채워 추세를 망친다",
@@ -70,7 +70,7 @@ module.exports = [
          ["fill_gaps(pd.Series([2.0, None, None, 8.0]))","[2.0, 2.0, 2.0, 8.0]"]],
   edge:[["fill_gaps(pd.Series([], dtype=float))","[]"],
         ["str(fill_gaps(pd.Series([None, 1.0]))[0])","'nan'"]],
-  ex:"🐛 원인: 센서 값의 결측은 '<b>측정을 못 했다</b>' 이지 '값이 0 이다' 가 아닙니다. 0 으로 채우면 그래프에 없던 급락이 생기고, 평균·이상 탐지·경보가 전부 그 가짜 값에 반응합니다.\n🔧 해결: 직전 값을 이어 가는 <code>ffill</code> 을 씁니다. 맨 앞의 결측은 채울 직전 값이 없어 그대로 남는데, 그 동작을 계약에 적어 두어야 호출자가 대비합니다.\n🛡 재발 방지: 결측 채우기는 <b>도메인 결정</b>입니다 — 센서는 직전 값, 판매량은 0 이 맞을 수도, 설문은 아예 빼야 할 수도 있습니다. 그리고 <code>ffill</code> 은 <b>오래된 값을 무한히 이어 가므로</b> <code>limit</code> 를 함께 주는 것이 안전합니다." },
+  ex:"원인: 센서 값의 결측은 '<b>측정을 못 했다</b>' 이지 '값이 0 이다' 가 아닙니다. 0 으로 채우면 그래프에 없던 급락이 생기고, 평균·이상 탐지·경보가 전부 그 가짜 값에 반응합니다.\n해결: 직전 값을 이어 가는 <code>ffill</code> 을 씁니다. 맨 앞의 결측은 채울 직전 값이 없어 그대로 남는데, 그 동작을 계약에 적어 두어야 호출자가 대비합니다.\n재발 방지: 결측 채우기는 <b>도메인 결정</b>입니다 — 센서는 직전 값, 판매량은 0 이 맞을 수도, 설문은 아예 빼야 할 수도 있습니다. 그리고 <code>ffill</code> 은 <b>오래된 값을 무한히 이어 가므로</b> <code>limit</code> 를 함께 주는 것이 안전합니다." },
 
 { track:"pandas", cat:"debug", fn:"to_int_col",
   k:"결측이 있는 열을 정수로 바꾼다",
@@ -84,7 +84,7 @@ module.exports = [
          ["to_int_col(pd.Series([0.0, 1.0, None]))","[0, 1, 0]"]],
   edge:[["to_int_col(pd.Series([], dtype=float))","[]"],
         ["to_int_col(pd.Series([-1.0, None]))","[-1, 0]"]],
-  ex:"🐛 원인: <code>NaN</code> 은 <b>실수</b>라서 정수 타입으로 바꿀 수 없습니다. 판다스는 예외를 던지고, 그 예외가 배치 작업 한복판에서 나면 그날 파이프라인이 통째로 멈춥니다. 개발용 표본에 결측이 없으면 끝까지 모릅니다.\n🔧 해결: 결측을 <b>먼저 채운 뒤</b> 타입을 바꿉니다. 결측을 살려 두어야 한다면 <code>Int64</code>(대문자) 같은 <b>결측 가능 정수 타입</b>을 쓰면 됩니다.\n🛡 재발 방지: CSV·JSON 에서 읽은 열은 결측 하나 때문에 <b>전체가 실수나 문자열</b>이 되기 쉽습니다. 읽자마자 <code>dtypes</code> 를 확인하고, 타입을 바꾸는 자리마다 '결측이 있으면 어떻게 하는가' 를 정하세요." },
+  ex:"원인: <code>NaN</code> 은 <b>실수</b>라서 정수 타입으로 바꿀 수 없습니다. 판다스는 예외를 던지고, 그 예외가 배치 작업 한복판에서 나면 그날 파이프라인이 통째로 멈춥니다. 개발용 표본에 결측이 없으면 끝까지 모릅니다.\n해결: 결측을 <b>먼저 채운 뒤</b> 타입을 바꿉니다. 결측을 살려 두어야 한다면 <code>Int64</code>(대문자) 같은 <b>결측 가능 정수 타입</b>을 쓰면 됩니다.\n재발 방지: CSV·JSON 에서 읽은 열은 결측 하나 때문에 <b>전체가 실수나 문자열</b>이 되기 쉽습니다. 읽자마자 <code>dtypes</code> 를 확인하고, 타입을 바꾸는 자리마다 '결측이 있으면 어떻게 하는가' 를 정하세요." },
 
 { track:"pandas", cat:"debug", fn:"latest_per_user",
   k:"중복 제거가 첫 행을 남긴다",
@@ -98,7 +98,7 @@ module.exports = [
          ["latest_per_user(pd.DataFrame({'uid': [7], 'val': ['only']}))","{7: 'only'}"]],
   edge:[["latest_per_user(pd.DataFrame({'uid': [], 'val': []}))","{}"],
         ["latest_per_user(pd.DataFrame({'uid': [3, 3, 3], 'val': ['a', 'b', 'c']}))","{3: 'c'}"]],
-  ex:"🐛 원인: <code>drop_duplicates</code> 의 기본은 <code>keep='first'</code> 라 <b>가장 오래된</b> 행이 남습니다. 이름만 보면 '중복을 지운다' 라서 어느 쪽이 남는지가 드러나지 않고, 사용자당 기록이 하나뿐인 표본에서는 차이도 없습니다.\n🔧 해결: <code>keep='last'</code> 를 명시합니다. 입력이 시각순이라는 <b>전제</b>가 필요하므로, 불안하면 함수 안에서 정렬까지 해 두는 편이 안전합니다.\n🛡 재발 방지: '어느 것을 남기는가' 를 기본값에 맡기지 마세요 — <code>drop_duplicates</code>·<code>groupby().first()</code>·<code>merge</code> 의 중복 처리 모두 같습니다. 그리고 <b>정렬이 전제</b>인 함수는 그 전제를 코드나 계약 중 한 곳에 반드시 적어야 합니다." },
+  ex:"원인: <code>drop_duplicates</code> 의 기본은 <code>keep='first'</code> 라 <b>가장 오래된</b> 행이 남습니다. 이름만 보면 '중복을 지운다' 라서 어느 쪽이 남는지가 드러나지 않고, 사용자당 기록이 하나뿐인 표본에서는 차이도 없습니다.\n해결: <code>keep='last'</code> 를 명시합니다. 입력이 시각순이라는 <b>전제</b>가 필요하므로, 불안하면 함수 안에서 정렬까지 해 두는 편이 안전합니다.\n재발 방지: '어느 것을 남기는가' 를 기본값에 맡기지 마세요 — <code>drop_duplicates</code>·<code>groupby().first()</code>·<code>merge</code> 의 중복 처리 모두 같습니다. 그리고 <b>정렬이 전제</b>인 함수는 그 전제를 코드나 계약 중 한 곳에 반드시 적어야 합니다." },
 
 { track:"pandas", cat:"debug", fn:"stack_frames",
   k:"이어 붙인 표의 인덱스가 겹친다",
@@ -112,7 +112,7 @@ module.exports = [
          ["len(set(stack_frames(pd.DataFrame({'v': [1, 2]}), pd.DataFrame({'v': [3, 4]}))))","4"]],
   edge:[["stack_frames(pd.DataFrame({'v': []}), pd.DataFrame({'v': []}))","[]"],
         ["stack_frames(pd.DataFrame({'v': [1, 2, 3]}), pd.DataFrame({'v': [4]}))","[0, 1, 2, 3]"]],
-  ex:"🐛 원인: <code>concat</code> 은 각 표의 <b>인덱스를 그대로</b> 가져옵니다. 둘 다 0 부터 시작했다면 결과에 0 이 두 개 생기고, <code>loc[0]</code> 이 한 행이 아니라 <b>표</b>를 돌려줍니다 — 그 뒤 코드가 예상 못 한 모양을 받아 엉뚱한 곳에서 터집니다.\n🔧 해결: <code>ignore_index=True</code> 로 인덱스를 새로 매깁니다. 원래 인덱스에 뜻이 있다면 <code>keys=</code> 로 계층 인덱스를 만들어 <b>어느 표에서 왔는지</b>를 남기는 방법도 있습니다.\n🛡 재발 방지: 인덱스가 고유한지는 <code>df.index.is_unique</code> 로 한 줄에 확인됩니다. 파이프라인 중간에 이 검사를 넣어 두면, 인덱스 중복이 만든 이상한 브로드캐스트와 조인 폭증을 <b>발생 지점에서</b> 잡을 수 있습니다." },
+  ex:"원인: <code>concat</code> 은 각 표의 <b>인덱스를 그대로</b> 가져옵니다. 둘 다 0 부터 시작했다면 결과에 0 이 두 개 생기고, <code>loc[0]</code> 이 한 행이 아니라 <b>표</b>를 돌려줍니다 — 그 뒤 코드가 예상 못 한 모양을 받아 엉뚱한 곳에서 터집니다.\n해결: <code>ignore_index=True</code> 로 인덱스를 새로 매깁니다. 원래 인덱스에 뜻이 있다면 <code>keys=</code> 로 계층 인덱스를 만들어 <b>어느 표에서 왔는지</b>를 남기는 방법도 있습니다.\n재발 방지: 인덱스가 고유한지는 <code>df.index.is_unique</code> 로 한 줄에 확인됩니다. 파이프라인 중간에 이 검사를 넣어 두면, 인덱스 중복이 만든 이상한 브로드캐스트와 조인 폭증을 <b>발생 지점에서</b> 잡을 수 있습니다." },
 
 { track:"pandas", cat:"debug", fn:"sum_by_pair",
   k:"피벗 기본 집계가 평균이다",
@@ -126,7 +126,7 @@ module.exports = [
          ["sum_by_pair(pd.DataFrame({'region': ['A', 'B'], 'kind': ['x', 'x'], 'amt': [4.0, 5.0]}), 'B', 'x')","5.0"]],
   edge:[["sum_by_pair(pd.DataFrame({'region': ['A', 'A'], 'kind': ['x', 'y'], 'amt': [1.0, 9.0]}), 'A', 'y')","9.0"],
         ["sum_by_pair(pd.DataFrame({'region': ['A', 'A'], 'kind': ['x', 'x'], 'amt': [2.0, 2.0]}), 'A', 'x')","4.0"]],
-  ex:"🐛 원인: <code>pivot_table</code> 의 기본 집계는 <b>평균</b>입니다. 이름이 '표를 돌린다' 라서 집계가 일어난다는 사실 자체를 놓치기 쉽고, 조합마다 행이 하나뿐인 표본에서는 <b>평균과 합계가 같아</b> 절대 드러나지 않습니다.\n🔧 해결: <code>aggfunc='sum'</code> 을 명시합니다. 집계 없이 그냥 모양만 바꾸고 싶다면 <code>pivot</code>(집계 안 함, 중복이 있으면 오류)이 의도를 더 정확히 드러냅니다.\n🛡 재발 방지: 집계 함수는 <b>언제나 명시</b>하세요 — 기본값에 기대면 읽는 사람이 매번 문서를 찾아야 합니다. 그리고 조합마다 행이 여러 개인 자료를 테스트에 반드시 넣으세요. 하나뿐인 자료는 sum·mean·max·first 를 전부 통과시킵니다." },
+  ex:"원인: <code>pivot_table</code> 의 기본 집계는 <b>평균</b>입니다. 이름이 '표를 돌린다' 라서 집계가 일어난다는 사실 자체를 놓치기 쉽고, 조합마다 행이 하나뿐인 표본에서는 <b>평균과 합계가 같아</b> 절대 드러나지 않습니다.\n해결: <code>aggfunc='sum'</code> 을 명시합니다. 집계 없이 그냥 모양만 바꾸고 싶다면 <code>pivot</code>(집계 안 함, 중복이 있으면 오류)이 의도를 더 정확히 드러냅니다.\n재발 방지: 집계 함수는 <b>언제나 명시</b>하세요 — 기본값에 기대면 읽는 사람이 매번 문서를 찾아야 합니다. 그리고 조합마다 행이 여러 개인 자료를 테스트에 반드시 넣으세요. 하나뿐인 자료는 sum·mean·max·first 를 전부 통과시킵니다." },
 
 { track:"pandas", cat:"debug", fn:"pick_contains",
   k:"문자열 검색이 결측에서 터진다",
@@ -140,7 +140,7 @@ module.exports = [
          ["pick_contains(pd.Series([None, None]), 'a')","[]"]],
   edge:[["pick_contains(pd.Series([], dtype=object), 'a')","[]"],
         ["pick_contains(pd.Series(['a+b', 'ab']), '+')","['a+b']"]],
-  ex:"🐛 원인: 두 가지가 어긋났습니다. <code>str.contains</code> 는 결측 자리에 <code>NaN</code> 을 돌려주는데, 그 <code>NaN</code> 이 든 불리언 마스크로 인덱싱하면 <b>예외</b>가 납니다. 그리고 <code>sub</code> 가 <b>정규식으로</b> 해석되어 <code>.</code> 이 아무 글자나 맞히고 <code>+</code> 는 문법 오류가 됩니다.\n🔧 해결: <code>na=False</code> 로 결측을 '안 맞음' 으로 두고, <code>regex=False</code> 로 <b>글자 그대로</b> 찾게 합니다. 사용자가 넣은 검색어를 정규식으로 넘기는 것은 성능과 보안 양쪽에서 위험합니다.\n🛡 재발 방지: <code>str</code> 접근자는 결측을 만나면 대부분 <code>NaN</code> 을 내놓습니다 — 마스크로 쓸 값이라면 <b>언제나 <code>na=</code> 를 적으세요</b>. 그리고 '정규식인가 아닌가' 는 기본값이 라이브러리마다 달라, 명시하는 편이 읽는 사람에게도 친절합니다." },
+  ex:"원인: 두 가지가 어긋났습니다. <code>str.contains</code> 는 결측 자리에 <code>NaN</code> 을 돌려주는데, 그 <code>NaN</code> 이 든 불리언 마스크로 인덱싱하면 <b>예외</b>가 납니다. 그리고 <code>sub</code> 가 <b>정규식으로</b> 해석되어 <code>.</code> 이 아무 글자나 맞히고 <code>+</code> 는 문법 오류가 됩니다.\n해결: <code>na=False</code> 로 결측을 '안 맞음' 으로 두고, <code>regex=False</code> 로 <b>글자 그대로</b> 찾게 합니다. 사용자가 넣은 검색어를 정규식으로 넘기는 것은 성능과 보안 양쪽에서 위험합니다.\n재발 방지: <code>str</code> 접근자는 결측을 만나면 대부분 <code>NaN</code> 을 내놓습니다 — 마스크로 쓸 값이라면 <b>언제나 <code>na=</code> 를 적으세요</b>. 그리고 '정규식인가 아닌가' 는 기본값이 라이브러리마다 달라, 명시하는 편이 읽는 사람에게도 친절합니다." },
 
 { track:"pandas", cat:"debug", fn:"add_col",
   k:"인덱스가 다른 시리즈를 붙인다",
@@ -154,7 +154,7 @@ module.exports = [
          ["add_col(pd.DataFrame({'v': [1, 1, 4]}))","[8]"]],
   edge:[["add_col(pd.DataFrame({'v': []}))","[]"],
         ["add_col(pd.DataFrame({'v': [2, 3]}))","[4, 6]"]],
-  ex:"🐛 원인: 열을 대입할 때 판다스는 <b>인덱스를 맞춥니다</b>. 걸러 낸 표의 인덱스는 <code>[1, 2]</code> 처럼 구멍이 있는데, 새로 만든 시리즈의 인덱스는 <code>[0, 1]</code> 이라 겹치는 자리만 값이 들어가고 나머지는 <code>NaN</code> 이 됩니다. 걸러지지 않은 표로 테스트하면 인덱스가 같아 통과합니다.\n🔧 해결: 같은 표의 열로 직접 계산하면 인덱스가 저절로 맞습니다. 리스트를 넣어야 한다면 <code>.values</code> 나 <code>.to_numpy()</code> 로 <b>인덱스를 떼고</b> 넣습니다.\n🛡 재발 방지: '<b>인덱스 정렬</b>' 은 판다스의 가장 강력하면서 가장 헷갈리는 기능입니다. 걸러 내기·정렬·조인 뒤에는 인덱스가 바뀌므로, 계산 결과를 다시 붙일 때마다 이 함정이 나옵니다. 헷갈리면 <code>reset_index(drop=True)</code> 로 한 번 정리하고 시작하세요." },
+  ex:"원인: 열을 대입할 때 판다스는 <b>인덱스를 맞춥니다</b>. 걸러 낸 표의 인덱스는 <code>[1, 2]</code> 처럼 구멍이 있는데, 새로 만든 시리즈의 인덱스는 <code>[0, 1]</code> 이라 겹치는 자리만 값이 들어가고 나머지는 <code>NaN</code> 이 됩니다. 걸러지지 않은 표로 테스트하면 인덱스가 같아 통과합니다.\n해결: 같은 표의 열로 직접 계산하면 인덱스가 저절로 맞습니다. 리스트를 넣어야 한다면 <code>.values</code> 나 <code>.to_numpy()</code> 로 <b>인덱스를 떼고</b> 넣습니다.\n재발 방지: '<b>인덱스 정렬</b>' 은 판다스의 가장 강력하면서 가장 헷갈리는 기능입니다. 걸러 내기·정렬·조인 뒤에는 인덱스가 바뀌므로, 계산 결과를 다시 붙일 때마다 이 함정이 나옵니다. 헷갈리면 <code>reset_index(drop=True)</code> 로 한 번 정리하고 시작하세요." },
 
 { track:"pandas", cat:"debug", fn:"share_pct",
   k:"비율 계산에 정수 나눗셈이 남았다",
@@ -168,6 +168,6 @@ module.exports = [
          ["share_pct(pd.Series([0, 0])) is None","True"]],
   edge:[["share_pct(pd.Series([2, 2, 2, 2]))","[25.0, 25.0, 25.0, 25.0]"],
         ["share_pct(pd.Series([1, 0]))","[100.0, 0.0]"]],
-  ex:"🐛 원인: <code>//</code> 는 <b>몫만 남기는 나눗셈</b>입니다. 각 값이 전체보다 작으니 몫이 언제나 0 이 되고, 100 을 곱해도 0 입니다. 오류가 아니라 <b>전부 0</b> 이라는 그럴듯한 표가 나와서, 데이터가 이상한 줄로 오해하기 쉽습니다.\n🔧 해결: 보통 나눗셈 <code>/</code> 를 씁니다. 한 값이 전체와 같은 경우(100%)만 <code>//</code> 로도 우연히 맞아, 단일 행 테스트로는 안 잡힙니다.\n🛡 재발 방지: 파이썬 3 에서 <code>/</code> 는 실수, <code>//</code> 는 내림 나눗셈입니다. 파이썬 2 습관이나 다른 언어에서 옮겨 온 코드에 <code>//</code> 가 남아 있으면 <b>비율이 전부 0</b> 이 되는 이 증상이 나옵니다. 비율을 다루는 코드는 '<b>합이 100 인가</b>' 를 테스트로 못 박으세요." },
+  ex:"원인: <code>//</code> 는 <b>몫만 남기는 나눗셈</b>입니다. 각 값이 전체보다 작으니 몫이 언제나 0 이 되고, 100 을 곱해도 0 입니다. 오류가 아니라 <b>전부 0</b> 이라는 그럴듯한 표가 나와서, 데이터가 이상한 줄로 오해하기 쉽습니다.\n해결: 보통 나눗셈 <code>/</code> 를 씁니다. 한 값이 전체와 같은 경우(100%)만 <code>//</code> 로도 우연히 맞아, 단일 행 테스트로는 안 잡힙니다.\n재발 방지: 파이썬 3 에서 <code>/</code> 는 실수, <code>//</code> 는 내림 나눗셈입니다. 파이썬 2 습관이나 다른 언어에서 옮겨 온 코드에 <code>//</code> 가 남아 있으면 <b>비율이 전부 0</b> 이 되는 이 증상이 나옵니다. 비율을 다루는 코드는 '<b>합이 100 인가</b>' 를 테스트로 못 박으세요." },
 
 ];

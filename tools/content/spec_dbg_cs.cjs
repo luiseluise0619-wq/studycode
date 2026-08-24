@@ -1,5 +1,5 @@
 module.exports = {
-  track: "cs", guide: "🐛", xp: 80,
+  track: "cs", guide: "", xp: 80,
   unit: "실행형 실전 — 교과서 코드를 반쯤 옮긴 자리 고치기",
   source: "./dbg_cs.cjs",
   lessons: [

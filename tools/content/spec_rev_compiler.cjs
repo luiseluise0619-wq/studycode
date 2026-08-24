@@ -1,5 +1,5 @@
 module.exports = {
-  track: "compiler", guide: "🔍", xp: 70,
+  track: "compiler", guide: "", xp: 70,
   unit: "코드 리뷰 — 결함 찾기",
   source: "./rev_compiler.cjs",
   lessons: [

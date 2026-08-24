@@ -1,5 +1,5 @@
 module.exports = {
-  track: "pandas", guide: "🐛", xp: 80,
+  track: "pandas", guide: "", xp: 80,
   unit: "실행형 실전 — 행이 사라지거나 값이 어긋나는 코드 고치기",
   source: "./dbg_pandas.cjs",
   lessons: [

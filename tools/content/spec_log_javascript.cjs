@@ -1,5 +1,5 @@
 module.exports = {
-  track: "javascript", guide: "📜", xp: 70,
+  track: "javascript", guide: "", xp: 70,
   unit: "로그 분석 II — 이벤트 루프와 프로세스",
   source: "./log_javascript.cjs",
   lessons: [

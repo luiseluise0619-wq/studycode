@@ -1,5 +1,5 @@
 module.exports = {
-  track: "stat", guide: "🐛", xp: 80,
+  track: "stat", guide: "", xp: 80,
   unit: "실행형 실전 — 숫자는 나오는데 뜻이 틀린 코드 고치기",
   source: "./dbg_stat.cjs",
   lessons: [

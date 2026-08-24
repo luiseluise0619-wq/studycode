@@ -1,5 +1,5 @@
 module.exports = {
-  track: "algo", guide: "✍️", xp: 60,
+  track: "algo", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 복잡도 표기와 자료구조의 성질",
   source: "./in_algo.cjs",
   lessons: [

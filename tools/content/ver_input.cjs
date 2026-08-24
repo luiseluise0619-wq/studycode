@@ -11,6 +11,7 @@
      · 정규화하면 서로 같아지는 답이 중복으로 들어 있지 않은가
      · 해설이 충분한가 */
 const path = require("path");
+const findEmoji = require("./noemoji.cjs");
 const SRC = process.argv[2];
 if (!SRC) { console.error("문항 파일을 인자로 주세요: node ver_input.cjs ./in_cs.cjs"); process.exit(2); }
 const Q = require(path.resolve(SRC));
@@ -25,6 +26,8 @@ Q.forEach((q, i) => {
   const tag = "[" + (i + 1) + "] " + (q.k || "(제목 없음)");
   const before = bad;
   const fail = m => { bad++; console.log("✗ " + tag + " — " + m); };
+  const emj = findEmoji({ q: q.q, ex: q.ex, a: q.a, code: q.code });
+  if (emj) fail("이모지를 쓰지 않는다: " + emj);
 
   if (q.t !== "input") fail('t 가 "input" 이 아니다');
   if (!q.track) fail("track 이 없다");

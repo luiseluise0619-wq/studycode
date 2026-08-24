@@ -10,6 +10,7 @@
    그 밖에 시간 순서, 해설의 자리 표현, 기존 데이터와의 중복도 본다. */
 const fs = require("fs");
 const path = require("path");
+const findEmoji = require("./noemoji.cjs");
 const sig = require("./logsig.cjs");
 
 const SRC = process.argv[2];
@@ -50,6 +51,8 @@ let firstWarnHit = 0;
 Q.forEach((q, i) => {
   const tag = "[" + (i + 1) + "] " + (q.k || "(제목 없음)");
   const fail = m => { bad++; console.log("✗ " + tag + " — " + m); };
+  const em = findEmoji({ q: q.q, ex: q.ex, items: q.items, file: q.file });
+  if (em) fail("이모지를 쓰지 않는다: " + em);
 
   if (q.t !== "log") fail('t 가 "log" 가 아니다');
   if (q.cat !== "logs") fail('cat 이 "logs" 가 아니다');

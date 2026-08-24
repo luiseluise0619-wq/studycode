@@ -1,5 +1,5 @@
 module.exports = {
-  track: "arch", guide: "✍️", xp: 60,
+  track: "arch", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 원칙과 패턴의 이름",
   source: "./in_arch.cjs",
   lessons: [

@@ -1,5 +1,5 @@
 module.exports = {
-  track: "code", guide: "🐛", xp: 80,
+  track: "code", guide: "", xp: 80,
   unit: "실행형 실전 — 자바스크립트가 조용히 다르게 도는 자리",
   source: "./dbg_code.cjs",
   lessons: [

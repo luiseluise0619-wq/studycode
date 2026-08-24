@@ -22,7 +22,7 @@ Q.forEach((q,i)=>{
 
   if(fns.has(q.fn)) fail("함수 이름 중복: "+q.fn); fns.add(q.fn);
   const stem=q.q.slice(0,40); if(stems.has(stem)) fail("문제 줄기 중복"); stems.add(stem);
-  if(!/🐛 원인/.test(q.ex)||!/🔧 해결/.test(q.ex)||!/🛡 재발 방지/.test(q.ex)) fail("해설에 원인·해결·재발방지가 없다");
+  if(!/ 원인/.test(q.ex)||!/ 해결/.test(q.ex)||!/ 재발 방지/.test(q.ex)) fail("해설에 원인·해결·재발방지가 없다");
   if(q.tests.length<4) fail("tests 가 4개 미만");
   if(!q.edge||q.edge.length<1) fail("edge 가 없다");
   if(!q.src.includes("def "+q.fn)) fail("src 에 def "+q.fn+" 이 없다");

@@ -1,5 +1,5 @@
 module.exports = {
-  track: "stat", guide: "✍️", xp: 60,
+  track: "stat", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 요약값과 검정 용어",
   source: "./in_stat.cjs",
   lessons: [

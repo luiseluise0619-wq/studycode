@@ -1,5 +1,5 @@
 module.exports={
-  track:"dl", guide:"🧠", xp:80,
+  track:"dl", guide:"", xp:80,
   unit:"실행형 실전 — 학습 구성 요소를 직접 만든다",
   source:"./exec_aidl.cjs", slice:[6,12],
   lessons:[

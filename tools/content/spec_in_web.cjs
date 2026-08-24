@@ -1,5 +1,5 @@
 module.exports = {
-  track: "web", guide: "✍️", xp: 60,
+  track: "web", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 기본값과 규칙의 이름",
   source: "./in_web.cjs",
   lessons: [

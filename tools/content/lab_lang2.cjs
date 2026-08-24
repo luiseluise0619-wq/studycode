@@ -535,7 +535,7 @@ fn negative_and_zero() {
 module.exports = {
   projects: [
     { id:"sensorlog", lang:"c", mainFile:"sol.c", srcName:"sol.c",
-      em:"🌡", title:"C — 센서 링 버퍼 로거",
+      em:"", title:"C — 센서 링 버퍼 로거",
       sub:"고정 메모리로 최근 8개를 유지하고 통계를 낸다. 실제 gcc 가 채점합니다",
       brief:"파일 하나(sol.c)를 3일에 걸쳐 키웁니다. 할당은 없습니다 — 배열 8칸이 전부이고, 그 안에서 감기(wrap)와 합계 유지를 직접 다뤄야 합니다. 채점은 로컬 러너의 진짜 gcc 가 sol.c 와 test.c 를 함께 빌드해 실행합니다.",
       contract:"sol.c 는 Log 구조체(buf·head·count·total)와 log_init·log_push·log_avg·log_spikes 를 제공해야 합니다. 구조체 필드 이름은 테스트가 직접 읽으므로 바꾸면 안 됩니다.",
@@ -568,7 +568,7 @@ module.exports = {
       ] },
 
     { id:"aabb", lang:"cpp", mainFile:"sol.h", srcName:"sol.h",
-      em:"🎮", title:"C++ — 충돌 판정",
+      em:"", title:"C++ — 충돌 판정",
       sub:"AABB 겹침 → 쌍 찾기 → 밀어내기. 실제 g++ 와 catch2 가 채점합니다",
       brief:"게임 물리의 가장 기본인 축 정렬 사각형(AABB) 충돌을 3일에 걸쳐 만듭니다. 경계가 맞닿았을 때를 충돌로 볼지, 밀어낼 때 어느 축으로 밀지 — 두 가지 결정이 이 프로젝트의 진짜 주제입니다. 채점은 로컬 러너의 g++ 와 catch2 가 합니다.",
       contract:"sol.h 는 struct AABB{x,y,w,h} 와 overlaps·collisions·resolve 를 제공해야 합니다. 테스트가 헤더를 include 하므로 함수는 inline 이거나 템플릿이어야 합니다.",
@@ -604,7 +604,7 @@ module.exports = {
       ] },
 
     { id:"confparse", lang:"rust", mainFile:"src/lib.rs",
-      em:"🦀", title:"Rust — 설정 파서",
+      em:"", title:"Rust — 설정 파서",
       sub:"한 줄 파싱 → 맵 구성 → 타입 변환. 실제 cargo test 가 채점합니다",
       brief:"설정 파일 파서를 3일에 걸쳐 만듭니다. 러스트답게 실패를 전부 타입으로 표현합니다 — '없음'은 Option, '틀림'은 Result, 그리고 어떤 방식으로 틀렸는지는 열거형이 담습니다. 채점은 로컬 러너의 진짜 cargo test 가 합니다.",
       contract:"src/lib.rs 는 크레이트 ex 로 빌드되며 parse_line·parse·get_int 과 ConfError 를 pub 으로 내보내야 합니다. 외부 크레이트는 쓸 수 없습니다(오프라인 빌드).",

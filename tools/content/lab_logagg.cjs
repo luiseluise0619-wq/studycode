@@ -143,7 +143,7 @@ const SAMPLE = [
 
 const PROJECT = {
   id: "logagg",
-  em: "📊",
+  em: "",
   lv: 4,
   title: "로그 집계 파이프라인 — 5일",
   sub: "원시 로그를 파싱해 지표로 바꾸고, 임계를 넘으면 경보까지",

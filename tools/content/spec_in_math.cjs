@@ -1,5 +1,5 @@
 module.exports = {
-  track: "math", guide: "✍️", xp: 60,
+  track: "math", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 세고, 접고, 재는 셈",
   source: "./in_math.cjs",
   lessons: [

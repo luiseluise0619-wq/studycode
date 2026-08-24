@@ -1,5 +1,5 @@
 module.exports = {
-  track: "arch", guide: "🐛", xp: 80,
+  track: "arch", guide: "", xp: 80,
   unit: "실행형 실전 — 비트와 성능 계산이 어긋난 코드 고치기",
   source: "./dbg_arch.cjs",
   lessons: [

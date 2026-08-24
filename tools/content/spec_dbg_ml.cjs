@@ -1,5 +1,5 @@
 module.exports = {
-  track: "ml", guide: "🐛", xp: 80,
+  track: "ml", guide: "", xp: 80,
   unit: "실행형 실전 — 학습은 도는데 결론이 틀린 코드 고치기",
   source: "./dbg_ml.cjs",
   lessons: [

@@ -1,5 +1,5 @@
 module.exports = {
-  track: "backend", guide: "🐛", xp: 80,
+  track: "backend", guide: "", xp: 80,
   unit: "실행형 실전 — 돌아가는 것처럼 보이는 고장난 코드",
   source: "./dbg_be.cjs",
   lessons: [

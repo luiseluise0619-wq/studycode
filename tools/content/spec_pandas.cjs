@@ -1,5 +1,5 @@
 module.exports={
-  track:"pandas", guide:"🐼", xp:80,
+  track:"pandas", guide:"", xp:80,
   unit:"실행형 실전 — pandas 의 규칙을 직접 만든다",
   source:"./exec_npd.cjs", slice:[6,12],
   lessons:[

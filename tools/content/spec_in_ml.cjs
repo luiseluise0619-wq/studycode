@@ -1,5 +1,5 @@
 module.exports = {
-  track: "ml", guide: "✍️", xp: 60,
+  track: "ml", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 개념 이름과 지표",
   source: "./in_ml.cjs",
   lessons: [

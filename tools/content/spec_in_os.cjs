@@ -1,5 +1,5 @@
 module.exports = {
-  track: "os", guide: "✍️", xp: 60,
+  track: "os", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 커널이 쓰는 이름과 숫자",
   source: "./in_os.cjs",
   lessons: [

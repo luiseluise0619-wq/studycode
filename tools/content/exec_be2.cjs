@@ -13,7 +13,7 @@ module.exports = [
          ["(() => { const b=makeBucket(2,1); b.allow(0); return [b.allow(100), b.allow(100), b.allow(100)]; })()","[true,true,false]"]],
   edge:[["(() => { const b=makeBucket(1,0); b.allow(0); return b.allow(999); })()","false"],
         ["(() => { const b=makeBucket(1,2); b.allow(0); return b.allow(0.5); })()","true"]],
-  ex:"🎯 토큰 버킷의 매력은 <b>버스트 허용</b>입니다. 평균 초당 rate 을 지키면서도 버킷에 모인 만큼(cap)은 한꺼번에 쓸 수 있습니다 — '평소엔 조용하다 가끔 몰리는' 실제 트래픽에 고정 윈도우보다 잘 맞습니다.\n💡 구현 요령은 타이머가 아니라 <b>지연 리필</b>입니다. 요청이 올 때 경과 시간 × rate 만큼 한 번에 채우면 백그라운드 작업 없이 같은 결과가 나옵니다 — 시각을 인자로 받으니 테스트도 결정적입니다.\n⚠️ <code>Math.min(cap, …)</code> 을 빼먹으면 한가한 시간 동안 토큰이 무한히 쌓여, 새벽 내내 모은 토큰으로 아침에 <b>거대한 버스트</b>가 통과합니다. cap 이 곧 '최대 버스트 크기' 라는 계약입니다.\n🔧 분산 환경에서는 이 상태를 Redis 에 두고 Lua 스크립트로 원자적으로 갱신합니다 — 리필 계산과 차감이 쪼개지면 동시 요청이 같은 토큰을 두 번 씁니다." },
+  ex:"토큰 버킷의 매력은 <b>버스트 허용</b>입니다. 평균 초당 rate 을 지키면서도 버킷에 모인 만큼(cap)은 한꺼번에 쓸 수 있습니다 — '평소엔 조용하다 가끔 몰리는' 실제 트래픽에 고정 윈도우보다 잘 맞습니다.\n구현 요령은 타이머가 아니라 <b>지연 리필</b>입니다. 요청이 올 때 경과 시간 × rate 만큼 한 번에 채우면 백그라운드 작업 없이 같은 결과가 나옵니다 — 시각을 인자로 받으니 테스트도 결정적입니다.\n<code>Math.min(cap, …)</code> 을 빼먹으면 한가한 시간 동안 토큰이 무한히 쌓여, 새벽 내내 모은 토큰으로 아침에 <b>거대한 버스트</b>가 통과합니다. cap 이 곧 '최대 버스트 크기' 라는 계약입니다.\n분산 환경에서는 이 상태를 Redis 에 두고 Lua 스크립트로 원자적으로 갱신합니다 — 리필 계산과 차감이 쪼개지면 동시 요청이 같은 토큰을 두 번 씁니다." },
 
 { track:"backend", k:"서킷 브레이커", cat:"internals",
   q:"<b>서킷 브레이커</b>를 구현하세요. <code>makeBreaker(n, cool)</code> 은 <code>{record(ok, now), canPass(now)}</code> 를 돌려줍니다. <b>연속 실패 n회</b>면 열리고(open, 차단), <code>cool</code> 경과 후 <b>탐침 1회</b>만 통과(half-open)합니다. 탐침이 성공하면 닫히고, 실패하면 다시 열립니다. 성공은 실패 카운터를 리셋합니다.",
@@ -25,7 +25,7 @@ module.exports = [
          ["(() => { const cb=makeBreaker(2,100); cb.record(false,0); cb.record(false,10); cb.canPass(110); cb.record(false,120); return cb.canPass(200); })()","false"]],
   edge:[["(() => { const cb=makeBreaker(2,100); cb.record(false,0); cb.record(true,1); cb.record(false,2); return cb.canPass(3); })()","true"],
         ["(() => { const cb=makeBreaker(1,100); cb.record(false,0); cb.canPass(100); return cb.canPass(101); })()","false"]],
-  ex:"🎯 죽은 서비스에 계속 요청을 보내면 <b>타임아웃 대기 스레드가 쌓여</b> 호출하는 쪽까지 죽습니다(연쇄 장애). 서킷 브레이커는 실패가 반복되면 <b>빠르게 실패</b>로 전환해 양쪽을 보호합니다.\n💡 핵심은 <b>half-open 의 탐침 1회</b>입니다. cool 이 지났다고 전면 개방하면 아직 안 살아난 서비스에 다시 폭주가 갑니다 — 한 요청만 보내 보고 그 결과로 결정합니다. 탐침 중 나머지 요청이 차단되는 것(테스트의 두 번째 canPass)이 그 장치입니다.\n⚠️ '연속' 실패 카운트라 <b>성공 1회가 리셋</b>합니다. 성공·실패가 섞이는 간헐 장애는 연속 카운트로 안 잡혀서, 실전에서는 슬라이딩 윈도우 실패율(예: 최근 100건 중 50%)을 함께 씁니다.\n🔧 열림 상태의 응답은 즉시 오류가 아니라 <b>대체 동작(fallback)</b>일 수 있습니다 — 캐시된 값, 기본 추천 목록, '잠시 후 다시' 페이지. 무엇으로 대체할지가 실은 제품 결정입니다." },
+  ex:"죽은 서비스에 계속 요청을 보내면 <b>타임아웃 대기 스레드가 쌓여</b> 호출하는 쪽까지 죽습니다(연쇄 장애). 서킷 브레이커는 실패가 반복되면 <b>빠르게 실패</b>로 전환해 양쪽을 보호합니다.\n핵심은 <b>half-open 의 탐침 1회</b>입니다. cool 이 지났다고 전면 개방하면 아직 안 살아난 서비스에 다시 폭주가 갑니다 — 한 요청만 보내 보고 그 결과로 결정합니다. 탐침 중 나머지 요청이 차단되는 것(테스트의 두 번째 canPass)이 그 장치입니다.\n'연속' 실패 카운트라 <b>성공 1회가 리셋</b>합니다. 성공·실패가 섞이는 간헐 장애는 연속 카운트로 안 잡혀서, 실전에서는 슬라이딩 윈도우 실패율(예: 최근 100건 중 50%)을 함께 씁니다.\n열림 상태의 응답은 즉시 오류가 아니라 <b>대체 동작(fallback)</b>일 수 있습니다 — 캐시된 값, 기본 추천 목록, '잠시 후 다시' 페이지. 무엇으로 대체할지가 실은 제품 결정입니다." },
 
 { track:"backend", k:"재시도 판정과 백오프", cat:"internals",
   q:"재시도 정책 <code>retryPlan(status, attempt, max, retryAfter)</code> 를 구현하세요. 반환은 <b>다음 재시도까지 대기 ms</b> 또는 <b>재시도 안 함 <code>null</code></b>. 규칙: <code>attempt ≥ max</code> 면 null · <b>5xx 와 429만</b> 재시도(그 외 4xx 는 null) · 429에 <code>retryAfter</code>(초)가 있으면 <b>그 값 × 1000</b> · 나머지는 <code>min(100 × 2^attempt, 3000)</code>.",
@@ -37,7 +37,7 @@ module.exports = [
          ["retryPlan(429,0,3,2)","2000"]],
   edge:[["retryPlan(500,3,3,null)","null"],
         ["retryPlan(503,10,20,null)","3000"]],
-  ex:"🎯 재시도의 첫 질문은 '언제까지' 가 아니라 '<b>애초에 해도 되는가</b>' 입니다. 404·400·403 은 백 번 다시 보내도 결과가 같습니다 — 4xx 는 <b>내 요청이 문제</b>라는 뜻이라 재시도가 낭비이자 소음입니다. 예외가 429(속도 초과)입니다.\n💡 429의 <code>Retry-After</code> 는 서버가 알려 주는 <b>정확한 대기 시간</b>입니다. 서버가 말해 줬는데 내 백오프 공식을 고집하면 더 빨리 다시 차단당합니다 — 명시 신호가 추측보다 항상 우선입니다.\n⚠️ 지수 백오프에 <b>상한</b>이 없으면 attempt 20에서 약 29시간을 기다리게 됩니다. 상한(여기선 3초)과 최대 횟수를 함께 두는 것이 계약입니다. 실전에서는 여기에 지터(무작위 흔들기)를 더해 <b>재시도 폭풍의 동기화</b>를 깹니다.\n🔧 재시도가 안전하려면 요청이 <b>멱등</b>해야 합니다 — POST 결제를 그냥 재시도하면 이중 결제입니다. 멱등키가 이 정책의 전제 조건입니다." },
+  ex:"재시도의 첫 질문은 '언제까지' 가 아니라 '<b>애초에 해도 되는가</b>' 입니다. 404·400·403 은 백 번 다시 보내도 결과가 같습니다 — 4xx 는 <b>내 요청이 문제</b>라는 뜻이라 재시도가 낭비이자 소음입니다. 예외가 429(속도 초과)입니다.\n429의 <code>Retry-After</code> 는 서버가 알려 주는 <b>정확한 대기 시간</b>입니다. 서버가 말해 줬는데 내 백오프 공식을 고집하면 더 빨리 다시 차단당합니다 — 명시 신호가 추측보다 항상 우선입니다.\n지수 백오프에 <b>상한</b>이 없으면 attempt 20에서 약 29시간을 기다리게 됩니다. 상한(여기선 3초)과 최대 횟수를 함께 두는 것이 계약입니다. 실전에서는 여기에 지터(무작위 흔들기)를 더해 <b>재시도 폭풍의 동기화</b>를 깹니다.\n재시도가 안전하려면 요청이 <b>멱등</b>해야 합니다 — POST 결제를 그냥 재시도하면 이중 결제입니다. 멱등키가 이 정책의 전제 조건입니다." },
 
 { track:"backend", k:"stale-while-revalidate", cat:"internals",
   q:"캐시 항목의 <b>신선도 판정</b>을 구현하세요. <code>freshness(entry, now)</code> 는 <code>{at, ttl, swr}</code> 항목에 대해 <code>{serve, revalidate}</code> 를 돌려줍니다. 나이가 <code>ttl</code> 미만이면 <b>그대로 서빙</b>, <code>ttl 이상 ttl+swr 미만</code>이면 <b>서빙하되 뒤에서 갱신</b>, 그 이상(또는 항목 없음)이면 <b>서빙 불가 + 갱신</b>입니다.",
@@ -49,7 +49,7 @@ module.exports = [
          ["freshness(null,5)","{serve:false,revalidate:true}"]],
   edge:[["freshness({at:0,ttl:60,swr:30},60)","{serve:true,revalidate:true}"],
         ["freshness({at:0,ttl:60,swr:0},60)","{serve:false,revalidate:true}"]],
-  ex:"🎯 TTL 만료 순간 모든 요청이 원본으로 몰리는 것이 캐시의 고전적 문제입니다. SWR(stale-while-revalidate)은 만료 후에도 <b>일정 기간은 낡은 값을 먼저 주고</b> 갱신은 백그라운드로 보내, 사용자가 원본 지연을 기다리지 않게 합니다.\n💡 판정은 3구간입니다 — fresh(그냥 서빙) · stale(서빙 + 뒤에서 갱신) · expired(막고 갱신). 경계에서 <code>age === ttl</code> 은 이미 stale 입니다 — <code>&lt;</code> 와 <code>≤</code> 의 선택이 곧 계약이므로 테스트로 못 박아야 합니다.\n⚠️ stale 구간이 길수록 사용자는 빠르지만 <b>낡은 데이터를 보는 시간</b>도 길어집니다. 가격·재고처럼 정확성이 돈인 데이터는 swr 을 짧게, 아바타·글 목록은 길게 — 필드가 아니라 <b>데이터 성격</b>이 기준입니다.\n🔧 HTTP 헤더로는 <code>Cache-Control: max-age=60, stale-while-revalidate=30</code> 이 정확히 이 로직입니다. CDN 과 브라우저가 이 판정을 대신 해 줍니다." },
+  ex:"TTL 만료 순간 모든 요청이 원본으로 몰리는 것이 캐시의 고전적 문제입니다. SWR(stale-while-revalidate)은 만료 후에도 <b>일정 기간은 낡은 값을 먼저 주고</b> 갱신은 백그라운드로 보내, 사용자가 원본 지연을 기다리지 않게 합니다.\n판정은 3구간입니다 — fresh(그냥 서빙) · stale(서빙 + 뒤에서 갱신) · expired(막고 갱신). 경계에서 <code>age === ttl</code> 은 이미 stale 입니다 — <code>&lt;</code> 와 <code>≤</code> 의 선택이 곧 계약이므로 테스트로 못 박아야 합니다.\nstale 구간이 길수록 사용자는 빠르지만 <b>낡은 데이터를 보는 시간</b>도 길어집니다. 가격·재고처럼 정확성이 돈인 데이터는 swr 을 짧게, 아바타·글 목록은 길게 — 필드가 아니라 <b>데이터 성격</b>이 기준입니다.\nHTTP 헤더로는 <code>Cache-Control: max-age=60, stale-while-revalidate=30</code> 이 정확히 이 로직입니다. CDN 과 브라우저가 이 판정을 대신 해 줍니다." },
 
 { track:"backend", k:"요청 병합 — 캐시 스탬피드 방어", cat:"internals",
   q:"같은 키의 동시 조회를 <b>한 번의 원본 호출로 병합</b>하세요. <code>makeCoalescer()</code> 는 <code>{begin(key), settle(key)}</code> 를 돌려줍니다. <code>begin</code> 은 <b>첫 요청자에게만 <code>true</code></b>(직접 가져와라), 진행 중이면 <code>false</code>(기다려라). <code>settle</code> 은 결과 도착 시 <b>대기자 수(첫 요청자 포함)</b>를 돌려주고 상태를 지웁니다.",
@@ -61,7 +61,7 @@ module.exports = [
          ["(() => { const co=makeCoalescer(); co.begin('a'); co.begin('b'); co.begin('b'); return co.settle('b'); })()","2"]],
   edge:[["(() => { const co=makeCoalescer(); return co.settle('x'); })()","0"],
         ["(() => { const co=makeCoalescer(); co.begin('a'); return co.settle('a'); })()","1"]],
-  ex:"🎯 인기 키의 캐시가 만료되는 순간 동시 요청 1,000개가 <b>전부 DB 로</b> 달려가는 것이 캐시 스탬피드입니다. 결과는 어차피 같으므로 <b>한 명만 가져오고 나머지는 그 결과를 나눠 받으면</b> DB 부하가 1/1000 이 됩니다.\n💡 구현의 뼈대는 '키별 진행 중 표시' 입니다. 첫 begin 이 소유권을 가져가고, 이후 begin 은 대기자로 등록됩니다. settle 에서 대기자 수를 알아야 <b>모두에게 결과를 배달</b>할 수 있습니다 — Go 의 singleflight, 자바스크립트의 '같은 Promise 공유' 가 이 패턴입니다.\n⚠️ settle 후 <b>상태를 지우는 것</b>이 중요합니다. 안 지우면 다음 만료 때 아무도 원본에 가지 않아 영원히 낡은 값을 봅니다. 실패 시에도 지워야 합니다 — 실패한 조회에 계속 합류시키면 오류가 1,000명에게 복제됩니다.\n🔧 이 방어는 서버 한 대 안에서만 유효합니다. 서버가 100대면 원본 호출도 100번입니다 — 전역 병합이 필요하면 분산 락이나 '만료 전 선제 갱신' 으로 올라갑니다." },
+  ex:"인기 키의 캐시가 만료되는 순간 동시 요청 1,000개가 <b>전부 DB 로</b> 달려가는 것이 캐시 스탬피드입니다. 결과는 어차피 같으므로 <b>한 명만 가져오고 나머지는 그 결과를 나눠 받으면</b> DB 부하가 1/1000 이 됩니다.\n구현의 뼈대는 '키별 진행 중 표시' 입니다. 첫 begin 이 소유권을 가져가고, 이후 begin 은 대기자로 등록됩니다. settle 에서 대기자 수를 알아야 <b>모두에게 결과를 배달</b>할 수 있습니다 — Go 의 singleflight, 자바스크립트의 '같은 Promise 공유' 가 이 패턴입니다.\nsettle 후 <b>상태를 지우는 것</b>이 중요합니다. 안 지우면 다음 만료 때 아무도 원본에 가지 않아 영원히 낡은 값을 봅니다. 실패 시에도 지워야 합니다 — 실패한 조회에 계속 합류시키면 오류가 1,000명에게 복제됩니다.\n이 방어는 서버 한 대 안에서만 유효합니다. 서버가 100대면 원본 호출도 100번입니다 — 전역 병합이 필요하면 분산 락이나 '만료 전 선제 갱신' 으로 올라갑니다." },
 
 { track:"backend", k:"세마포어 — 동시 실행 제한", cat:"internals",
   q:"동시 실행을 제한하는 <b>세마포어</b>를 구현하세요. <code>makeSema(n)</code> 은 <code>{acquire(id), release()}</code> 를 돌려줍니다. 슬롯이 남으면 <code>acquire</code> 는 <code>true</code>, 꽉 찼으면 <b>대기열에 넣고 <code>false</code></b>. <code>release</code> 는 대기자가 있으면 <b>가장 오래 기다린 id 를 돌려주며 슬롯을 넘기고</b>, 없으면 슬롯을 비우고 <code>null</code> 입니다.",
@@ -73,7 +73,7 @@ module.exports = [
          ["(() => { const sm=makeSema(1); sm.acquire('a'); sm.release(); return sm.acquire('b'); })()","true"]],
   edge:[["(() => { const sm=makeSema(2); sm.acquire('a'); sm.acquire('b'); sm.acquire('c'); sm.acquire('d'); return [sm.release(), sm.release(), sm.release()]; })()","['c','d',null]"],
         ["(() => { const sm=makeSema(0); return sm.acquire('a'); })()","false"]],
-  ex:"🎯 외부 API 가 '동시 10 커넥션까지' 라면, 우리 쪽에서 <b>10개 슬롯의 세마포어</b>로 막아야 합니다. 안 막으면 상대가 429로 막고, 그 재시도가 다시 몰리는 악순환이 됩니다.\n💡 release 의 미묘한 점: 대기자가 있으면 슬롯을 비우는 게 아니라 <b>그대로 넘깁니다</b>(used 불변). 비웠다가 다시 채우는 사이에 새 acquire 가 끼어들면 대기열이 <b>추월</b>당합니다 — FIFO 승계가 기아(starvation)를 막습니다.\n⚠️ n=1 세마포어가 곧 뮤텍스입니다. 반대로 세마포어는 '누가 잡았는지' 를 모르므로 <b>잡지 않은 쪽이 release 해도 막을 수 없습니다</b> — 소유권 검사가 필요하면 락으로 올라가야 합니다.\n🔧 DB 커넥션 풀, 크롤러의 도메인별 동시 요청 제한, 업로드 파이프라인의 동시 변환 수 — 전부 이 자료구조 하나로 표현됩니다. bulkhead(격벽) 패턴도 '자원별 세마포어 분리' 입니다." },
+  ex:"외부 API 가 '동시 10 커넥션까지' 라면, 우리 쪽에서 <b>10개 슬롯의 세마포어</b>로 막아야 합니다. 안 막으면 상대가 429로 막고, 그 재시도가 다시 몰리는 악순환이 됩니다.\nrelease 의 미묘한 점: 대기자가 있으면 슬롯을 비우는 게 아니라 <b>그대로 넘깁니다</b>(used 불변). 비웠다가 다시 채우는 사이에 새 acquire 가 끼어들면 대기열이 <b>추월</b>당합니다 — FIFO 승계가 기아(starvation)를 막습니다.\nn=1 세마포어가 곧 뮤텍스입니다. 반대로 세마포어는 '누가 잡았는지' 를 모르므로 <b>잡지 않은 쪽이 release 해도 막을 수 없습니다</b> — 소유권 검사가 필요하면 락으로 올라가야 합니다.\nDB 커넥션 풀, 크롤러의 도메인별 동시 요청 제한, 업로드 파이프라인의 동시 변환 수 — 전부 이 자료구조 하나로 표현됩니다. bulkhead(격벽) 패턴도 '자원별 세마포어 분리' 입니다." },
 
 { track:"backend", k:"커넥션 풀", cat:"internals",
   q:"<b>커넥션 풀</b>을 구현하세요. <code>makePool(max)</code> 는 <code>{acquire(), release(id)}</code> 를 돌려줍니다. <code>acquire</code> 는 <b>유휴 커넥션이 있으면 재사용</b>, 없고 총량이 <code>max</code> 미만이면 <code>'c1'</code>, <code>'c2'</code>… 순으로 새로 만들며, 꽉 찼으면 <code>null</code>. <code>release</code> 는 사용 중인 커넥션만 유휴로 되돌립니다(모르는 id 는 무시).",
@@ -85,7 +85,7 @@ module.exports = [
          ["(() => { const pl=makePool(1); pl.acquire(); pl.release('zzz'); return pl.acquire(); })()","null"]],
   edge:[["(() => { const pl=makePool(0); return pl.acquire(); })()","null"],
         ["(() => { const pl=makePool(2); const a=pl.acquire(); pl.release(a); pl.release(a); pl.acquire(); return pl.acquire(); })()","'c2'"]],
-  ex:"🎯 DB 커넥션은 만드는 데 수십 ms(TCP + TLS + 인증)가 들고 서버 쪽 메모리도 먹습니다. 요청마다 새로 만들면 그 비용이 <b>모든 요청의 지연</b>에 더해집니다 — 풀은 만든 것을 돌려쓰는 장치입니다.\n💡 순서가 계약입니다: <b>유휴 재사용 → 없으면 생성 → max 면 거부</b>. 재사용을 먼저 안 하면 풀이 있으나 마나가 됩니다(테스트 2가 그걸 잡습니다). max 는 DB 가 견디는 동시 커넥션의 상한이라는 약속입니다.\n⚠️ 가장 흔한 실전 사고는 <b>반납 누락(leak)</b>입니다. 예외 경로에서 release 를 건너뛰면 풀이 서서히 말라, '몇 시간 뒤 모든 요청이 멈춤' 으로 나타납니다 — finally 에서 반납하거나 트랜잭션 래퍼로 강제해야 합니다. 이중 반납 무시(멱등)도 그 방어선입니다.\n🔧 실전 풀은 여기에 대기 타임아웃·유휴 커넥션 정리·죽은 커넥션 검사(validation query)를 더합니다. HikariCP 문서의 '풀 크기 = 코어 수 × 2 + 디스크 수' 논의는 '크면 좋다' 가 왜 틀린지 보여 줍니다." },
+  ex:"DB 커넥션은 만드는 데 수십 ms(TCP + TLS + 인증)가 들고 서버 쪽 메모리도 먹습니다. 요청마다 새로 만들면 그 비용이 <b>모든 요청의 지연</b>에 더해집니다 — 풀은 만든 것을 돌려쓰는 장치입니다.\n순서가 계약입니다: <b>유휴 재사용 → 없으면 생성 → max 면 거부</b>. 재사용을 먼저 안 하면 풀이 있으나 마나가 됩니다(테스트 2가 그걸 잡습니다). max 는 DB 가 견디는 동시 커넥션의 상한이라는 약속입니다.\n가장 흔한 실전 사고는 <b>반납 누락(leak)</b>입니다. 예외 경로에서 release 를 건너뛰면 풀이 서서히 말라, '몇 시간 뒤 모든 요청이 멈춤' 으로 나타납니다 — finally 에서 반납하거나 트랜잭션 래퍼로 강제해야 합니다. 이중 반납 무시(멱등)도 그 방어선입니다.\n실전 풀은 여기에 대기 타임아웃·유휴 커넥션 정리·죽은 커넥션 검사(validation query)를 더합니다. HikariCP 문서의 '풀 크기 = 코어 수 × 2 + 디스크 수' 논의는 '크면 좋다' 가 왜 틀린지 보여 줍니다." },
 
 { track:"backend", k:"헬스체크 판정", cat:"internals",
   q:"로드밸런서의 <b>헬스체크 판정</b>을 구현하세요. <code>makeHealth(failN, okN)</code> 은 체크 결과를 받는 함수 <code>(ok) =&gt; 살아있는가</code> 를 돌려줍니다. <b>연속 <code>failN</code> 회 실패</b>면 다운으로, 다운 상태에서 <b>연속 <code>okN</code> 회 성공</b>이면 복귀로 판정합니다. 반대 결과가 나오면 연속 카운트는 리셋됩니다. 초기 상태는 살아있음입니다.",
@@ -97,7 +97,7 @@ module.exports = [
          ["(() => { const h=makeHealth(2,2); h(false); h(false); h(true); h(false); return h(true); })()","false"]],
   edge:[["(() => { const h=makeHealth(1,1); return [h(false), h(true)]; })()","[false,true]"],
         ["(() => { const h=makeHealth(3,1); return h(true); })()","true"]],
-  ex:"🎯 체크 한 번의 실패로 서버를 빼면 <b>일시적 GC 멈춤·패킷 유실에도 서버가 널뛰기</b>합니다. '연속 N회' 는 노이즈와 진짜 장애를 구분하는 최소한의 필터입니다.\n💡 내리는 문턱(failN)과 올리는 문턱(okN)을 <b>따로</b> 두는 것이 히스테리시스입니다. 경계에서 왔다갔다(flapping)하면 트래픽이 붙었다 떨어졌다를 반복해 오히려 더 위험합니다 — 온도조절기가 켜짐/꺼짐 온도를 다르게 두는 것과 같은 원리입니다.\n⚠️ 반대 결과가 <b>연속 카운트를 리셋</b>하는 것을 빼먹으면, 오래 운영될수록 누적 실패가 쌓여 멀쩡한 서버가 내려갑니다(테스트 2·4가 그걸 잡습니다). '연속' 과 '누적' 은 다른 판정입니다.\n🔧 헬스체크 엔드포인트 자체도 설계 대상입니다 — DB 까지 찌르는 deep check 는 DB 장애 때 <b>모든 서버를 동시에</b> 빼 버립니다. LB 판정용은 얕게, 모니터링용 deep check 는 따로 두는 것이 정석입니다." },
+  ex:"체크 한 번의 실패로 서버를 빼면 <b>일시적 GC 멈춤·패킷 유실에도 서버가 널뛰기</b>합니다. '연속 N회' 는 노이즈와 진짜 장애를 구분하는 최소한의 필터입니다.\n내리는 문턱(failN)과 올리는 문턱(okN)을 <b>따로</b> 두는 것이 히스테리시스입니다. 경계에서 왔다갔다(flapping)하면 트래픽이 붙었다 떨어졌다를 반복해 오히려 더 위험합니다 — 온도조절기가 켜짐/꺼짐 온도를 다르게 두는 것과 같은 원리입니다.\n반대 결과가 <b>연속 카운트를 리셋</b>하는 것을 빼먹으면, 오래 운영될수록 누적 실패가 쌓여 멀쩡한 서버가 내려갑니다(테스트 2·4가 그걸 잡습니다). '연속' 과 '누적' 은 다른 판정입니다.\n헬스체크 엔드포인트 자체도 설계 대상입니다 — DB 까지 찌르는 deep check 는 DB 장애 때 <b>모든 서버를 동시에</b> 빼 버립니다. LB 판정용은 얕게, 모니터링용 deep check 는 따로 두는 것이 정석입니다." },
 
 { track:"backend", k:"DLQ — 재시도 소진 격리", cat:"internals",
   q:"메시지 큐의 <b>DLQ(Dead Letter Queue) 이동</b>을 구현하세요. <code>pump(queue, handler, maxRetry)</code> 는 큐가 빌 때까지 앞에서 하나씩 <code>handler(msg)</code> 로 처리합니다. 실패하면 시도 횟수를 세고 <b>큐 뒤로</b> 보내되, <b>실패 횟수가 <code>maxRetry</code> 를 넘으면 DLQ 로</b> 격리합니다. <code>{done, dlq}</code> (id 배열)을 돌려주세요.",
@@ -109,7 +109,7 @@ module.exports = [
          ["pump([{id:'a'},{id:'b'}],(msg)=>msg.id!=='a',1)","{done:['b'],dlq:['a']}"]],
   edge:[["pump([],()=>true,1)","{done:[],dlq:[]}"],
         ["pump([{id:'x'}],()=>false,0)","{done:[],dlq:['x']}"]],
-  ex:"🎯 처리 불가능한 메시지(포이즌 필)를 계속 재시도하면 <b>큐 전체가 그 메시지에 막힙니다</b>. DLQ 는 '재시도로 해결 안 되는 것' 을 옆으로 빼서 나머지 흐름을 지키는 격리 병동입니다.\n💡 실패한 메시지를 <b>큐 뒤로</b> 보내는 것도 설계입니다 — 제자리에서 바로 재시도하면 일시 장애(DB 재시작 등) 동안 같은 메시지만 두들깁니다. 뒤로 보내면 다른 메시지가 먼저 흐르고, 재시도 시점도 자연히 늦춰집니다.\n⚠️ DLQ 는 <b>버리는 곳이 아닙니다</b>. 모니터링을 걸어 쌓이면 알람이 와야 하고, 원인(스키마 불일치·버그) 수정 후 <b>재주입(redrive)</b>할 수 있어야 합니다. DLQ 에 조용히 쌓인 주문이 몇 주 뒤 발견되는 사고가 실제로 흔합니다.\n🔧 SQS·Kafka 모두 이 패턴을 내장합니다(maxReceiveCount, retry topic). 재시도 대상과 즉시 DLQ 대상을 구분하는 것도 중요합니다 — 파싱 불가는 재시도해도 똑같으니 바로 격리가 맞습니다." },
+  ex:"처리 불가능한 메시지(포이즌 필)를 계속 재시도하면 <b>큐 전체가 그 메시지에 막힙니다</b>. DLQ 는 '재시도로 해결 안 되는 것' 을 옆으로 빼서 나머지 흐름을 지키는 격리 병동입니다.\n실패한 메시지를 <b>큐 뒤로</b> 보내는 것도 설계입니다 — 제자리에서 바로 재시도하면 일시 장애(DB 재시작 등) 동안 같은 메시지만 두들깁니다. 뒤로 보내면 다른 메시지가 먼저 흐르고, 재시도 시점도 자연히 늦춰집니다.\nDLQ 는 <b>버리는 곳이 아닙니다</b>. 모니터링을 걸어 쌓이면 알람이 와야 하고, 원인(스키마 불일치·버그) 수정 후 <b>재주입(redrive)</b>할 수 있어야 합니다. DLQ 에 조용히 쌓인 주문이 몇 주 뒤 발견되는 사고가 실제로 흔합니다.\nSQS·Kafka 모두 이 패턴을 내장합니다(maxReceiveCount, retry topic). 재시도 대상과 즉시 DLQ 대상을 구분하는 것도 중요합니다 — 파싱 불가는 재시도해도 똑같으니 바로 격리가 맞습니다." },
 
 { track:"backend", k:"멱등 컨슈머", cat:"internals",
   q:"<b>at-least-once</b> 전달에서 안전한 컨슈머를 구현하세요. <code>consume(msgs)</code> 는 <code>{id, val}</code> 메시지 배열을 받아 <b>같은 id 는 한 번만</b> 처리합니다(중복은 값이 달라도 스킵). 처리한 값의 합 <code>sum</code> 과 처리 순서의 id 배열 <code>handled</code> 를 돌려주세요.",
@@ -121,7 +121,7 @@ module.exports = [
          ["consume([{id:'x',val:2},{id:'y',val:4}])","{sum:6,handled:['x','y']}"]],
   edge:[["consume([])","{sum:0,handled:[]}"],
         ["consume([{id:'a',val:5},{id:'b',val:5}])","{sum:10,handled:['a','b']}"]],
-  ex:"🎯 메시지 큐의 기본 계약은 exactly-once 가 아니라 <b>at-least-once</b> 입니다 — 네트워크 단절·컨슈머 재시작·ack 유실이 있으면 같은 메시지가 <b>반드시 다시 옵니다</b>. '중복이 오면 어떡하지' 가 아니라 '중복은 온다' 가 전제입니다.\n💡 방어는 컨슈머 쪽 <b>처리 기록</b>입니다. 메시지 id 를 기록하고, 이미 본 id 는 건너뜁니다. '전달은 중복될 수 있지만 <b>효과는 한 번</b>' — 이것이 실무에서 말하는 exactly-once 의 실체(멱등 처리)입니다.\n⚠️ 중복 메시지의 <b>값이 달라도 첫 처리를 유지</b>해야 합니다(테스트 2). 값이 다르다는 것은 재전송 중 변조이거나 별개 이벤트를 같은 id 로 낸 생산자 버그입니다 — 어느 쪽이든 컨슈머가 '나중 값으로 덮어쓰기' 를 임의로 결정하면 안 됩니다.\n🔧 실전의 seen 집합은 메모리가 아니라 <b>DB 유니크 제약</b>이나 Redis SETNX 입니다 — 처리와 기록이 한 트랜잭션이어야 '기록 후 처리 전 죽음' 의 구멍이 없습니다." },
+  ex:"메시지 큐의 기본 계약은 exactly-once 가 아니라 <b>at-least-once</b> 입니다 — 네트워크 단절·컨슈머 재시작·ack 유실이 있으면 같은 메시지가 <b>반드시 다시 옵니다</b>. '중복이 오면 어떡하지' 가 아니라 '중복은 온다' 가 전제입니다.\n방어는 컨슈머 쪽 <b>처리 기록</b>입니다. 메시지 id 를 기록하고, 이미 본 id 는 건너뜁니다. '전달은 중복될 수 있지만 <b>효과는 한 번</b>' — 이것이 실무에서 말하는 exactly-once 의 실체(멱등 처리)입니다.\n중복 메시지의 <b>값이 달라도 첫 처리를 유지</b>해야 합니다(테스트 2). 값이 다르다는 것은 재전송 중 변조이거나 별개 이벤트를 같은 id 로 낸 생산자 버그입니다 — 어느 쪽이든 컨슈머가 '나중 값으로 덮어쓰기' 를 임의로 결정하면 안 됩니다.\n실전의 seen 집합은 메모리가 아니라 <b>DB 유니크 제약</b>이나 Redis SETNX 입니다 — 처리와 기록이 한 트랜잭션이어야 '기록 후 처리 전 죽음' 의 구멍이 없습니다." },
 
 { track:"backend", k:"그레이스풀 셧다운", cat:"internals",
   q:"서버의 <b>그레이스풀 셧다운</b> 상태 기계를 구현하세요. <code>makeServer()</code> 는 <code>{reqStart(), reqEnd(), shutdown(), state()}</code> 를 돌려줍니다. <code>shutdown</code> 후에는 <b>새 요청을 거부</b>(<code>reqStart → false</code>)하되 <b>진행 중인 요청은 끝까지</b> 처리합니다. 상태는 <code>running → draining</code>(진행 중 요청 남음) <code>→ stopped</code>(0개) 입니다.",
@@ -133,7 +133,7 @@ module.exports = [
          ["(() => { const sv=makeServer(); sv.reqStart(); sv.reqStart(); sv.shutdown(); sv.reqEnd(); return sv.state(); })()","'draining'"]],
   edge:[["(() => { const sv=makeServer(); sv.reqStart(); sv.reqEnd(); return sv.state(); })()","'running'"],
         ["(() => { const sv=makeServer(); sv.shutdown(); return sv.reqStart(); })()","false"]],
-  ex:"🎯 배포할 때 서버를 그냥 죽이면 <b>처리 중이던 요청이 잘려</b> 사용자는 에러를, 시스템은 어중간한 상태(결제만 되고 주문 미생성)를 얻습니다. 그레이스풀 셧다운은 '새 손님은 안 받고, 있는 손님은 끝까지' 입니다.\n💡 핵심 자료는 <b>in-flight 카운터</b> 하나입니다. 시작 +1, 종료 −1 — draining 인지 stopped 인지는 이 수가 0인지로 갈립니다. 쿠버네티스의 SIGTERM → (드레인) → SIGKILL 흐름에서 드레인 구간이 정확히 이 상태 기계입니다.\n⚠️ 순서가 중요합니다: <b>LB 에서 먼저 빠진 뒤</b> 드레인해야 합니다. 새 요청을 거부하는 중에도 LB 가 트래픽을 보내면 사용자는 연결 거부를 봅니다 — readiness probe 를 먼저 false 로 만들고 잠깐 기다린 뒤 드레인이 정석입니다.\n🔧 드레인에는 <b>시한</b>이 필요합니다. 웹소켓처럼 안 끝나는 요청이 있으면 stopped 에 영원히 못 가므로, 타임아웃 후 강제 종료(SIGKILL)가 마지막 방어선입니다." },
+  ex:"배포할 때 서버를 그냥 죽이면 <b>처리 중이던 요청이 잘려</b> 사용자는 에러를, 시스템은 어중간한 상태(결제만 되고 주문 미생성)를 얻습니다. 그레이스풀 셧다운은 '새 손님은 안 받고, 있는 손님은 끝까지' 입니다.\n핵심 자료는 <b>in-flight 카운터</b> 하나입니다. 시작 +1, 종료 −1 — draining 인지 stopped 인지는 이 수가 0인지로 갈립니다. 쿠버네티스의 SIGTERM → (드레인) → SIGKILL 흐름에서 드레인 구간이 정확히 이 상태 기계입니다.\n순서가 중요합니다: <b>LB 에서 먼저 빠진 뒤</b> 드레인해야 합니다. 새 요청을 거부하는 중에도 LB 가 트래픽을 보내면 사용자는 연결 거부를 봅니다 — readiness probe 를 먼저 false 로 만들고 잠깐 기다린 뒤 드레인이 정석입니다.\n드레인에는 <b>시한</b>이 필요합니다. 웹소켓처럼 안 끝나는 요청이 있으면 stopped 에 영원히 못 가므로, 타임아웃 후 강제 종료(SIGKILL)가 마지막 방어선입니다." },
 
 { track:"backend", k:"데드라인 안의 순차 호출", cat:"internals",
   q:"<b>데드라인 예산</b> 안에서 하위 호출 체인을 실행하세요. <code>runChain(deadline, calls)</code> 는 <code>{name, cost}</code> 호출들을 시각 0부터 순서대로 실행합니다. 다음 호출을 마치면 데드라인을 <b>넘는 경우</b>(<code>now + cost &gt; deadline</code>) 거기서 멈추고, <code>{done, timedOut}</code> (완료 이름들, 초과 호출 이름 또는 <code>null</code>)을 돌려주세요.",
@@ -145,7 +145,7 @@ module.exports = [
          ["runChain(50,[{name:'a',cost:60},{name:'b',cost:1}])","{done:[],timedOut:'a'}"]],
   edge:[["runChain(10,[])","{done:[],timedOut:null}"],
         ["runChain(0,[{name:'x',cost:1}])","{done:[],timedOut:'x'}"]],
-  ex:"🎯 사용자는 3초를 기다립니다. 인증 1초 + DB 2.5초 + 렌더링… 각자 자기 타임아웃만 보면 <b>합이 예산을 넘는데도 계속 일합니다</b>. 데드라인은 개별 호출이 아니라 <b>체인 전체</b>의 계약입니다.\n💡 그래서 각 단계 전에 '남은 예산으로 이걸 할 수 있나' 를 검사합니다. 못 하면 <b>시작하지 않는 것</b>이 핵심입니다 — 어차피 버려질 결과에 하위 서비스의 자원을 쓰는 것이 최악이기 때문입니다. 4번 테스트처럼 뒤의 작은 호출도 실행하지 않습니다(순차 체인은 앞이 막히면 끝).\n⚠️ 데드라인은 <b>전파</b>되어야 합니다. gRPC 의 deadline, HTTP 의 타임아웃 헤더로 하위 서비스에 '너에게 남은 시간' 을 알려 줘야, 하위도 그 안에서 포기할 수 있습니다 — 각자 고정 타임아웃을 쓰면 상류가 이미 떠난 뒤에도 일하는 좀비 작업이 생깁니다.\n🔧 경계 판정(<code>now + cost &gt; deadline</code> — 딱 맞으면 실행)도 계약의 일부입니다. 테스트 3이 그 경계를 못 박습니다." },
+  ex:"사용자는 3초를 기다립니다. 인증 1초 + DB 2.5초 + 렌더링… 각자 자기 타임아웃만 보면 <b>합이 예산을 넘는데도 계속 일합니다</b>. 데드라인은 개별 호출이 아니라 <b>체인 전체</b>의 계약입니다.\n그래서 각 단계 전에 '남은 예산으로 이걸 할 수 있나' 를 검사합니다. 못 하면 <b>시작하지 않는 것</b>이 핵심입니다 — 어차피 버려질 결과에 하위 서비스의 자원을 쓰는 것이 최악이기 때문입니다. 4번 테스트처럼 뒤의 작은 호출도 실행하지 않습니다(순차 체인은 앞이 막히면 끝).\n데드라인은 <b>전파</b>되어야 합니다. gRPC 의 deadline, HTTP 의 타임아웃 헤더로 하위 서비스에 '너에게 남은 시간' 을 알려 줘야, 하위도 그 안에서 포기할 수 있습니다 — 각자 고정 타임아웃을 쓰면 상류가 이미 떠난 뒤에도 일하는 좀비 작업이 생깁니다.\n경계 판정(<code>now + cost &gt; deadline</code> — 딱 맞으면 실행)도 계약의 일부입니다. 테스트 3이 그 경계를 못 박습니다." },
 
 /* ── HTTP 계약 ── */
 { track:"backend", k:"경로 라우터 — 정적 우선", cat:"internals",
@@ -158,7 +158,7 @@ module.exports = [
          ["pickRoute(['/users/:id','/users/new'],'/users/new')","'/users/new'"]],
   edge:[["pickRoute(['/users/new','/users/:id'],'/users/7')","'/users/:id'"],
         ["matchRoute('/','/')","{}"]],
-  ex:"🎯 <code>/users/new</code> 와 <code>/users/:id</code> 가 둘 다 매칭될 때 <b>등록 순서로 결정하면</b> 라우트 파일을 정리하다 순서가 바뀌는 순간 <code>new</code> 라는 id 의 사용자를 찾게 됩니다. '정적이 파라미터를 이긴다' 는 규칙이 순서 의존을 없앱니다.\n💡 매칭은 세그먼트 단위입니다 — 먼저 <b>개수부터</b> 비교해야 <code>/users</code> 가 <code>/users/:id</code> 에 걸리지 않습니다. 문자열 startsWith 로 어림잡으면 이 경계가 뚫립니다.\n⚠️ 파라미터 값은 <b>항상 문자열</b>입니다. <code>{id:'42'}</code> 를 숫자로 쓰려면 명시적 변환+검증이 필요합니다 — <code>:id</code> 에 <code>abc</code> 가 들어오는 것을 라우터는 막아 주지 않습니다.\n🔧 Express 는 등록 순서 우선, Rails·Spring 은 구체성 우선 — 프레임워크마다 규칙이 다릅니다. 실전 라우터는 선형 탐색 대신 세그먼트 트라이(trie)로 O(경로 길이)에 찾습니다." },
+  ex:"<code>/users/new</code> 와 <code>/users/:id</code> 가 둘 다 매칭될 때 <b>등록 순서로 결정하면</b> 라우트 파일을 정리하다 순서가 바뀌는 순간 <code>new</code> 라는 id 의 사용자를 찾게 됩니다. '정적이 파라미터를 이긴다' 는 규칙이 순서 의존을 없앱니다.\n매칭은 세그먼트 단위입니다 — 먼저 <b>개수부터</b> 비교해야 <code>/users</code> 가 <code>/users/:id</code> 에 걸리지 않습니다. 문자열 startsWith 로 어림잡으면 이 경계가 뚫립니다.\n파라미터 값은 <b>항상 문자열</b>입니다. <code>{id:'42'}</code> 를 숫자로 쓰려면 명시적 변환+검증이 필요합니다 — <code>:id</code> 에 <code>abc</code> 가 들어오는 것을 라우터는 막아 주지 않습니다.\nExpress 는 등록 순서 우선, Rails·Spring 은 구체성 우선 — 프레임워크마다 규칙이 다릅니다. 실전 라우터는 선형 탐색 대신 세그먼트 트라이(trie)로 O(경로 길이)에 찾습니다." },
 
 { track:"backend", k:"쿼리 스트링 파서", cat:"internals",
   q:"<b>쿼리 스트링 파서</b>를 구현하세요. <code>parseQuery(qs)</code> 는 <code>'a=1&b=2'</code> 를 객체로 만듭니다. <b>같은 키가 반복되면 배열</b>로 모으고, 키와 값 모두 <code>decodeURIComponent</code> 로 디코딩하며, <code>=</code> 가 없는 키는 빈 문자열 값으로 처리합니다.",
@@ -170,7 +170,7 @@ module.exports = [
          ["parseQuery('flag&x=1')","{flag:'',x:'1'}"]],
   edge:[["parseQuery('')","{}"],
         ["parseQuery('a=1&a=2&a=3')","{a:['1','2','3']}"]],
-  ex:"🎯 같은 키의 반복(<code>tag=a&tag=b</code>)은 <b>합법이며 흔합니다</b> — 다중 선택 필터가 정확히 이 모양입니다. 마지막 값으로 덮어쓰는 파서는 사용자가 고른 필터를 조용히 버립니다.\n💡 <code>split('=')</code> 이 아니라 <b>첫 <code>=</code> 위치로</b> 잘라야 합니다. 값 안에 <code>=</code> 가 또 올 수 있고(base64 등), 디코딩은 <b>자른 뒤에</b> 해야 인코딩된 <code>%26</code>(&) 이 구분자로 오해되지 않습니다 — 순서를 바꾸면 파서가 뚫립니다.\n⚠️ '하나면 문자열, 여러 개면 배열' 은 편하지만 <b>타입이 흔들리는</b> 계약입니다. 소비하는 쪽은 <code>Array.isArray</code> 로 항상 방어해야 합니다 — 프레임워크마다(Express qs, PHP 의 <code>[]</code> 규약) 처리 방식이 달라 API 문서에 명시해야 하는 부분입니다.\n🔧 실전에서는 <code>URLSearchParams</code> 가 표준이지만, <code>getAll()</code> 을 안 쓰고 <code>get()</code> 만 쓰면 똑같이 첫 값만 보게 됩니다 — 파서를 직접 짜 보면 그 API 가 왜 둘로 나뉘는지 이해됩니다." },
+  ex:"같은 키의 반복(<code>tag=a&tag=b</code>)은 <b>합법이며 흔합니다</b> — 다중 선택 필터가 정확히 이 모양입니다. 마지막 값으로 덮어쓰는 파서는 사용자가 고른 필터를 조용히 버립니다.\n<code>split('=')</code> 이 아니라 <b>첫 <code>=</code> 위치로</b> 잘라야 합니다. 값 안에 <code>=</code> 가 또 올 수 있고(base64 등), 디코딩은 <b>자른 뒤에</b> 해야 인코딩된 <code>%26</code>(&) 이 구분자로 오해되지 않습니다 — 순서를 바꾸면 파서가 뚫립니다.\n'하나면 문자열, 여러 개면 배열' 은 편하지만 <b>타입이 흔들리는</b> 계약입니다. 소비하는 쪽은 <code>Array.isArray</code> 로 항상 방어해야 합니다 — 프레임워크마다(Express qs, PHP 의 <code>[]</code> 규약) 처리 방식이 달라 API 문서에 명시해야 하는 부분입니다.\n실전에서는 <code>URLSearchParams</code> 가 표준이지만, <code>getAll()</code> 을 안 쓰고 <code>get()</code> 만 쓰면 똑같이 첫 값만 보게 됩니다 — 파서를 직접 짜 보면 그 API 가 왜 둘로 나뉘는지 이해됩니다." },
 
 { track:"backend", k:"콘텐츠 협상 — Accept 와 q값", cat:"internals",
   q:"<b>콘텐츠 협상</b>을 구현하세요. <code>negotiate(accept, supported)</code> 는 <code>'text/html,application/json;q=0.9'</code> 형식의 Accept 헤더에서 <b>q값이 가장 높은</b>(생략 시 1, 동률이면 헤더에서 앞선 것) 지원 타입을 고릅니다. <code>*/*</code> 는 모든 타입과 매칭, <b><code>q=0</code> 은 명시적 거부</b>, 고를 것이 없으면 <code>null</code> 입니다.",
@@ -182,7 +182,7 @@ module.exports = [
          ["negotiate('text/html',['application/json'])","null"]],
   edge:[["negotiate('text/html;q=0',['text/html'])","null"],
         ["negotiate('text/html;q=0.5,*/*;q=0.1',['application/json','text/html'])","'text/html'"]],
-  ex:"🎯 같은 URL 이 브라우저에는 HTML 을, API 클라이언트에는 JSON 을 줄 수 있는 것이 콘텐츠 협상입니다. 결정권은 <b>q값</b>에 있습니다 — 생략된 q 는 1(최고 선호)이라, <code>text/html,application/json;q=0.9</code> 는 HTML 우선입니다.\n💡 우선순위는 <b>서버 지원 목록과 클라이언트 선호의 교집합</b>에서 q 최대를 고르는 것입니다. supported 의 순서가 아니라 <b>q값이</b> 결정합니다(테스트 2가 그 구분을 잡습니다).\n⚠️ <code>q=0</code> 은 '선호 없음' 이 아니라 <b>명시적 거부</b>입니다 — 매칭돼도 제외해야 합니다. 그리고 아무것도 못 고르면 아무거나 주는 게 아니라 <code>406 Not Acceptable</code>(여기선 null)이 맞습니다.\n🔧 같은 문법이 <code>Accept-Language</code>(다국어), <code>Accept-Encoding</code>(gzip/br 협상)에도 그대로 쓰입니다. 협상 결과가 URL 마다 다르므로 캐시에는 <code>Vary: Accept</code> 를 알려야 잘못된 형식이 캐시되지 않습니다." },
+  ex:"같은 URL 이 브라우저에는 HTML 을, API 클라이언트에는 JSON 을 줄 수 있는 것이 콘텐츠 협상입니다. 결정권은 <b>q값</b>에 있습니다 — 생략된 q 는 1(최고 선호)이라, <code>text/html,application/json;q=0.9</code> 는 HTML 우선입니다.\n우선순위는 <b>서버 지원 목록과 클라이언트 선호의 교집합</b>에서 q 최대를 고르는 것입니다. supported 의 순서가 아니라 <b>q값이</b> 결정합니다(테스트 2가 그 구분을 잡습니다).\n<code>q=0</code> 은 '선호 없음' 이 아니라 <b>명시적 거부</b>입니다 — 매칭돼도 제외해야 합니다. 그리고 아무것도 못 고르면 아무거나 주는 게 아니라 <code>406 Not Acceptable</code>(여기선 null)이 맞습니다.\n같은 문법이 <code>Accept-Language</code>(다국어), <code>Accept-Encoding</code>(gzip/br 협상)에도 그대로 쓰입니다. 협상 결과가 URL 마다 다르므로 캐시에는 <code>Vary: Accept</code> 를 알려야 잘못된 형식이 캐시되지 않습니다." },
 
 { track:"backend", k:"CORS 프리플라이트 판정", cat:"internals",
   q:"<b>CORS 프리플라이트</b> 판정을 구현하세요. <code>preflight(req, cfg)</code> 에서 요청은 <code>{origin, method, headers}</code>, 설정은 <code>{origins, methods, headers}</code> 입니다. origin(<code>'*'</code> 허용)·method·요청 헤더(<b>대소문자 무시</b>)가 전부 허용될 때만 <code>{origin, methods, headers}</code> 응답을(메서드·헤더는 쉼표로 합쳐서), 하나라도 안 되면 <code>null</code> 을 돌려주세요.",
@@ -194,7 +194,7 @@ module.exports = [
          ["preflight({origin:'https://a.com',method:'GET',headers:['Content-Type']},{origins:['https://a.com'],methods:['GET'],headers:['content-type']})","{origin:'https://a.com',methods:'GET',headers:'content-type'}"]],
   edge:[["preflight({origin:'https://x.io',method:'GET',headers:[]},{origins:['*'],methods:['GET'],headers:[]})","{origin:'https://x.io',methods:'GET',headers:''}"],
         ["preflight({origin:'https://a.com',method:'GET',headers:['x-custom']},{origins:['https://a.com'],methods:['GET'],headers:[]})","null"]],
-  ex:"🎯 프리플라이트는 브라우저가 본 요청 전에 보내는 <b>OPTIONS 사전 질의</b>입니다 — 'PUT 에 이 헤더 붙여 보내도 되나요?'. 서버의 대답이 곧 이 판정 함수이고, 하나라도 어긋나면 브라우저가 본 요청을 <b>아예 보내지 않습니다</b>.\n💡 검사는 <b>origin → method → headers 3중</b>입니다. 헤더 이름은 대소문자 구분이 없으므로(<code>Content-Type</code> ≡ <code>content-type</code>) 정규화 후 비교해야 합니다 — 이걸 빼먹으면 클라이언트 라이브러리에 따라 되다 안 되다 하는 미스터리 버그가 됩니다.\n⚠️ CORS 는 <b>브라우저의 보호 장치이지 서버 보안이 아닙니다</b>. curl·서버 간 호출은 CORS 를 전혀 보지 않습니다 — CORS 를 인증 대신으로 쓰면 뚫린 게 아니라 원래 열려 있던 것입니다.\n🔧 <code>origins: ['*']</code> 는 편하지만 <b>credentials(쿠키) 와 함께 쓸 수 없습니다</b> — 브라우저가 거부합니다. 그래서 실전 응답은 요청 origin 을 허용 목록과 대조해 <b>그대로 되돌려 주는</b>(echo) 방식이 됩니다." },
+  ex:"프리플라이트는 브라우저가 본 요청 전에 보내는 <b>OPTIONS 사전 질의</b>입니다 — 'PUT 에 이 헤더 붙여 보내도 되나요?'. 서버의 대답이 곧 이 판정 함수이고, 하나라도 어긋나면 브라우저가 본 요청을 <b>아예 보내지 않습니다</b>.\n검사는 <b>origin → method → headers 3중</b>입니다. 헤더 이름은 대소문자 구분이 없으므로(<code>Content-Type</code> ≡ <code>content-type</code>) 정규화 후 비교해야 합니다 — 이걸 빼먹으면 클라이언트 라이브러리에 따라 되다 안 되다 하는 미스터리 버그가 됩니다.\nCORS 는 <b>브라우저의 보호 장치이지 서버 보안이 아닙니다</b>. curl·서버 간 호출은 CORS 를 전혀 보지 않습니다 — CORS 를 인증 대신으로 쓰면 뚫린 게 아니라 원래 열려 있던 것입니다.\n<code>origins: ['*']</code> 는 편하지만 <b>credentials(쿠키) 와 함께 쓸 수 없습니다</b> — 브라우저가 거부합니다. 그래서 실전 응답은 요청 origin 을 허용 목록과 대조해 <b>그대로 되돌려 주는</b>(echo) 방식이 됩니다." },
 
 { track:"backend", k:"Range 요청 파싱", cat:"internals",
   q:"<b>Range 헤더</b>를 파싱하세요. <code>parseRange(header, size)</code> 는 <code>'bytes=0-99'</code>(구간) · <code>'bytes=100-'</code>(거기부터 끝까지) · <code>'bytes=-100'</code>(<b>마지막 100바이트</b>) 를 <code>{start, end}</code> 로 만듭니다. <code>end</code> 가 파일을 넘으면 <b>잘라내고</b>, <code>start</code> 가 크기 이상이거나 형식이 틀리면 <code>null</code>(416) 입니다.",
@@ -206,7 +206,7 @@ module.exports = [
          ["parseRange('bytes=1000-',1000)","null"]],
   edge:[["parseRange('bytes=0-5000',1000)","{start:0,end:999}"],
         ["parseRange('bytes=-2000',1000)","{start:0,end:999}"]],
-  ex:"🎯 동영상 탐색·다운로드 이어받기가 전부 Range 요청입니다. 재생 위치를 옮기면 브라우저가 <code>bytes=52428800-</code> 를 보내고, 서버는 <b>그 지점부터만</b> 206 Partial Content 로 응답합니다 — Range 지원이 없으면 매번 처음부터 다시 받습니다.\n💡 세 형태의 의미가 다릅니다: <code>a-b</code> 구간, <code>a-</code> 시작만, <code>-n</code> 은 오프셋이 아니라 <b>마지막 n바이트</b>(suffix)입니다. 음수 시작으로 읽으면 전혀 다른 구간을 보내게 됩니다.\n⚠️ 경계의 좌우가 다릅니다 — end 초과는 <b>파일 끝으로 잘라 주지만</b>(관용), start 초과는 <b>416 거부</b>입니다(요청 자체가 성립 불가). 그리고 end 는 <b>포함</b>(inclusive)이라 <code>0-99</code> 가 정확히 100바이트입니다 — off-by-one 의 단골 지점입니다.\n🔧 응답에는 <code>Content-Range: bytes 900-999/1000</code> 로 전체 크기를 알려 줘야 클라이언트가 진행률을 계산합니다. CDN 은 Range 를 청크 캐시로 변환해 원본 부하를 줄입니다." },
+  ex:"동영상 탐색·다운로드 이어받기가 전부 Range 요청입니다. 재생 위치를 옮기면 브라우저가 <code>bytes=52428800-</code> 를 보내고, 서버는 <b>그 지점부터만</b> 206 Partial Content 로 응답합니다 — Range 지원이 없으면 매번 처음부터 다시 받습니다.\n세 형태의 의미가 다릅니다: <code>a-b</code> 구간, <code>a-</code> 시작만, <code>-n</code> 은 오프셋이 아니라 <b>마지막 n바이트</b>(suffix)입니다. 음수 시작으로 읽으면 전혀 다른 구간을 보내게 됩니다.\n경계의 좌우가 다릅니다 — end 초과는 <b>파일 끝으로 잘라 주지만</b>(관용), start 초과는 <b>416 거부</b>입니다(요청 자체가 성립 불가). 그리고 end 는 <b>포함</b>(inclusive)이라 <code>0-99</code> 가 정확히 100바이트입니다 — off-by-one 의 단골 지점입니다.\n응답에는 <code>Content-Range: bytes 900-999/1000</code> 로 전체 크기를 알려 줘야 클라이언트가 진행률을 계산합니다. CDN 은 Range 를 청크 캐시로 변환해 원본 부하를 줄입니다." },
 
 { track:"backend", k:"부분 응답 — fields 선택", cat:"internals",
   q:"응답 크기를 줄이는 <b>fields 파라미터</b>를 구현하세요. <code>pickFields(obj, fields)</code> 는 <code>'user(id,name),total'</code> 같은 선택식으로 객체를 잘라냅니다. 괄호는 <b>중첩 객체의 하위 선택</b>이고, 없는 필드는 무시하며, 빈 선택식은 빈 객체입니다.",
@@ -218,7 +218,7 @@ module.exports = [
          ["pickFields({a:{b:{c:1,d:2},e:3}},'a(b(c))')","{a:{b:{c:1}}}"]],
   edge:[["pickFields({a:1,b:2},'')","{}"],
         ["pickFields({arr:[1,2]},'arr')","{arr:[1,2]}"]],
-  ex:"🎯 모바일에서 목록 화면은 <code>id, name, thumb</code> 만 필요한데 전체 객체를 내리면 <b>페이로드의 90%가 낭비</b>입니다. fields 파라미터는 클라이언트가 '이만큼만' 을 말하게 하는 계약입니다 — GraphQL 의 핵심 아이디어를 REST 에 이식한 것입니다.\n💡 괄호 중첩 때문에 <code>split(',')</code> 로는 못 자릅니다 — <code>user(id,name)</code> 안의 쉼표가 같이 잘립니다. <b>깊이를 세면서</b> 최상위 쉼표에서만 자르는 것이 미니 파서의 요령입니다(JSON·수식 파싱과 같은 패턴).\n⚠️ 이 함수는 <b>화이트리스트 필터이기도</b> 합니다 — 요청한 것만 나가므로 <code>pw</code> 같은 민감 필드가 실수로 나가는 것을 구조적으로 막습니다. 반대 방식(제외 목록)은 새 민감 필드가 추가될 때마다 구멍이 생깁니다.\n🔧 실전 사례는 Google API 의 <code>fields=items(id,snippet/title)</code>, GitHub GraphQL, JSON:API 의 <code>fields[articles]=title</code> 입니다. 없는 필드 무시(관용)는 클라이언트 버전이 섞여 있어도 깨지지 않게 합니다." },
+  ex:"모바일에서 목록 화면은 <code>id, name, thumb</code> 만 필요한데 전체 객체를 내리면 <b>페이로드의 90%가 낭비</b>입니다. fields 파라미터는 클라이언트가 '이만큼만' 을 말하게 하는 계약입니다 — GraphQL 의 핵심 아이디어를 REST 에 이식한 것입니다.\n괄호 중첩 때문에 <code>split(',')</code> 로는 못 자릅니다 — <code>user(id,name)</code> 안의 쉼표가 같이 잘립니다. <b>깊이를 세면서</b> 최상위 쉼표에서만 자르는 것이 미니 파서의 요령입니다(JSON·수식 파싱과 같은 패턴).\n이 함수는 <b>화이트리스트 필터이기도</b> 합니다 — 요청한 것만 나가므로 <code>pw</code> 같은 민감 필드가 실수로 나가는 것을 구조적으로 막습니다. 반대 방식(제외 목록)은 새 민감 필드가 추가될 때마다 구멍이 생깁니다.\n실전 사례는 Google API 의 <code>fields=items(id,snippet/title)</code>, GitHub GraphQL, JSON:API 의 <code>fields[articles]=title</code> 입니다. 없는 필드 무시(관용)는 클라이언트 버전이 섞여 있어도 깨지지 않게 합니다." },
 
 { track:"backend", k:"벌크 요청 — 부분 성공", cat:"internals",
   q:"<b>벌크 처리의 부분 성공</b>을 구현하세요. <code>bulkRun(items, handler)</code> 는 각 항목을 <code>handler</code> 로 처리하되, <b>하나가 던져도(throw) 나머지를 계속</b> 진행합니다. 항목별 결과 <code>{id, ok, value|error}</code> 배열(입력 순서 유지)과 <code>succeeded</code>·<code>failed</code> 집계를 돌려주세요.",
@@ -230,7 +230,7 @@ module.exports = [
          ["(() => { const seen=[]; bulkRun([{id:'a'},{id:'b'}],(it)=>{ seen.push(it.id); return 1; }); return seen; })()","['a','b']"]],
   edge:[["bulkRun([],()=>1)","{results:[],succeeded:0,failed:0}"],
         ["bulkRun([{id:1}],()=>{ throw new Error('bad input'); }).results[0].error","'bad input'"]],
-  ex:"🎯 100건 임포트에서 2건이 나쁘다고 <b>전체를 거부하면</b> 사용자는 98건을 다시 올려야 합니다. 반대로 200 OK 만 주고 실패를 숨기면 데이터가 조용히 사라집니다 — 부분 성공은 <b>항목별 결과를 그대로 보고</b>하는 계약입니다.\n💡 응답 상태는 하나로 말할 수 없으므로 HTTP 207(Multi-Status)이나 <code>200 + 항목별 결과 배열</code>을 씁니다. <b>입력 순서 보존</b>이 중요합니다 — 클라이언트는 인덱스로 자기 요청과 결과를 짝짓기 때문입니다.\n⚠️ 부분 성공이 항상 정답은 아닙니다. 계좌 이체처럼 <b>전부-아니면-전무</b>가 필요한 묶음은 트랜잭션(원자성)이 맞습니다 — '독립적인 항목들인가' 가 갈림길의 질문입니다.\n🔧 실패 항목에는 <b>기계가 읽을 수 있는 이유</b>(코드·메시지)를 담아야 클라이언트가 '실패분만 수정 후 재제출' 흐름을 만들 수 있습니다. Elasticsearch 의 _bulk, SES 배치 발송이 이 구조입니다." },
+  ex:"100건 임포트에서 2건이 나쁘다고 <b>전체를 거부하면</b> 사용자는 98건을 다시 올려야 합니다. 반대로 200 OK 만 주고 실패를 숨기면 데이터가 조용히 사라집니다 — 부분 성공은 <b>항목별 결과를 그대로 보고</b>하는 계약입니다.\n응답 상태는 하나로 말할 수 없으므로 HTTP 207(Multi-Status)이나 <code>200 + 항목별 결과 배열</code>을 씁니다. <b>입력 순서 보존</b>이 중요합니다 — 클라이언트는 인덱스로 자기 요청과 결과를 짝짓기 때문입니다.\n부분 성공이 항상 정답은 아닙니다. 계좌 이체처럼 <b>전부-아니면-전무</b>가 필요한 묶음은 트랜잭션(원자성)이 맞습니다 — '독립적인 항목들인가' 가 갈림길의 질문입니다.\n실패 항목에는 <b>기계가 읽을 수 있는 이유</b>(코드·메시지)를 담아야 클라이언트가 '실패분만 수정 후 재제출' 흐름을 만들 수 있습니다. Elasticsearch 의 _bulk, SES 배치 발송이 이 구조입니다." },
 
 { track:"backend", k:"슬러그 생성과 충돌 회피", cat:"internals",
   q:"URL <b>슬러그</b>를 만드세요. <code>slugify(title, taken)</code> 은 제목을 소문자로 바꾸고 영숫자 외 문자를 <code>-</code> 로 접습니다(연속은 하나로, 양끝 제거). 이미 <code>taken</code> 에 있으면 <b><code>-2</code>, <code>-3</code>… 을 붙여</b> 첫 빈 이름을 찾습니다.",
@@ -242,7 +242,7 @@ module.exports = [
          ["slugify('My Post',['my-post','my-post-2'])","'my-post-3'"]],
   edge:[["slugify('A B',['a-b','a-b-2','a-b-3'])","'a-b-4'"],
         ["slugify('Already-Clean',[])","'already-clean'"]],
-  ex:"🎯 슬러그는 <b>URL 이 곧 UI</b> 라는 생각입니다 — <code>/posts/91f3ab</code> 보다 <code>/posts/rest-api-guide</code> 가 공유·검색·기억 모두에서 낫습니다. 대신 사람이 읽는 이름은 <b>충돌</b>하므로 규칙적인 회피가 필요합니다.\n💡 정규화 순서에 함정이 있습니다 — 특수문자를 <b>각각</b> <code>-</code> 로 바꾸면 <code>--</code> 가 생깁니다. <code>[^a-z0-9]+</code> 처럼 <b>연속을 한 번에</b> 접고, 양끝을 다듬어야 <code>-my-post-</code> 같은 슬러그가 안 나옵니다.\n⚠️ 검사와 저장 사이에 다른 요청이 같은 슬러그를 만들면 <b>경쟁 조건</b>입니다 — 최종 방어선은 DB 유니크 제약이고, 충돌 시 재생성으로 물러나는 구조가 안전합니다. 또 제목을 바꿔도 <b>기존 슬러그는 리다이렉트로 남겨야</b> 공유된 링크가 죽지 않습니다.\n🔧 유니코드 제목(한글 등)은 그대로 두거나(percent-encoding), 음역(transliteration)하거나, id 병기(<code>/posts/123-제목</code>) — 세 방식의 트레이드오프를 알고 골라야 합니다." },
+  ex:"슬러그는 <b>URL 이 곧 UI</b> 라는 생각입니다 — <code>/posts/91f3ab</code> 보다 <code>/posts/rest-api-guide</code> 가 공유·검색·기억 모두에서 낫습니다. 대신 사람이 읽는 이름은 <b>충돌</b>하므로 규칙적인 회피가 필요합니다.\n정규화 순서에 함정이 있습니다 — 특수문자를 <b>각각</b> <code>-</code> 로 바꾸면 <code>--</code> 가 생깁니다. <code>[^a-z0-9]+</code> 처럼 <b>연속을 한 번에</b> 접고, 양끝을 다듬어야 <code>-my-post-</code> 같은 슬러그가 안 나옵니다.\n검사와 저장 사이에 다른 요청이 같은 슬러그를 만들면 <b>경쟁 조건</b>입니다 — 최종 방어선은 DB 유니크 제약이고, 충돌 시 재생성으로 물러나는 구조가 안전합니다. 또 제목을 바꿔도 <b>기존 슬러그는 리다이렉트로 남겨야</b> 공유된 링크가 죽지 않습니다.\n유니코드 제목(한글 등)은 그대로 두거나(percent-encoding), 음역(transliteration)하거나, id 병기(<code>/posts/123-제목</code>) — 세 방식의 트레이드오프를 알고 골라야 합니다." },
 
 { track:"backend", k:"일관 해싱 — 링 라우팅", cat:"internals",
   q:"<b>일관 해싱</b> 링에서 키의 담당 노드를 찾으세요. <code>route(keyHash, ring)</code> 은 <code>{h, node}</code> 배열(정렬 안 되어 있을 수 있음)에서 <b><code>h ≥ keyHash</code> 인 가장 작은 노드</b>를 고르고, 없으면 <b>맨 앞(가장 작은 h)으로 감습니다</b>(wrap).",
@@ -254,7 +254,7 @@ module.exports = [
          ["route(15,[{h:10,node:'A'},{h:30,node:'C'}])","'C'"]],
   edge:[["route(99,[{h:50,node:'X'}])","'X'"],
         ["route(15,[{h:30,node:'C'},{h:10,node:'A'},{h:20,node:'B'}])","'B'"]],
-  ex:"🎯 <code>hash % 서버수</code> 의 치명적 약점: 서버가 3대에서 4대가 되면 <b>거의 모든 키의 담당이 바뀝니다</b>(캐시 전멸). 일관 해싱은 키와 노드를 <b>같은 링 위에</b> 놓아, 노드 하나가 빠져도 <b>그 노드 구간의 키만</b> 이웃으로 이동합니다.\n💡 규칙은 '시계 방향으로 처음 만나는 노드' 입니다. 4번 테스트가 그 가치를 보여 줍니다 — B(h:20)가 빠지자 B 의 키(15)만 C 로 가고, A 구간의 키는 <b>그대로</b>입니다. 끝을 넘으면 맨 앞으로 감는 wrap 이 링을 완성합니다.\n⚠️ 노드가 적으면 구간 크기가 <b>불균등</b>해 한 노드에 부하가 쏠립니다. 실전은 노드마다 <b>가상 노드 수백 개</b>를 링에 뿌려 구간을 잘게 섞습니다 — 성능 좋은 서버에 가상 노드를 더 주는 가중치도 이 방식으로 자연히 됩니다.\n🔧 Memcached 클라이언트(ketama), DynamoDB·Cassandra 의 파티셔닝, Envoy 의 ring hash LB 가 전부 이 구조입니다. 같은 키는 항상 같은 노드로 — 세션 어피니티도 공짜로 얻습니다." },
+  ex:"<code>hash % 서버수</code> 의 치명적 약점: 서버가 3대에서 4대가 되면 <b>거의 모든 키의 담당이 바뀝니다</b>(캐시 전멸). 일관 해싱은 키와 노드를 <b>같은 링 위에</b> 놓아, 노드 하나가 빠져도 <b>그 노드 구간의 키만</b> 이웃으로 이동합니다.\n규칙은 '시계 방향으로 처음 만나는 노드' 입니다. 4번 테스트가 그 가치를 보여 줍니다 — B(h:20)가 빠지자 B 의 키(15)만 C 로 가고, A 구간의 키는 <b>그대로</b>입니다. 끝을 넘으면 맨 앞으로 감는 wrap 이 링을 완성합니다.\n노드가 적으면 구간 크기가 <b>불균등</b>해 한 노드에 부하가 쏠립니다. 실전은 노드마다 <b>가상 노드 수백 개</b>를 링에 뿌려 구간을 잘게 섞습니다 — 성능 좋은 서버에 가상 노드를 더 주는 가중치도 이 방식으로 자연히 됩니다.\nMemcached 클라이언트(ketama), DynamoDB·Cassandra 의 파티셔닝, Envoy 의 ring hash LB 가 전부 이 구조입니다. 같은 키는 항상 같은 노드로 — 세션 어피니티도 공짜로 얻습니다." },
 
 { track:"backend", k:"낙관적 락 갱신", cat:"internals",
   q:"<b>낙관적 락</b>으로 갱신하세요. <code>updateIf(store, id, version, patch)</code> 는 <code>{id: {version, data}}</code> 저장소에서 <b>버전이 일치할 때만</b> <code>data</code> 에 patch 를 병합하고 <b>버전을 +1</b> 한 <b>새 저장소</b>를 돌려줍니다(원본 불변). 버전 불일치나 없는 id 는 <code>null</code>(409 Conflict) 입니다.",
@@ -266,7 +266,7 @@ module.exports = [
          ["updateIf({u1:{version:1,data:{name:'a',age:5}}},'u1',1,{age:6})","{u1:{version:2,data:{name:'a',age:6}}}"]],
   edge:[["updateIf({},'x',1,{})","null"],
         ["updateIf({a:{version:1,data:{}},b:{version:9,data:{}}},'a',1,{x:1})","{a:{version:2,data:{x:1}},b:{version:9,data:{}}}"]],
-  ex:"🎯 두 관리자가 같은 상품을 편집하다 나중에 저장한 쪽이 앞의 변경을 <b>통째로 덮는</b> 것이 lost update 입니다. 낙관적 락은 '읽었을 때의 버전' 을 갱신 조건에 넣어 — <code>UPDATE … WHERE version = 3</code> — 충돌을 <b>덮어쓰기가 아니라 실패로</b> 바꿉니다.\n💡 '낙관적' 인 이유는 <b>잠그지 않기 때문</b>입니다. 충돌이 드물다는 가정 하에 평소 비용이 0이고, 충돌 시에만 409를 받고 다시 읽어 재시도합니다 — 편집 화면처럼 충돌이 드문 곳의 정석입니다(잦으면 비관적 락이 낫습니다).\n⚠️ 409를 받은 클라이언트의 처리가 제품의 품질입니다 — 조용히 재시도하며 덮으면 락이 무의미해집니다. <b>최신 값을 보여 주고 병합을 사용자에게</b> 맡기는 것까지가 이 패턴입니다. HTTP 로는 ETag + <code>If-Match</code> 가 정확히 같은 구조입니다.\n🔧 버전 +1 은 서버가 합니다 — 클라이언트가 보낸 버전을 그대로 저장하면 조작될 수 있습니다. 숫자 대신 수정 시각을 쓰면 같은 ms 의 충돌을 놓치므로 <b>단조 증가 정수</b>가 안전합니다." },
+  ex:"두 관리자가 같은 상품을 편집하다 나중에 저장한 쪽이 앞의 변경을 <b>통째로 덮는</b> 것이 lost update 입니다. 낙관적 락은 '읽었을 때의 버전' 을 갱신 조건에 넣어 — <code>UPDATE … WHERE version = 3</code> — 충돌을 <b>덮어쓰기가 아니라 실패로</b> 바꿉니다.\n'낙관적' 인 이유는 <b>잠그지 않기 때문</b>입니다. 충돌이 드물다는 가정 하에 평소 비용이 0이고, 충돌 시에만 409를 받고 다시 읽어 재시도합니다 — 편집 화면처럼 충돌이 드문 곳의 정석입니다(잦으면 비관적 락이 낫습니다).\n409를 받은 클라이언트의 처리가 제품의 품질입니다 — 조용히 재시도하며 덮으면 락이 무의미해집니다. <b>최신 값을 보여 주고 병합을 사용자에게</b> 맡기는 것까지가 이 패턴입니다. HTTP 로는 ETag + <code>If-Match</code> 가 정확히 같은 구조입니다.\n버전 +1 은 서버가 합니다 — 클라이언트가 보낸 버전을 그대로 저장하면 조작될 수 있습니다. 숫자 대신 수정 시각을 쓰면 같은 ms 의 충돌을 놓치므로 <b>단조 증가 정수</b>가 안전합니다." },
 
 { track:"backend", k:"리스 기반 분산 락", cat:"internals",
   q:"<b>만료(리스)가 있는 분산 락</b>을 구현하세요. <code>makeLock()</code> 은 <code>{acquire(who, now, ttl), release(who, tk)}</code> 를 돌려줍니다. <code>acquire</code> 는 비었거나 <b>만료된 락이면 획득</b>하고 <b>증가하는 펜싱 토큰</b>을, 아니면 <code>null</code> 을 돌려줍니다(재진입 없음). <code>release</code> 는 <b>소유자와 토큰이 모두 현재와 일치할 때만</b> 해제합니다.",
@@ -278,7 +278,7 @@ module.exports = [
          ["(() => { const lk=makeLock(); lk.acquire('a',0,100); lk.acquire('b',100,100); return lk.release('a',1); })()","false"]],
   edge:[["(() => { const lk=makeLock(); const tk=lk.acquire('a',0,50); lk.release('a',tk); return lk.acquire('b',10,50); })()","2"],
         ["(() => { const lk=makeLock(); lk.acquire('a',0,100); return lk.acquire('a',50,100); })()","null"]],
-  ex:"🎯 락을 잡은 프로세스가 <b>죽으면</b> 그 락은 영원히 안 풀립니다 — 그래서 분산 락에는 반드시 <b>만료(TTL, 리스)</b>가 필요합니다. 만료는 곧 '죽은 소유자의 락은 탈취 가능' 이라는 뜻입니다.\n💡 그런데 만료가 새 문제를 만듭니다 — GC 멈춤으로 <b>느려졌을 뿐인</b> A 의 락이 만료되고 B 가 획득한 뒤, A 가 깨어나 계속 쓰기를 하면 둘이 동시에 씁니다. <b>펜싱 토큰</b>(단조 증가)이 방어선입니다 — 저장소가 낡은 토큰(테스트 4의 tk=1)의 쓰기를 거부합니다.\n⚠️ release 도 <b>소유자+토큰 검사</b>가 필요합니다. 검사 없는 release 는 낡은 A 가 B 의 락을 풀어 버리는 사고가 됩니다 — Redis 의 'GET 비교 후 DEL' 을 Lua 로 원자화하는 이유입니다.\n🔧 TTL 은 '작업 최대 시간보다 길게, 장애 감지는 빠르게' 사이의 절충입니다. 긴 작업은 주기적 <b>리스 연장(heartbeat)</b>으로 풉니다 — 연장이 끊기면 죽은 것으로 봅니다." },
+  ex:"락을 잡은 프로세스가 <b>죽으면</b> 그 락은 영원히 안 풀립니다 — 그래서 분산 락에는 반드시 <b>만료(TTL, 리스)</b>가 필요합니다. 만료는 곧 '죽은 소유자의 락은 탈취 가능' 이라는 뜻입니다.\n그런데 만료가 새 문제를 만듭니다 — GC 멈춤으로 <b>느려졌을 뿐인</b> A 의 락이 만료되고 B 가 획득한 뒤, A 가 깨어나 계속 쓰기를 하면 둘이 동시에 씁니다. <b>펜싱 토큰</b>(단조 증가)이 방어선입니다 — 저장소가 낡은 토큰(테스트 4의 tk=1)의 쓰기를 거부합니다.\nrelease 도 <b>소유자+토큰 검사</b>가 필요합니다. 검사 없는 release 는 낡은 A 가 B 의 락을 풀어 버리는 사고가 됩니다 — Redis 의 'GET 비교 후 DEL' 을 Lua 로 원자화하는 이유입니다.\nTTL 은 '작업 최대 시간보다 길게, 장애 감지는 빠르게' 사이의 절충입니다. 긴 작업은 주기적 <b>리스 연장(heartbeat)</b>으로 풉니다 — 연장이 끊기면 죽은 것으로 봅니다." },
 
 { track:"backend", k:"API 키 스코프 검사", cat:"internals",
   q:"API 키의 <b>스코프(권한) 검사</b>를 구현하세요. <code>hasScope(granted, needed)</code> 는 부여 목록이 요구 스코프를 커버하는지 봅니다 — 정확히 일치, <code>'read:*'</code> 는 <b>read: 로 시작하는 전부</b>, <code>'*'</code> 는 전부 허용. <code>missing(granted, neededList)</code> 는 <b>부족한 스코프 목록</b>을 돌려줍니다.",
@@ -290,5 +290,5 @@ module.exports = [
          ["missing(['read:*','write:users'],['read:a','write:users','admin:x'])","['admin:x']"]],
   edge:[["hasScope(['*'],'anything:else')","true"],
         ["missing([],[])","[]"]],
-  ex:"🎯 API 키 하나에 전권을 주면 그 키가 새는 순간 <b>전부</b> 샙니다. 스코프는 '이 키는 읽기만' 처럼 권한을 쪼개는 장치이고, 검사 함수가 그 계약의 집행자입니다 — OAuth 의 scope, GitHub 토큰의 repo/read:org 가 다 이 구조입니다.\n💡 와일드카드 매칭의 디테일: <code>read:*</code> 는 <code>read:</code> <b>접두사</b> 검사입니다. <code>slice(0,-1)</code> 로 <code>read:</code> 를 남겨 비교해야 합니다 — <code>read</code> 까지 잘라 버리면 <code>readonly:x</code> 같은 이웃 스코프까지 허용하는 구멍이 됩니다.\n⚠️ 검사의 방향이 중요합니다 — '부여된 것 중 하나라도 커버하면 허용'(some)이지, '요구 중 하나라도 있으면' 이 아닙니다. 그리고 부족할 때는 403에 <b>무엇이 부족한지</b>(missing 목록)를 담아야 클라이언트가 올바른 권한을 요청할 수 있습니다.\n🔧 최소 권한 원칙: 기본은 빈 스코프, 필요한 것만 명시적으로. <code>*</code> 는 관리자 도구에만, 그것도 만료 짧게 — 와일드카드는 편의가 아니라 <b>부채</b>로 취급하는 것이 안전합니다." },
+  ex:"API 키 하나에 전권을 주면 그 키가 새는 순간 <b>전부</b> 샙니다. 스코프는 '이 키는 읽기만' 처럼 권한을 쪼개는 장치이고, 검사 함수가 그 계약의 집행자입니다 — OAuth 의 scope, GitHub 토큰의 repo/read:org 가 다 이 구조입니다.\n와일드카드 매칭의 디테일: <code>read:*</code> 는 <code>read:</code> <b>접두사</b> 검사입니다. <code>slice(0,-1)</code> 로 <code>read:</code> 를 남겨 비교해야 합니다 — <code>read</code> 까지 잘라 버리면 <code>readonly:x</code> 같은 이웃 스코프까지 허용하는 구멍이 됩니다.\n검사의 방향이 중요합니다 — '부여된 것 중 하나라도 커버하면 허용'(some)이지, '요구 중 하나라도 있으면' 이 아닙니다. 그리고 부족할 때는 403에 <b>무엇이 부족한지</b>(missing 목록)를 담아야 클라이언트가 올바른 권한을 요청할 수 있습니다.\n최소 권한 원칙: 기본은 빈 스코프, 필요한 것만 명시적으로. <code>*</code> 는 관리자 도구에만, 그것도 만료 짧게 — 와일드카드는 편의가 아니라 <b>부채</b>로 취급하는 것이 안전합니다." },
 ];

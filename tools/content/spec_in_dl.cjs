@@ -1,5 +1,5 @@
 module.exports = {
-  track: "dl", guide: "✍️", xp: 60,
+  track: "dl", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 층의 성질과 크기 계산",
   source: "./in_dl.cjs",
   lessons: [

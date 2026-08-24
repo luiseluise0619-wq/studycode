@@ -1,5 +1,5 @@
 module.exports = {
-  track: "compiler", guide: "✍️", xp: 60,
+  track: "compiler", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 단계 이름과 표현 형식",
   source: "./in_compiler.cjs",
   lessons: [

@@ -1,5 +1,5 @@
 module.exports = {
-  track: "security", guide: "📜", xp: 70,
+  track: "security", guide: "", xp: 70,
   unit: "로그 분석 II — 오설정이 만든 문",
   source: "./log_security.cjs",
   lessons: [

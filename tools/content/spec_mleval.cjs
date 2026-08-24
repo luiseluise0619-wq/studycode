@@ -1,5 +1,5 @@
 module.exports={
-  track:"mleval", guide:"📐", xp:80,
+  track:"mleval", guide:"", xp:80,
   unit:"실행형 실전 — 지표를 직접 만든다",
   source:"./exec_mlmet.cjs", slice:[6,12],
   lessons:[

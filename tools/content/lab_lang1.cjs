@@ -453,7 +453,7 @@ const JAVA_T3 = JAVA_T2.replace(/}\n$/, "") + `
 module.exports = {
   projects: [
     { id:"logcli", lang:"go", mainFile:"sol.go", srcName:"sol.go",
-      em:"🐹", title:"Go — 접속 로그 집계 CLI",
+      em:"", title:"Go — 접속 로그 집계 CLI",
       sub:"파싱 → 집계 → 리포트. 실제 go test 가 채점합니다",
       brief:"파일 하나(sol.go)를 3일에 걸쳐 키웁니다. 채점은 브라우저가 아니라 로컬 러너의 진짜 Go 컴파일러와 go test 가 합니다 — 실패하면 go test 의 출력을 그대로 보여 주므로, 어느 테스트가 왜 깨졌는지는 그 출력을 읽으면 됩니다.",
       contract:"sol.go 는 package ex 이며 ParseLine·Aggregate·Report 세 함수를 내보내야 합니다. 표준 라이브러리만 쓸 수 있고 외부 모듈은 받지 않습니다.",
@@ -488,7 +488,7 @@ module.exports = {
       ] },
 
     { id:"ordercore", lang:"java", mainFile:"Sol.java", srcName:"Sol.java",
-      em:"☕", title:"Java — 주문 코어",
+      em:"", title:"Java — 주문 코어",
       sub:"장바구니 → 쿠폰 → 영수증. 실제 JUnit 이 채점합니다",
       brief:"파일 하나(Sol.java)를 3일에 걸쳐 키웁니다. 채점은 로컬 러너의 진짜 javac 와 JUnit 5 가 합니다. 검증 실패를 예외로 던지는 것, 정수 나눗셈의 내림, 상태를 어디에 둘지 — 세 가지가 이 프로젝트의 진짜 주제입니다.",
       contract:"public class Sol 이 add(String,int,int) · total() · applyCoupon(int) · receipt() 를 공개 메서드로 가져야 합니다. 잘못된 입력은 IllegalArgumentException 을 던집니다.",

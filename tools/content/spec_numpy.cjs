@@ -1,5 +1,5 @@
 module.exports={
-  track:"numpy", guide:"🔢", xp:80,
+  track:"numpy", guide:"", xp:80,
   unit:"실행형 실전 — NumPy 의 의미를 직접 만든다",
   source:"./exec_npd.cjs", slice:[0,6],
   lessons:[

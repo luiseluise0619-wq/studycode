@@ -1,5 +1,5 @@
 module.exports = {
-  track: "mleval", guide: "🏗️", xp: 80,
+  track: "mleval", guide: "", xp: 80,
   unit: "설계 · 직접 그리는 평가 파이프라인",
   source: "./arch_mleval.cjs",
   lessons: [

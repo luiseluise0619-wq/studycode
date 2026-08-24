@@ -1,5 +1,5 @@
 module.exports = {
-  track: "compiler", guide: "🐛", xp: 80,
+  track: "compiler", guide: "", xp: 80,
   unit: "실행형 실전 — 작은 예제만 통과하는 컴파일러 코드 고치기",
   source: "./dbg_compiler.cjs",
   lessons: [

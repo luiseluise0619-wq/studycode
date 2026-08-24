@@ -1,5 +1,5 @@
 module.exports = {
-  track: "numpy", guide: "🐛", xp: 80,
+  track: "numpy", guide: "", xp: 80,
   unit: "실행형 실전 — 모양은 맞는데 값이 틀린 코드 고치기",
   source: "./dbg_numpy.cjs",
   lessons: [

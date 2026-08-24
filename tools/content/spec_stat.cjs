@@ -1,6 +1,6 @@
 const UNIT="실행형 실전 — 통계 알고리즘을 직접 만든다";
 module.exports={
-  track:"stat", guide:"📊", xp:80,
+  track:"stat", guide:"", xp:80,
   unit:UNIT,
   source:"./exec_stat.cjs",
   lessons:[

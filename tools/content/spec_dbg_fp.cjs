@@ -1,5 +1,5 @@
 module.exports = {
-  track: "fp", guide: "🐛", xp: 80,
+  track: "fp", guide: "", xp: 80,
   unit: "실행형 실전 — 순수해 보이지만 새는 코드 고치기",
   source: "./dbg_fp.cjs",
   lessons: [

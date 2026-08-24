@@ -1,5 +1,5 @@
 module.exports = {
-  track: "net", guide: "🐛", xp: 80,
+  track: "net", guide: "", xp: 80,
   unit: "실행형 실전 — 규약을 반쯤만 지킨 코드 고치기",
   source: "./dbg_net.cjs",
   lessons: [

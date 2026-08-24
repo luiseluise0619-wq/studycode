@@ -1,5 +1,5 @@
 module.exports = {
-  track: "mleval", guide: "✍️", xp: 60,
+  track: "mleval", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 지표를 직접 셈해 보기",
   source: "./in_mleval.cjs",
   lessons: [

@@ -1,5 +1,5 @@
 module.exports = {
-  track: "mleval", guide: "📜", xp: 70,
+  track: "mleval", guide: "", xp: 70,
   unit: "로그 분석 — 평가가 거짓말하는 자리",
   source: "./log_mleval.cjs",
   lessons: [

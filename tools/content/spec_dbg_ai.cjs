@@ -1,5 +1,5 @@
 module.exports = {
-  track: "ai", guide: "🐛", xp: 80,
+  track: "ai", guide: "", xp: 80,
   unit: "실행형 실전 — 파이프라인은 도는데 답만 어긋나는 자리",
   source: "./dbg_ai.cjs",
   lessons: [

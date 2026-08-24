@@ -1,5 +1,5 @@
 module.exports = {
-  track: "cs", guide: "✍️", xp: 60,
+  track: "cs", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 비트와 표현 범위",
   source: "./in_cs.cjs",
   lessons: [

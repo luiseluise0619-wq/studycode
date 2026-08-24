@@ -1,5 +1,5 @@
 module.exports={
-  track:"os", guide:"🧩", xp:80,
+  track:"os", guide:"", xp:80,
   unit:"실행형 실전 — 커널 알고리즘을 직접 돌린다",
   source:"./exec_os2.cjs",
   lessons:[

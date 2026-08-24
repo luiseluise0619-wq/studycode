@@ -1,5 +1,5 @@
 module.exports = {
-  track: "arduino", guide: "✍️", xp: 60,
+  track: "arduino", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 보드의 숫자와 신호 규격",
   source: "./in_arduino.cjs",
   lessons: [

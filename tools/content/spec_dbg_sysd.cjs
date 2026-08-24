@@ -1,5 +1,5 @@
 module.exports = {
-  track: "sysd", guide: "🐛", xp: 80,
+  track: "sysd", guide: "", xp: 80,
   unit: "실행형 실전 — 여러 대에서만 갈라지는 코드 고치기",
   source: "./dbg_sysd.cjs",
   lessons: [

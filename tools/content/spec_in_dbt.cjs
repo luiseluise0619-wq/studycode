@@ -1,5 +1,5 @@
 module.exports = {
-  track: "dbt", guide: "✍️", xp: 60,
+  track: "dbt", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 트랜잭션과 인덱스의 약속",
   source: "./in_dbt.cjs",
   lessons: [

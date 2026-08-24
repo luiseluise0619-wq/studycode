@@ -1,5 +1,5 @@
 module.exports = {
-  track: "react", guide: "📜", xp: 70,
+  track: "react", guide: "", xp: 70,
   unit: "로그 분석 — 콘솔과 프로파일러 읽기",
   source: "./log_react.cjs",
   lessons: [

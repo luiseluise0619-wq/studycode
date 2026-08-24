@@ -1,5 +1,5 @@
 module.exports={
-  track:"ml", guide:"🤖", xp:80,
+  track:"ml", guide:"", xp:80,
   unit:"실행형 실전 — 학습 준비를 직접 만든다",
   source:"./exec_mlmet.cjs", slice:[0,6],
   lessons:[

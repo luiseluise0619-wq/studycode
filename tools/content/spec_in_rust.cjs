@@ -1,5 +1,5 @@
 module.exports = {
-  track: "rust", guide: "✍️", xp: 60,
+  track: "rust", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 소유권과 타입 규칙",
   source: "./in_rust.cjs",
   lessons: [

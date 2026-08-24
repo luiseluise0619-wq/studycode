@@ -1,5 +1,5 @@
 module.exports = {
-  track: "net", guide: "✍️", xp: 60,
+  track: "net", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 규격에 적힌 숫자와 이름",
   source: "./in_net.cjs",
   lessons: [

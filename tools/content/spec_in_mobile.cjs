@@ -1,5 +1,5 @@
 module.exports = {
-  track: "mobile", guide: "✍️", xp: 60,
+  track: "mobile", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 생명주기·성능·배포",
   source: "./in_mobile.cjs",
   lessons: [

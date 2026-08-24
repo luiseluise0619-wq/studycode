@@ -1,5 +1,5 @@
 module.exports = {
-  track: "ml", guide: "🏗️", xp: 80,
+  track: "ml", guide: "", xp: 80,
   unit: "설계 · 직접 그리는 학습 파이프라인",
   source: "./arch_ml.cjs",
   lessons: [

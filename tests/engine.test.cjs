@@ -205,7 +205,7 @@ const SOL={
 t("미션 12개가 모두 존재하고 필수 필드를 갖춘다", ()=>{
   eq(GIT_MISSIONS.length,12);
   GIT_MISSIONS.forEach(m=>{
-    ["id","em","title","brief","teach","hint","goalTxt"].forEach(f=>ok(m[f],m.id+"."+f+" 누락"));
+    ["id","title","brief","teach","hint","goalTxt"].forEach(f=>ok(m[f],m.id+"."+f+" 누락"));
     ok(typeof m.goal==="function", m.id+".goal");
   });
 });
@@ -261,7 +261,7 @@ function runBuildDay(files, day){
 t("빌드 프로젝트가 존재하고 필수 필드를 갖춘다", ()=>{
   ok(BUILD_PROJECTS.length>=2, "프로젝트 2개 이상");
   BUILD_PROJECTS.forEach(p=>{
-    ["id","em","title","sub","brief","contract","seed","days"].forEach(f=>ok(p[f],p.id+"."+f+" 누락"));
+    ["id","title","sub","brief","contract","seed","days"].forEach(f=>ok(p[f],p.id+"."+f+" 누락"));
     const native=p.lang&&p.lang!=="js";
     if(native){
       /* 언어 프로젝트는 러너가 파일 하나를 컴파일한다 — 진입점은 mainFile 이고

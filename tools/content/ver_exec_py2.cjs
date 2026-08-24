@@ -22,7 +22,7 @@ Q.forEach((q,i)=>{
 
   if(fns.has(q.fn)) fail("함수 이름 중복: "+q.fn); fns.add(q.fn);
   const stem=q.q.slice(0,40); if(stems.has(stem)) fail("문제 줄기 중복"); stems.add(stem);
-  if(!/🎯/.test(q.ex)||String(q.ex).length<200) fail("해설에 요지가 없거나 200자 미만");
+  if(!//.test(q.ex)||String(q.ex).length<200) fail("해설에 요지가 없거나 200자 미만");
   if(q.tests.length<4) fail("tests 가 4개 미만");
   if(!q.edge||q.edge.length<1) fail("edge 가 없다");
   if(!new RegExp("(?:def|class)\\s+"+q.fn).test(q.src)) fail("src 에 "+q.fn+" 정의가 없다");

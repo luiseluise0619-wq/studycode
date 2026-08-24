@@ -1,5 +1,5 @@
 module.exports = {
-  track: "math", guide: "🐛", xp: 80,
+  track: "math", guide: "", xp: 80,
   unit: "실행형 실전 — 식은 맞는데 수가 어긋난 코드 고치기",
   source: "./dbg_math.cjs",
   lessons: [

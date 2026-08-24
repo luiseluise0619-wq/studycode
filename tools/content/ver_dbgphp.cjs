@@ -36,7 +36,7 @@ const post = body => fetch(BASE + "/test", {
     if (!q.src || !q.sol) probs.push("src 또는 sol 이 없다");
     if (q.src === q.sol) probs.push("src 와 sol 이 같다");
     if (/TODO|여기를 채우|구현하세요/.test(String(q.src))) probs.push("src 에 빈칸이 있다 — 디버깅이 아니라 구현이다");
-    if (!/🐛 원인/.test(q.ex || "") || !/🔧 해결/.test(q.ex || "") || !/🛡 재발 방지/.test(q.ex || ""))
+    if (!/(^|\n)원인/.test(q.ex || "") || !/(^|\n)해결/.test(q.ex || "") || !/(^|\n)재발 방지/.test(q.ex || ""))
       probs.push("해설에 원인·해결·재발방지가 없다");
     if (String(q.ex || "").length < 200) probs.push("해설이 200자 미만");
     if (String(q.q || "").length < 60) probs.push("문제 설명이 부실하다");

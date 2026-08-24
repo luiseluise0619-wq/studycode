@@ -1,5 +1,5 @@
 module.exports = {
-  track: "ml", guide: "📜", xp: 70,
+  track: "ml", guide: "", xp: 70,
   unit: "로그 분석 — 학습 로그가 남긴 증거",
   source: "./log_ml.cjs",
   lessons: [

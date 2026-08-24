@@ -1,5 +1,5 @@
 module.exports = {
-  track: "algo", guide: "🐛", xp: 80,
+  track: "algo", guide: "", xp: 80,
   unit: "실행형 실전 — 예제는 통과하는 구현 고치기",
   source: "./dbg_algo.cjs",
   lessons: [

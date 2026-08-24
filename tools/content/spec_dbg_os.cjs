@@ -1,5 +1,5 @@
 module.exports = {
-  track: "os", guide: "🐛", xp: 80,
+  track: "os", guide: "", xp: 80,
   unit: "실행형 실전 — 커널 계산이 한 칸씩 어긋난 코드 고치기",
   source: "./dbg_os.cjs",
   lessons: [

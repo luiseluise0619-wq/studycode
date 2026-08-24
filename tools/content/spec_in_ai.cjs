@@ -1,5 +1,5 @@
 module.exports = {
-  track: "ai", guide: "✍️", xp: 60,
+  track: "ai", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 파이프라인의 용어와 숫자",
   source: "./in_ai.cjs",
   lessons: [

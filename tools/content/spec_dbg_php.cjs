@@ -1,5 +1,5 @@
 module.exports = {
-  track: "php", guide: "🐛", xp: 80,
+  track: "php", guide: "", xp: 80,
   unit: "실행형 실전 — 돌아가는 것처럼 보이는 PHP 고치기",
   source: "./dbg_php.cjs",
   lessons: [

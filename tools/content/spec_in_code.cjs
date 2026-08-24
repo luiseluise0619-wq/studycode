@@ -1,5 +1,5 @@
 module.exports = {
-  track: "code", guide: "✍️", xp: 60,
+  track: "code", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 자바스크립트가 실제로 내놓는 값",
   source: "./in_code.cjs",
   lessons: [

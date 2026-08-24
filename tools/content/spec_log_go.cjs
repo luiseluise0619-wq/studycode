@@ -1,5 +1,5 @@
 module.exports = {
-  track: "go", guide: "📜", xp: 70,
+  track: "go", guide: "", xp: 70,
   unit: "로그 분석 II — 고루틴이 남긴 자취",
   source: "./log_go.cjs",
   lessons: [

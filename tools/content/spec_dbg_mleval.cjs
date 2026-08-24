@@ -1,5 +1,5 @@
 module.exports = {
-  track: "mleval", guide: "🐛", xp: 80,
+  track: "mleval", guide: "", xp: 80,
   unit: "실행형 실전 — 점수는 나오는데 비교를 망치는 코드 고치기",
   source: "./dbg_mleval.cjs",
   lessons: [

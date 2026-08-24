@@ -6,6 +6,7 @@
      node ver_arch.cjs ./arch_ml.cjs      (인자를 안 주면 arch_new.cjs) */
 const path=require("path");
 const Q=require(path.resolve(process.argv[2] || "./arch_new.cjs"));
+const findEmoji=require("./noemoji.cjs");
 function runTests(tests, D){
   return tests.map(t=>{ let ok=false, err="";
     try{ ok=!!Function("D","return ("+t.js+")")(D); }catch(e){ err=String(e.message||e); }
@@ -31,8 +32,10 @@ Q.forEach((q,i)=>{
   const rr=runTests(q.tests, q.ref);
   const fail=rr.filter(x=>!x.ok);
   if(fail.length) probs.push("참조 설계가 통과하지 못함:\n      "+fail.map(x=>"✗ "+x.d+(x.err?"  ["+x.err+"]":"")).join("\n      "));
-  if(!/💡|⚠️|🔧|📈/.test(q.ex)) probs.push("해설에 보충 설명이 없다");
+  if(String(q.ex).split("\n").filter(x=>x.trim()).length<3) probs.push("해설이 세 문단 미만 — 왜·어떻게·대가를 나눠 적으세요");
   if(String(q.ex).length<200) probs.push("해설이 200자 미만");
+  const em=findEmoji({q:q.q, ex:q.ex, src:q.src, tests:q.tests});
+  if(em) probs.push("이모지를 쓰지 않는다: "+em);
   if(probs.length){ bad++; console.log("✗ "+tag+"\n    "+probs.join("\n    ")); }
   else { const sp=runTests(q.tests, src).filter(x=>x.ok).length;
     console.log("✓ "+tag+"  (시작 "+sp+"/"+q.tests.length+" · 참조 "+q.tests.length+"/"+q.tests.length+")"); }

@@ -1,5 +1,5 @@
 module.exports = {
-  track: "numpy", guide: "✍️", xp: 60,
+  track: "numpy", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 모양·타입·뷰",
   source: "./in_numpy.cjs",
   lessons: [

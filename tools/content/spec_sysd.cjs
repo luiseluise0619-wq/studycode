@@ -1,5 +1,5 @@
 module.exports={
-  track:"sysd", guide:"🏛️", xp:80,
+  track:"sysd", guide:"", xp:80,
   unit:"실행형 실전 — 설계 정책을 직접 계산한다",
   source:"./exec_sysd.cjs",
   lessons:[

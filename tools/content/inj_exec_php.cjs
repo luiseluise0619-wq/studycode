@@ -77,7 +77,7 @@ for(let i=start;i<html.length;i++){
 const C=JSON.parse(html.slice(start,end+1));
 if(!C.php) throw new Error("COURSES 에 php 가 없다 — inj_php.cjs 를 먼저 돌려야 한다");
 if(C.php.units.some(u=>u.title===UNIT)) throw new Error("목차 유닛 중복");
-C.php.units.push({ title:UNIT, guide:"🐘", lessons:LESSONS.map(L=>({ title:L.t, xp:80, n:L.n })) });
+C.php.units.push({ title:UNIT, guide:"", lessons:LESSONS.map(L=>({ title:L.t, xp:80, n:L.n })) });
 fs.writeFileSync(ih, html.slice(0,start)+JSON.stringify(C)+html.slice(end+1));
 
 console.log("주입 완료: php 실행형 +"+Q.length);

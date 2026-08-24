@@ -1,5 +1,5 @@
 module.exports = {
-  track: "rust", guide: "📜", xp: 70,
+  track: "rust", guide: "", xp: 70,
   unit: "로그 분석 II — 패닉과 런타임",
   source: "./log_rust.cjs",
   lessons: [

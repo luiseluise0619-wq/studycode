@@ -1,5 +1,5 @@
 module.exports = {
-  track: "php", guide: "✍️", xp: 60,
+  track: "php", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 비교 규칙과 표준 함수",
   source: "./in_php.cjs",
   lessons: [

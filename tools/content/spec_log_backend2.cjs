@@ -1,5 +1,5 @@
 module.exports = {
-  track: "backend", guide: "📜", xp: 70,
+  track: "backend", guide: "", xp: 70,
   unit: "로그 분석 II — API·DB·큐의 경계",
   source: "./log_backend.cjs",
   lessons: [

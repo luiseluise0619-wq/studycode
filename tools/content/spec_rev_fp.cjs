@@ -1,5 +1,5 @@
 module.exports = {
-  track: "fp", guide: "🔍", xp: 70,
+  track: "fp", guide: "", xp: 70,
   unit: "코드 리뷰 — 결함 찾기",
   source: "./rev_fp.cjs",
   lessons: [

@@ -675,7 +675,7 @@ function check(name, cond, detail){
       const at=per+"/"+idx+" "+x.title;
       /* 두 형식이 있다 — phases 를 직접 적은 것과 steps 로 적어 projPhases 가
          앞뒤에 요구사항·회고를 붙여 주는 것(kind:"guide"). 설명 필드 이름이 다르다. */
-      if(!(x.lv>=1&&x.lv<=5)||!x.em||!(x.desc||x.goal)||!x.skills||!x.skills.length) bad.필수.push(at);
+      if(!(x.lv>=1&&x.lv<=5)||!(x.desc||x.goal)||!x.skills||!x.skills.length) bad.필수.push(at);
       projPhases(x).forEach((ph,i)=>{
         const w=at+" 단계"+(i+1);
         if(!ph.t||!ph.goal) bad.필수.push(w);

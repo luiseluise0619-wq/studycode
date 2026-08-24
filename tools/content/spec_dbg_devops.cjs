@@ -1,5 +1,5 @@
 module.exports = {
-  track: "devops", guide: "🐛", xp: 80,
+  track: "devops", guide: "", xp: 80,
   unit: "실행형 실전 — 배포 계산이 조용히 어긋난 코드 고치기",
   source: "./dbg_devops.cjs",
   lessons: [

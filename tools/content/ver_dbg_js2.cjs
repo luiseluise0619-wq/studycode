@@ -33,7 +33,7 @@ Q.forEach((q,i)=>{
   const fail=m=>{ bad++; console.log("✗ "+tag+" — "+m); };
   if(fns.has(q.fn)) fail("함수 이름 중복: "+q.fn); fns.add(q.fn);
   const st=q.q.slice(0,40); if(stems.has(st)) fail("문제 줄기 중복"); stems.add(st);
-  if(!/🐛 원인/.test(q.ex)||!/🔧 해결/.test(q.ex)||!/🛡 재발 방지/.test(q.ex)) fail("해설 3단 구성이 아니다");
+  if(!/ 원인/.test(q.ex)||!/ 해결/.test(q.ex)||!/ 재발 방지/.test(q.ex)) fail("해설 3단 구성이 아니다");
   if(q.tests.length<4) fail("tests 4개 미만");
   if(!q.edge||q.edge.length<2) fail("edge 2개 미만");
   if(!q.src.includes(q.fn)||!q.sol.includes(q.fn)) fail("함수 이름이 코드에 없다");

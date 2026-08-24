@@ -1,5 +1,5 @@
 module.exports = {
-  track: "arduino", guide: "🐛", xp: 80,
+  track: "arduino", guide: "", xp: 80,
   unit: "실행형 실전 — 며칠 돌리면 어긋나는 코드 고치기",
   source: "./dbg_arduino.cjs",
   lessons: [

@@ -1,5 +1,5 @@
 module.exports = {
-  track: "java", guide: "📜", xp: 70,
+  track: "java", guide: "", xp: 70,
   unit: "로그 분석 II — 런타임이 흘린 단서",
   source: "./log_java.cjs",
   lessons: [

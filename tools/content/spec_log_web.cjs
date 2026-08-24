@@ -1,5 +1,5 @@
 module.exports = {
-  track: "web", guide: "📜", xp: 70,
+  track: "web", guide: "", xp: 70,
   unit: "로그 분석 — 네트워크 탭이 말해 주는 것",
   source: "./log_web.cjs",
   lessons: [

@@ -1,6 +1,6 @@
 const UNIT="실행형 실전 — 인프라 알고리즘을 직접 만든다";
 module.exports={
-  track:"devops", guide:"🚀", xp:80,
+  track:"devops", guide:"", xp:80,
   unit:UNIT,
   source:"./exec_devops.cjs",
   lessons:[

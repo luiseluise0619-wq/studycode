@@ -1,5 +1,5 @@
 module.exports = {
-  track: "devops", guide: "✍️", xp: 60,
+  track: "devops", guide: "", xp: 60,
   unit: "단답으로 확인하기 — 배포·컨테이너·운영 용어",
   source: "./in_devops.cjs",
   lessons: [
