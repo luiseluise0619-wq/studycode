@@ -31,9 +31,10 @@ const lessons = SPEC.lessons.map(L => {
   if (!L.th || !L.th.sum || L.th.body.length !== 2 || !L.th.code || !L.th.key) throw new Error(L.t + ": 이론 형식");
   const qs = Q.slice(cur, cur + L.n).map(x => {
     if (!x.t || !x.q || !x.ex) throw new Error(x.k + ": 필드 누락");
-    /* track 은 검증기용 표시라 데이터에는 넣지 않는다 — 트랙은 파일이 이미 정한다 */
+    /* 검증기 전용 필드는 데이터에 넣지 않는다.
+       track 은 파일이 이미 정하고, ref(설계 문항의 참조 답안)를 넣으면 정답이 그대로 실린다. */
     const out = {};
-    Object.keys(x).forEach(k => { if (k !== "track") out[k] = x[k]; });
+    Object.keys(x).forEach(k => { if (k !== "track" && k !== "ref") out[k] = x[k]; });
     return out;
   });
   cur += L.n;

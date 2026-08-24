@@ -1,8 +1,11 @@
 /* 설계 문항 검증 — 앱의 archRun 과 같은 방식으로 검사식을 D 위에서 평가한다.
      1. src 가 올바른 JSON 이고, 그대로는 통과하지 못한다 (풀 게 남아 있다)
      2. ref(참조 설계)는 모든 검사를 통과한다 (요건이 실제로 만족 가능하다)
-   2번이 없으면 '아무도 못 푸는 문항' 이 그대로 들어간다. */
-const Q=require("./arch_new.cjs");
+   2번이 없으면 '아무도 못 푸는 문항' 이 그대로 들어간다.
+
+     node ver_arch.cjs ./arch_ml.cjs      (인자를 안 주면 arch_new.cjs) */
+const path=require("path");
+const Q=require(path.resolve(process.argv[2] || "./arch_new.cjs"));
 function runTests(tests, D){
   return tests.map(t=>{ let ok=false, err="";
     try{ ok=!!Function("D","return ("+t.js+")")(D); }catch(e){ err=String(e.message||e); }
