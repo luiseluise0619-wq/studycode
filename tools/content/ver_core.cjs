@@ -3,7 +3,9 @@
      품질  = var 금지 · 주석 뺀 28줄 이하 · console.log 금지 (점수에 반영되므로 sol 은 100 이어야 한다)
    확인: sol 은 gate 통과 + 품질 100, src 는 tests 중 하나 이상 실패. */
 const vm=require("vm");
-const Q=require("./exec_core.cjs");
+/* 인자로 파일을 주면 그것을 본다. 안 주면 예전처럼 exec_core.cjs 다.
+     node ver_core.cjs ./algo_search.cjs */
+const Q=require(process.argv[2] ? require("path").resolve(process.argv[2]) : "./exec_core.cjs");
 
 function eq(a,b){ try{ return JSON.stringify(a)===JSON.stringify(b); }catch(e){ return String(a)===String(b); } }
 /* 앱의 testDoc 은 tests 와 edge 를 '같은 문서' 안에서 이어서 돌린다 —
@@ -49,7 +51,9 @@ Q.forEach((q,i)=>{
   const tag="["+(i+1)+"] "+q.k;
   const fail=m=>{ bad++; console.log("✗ "+tag+" — "+m); };
   const st=q.q.slice(0,40); if(stems.has(st)) fail("문제 줄기 중복"); stems.add(st);
-  if(!//.test(q.ex)) fail("해설에 요지가 없다");
+  /* 해설은 한 줄로 끝내지 않는다 — 왜 그렇게 푸는지, 어디서 틀리는지, 실무에서 어떻게 쓰는지.
+     (47차 이모지 정리 때 이 자리의 검사가 빈 정규식이 되어 아무것도 걸러 내지 못하고 있었다.) */
+  if(String(q.ex).split("\n").filter(x=>x.trim()).length<3) fail("해설이 3문단 미만");
   if(String(q.ex).length<200) fail("해설이 200자 미만");
   if(q.tests.length<4) fail("tests 4개 미만");
   if(!q.edge||q.edge.length<2) fail("edge 2개 미만");
