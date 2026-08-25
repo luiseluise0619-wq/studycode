@@ -191,3 +191,38 @@ node tools/content/strip_emoji.cjs --html --write    # index.html
 
 예외는 <b>이모지가 주제인 문항</b>뿐입니다(문자열 길이·접근성). 지우면 문제가
 성립하지 않으므로 그대로 둡니다 — 지금 셋 있습니다.
+
+## 실행형(code) 문항을 새로 쓸 때 (50차)
+
+`ver_core.cjs` 가 인자로 준 배치 파일을 봅니다. 반드시 저장소 루트에서 부르세요.
+
+```
+node tools/content/ver_core.cjs ./tools/content/algo_dp.cjs
+cd tools/content && node inj_jsexec.cjs ./spec_algo_dp.cjs
+```
+
+배치 한 문항의 모양:
+
+```js
+{ track: "algo", k: "짧은 제목 · 함수명", cat: "internals",
+  q: "무엇을 돌려주는지 · 경계는 무엇인지 (HTML 가능)",
+  src: "고장난 시작 코드 — 테스트를 하나 이상 떨어뜨려야 한다",
+  sol: "참조 해답 — 28줄 이내 · var 금지 · console.log 금지",
+  tests: [["호출식", "기댓값"], ...4개],
+  edge:  [["호출식", "기댓값"], ...2개],
+  ex: "해설 — 세 문단 이상, \n 으로 나눈다" }
+```
+
+기댓값은 `eval("(" + 기댓값 + ")")` 로 평가한 뒤 `JSON.stringify` 로 견줍니다.
+그래서 **객체를 돌려주는 문제는 피합니다** — 키 순서가 다르면 옳은 답이 틀립니다.
+배열·숫자·불리언·문자열로 답이 나오게 문제를 설계하세요. 문자열 기댓값은
+`'"user_name"'` 처럼 따옴표를 안에 넣습니다.
+
+해답의 지역 변수 이름이 채점 하네스와 겹치면 안 됩니다. 예약된 이름은
+`SRC TS EG PF esc sh eq P row Cp Ch Ep Eh perfScore perfMs perfOk qr qp qScore
+comps impl PG gate gcol gtxt bar parts eh ph qn __out` 입니다.
+
+해설에는 **왜 다른 방법이 틀리는가**를 함께 씁니다. 반례가 되는 입력을
+테스트에 실제로 넣고, 해설에서 "몇 번째 테스트가 그 자리" 라고 가리키면
+학습자가 실패를 보고 배웁니다. 유닛 제목은 `직접 구현 —` 으로 시작해야
+'해 보는 유닛이 마지막' 규칙(TAILU)을 만족합니다.
