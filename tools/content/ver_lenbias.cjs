@@ -13,10 +13,10 @@ const path=require("path");
 const ROOT=path.resolve(__dirname,"..","..");
 const DATA=path.join(ROOT,"data");
 
+/* app.test.cjs 와 똑같이 잰다 — 태그만 벗기고 엔티티는 그대로 센다.
+   두 도구가 다른 숫자를 내면 한쪽에서 통과한 것이 다른 쪽에서 걸린다. */
 const strip=s=>String(s||"").replace(/<[^>]*>/g,"").trim();
-/* 화면에 보이는 폭 — 한글·한자는 두 칸, 엔티티는 되돌려 센다 */
-const dec=s=>String(s).replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"')
-  .replace(/&#39;/g,"'").replace(/&nbsp;/g," ").replace(/&amp;/g,"&");
+const dec=s=>String(s);
 
 function rankOf(lens, ans, tol){
   const order=[0,1,2,3].sort((x,y)=>lens[y]-lens[x]);

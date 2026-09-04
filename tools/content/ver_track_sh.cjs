@@ -1,9 +1,9 @@
-/* Git 트랙 문항 검증.
+/* Linux 트랙 문항 검증.
    ① 구조: 보기 4개·정답 인덱스·해설 길이·중복 보기·이론 형식
-   ② 사실: _p 가 붙은 문항은 임시 저장소에서 실제 git 을 돌려 결과를 비교한다.
-      "git 이 이렇게 동작한다" 는 주장을 손으로 쓰지 않고 기계가 확인하게 한다.
+   ② 사실: _p 가 붙은 문항은 임시 폴더에서 실제 셸을 돌려 결과를 비교한다.
+      "셸이 이렇게 동작한다" 는 주장을 손으로 쓰지 않고 기계가 확인하게 한다.
 
-   사용: node tools/content/ver_track_git.cjs ./tools/content/track_git1.cjs */
+   사용: node tools/content/ver_track_sh.cjs ./tools/content/track_linux1.cjs */
 const {execSync}=require("child_process");
 const fs=require("fs");
 const os=require("os");
@@ -11,20 +11,18 @@ const path=require("path");
 
 /* 파일을 여러 개 주면 한 트랙으로 합쳐서 잰다 — 길이 쏠림은 트랙 단위로 봐야
    의미가 있다. 배치 파일 하나는 표본이 84문항뿐이라 숫자가 심하게 흔들린다.
-     node tools/content/ver_track_git.cjs ./tools/content/track_git1.cjs ./tools/content/track_git2.cjs */
+     node tools/content/ver_track_sh.cjs ./tools/content/track_linux1.cjs ./tools/content/track_git2.cjs */
 const FILES=process.argv.slice(2).filter(x=>x[0]!=="-");
-const UNITS=(FILES.length?FILES:["./track_git1.cjs"])
+const UNITS=(FILES.length?FILES:["./track_linux1.cjs"])
   .reduce((a,f)=>a.concat(require(path.resolve(f))),[]);
 
 const NOEMOJI=require("./noemoji.cjs");
 
 function gitProbe(script){
-  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"cr_git_"));
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"cr_sh_"));
   try{
-    execSync("git init -q && git config user.email t@t && git config user.name t "+
-             "&& git config commit.gpgsign false",{cwd:dir,stdio:"pipe"});
     const out=execSync(script,{cwd:dir,encoding:"utf8",stdio:"pipe",timeout:20000,
-      env:Object.assign({},process.env,{GIT_TERMINAL_PROMPT:"0",GIT_PAGER:"cat"})});
+      env:Object.assign({},process.env,{LC_ALL:"C",LANG:"C"})});
     const lines=out.split("\n").filter(x=>x.trim());
     return lines.length?lines[lines.length-1].trim():"";
   }catch(e){
@@ -76,7 +74,7 @@ UNITS.forEach(u=>{
       if(q._p){
         probes++;
         const got=gitProbe(q._p.sh);
-        if(got!==q._p.want) p.push("실행 결과 불일치 — git 이 돌려준 값: "+got+" / 문항이 전제한 값: "+q._p.want);
+        if(got!==q._p.want) p.push("실행 결과 불일치 — 셸이 돌려준 값: "+got+" / 문항이 전제한 값: "+q._p.want);
       }
       if(p.length){ bad++; console.log("✗ "+tag+"\n  "+p.join("\n  ")); }
     });

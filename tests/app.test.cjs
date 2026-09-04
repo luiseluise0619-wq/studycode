@@ -47,7 +47,7 @@ function check(name, cond, detail){
   const dataDir=path.join(__dirname,"..","data");
   const files=fs.readdirSync(dataDir);
   /* 트랙 수는 COURSES 와 청크가 1:1 이어야 한다. 트랙을 늘릴 때 이 숫자도 함께 올린다 */
-  check("트랙 청크가 35개 있다", files.filter(f=>/^t-.+\.js$/.test(f)).length===35,
+  check("트랙 청크가 36개 있다", files.filter(f=>/^t-.+\.js$/.test(f)).length===36,
         {n:files.filter(f=>/^t-.+\.js$/.test(f)).length});
   check("시뮬·진단·프로젝트·SQL 청크가 있다",
         ["sims.js","diags.js","projects.js","sql-wasm.js","sql-lib.js"].every(f=>files.indexOf(f)>=0), files);
@@ -65,7 +65,7 @@ function check(name, cond, detail){
     tracks:Object.keys(COURSES).length,
     loaded:Object.keys(COURSES).filter(k=>trackLoaded(k))
   }));
-  check("문항 없이도 트랙 지도가 그려진다", early.nodes>0 && early.tracks===35, early);
+  check("문항 없이도 트랙 지도가 그려진다", early.nodes>0 && early.tracks===36, early);
   check("첫 화면에 다른 트랙은 받지 않는다", asked.filter(f=>/^t-/.test(f)).length<=1, asked.slice(0,8));
   await p.waitForFunction(()=>trackLoaded(curLang), {timeout:60000});
   const after=await p.evaluate(()=>{
