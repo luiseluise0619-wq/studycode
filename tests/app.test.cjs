@@ -47,7 +47,7 @@ function check(name, cond, detail){
   const dataDir=path.join(__dirname,"..","data");
   const files=fs.readdirSync(dataDir);
   /* 트랙 수는 COURSES 와 청크가 1:1 이어야 한다. 트랙을 늘릴 때 이 숫자도 함께 올린다 */
-  check("트랙 청크가 36개 있다", files.filter(f=>/^t-.+\.js$/.test(f)).length===36,
+  check("트랙 청크가 37개 있다", files.filter(f=>/^t-.+\.js$/.test(f)).length===37,
         {n:files.filter(f=>/^t-.+\.js$/.test(f)).length});
   check("시뮬·진단·프로젝트·SQL 청크가 있다",
         ["sims.js","diags.js","projects.js","sql-wasm.js","sql-lib.js"].every(f=>files.indexOf(f)>=0), files);
@@ -65,7 +65,7 @@ function check(name, cond, detail){
     tracks:Object.keys(COURSES).length,
     loaded:Object.keys(COURSES).filter(k=>trackLoaded(k))
   }));
-  check("문항 없이도 트랙 지도가 그려진다", early.nodes>0 && early.tracks===36, early);
+  check("문항 없이도 트랙 지도가 그려진다", early.nodes>0 && early.tracks===37, early);
   check("첫 화면에 다른 트랙은 받지 않는다", asked.filter(f=>/^t-/.test(f)).length<=1, asked.slice(0,8));
   await p.waitForFunction(()=>trackLoaded(curLang), {timeout:60000});
   const after=await p.evaluate(()=>{
@@ -801,7 +801,7 @@ function check(name, cond, detail){
      기계 눈금은 72.8 → 59.4 로 내려갔고, 사람 눈금만 29.3 → 37.7 로
      올랐다. 남은 일 3952자리를 끝내면 둘 다 25% 근처로 간다.
      이 두 숫자는 작업이 진행되는 동안 계속 내려가야 한다. */
-  const BIAS_EXACT=26.2, BIAS_HUMAN=24.8;
+  const BIAS_EXACT=26.2, BIAS_HUMAN=24.7;
   console.log("  길이로 찍기 최고 정답률: 기계(0자) "+bias.exact+"% · 사람(5자) "+bias.human+
               "% · 눈금 "+BIAS_EXACT+"/"+BIAS_HUMAN+"% · 찍기 기준선 25%");
   check("길이로 찍기(기계 기준)가 더 나빠지지 않았다", bias.exact<=BIAS_EXACT, {지금:bias.exact, 눈금:BIAS_EXACT});
