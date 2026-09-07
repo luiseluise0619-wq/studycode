@@ -399,6 +399,20 @@ function check(name, cond, detail){
   }
   check("모든 트랙이 유닛 순서를 적어 두었다", noOrd.length===0, noOrd);
 
+  /* 전수 점검 — 이 파일이 보지 않는 아래를 본다(깨진 태그·빈 레슨·문항 중복).
+     tools/content/audit_all.cjs 가 0건이 되도록 맞춰 두었으니 그대로 지킨다.
+     경고를 남발하지 않도록 만든 도구라, 여기서 걸리면 대개 진짜다. */
+  {
+    let auditOut="", auditCode=0;
+    try{
+      auditOut=require("child_process").execFileSync(process.execPath,
+        [path.join(__dirname,"..","tools","content","audit_all.cjs")],
+        {encoding:"utf8", stdio:["ignore","pipe","pipe"]});
+    }catch(e){ auditCode=1; auditOut=String((e.stdout||"")+(e.stderr||"")); }
+    const head=auditOut.split("\n").filter(x=>x.indexOf("■")===0).slice(0,4);
+    check("전수 점검에 고칠 것이 없다", auditCode===0, head);
+  }
+
   /* 해 보는 유닛(시뮬레이션·실행형 실전·설계 실전)은 배운 뒤에 오는 것이라 맨 뒤여야 한다.
      code 트랙은 예외다 — 트랙 전체가 실습이라 '직접 구현' 이 중간에 있는 것이 맞다. */
   const TAILU=/시뮬레이션|실행형 실전|실행형 ·|설계 실전|설계 · 직접|직접 구현 —|직접 코딩 —|직접 SQL —|직접 만들며|직접 실행해/;
