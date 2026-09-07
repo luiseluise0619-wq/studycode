@@ -1,0 +1,108 @@
+/* NumPy 트랙 전용 프로젝트 — 루프로 쓴 계산을 배열로 옮긴다.
+   벡터화·브로드캐스팅·뷰와 복사·메모리 레이아웃은 따로 배우면 흩어지지만,
+   '왜 이 코드가 40초 걸리는가' 를 쫓으면 한 줄에 꿰인다. */
+module.exports = {
+  lv: 2, em: "📐",
+  title: "40초 걸리던 계산을 0.2초로",
+  desc: "파이썬 루프로 쓴 센서 데이터 처리를 배열 연산으로 옮기고, 뷰와 복사·브로드캐스팅·메모리 레이아웃까지 확인해 값과 속도를 함께 지킨다",
+  skills: ["numpy", "python", "stat"],
+  phases: [
+
+  { t: "무엇을 재고 시작할지 적는다", type: "note",
+    goal: "지금 코드가 <b>무엇을 얼마나 처리하고 몇 초 걸리는지</b> 적으세요.\n데이터의 모양(행·열·타입)과 메모리 사용량도 함께 적습니다. 옮긴 뒤 비교할 기준이 됩니다.",
+    ph: "예: 센서 200채널 × 90일 × 1분 간격 = 200 × 129,600 float64 · 파일 207MB · 이동평균 + 이상치 제거 + 채널별 정규화 = 41초 · 목표 1초 이내 · 결과는 소수 6자리까지 같아야 함" },
+
+  { t: "왜 파이썬 루프가 느린가", type: "decide",
+    goal: "2,600만 개 값을 파이썬 <code>for</code> 로 훑으며 계산하고 있습니다.",
+    sit: "느린 이유를 어떻게 설명하시겠습니까?",
+    opts: [
+      { label: "값마다 파이썬 객체를 거치고 타입을 매번 확인하기 때문",
+        fx: { performance: 3, coding: 2 },
+        fb: "✅ 파이썬의 정수 하나도 객체라 <b>포인터를 따라가고 타입을 확인하고 참조를 세는</b> 일이 값마다 일어납니다. NumPy 배열은 같은 타입의 값을 메모리에 붙여 담고 계산을 C 반복문 하나로 끝내므로, 이 반복 비용이 통째로 사라집니다.",
+        best: true },
+      { label: "파이썬이 인터프리터 언어라서 모든 코드가 느리기 때문",
+        fx: { performance: -1 },
+        fb: "⚠️ 방향은 맞지만 설명이 거칩니다. NumPy 도 파이썬에서 부르는데 빠릅니다. 느린 것은 언어 자체가 아니라 <b>값 하나마다 인터프리터를 거치는 구조</b>입니다 — 그래서 루프를 배열 연산으로 바꾸면 해결됩니다." },
+      { label: "메모리가 부족해 스왑이 일어나기 때문",
+        fx: { performance: -2, debugging: -1 },
+        fb: "⚠️ 207MB 는 스왑이 일어날 규모가 아닙니다. 원인을 짐작하지 말고 재야 합니다 — 메모리가 원인이라면 사용량 그래프에 드러납니다." },
+      { label: "디스크에서 데이터를 읽는 데 시간이 걸리기 때문",
+        fx: { performance: -2 },
+        fb: "⚠️ 읽기는 한 번뿐이고 몇 초면 끝납니다. 41초 중 대부분은 계산 구간이므로, <b>어느 구간이 오래 걸리는지 나눠서 재면</b> 바로 드러납니다." }] },
+
+  { t: "구간을 나눠 재고 배열로 옮긴다", type: "build",
+    goal: "먼저 <b>구간별로 시간을 재고</b>, 루프를 배열 연산으로 옮기세요.\n옮긴 뒤에는 반드시 <b>결과가 같은지</b> 확인합니다 — 빨라졌는데 값이 달라지면 아무 소용이 없습니다.",
+    hint: "이동평균은 누적합의 차이로 한 번에 구할 수 있습니다. `cumsum` 을 쓸 때는 float64 여야 오차가 쌓이지 않습니다. 비교는 `==` 가 아니라 `np.allclose` 로 합니다 — 계산 순서가 달라지면 마지막 자리가 다를 수 있습니다.",
+    acc: "구간별 소요 시간이 출력되고, 배열 방식의 결과가 루프 방식과 `allclose` 로 같으며, 전체 시간이 크게 줄었으면 완료입니다.",
+    lang: "python",
+    sol: "import time\nimport numpy as np\n\nrng = np.random.default_rng(20260907)\nx = rng.normal(size=(200, 129_600))          # 채널 × 시각\n\ndef timed(name, fn):\n    t0 = time.perf_counter()\n    out = fn()\n    print(f\"{name:<24}{time.perf_counter() - t0:7.3f}s\")\n    return out\n\n# ── 옮기기 전: 값마다 파이썬을 거친다 ───────────────────────────\ndef moving_avg_loop(a, w):\n    n = a.shape[1] - w + 1\n    out = np.empty((a.shape[0], n))\n    for i in range(a.shape[0]):\n        for j in range(n):\n            out[i, j] = sum(a[i, j:j + w]) / w\n    return out\n\n# ── 옮긴 뒤: 누적합의 차이로 한 번에 ──────────────────────────\ndef moving_avg_vec(a, w):\n    # float64 로 누적해야 오차가 쌓이지 않는다\n    c = np.cumsum(a, axis=1, dtype=np.float64)\n    c = np.concatenate([np.zeros((a.shape[0], 1)), c], axis=1)\n    return (c[:, w:] - c[:, :-w]) / w\n\nsmall = x[:5, :20_000]                        # 루프 방식은 전체를 못 돌린다\nslow = timed(\"루프 (5채널만)\", lambda: moving_avg_loop(small, 60))\nfast = timed(\"배열 (5채널만)\", lambda: moving_avg_vec(small, 60))\n\n# 빨라진 것보다 값이 같은 것이 먼저다\nprint(\"결과가 같은가:\", np.allclose(slow, fast))\nprint(\"최대 차이:\", np.abs(slow - fast).max())\n\nfull = timed(\"배열 (200채널 전체)\", lambda: moving_avg_vec(x, 60))\nprint(\"결과 모양:\", full.shape)" },
+
+  { t: "고쳤는데 원본이 바뀌었다", type: "decide",
+    goal: "슬라이스를 받아 값을 고쳤더니 <b>원본 배열까지 바뀌어</b> 있었습니다.",
+    sit: "무엇을 의심해야 하나요?",
+    opts: [
+      { label: "기본 슬라이싱은 복사가 아니라 같은 메모리를 가리키는 뷰다",
+        fx: { coding: 3, debugging: 3 },
+        fb: "✅ NumPy 의 기본 슬라이싱은 <b>복사하지 않습니다.</b> 같은 데이터를 다른 모양으로 보는 창일 뿐이라, 뷰를 고치면 원본이 바뀝니다. 이것은 결함이 아니라 큰 배열을 값싸게 다루기 위한 설계입니다. 원본을 지키려면 명시적으로 `.copy()` 를 부릅니다. 참고로 <b>팬시 인덱싱과 불리언 마스킹은 복사</b>라 반대로 동작합니다.",
+        best: true },
+      { label: "배열을 함수에 넘길 때 참조로 전달되기 때문",
+        fx: { coding: 1, debugging: -1 },
+        fb: "⚠️ 절반만 맞습니다. 참조 전달은 파이썬 전체의 규칙이지만, 여기서 헷갈리는 지점은 <b>슬라이스가 새 배열이 아니라는 것</b>입니다. 리스트를 슬라이스하면 복사본이 나오므로 그 습관이 그대로 오면 틀립니다." },
+      { label: "배열의 dtype 이 달라 자동 변환이 일어났기 때문",
+        fx: { coding: -2 },
+        fb: "⚠️ dtype 변환은 <b>새 배열</b>을 만들므로 오히려 원본이 안 바뀝니다. 증상이 반대입니다." },
+      { label: "메모리가 부족해 같은 자리를 재사용했기 때문",
+        fx: { coding: -3, debugging: -2 },
+        fb: "⚠️ 그런 일은 일어나지 않습니다. 이미 쓰이는 메모리를 임의로 재사용하면 어떤 프로그램도 동작할 수 없습니다." }] },
+
+  { t: "뷰와 복사를 확인한다", type: "build",
+    goal: "어떤 연산이 <b>뷰</b>를 주고 어떤 연산이 <b>복사</b>를 주는지 직접 확인하세요.\n메모리를 공유하는지 판정하고, 원본을 지켜야 하는 자리를 찾습니다.",
+    hint: "`np.shares_memory` 로 두 배열이 같은 메모리를 쓰는지 알 수 있고, `arr.base` 로 어느 배열의 뷰인지 볼 수 있습니다. 전치와 `reshape` 는 대개 뷰이고, 팬시 인덱싱·마스킹·`astype` 은 복사입니다.",
+    acc: "기본 슬라이싱·전치·팬시 인덱싱·마스킹 각각에 대해 뷰인지 복사인지 출력되고, 뷰를 고쳤을 때 원본이 바뀌는 것이 보이면 완료입니다.",
+    lang: "python",
+    sol: "import numpy as np\n\na = np.arange(12).reshape(3, 4)\n\ndef kind(name, b):\n    shared = np.shares_memory(a, b)\n    print(f\"{name:<22}{'뷰  (원본과 공유)' if shared else '복사(따로 있음)'}\")\n    return b\n\nprint(\"원본\\n\", a, \"\\n\")\n\ns  = kind(\"기본 슬라이싱\",   a[:2, 1:3])\nt  = kind(\"전치\",           a.T)\nr  = kind(\"reshape\",        a.reshape(4, 3))\nf  = kind(\"팬시 인덱싱\",     a[[0, 2]])\nm  = kind(\"불리언 마스킹\",   a[a > 5])\nc  = kind(\"astype\",         a.astype(np.float64))\nk  = kind(\"copy\",           a[:2, 1:3].copy())\n\n# 뷰를 고치면 원본이 바뀐다\ns[0, 0] = -1\nprint(\"\\n뷰를 고친 뒤 원본[0,1]:\", a[0, 1], \"  ← 바뀌었다\")\n\n# 복사를 고치면 원본은 그대로다\nk[0, 0] = -99\nprint(\"복사를 고친 뒤 원본[0,1]:\", a[0, 1], \"  ← 그대로다\")\n\n# 어느 배열의 뷰인지 확인한다\nprint(\"\\ns.base is a :\", s.base is a)\nprint(\"k.base      :\", k.base)\n\n# 함수가 원본을 건드리지 않게 하려면 경계에서 복사한다\ndef normalize(arr):\n    out = arr.astype(np.float64, copy=True)   # 여기서 끊는다\n    out -= out.mean(axis=1, keepdims=True)\n    sd = out.std(axis=1, keepdims=True)\n    np.divide(out, sd, out=out, where=sd != 0)  # 0으로 나누기를 막는다\n    return out\n\nbefore = a.copy()\nnormalize(a)\nprint(\"정규화 뒤 원본이 그대로인가:\", np.array_equal(a, before))" },
+
+  { t: "모양이 안 맞는다고 한다", type: "build",
+    goal: "채널별 평균을 빼는 계산에서 <b>브로드캐스팅 규칙</b>을 맞추세요.\n어떤 모양끼리 맞고 어떤 모양이 안 맞는지 규칙으로 설명할 수 있어야 합니다.",
+    hint: "브로드캐스팅은 <b>뒤쪽 축부터</b> 견주며, 크기가 같거나 한쪽이 1이면 맞습니다. `keepdims=True` 를 쓰면 축이 사라지지 않아 그대로 뺄 수 있습니다. 안 맞을 때는 `arr[:, None]` 처럼 축을 하나 끼워 넣습니다.",
+    acc: "맞는 조합과 안 맞는 조합이 각각 출력되고, keepdims 를 쓴 쪽과 안 쓴 쪽의 차이가 보이면 완료입니다.",
+    lang: "python",
+    sol: "import numpy as np\n\nx = np.arange(24, dtype=np.float64).reshape(4, 6)   # 채널 4 × 시각 6\nprint(\"x\", x.shape)\n\n# 채널별 평균 — 축을 없애면 모양이 안 맞는다\nm_drop = x.mean(axis=1)                  # (4,)\nm_keep = x.mean(axis=1, keepdims=True)   # (4, 1)\nprint(\"axis=1 평균          \", m_drop.shape)\nprint(\"keepdims=True 평균   \", m_keep.shape)\n\n# 규칙: 뒤쪽 축부터 견주어 같거나 한쪽이 1이면 맞는다\n#   (4,6) 과 (4,1) → 6 vs 1 맞음, 4 vs 4 맞음 → OK\nprint(\"\\nkeepdims 로 빼기:\", (x - m_keep).shape)\n\n#   (4,6) 과 (4,)  → 6 vs 4 → 안 맞음\ntry:\n    x - m_drop\nexcept ValueError as e:\n    print(\"축을 없애고 빼기:\", type(e).__name__, \"-\", e)\n\n# 축을 하나 끼워 넣어도 된다 — keepdims 와 같은 결과\nprint(\"None 으로 축 끼우기:\", (x - m_drop[:, None]).shape)\n\n# 시각별 평균은 축이 반대다\nt_keep = x.mean(axis=0, keepdims=True)   # (1, 6)\nprint(\"\\naxis=0 평균          \", t_keep.shape, \"→ 빼기\", (x - t_keep).shape)\n\n# 바깥곱 — (4,1) 과 (1,6) 이 만나 (4,6) 이 된다\na = np.arange(4)[:, None]\nb = np.arange(6)[None, :]\nprint(\"\\n(4,1) x (1,6) =\", (a * b).shape)\nprint(\"메모리는 실제로 늘어나지 않는다 — 같은 값을 다시 읽을 뿐이다\")" },
+
+  { t: "메모리가 두 배로 늘었다", type: "decide",
+    goal: "배열 연산으로 옮긴 뒤 속도는 빨라졌는데 메모리 사용량이 크게 늘었습니다.",
+    sit: "무엇을 하시겠습니까?",
+    opts: [
+      { label: "중간 배열이 몇 개나 만들어지는지 보고 제자리 연산으로 줄인다",
+        fx: { performance: 3, coding: 2 },
+        fb: "✅ `a = a - m; a = a / s` 처럼 쓰면 단계마다 <b>새 배열</b>이 생깁니다. `out=` 인자나 `-=`·`/=` 같은 제자리 연산을 쓰면 같은 메모리를 다시 씁니다. 큰 배열에서는 이것만으로 사용량이 절반 아래로 떨어지기도 합니다.",
+        best: true },
+      { label: "float64 를 float32 로 바꿔 절반으로 줄인다",
+        fx: { performance: 1, coding: -1 },
+        fb: "⚠️ 효과는 확실하지만 <b>정밀도를 내주는 거래</b>입니다. 누적합처럼 오차가 쌓이는 계산에서는 결과가 눈에 띄게 달라질 수 있습니다. 먼저 중간 배열을 줄이고, 그래도 부족하면 정밀도 손실을 재어 본 뒤 정합니다." },
+      { label: "데이터를 조각으로 나눠 순서대로 처리한다",
+        fx: { performance: 2, system_design: 1 },
+        fb: "⚠️ 메모리에 안 들어가는 규모라면 옳은 방향입니다. 다만 지금은 <b>중간 배열이 원인</b>일 가능성이 높아, 먼저 그것을 확인하는 편이 값쌉니다. 조각 처리는 코드가 복잡해집니다." },
+      { label: "가비지 컬렉터를 직접 불러 메모리를 회수한다",
+        fx: { performance: -2, coding: -1 },
+        fb: "⚠️ 참조가 남아 있으면 회수되지 않습니다. 중간 배열이 살아 있는 것이 원인이라면 GC 를 불러도 그대로입니다 — <b>만들지 않는 것</b>이 답입니다." }] },
+
+  { t: "중간 배열을 줄인다", type: "build",
+    goal: "같은 계산을 <b>중간 배열을 만드는 방식</b>과 <b>제자리로 처리하는 방식</b>으로 각각 쓰고 메모리 사용량을 비교하세요.",
+    hint: "`np.subtract(a, b, out=a)` 처럼 결과를 둘 자리를 지정하면 새 배열이 생기지 않습니다. 다만 제자리 연산은 <b>원본을 덮어쓰므로</b> 그 배열을 나중에 쓸 일이 없는지 확인해야 합니다. dtype 이 다르면 제자리 연산이 실패하거나 값이 잘립니다.",
+    acc: "두 방식의 최대 메모리 사용량이 출력되고 결과가 서로 같으며, 제자리 방식이 눈에 띄게 적으면 완료입니다.",
+    lang: "python",
+    sol: "import tracemalloc\nimport numpy as np\n\nrng = np.random.default_rng(20260907)\nbase = rng.normal(size=(200, 129_600))\nprint(f\"원본 자체       {base.nbytes / 2**20:7.1f} MB\")\n\ndef peak(name, fn):\n    tracemalloc.start()\n    out = fn()\n    _, hi = tracemalloc.get_traced_memory()\n    tracemalloc.stop()\n    print(f\"{name:<16}{hi / 2**20:7.1f} MB\")\n    return out\n\n# ── 단계마다 새 배열이 생긴다 ──────────────────────────────\ndef make_copies():\n    a = base.copy()\n    m = a.mean(axis=1, keepdims=True)\n    a = a - m                      # 새 배열 1\n    s = a.std(axis=1, keepdims=True)\n    a = a / np.where(s == 0, 1, s)  # 새 배열 2 (+ where 로 하나 더)\n    return a\n\n# ── 같은 메모리를 다시 쓴다 ───────────────────────────────\ndef in_place():\n    a = base.copy()\n    m = a.mean(axis=1, keepdims=True)\n    np.subtract(a, m, out=a)       # 제자리\n    s = a.std(axis=1, keepdims=True)\n    np.divide(a, s, out=a, where=s != 0)   # 0으로 나누기도 함께 막는다\n    return a\n\nc = peak(\"중간 배열\", make_copies)\ni = peak(\"제자리\",   in_place)\n\nprint(\"\\n결과가 같은가:\", np.allclose(c, i))\nprint(\"\\n제자리 연산은 원본을 덮어쓴다 — 그 배열을 나중에 쓸 일이 없어야 한다.\")" },
+
+  { t: "값을 지키는 검사를 남긴다", type: "build",
+    goal: "옮긴 코드가 <b>같은 값을 낸다</b>는 것을 테스트로 못 박으세요.\n느린 원래 방식을 기준으로 삼고, 경계 입력에서도 확인합니다.",
+    hint: "빈 배열, 모든 값이 같아 표준편차가 0인 채널, NaN 이 섞인 입력이 대표적인 경계입니다. 부동소수점 비교는 `assert_allclose` 로 하고 허용 오차를 명시합니다 — `==` 는 계산 순서만 달라져도 실패합니다.",
+    acc: "일반 입력과 경계 입력 모두에서 원래 방식과 결과가 같고, 표준편차 0인 채널에서 NaN 이 나오지 않으면 완료입니다.",
+    lang: "python",
+    sol: "import numpy as np\nfrom numpy.testing import assert_allclose\n\ndef normalize_slow(a):\n    \"\"\"기준이 되는 느린 구현 — 읽기 쉬운 쪽을 진실로 둔다\"\"\"\n    out = np.empty_like(a, dtype=np.float64)\n    for i in range(a.shape[0]):\n        row = a[i].astype(np.float64)\n        m = row.mean()\n        s = row.std()\n        out[i] = (row - m) / s if s != 0 else row - m\n    return out\n\ndef normalize_fast(a):\n    out = a.astype(np.float64, copy=True)\n    out -= out.mean(axis=1, keepdims=True)\n    s = out.std(axis=1, keepdims=True)\n    np.divide(out, s, out=out, where=s != 0)   # s==0 이면 그대로 둔다\n    return out\n\nresults = []\ndef check(name, fn):\n    try:\n        fn()\n        results.append(\"PASS \" + name)\n    except AssertionError as e:\n        results.append(\"FAIL \" + name + \" — \" + str(e).splitlines()[0])\n\nrng = np.random.default_rng(7)\n\nx = rng.normal(size=(8, 500))\ncheck(\"일반 입력에서 두 구현이 같다\",\n      lambda: assert_allclose(normalize_slow(x), normalize_fast(x), rtol=1e-12))\n\nbig = rng.normal(size=(3, 200_000)) * 1e6   # 값이 커도 오차가 커지지 않는가\ncheck(\"큰 값에서도 같다\",\n      lambda: assert_allclose(normalize_slow(big), normalize_fast(big), rtol=1e-10))\n\nflat = np.full((3, 10), 5.0)          # 표준편차 0\ncheck(\"표준편차 0 인 채널에서 NaN 이 없다\",\n      lambda: assert_allclose(normalize_fast(flat), np.zeros((3, 10)), atol=0))\n\none = rng.normal(size=(1, 1))         # 값 하나\ncheck(\"값이 하나여도 터지지 않는다\",\n      lambda: assert_allclose(normalize_fast(one), np.zeros((1, 1)), atol=0))\n\nempty = np.zeros((0, 10))             # 빈 배열\ncheck(\"빈 배열도 모양을 지킨다\",\n      lambda: assert_allclose(normalize_fast(empty), np.zeros((0, 10))))\n\nprint(\"\\n\".join(results))" },
+
+  { t: "무엇을 얻고 무엇을 내줬는지 적는다", type: "note",
+    goal: "속도·메모리·정밀도의 <b>세 숫자</b>를 옮기기 전후로 나란히 적으세요.\n그리고 이 코드를 다음에 손댈 사람이 <b>깨뜨리기 쉬운 자리</b>가 어디인지 적습니다.",
+    ph: "예: 41초 → 0.19초 · 최대 메모리 620MB → 210MB · 최대 오차 3e-13(허용 1e-9) / 깨뜨리기 쉬운 자리 — normalize 는 제자리 연산이라 넘긴 배열을 덮어씀(호출 전에 copy 필요) · cumsum 을 float32 로 바꾸면 90일 구간에서 오차가 눈에 띄게 커짐 · std=0 채널을 where 로 건너뛰므로 그 줄을 지우면 NaN 이 퍼짐" }
+
+]};

@@ -1,0 +1,101 @@
+/* ML 모델·평가 트랙 전용 프로젝트 — 모델 두 개 중 무엇을 배포할까.
+   지표 선택 · 교차검증 · 임계값 · 비용은 따로 배우면 흩어지지만,
+   '정확도 98% 인 모델이 왜 쓸모없는가' 를 쫓으면 한 줄에 꿰인다. */
+module.exports = {
+  lv: 3, em: "🎯",
+  title: "정확도 98% 인데 쓸모가 없다",
+  desc: "불균형한 이상거래 탐지에서 지표를 다시 고르고, 교차검증을 제대로 설계하고, 임계값을 비용으로 정해 배포할 모델을 판단한다",
+  skills: ["mleval", "ml", "stat"],
+  phases: [
+
+  { t: "무엇을 맞히려는지 적는다", type: "note",
+    goal: "모델을 고르기 전에 <b>틀렸을 때 무슨 일이 생기는지</b> 적으세요.\n두 종류의 실수(놓침·헛경보)가 각각 얼마의 비용인지 숫자로 적습니다. 그 숫자가 지표와 임계값을 정합니다.",
+    ph: "예: 이상거래 탐지 · 전체 중 이상 1.8% · 놓치면 평균 피해 42만원 + 환불 처리 · 헛경보는 결제 차단 후 상담 3분(약 2천원) + 사용자 이탈 위험 · 하루 12만 건 · 상담 인력이 처리 가능한 알림은 하루 800건까지" },
+
+  { t: "정확도가 높은데 왜 쓸모없나", type: "decide",
+    goal: "이상거래가 1.8% 인 데이터에서 모델 정확도가 98.2% 로 나왔습니다.",
+    sit: "무엇을 의심해야 하나요?",
+    opts: [
+      { label: "전부 정상이라고 답해도 98.2% 가 나오므로 정확도로는 아무것도 알 수 없다",
+        fx: { algorithms: 3, debugging: 2 },
+        fb: "✅ <b>다수 클래스의 비율이 곧 기준선</b>입니다. 아무것도 학습하지 않아도 그 숫자가 나오므로, 불균형 데이터에서 정확도는 정보가 없습니다. 잡아낸 비율(재현율)과 알린 것 중 진짜 비율(정밀도), 그리고 그 둘의 균형을 봐야 합니다.",
+        best: true },
+      { label: "학습 데이터가 부족해 과소적합된 것이다",
+        fx: { algorithms: -2 },
+        fb: "⚠️ 과소적합이라면 정확도도 낮게 나옵니다. 여기서는 <b>지표 자체가 상황에 맞지 않는 것</b>이 문제라, 데이터를 더 모아도 같은 숫자가 나옵니다." },
+      { label: "테스트 데이터가 학습에 섞여 들어간 것이다",
+        fx: { algorithms: -1, debugging: 1 },
+        fb: "⚠️ 누출은 늘 의심할 값어치가 있지만, 그 경우에는 정확도가 <b>비정상적으로 높게</b> 나옵니다. 98.2% 는 다수 클래스 비율과 정확히 같아서, 누출보다는 지표 선택 문제로 보입니다." },
+      { label: "모델이 너무 단순해 결정 경계를 못 그린 것이다",
+        fx: { algorithms: -1 },
+        fb: "⚠️ 가능성은 있지만 확인할 방법이 먼저입니다. <b>혼동 행렬을 보면</b> 이상거래를 몇 건이나 잡았는지 바로 드러나므로, 모델을 바꾸기 전에 그것부터 봐야 합니다." }] },
+
+  { t: "혼동 행렬부터 본다", type: "build",
+    goal: "정확도 대신 <b>혼동 행렬과 그로부터 나오는 지표들</b>을 계산하세요.\n'전부 정상' 이라고 답하는 더미 모델과 나란히 놓아 비교합니다.",
+    hint: "재현율은 실제 이상 중 잡아낸 비율, 정밀도는 알린 것 중 진짜인 비율입니다. 둘은 대개 반대로 움직입니다. F1 은 둘의 조화평균이지만 <b>두 실수의 비용이 다르면</b> F1 도 맞는 지표가 아닙니다.",
+    acc: "두 모델의 혼동 행렬과 정확도·정밀도·재현율·F1 이 나란히 출력되고, 더미 모델의 정확도가 왜 높은지 드러나면 완료입니다.",
+    lang: "python",
+    sol: "def confusion(y_true, y_pred):\n    tp = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 1)\n    fp = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 1)\n    fn = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 0)\n    tn = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 0)\n    return tp, fp, fn, tn\n\ndef metrics(y_true, y_pred):\n    tp, fp, fn, tn = confusion(y_true, y_pred)\n    acc = (tp + tn) / len(y_true)\n    prec = tp / (tp + fp) if tp + fp else 0.0\n    rec = tp / (tp + fn) if tp + fn else 0.0\n    f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0\n    return tp, fp, fn, tn, acc, prec, rec, f1\n\n# 하루치 결과 (12만 건, 이상 1.8%)\nimport random\nrandom.seed(20260907)\nN, RATE = 120_000, 0.018\ny = [1 if random.random() < RATE else 0 for _ in range(N)]\n\n# 모델 A — 이상의 62% 를 잡고 정상의 0.9% 를 잘못 알린다\npred_a = [1 if (t == 1 and random.random() < 0.62) or\n               (t == 0 and random.random() < 0.009) else 0 for t in y]\n\n# 더미 — 전부 정상이라고 답한다\npred_d = [0] * N\n\ndef show(name, pred):\n    tp, fp, fn, tn, acc, prec, rec, f1 = metrics(y, pred)\n    print(f\"[{name}]\")\n    print(f\"  잡음 TP {tp:>6,}   헛경보 FP {fp:>6,}\")\n    print(f\"  놓침 FN {fn:>6,}   정상   TN {tn:>6,}\")\n    print(f\"  정확도 {acc:.4f}  정밀도 {prec:.3f}  재현율 {rec:.3f}  F1 {f1:.3f}\\n\")\n\nshow(\"모델 A\", pred_a)\nshow(\"전부 정상이라 답하는 더미\", pred_d)\n\nprint(\"더미의 정확도가 98%대인 이유는 이상이 1.8% 뿐이기 때문이다.\")\nprint(\"아무것도 학습하지 않아도 나오는 숫자를 성과로 보고하면 안 된다.\")" },
+
+  { t: "어떤 곡선을 볼 것인가", type: "decide",
+    goal: "두 모델을 견주려는데 ROC-AUC 는 둘 다 0.95 안팎으로 비슷합니다.",
+    sit: "무엇으로 견주시겠습니까?",
+    opts: [
+      { label: "양성이 드무니 PR 곡선과 그 아래 넓이를 함께 본다",
+        fx: { algorithms: 3, debugging: 1 },
+        fb: "✅ ROC 는 <b>정상 쪽 수가 압도적으로 많으면 낙관적으로 보입니다.</b> 헛경보가 1,000건 늘어도 정상이 11만 건이라 거짓양성률은 거의 안 움직이기 때문입니다. PR 곡선은 분모가 '알린 건수' 라 이 차이를 그대로 드러냅니다. 불균형 문제에서는 PR 을 주로 봅니다.",
+        best: true },
+      { label: "정확도가 더 높은 쪽을 고른다",
+        fx: { algorithms: -3 },
+        fb: "⚠️ 앞 단계에서 확인한 그대로입니다. 불균형에서 정확도는 <b>다수 클래스 비율</b>을 되풀이할 뿐입니다." },
+      { label: "학습 손실이 더 낮은 쪽을 고른다",
+        fx: { algorithms: -2, debugging: -1 },
+        fb: "⚠️ 학습 손실은 <b>학습 데이터에 얼마나 맞췄는가</b>이지 새 데이터에서의 성능이 아닙니다. 과적합된 모델일수록 이 숫자는 좋습니다." },
+      { label: "F1 이 높은 쪽을 고른다",
+        fx: { algorithms: 1 },
+        fb: "⚠️ 정확도보다는 낫지만 F1 은 <b>정밀도와 재현율을 같은 무게로</b> 봅니다. 놓침이 42만원이고 헛경보가 2천원인 상황에서 두 실수를 같게 다루는 것은 맞지 않습니다." }] },
+
+  { t: "임계값을 비용으로 정한다", type: "build",
+    goal: "확률을 <b>어디서 자를지</b>를 두 실수의 비용으로 정하세요.\n임계값을 훑으며 기대 비용을 계산하고, 가장 싼 지점을 찾습니다.",
+    hint: "임계값을 낮추면 더 많이 잡지만 헛경보가 늡니다. 어느 쪽이 나은지는 비용이 정합니다. 운영 제약(하루 800건까지 처리 가능)이 있으면 그 제약을 넘는 지점은 <b>고를 수 없는 후보</b>로 걸러야 합니다.",
+    acc: "임계값별 잡음·헛경보·기대 비용이 표로 출력되고, 비용이 최소인 지점과 운영 제약을 만족하는 지점이 함께 표시되면 완료입니다.",
+    lang: "python",
+    sol: "import random\n\nrandom.seed(20260907)\nN, RATE = 120_000, 0.018\nMISS_COST = 420_000      # 놓쳤을 때 피해\nALERT_COST = 2_000       # 헛경보 한 건 처리 비용\nMAX_ALERTS = 800         # 하루에 처리 가능한 알림 수\n\n# 모델이 내놓은 확률 (실제 이상일수록 높게 나오도록 흉내)\nrows = []\nfor _ in range(N):\n    is_bad = random.random() < RATE\n    score = random.betavariate(6, 3) if is_bad else random.betavariate(2, 12)\n    rows.append((1 if is_bad else 0, score))\n\ndef at(th):\n    tp = fp = fn = 0\n    for y, s in rows:\n        if s >= th:\n            tp += y\n            fp += 1 - y\n        else:\n            fn += y\n    cost = fn * MISS_COST + fp * ALERT_COST\n    alerts = tp + fp\n    prec = tp / alerts if alerts else 0.0\n    rec = tp / (tp + fn) if tp + fn else 0.0\n    return tp, fp, fn, alerts, prec, rec, cost\n\nprint(\"임계값   잡음   헛경보   알림수   정밀도  재현율      기대비용   운영가능\")\nbest = None\nbest_ok = None\nfor i in range(1, 20):\n    th = i / 20\n    tp, fp, fn, alerts, prec, rec, cost = at(th)\n    ok = alerts <= MAX_ALERTS\n    print(f\" {th:.2f}   {tp:>5,}  {fp:>6,}  {alerts:>6,}   {prec:>6.3f} {rec:>6.3f}  {cost:>12,}원   {'예' if ok else '아니오'}\")\n    if best is None or cost < best[1]:\n        best = (th, cost)\n    if ok and (best_ok is None or cost < best_ok[1]):\n        best_ok = (th, cost)\n\nprint(f\"\\n비용만 보면 최적 임계값 {best[0]:.2f}  (하루 {best[1]:,}원)\")\nprint(f\"운영 제약(알림 {MAX_ALERTS}건)까지 지키면 {best_ok[0]:.2f}  (하루 {best_ok[1]:,}원)\")\nprint(\"\\n임계값은 모델이 정하는 것이 아니라 비용과 제약이 정한다.\")" },
+
+  { t: "검증을 어떻게 나눌 것인가", type: "decide",
+    goal: "결제 데이터에는 같은 사용자의 거래가 여러 건 있고, 시간 순서도 있습니다.",
+    sit: "학습·검증 데이터를 어떻게 나누시겠습니까?",
+    opts: [
+      { label: "시간으로 자르고, 같은 사용자가 양쪽에 걸치지 않게 묶어서 나눈다",
+        fx: { algorithms: 3, system_design: 2, debugging: 1 },
+        fb: "✅ 두 가지 누출을 함께 막습니다. <b>시간</b> — 미래 데이터로 학습해 과거를 맞히면 실제 운영과 다릅니다. <b>사용자</b> — 같은 사람의 거래가 양쪽에 있으면 그 사람의 습관을 외워 맞힙니다. 운영에서는 '처음 보는 사람의 다음 거래' 를 맞혀야 하므로 검증도 그 모양이라야 합니다.",
+        best: true },
+      { label: "전체를 무작위로 섞어 8:2 로 나눈다",
+        fx: { algorithms: -3, debugging: -2 },
+        fb: "⚠️ 가장 흔한 실수입니다. 같은 사용자와 미래 정보가 양쪽에 섞여 <b>검증 점수가 실제보다 훨씬 좋게</b> 나옵니다. 배포한 뒤에 성능이 뚝 떨어지는 전형적인 원인입니다." },
+      { label: "이상거래 비율이 같아지도록 층화 추출로 나눈다",
+        fx: { algorithms: 1, debugging: -1 },
+        fb: "⚠️ 층화 자체는 좋은 습관이지만 <b>시간과 사용자 누출은 그대로</b>입니다. 무작위로 섞는다는 점이 바뀌지 않기 때문입니다." },
+      { label: "검증 데이터를 따로 두지 않고 학습 손실로 판단한다",
+        fx: { algorithms: -3 },
+        fb: "⚠️ 학습에 쓴 데이터로 평가하면 외운 것을 재는 셈입니다. 과적합될수록 숫자가 좋아져 <b>판단이 정확히 반대로</b> 갑니다." }] },
+
+  { t: "누출이 얼마나 부풀리는지 재어 본다", type: "build",
+    goal: "같은 데이터를 <b>무작위 분할</b>과 <b>시간·사용자 분할</b>로 각각 나눠 점수를 비교하세요.\n누출이 점수를 얼마나 부풀리는지 숫자로 확인합니다.",
+    hint: "사용자마다 고유한 습관이 있는 데이터를 만들면 누출의 효과가 분명히 드러납니다. 무작위 분할에서는 그 습관을 외워 맞히지만, 사용자를 묶어 나누면 그럴 수 없습니다.",
+    acc: "두 분할 방식의 검증 점수가 나란히 출력되고, 무작위 분할 쪽이 뚜렷하게 높으면 완료입니다.",
+    lang: "python",
+    sol: "import random\n\nrandom.seed(20260907)\n\n# 사용자마다 고유한 습성이 있다 — 이것을 외우면 점수가 부풀려진다\nUSERS = 900\nuser_bias = {u: random.random() for u in range(USERS)}\n\nrows = []\nfor t in range(60_000):                      # t 는 시각 순서\n    u = random.randrange(USERS)\n    # 실제 신호(작음) + 사용자 습성(큼) 이 섞여 있다\n    signal = random.random() * 0.35 + user_bias[u] * 0.65\n    y = 1 if signal > 0.62 else 0\n    rows.append((t, u, signal, y))\n\ndef fit_predict(train, test):\n    \"\"\"아주 단순한 모델 — 사용자별 과거 비율을 외우고, 없으면 전체 평균\"\"\"\n    seen = {}\n    for _, u, _, y in train:\n        a, b = seen.get(u, (0, 0))\n        seen[u] = (a + y, b + 1)\n    base = sum(y for *_, y in train) / len(train)\n    hit = 0\n    for _, u, _, y in test:\n        a, b = seen.get(u, (0, 0))\n        p = a / b if b else base\n        if (1 if p >= 0.5 else 0) == y:\n            hit += 1\n    return hit / len(test)\n\n# ── 무작위 분할 — 같은 사용자와 미래가 양쪽에 섞인다 ────────\nshuffled = rows[:]\nrandom.shuffle(shuffled)\ncut = int(len(shuffled) * 0.8)\nrandom_score = fit_predict(shuffled[:cut], shuffled[cut:])\n\n# ── 시간 + 사용자 분할 — 운영과 같은 모양 ────────────────\nby_time = sorted(rows)\ntcut = int(len(by_time) * 0.8)\ntrain, test = by_time[:tcut], by_time[tcut:]\ntrain_users = {u for _, u, _, _ in train}\ntest_clean = [r for r in test if r[1] not in train_users]\nif not test_clean:                            # 겹치면 사용자로 갈라 낸다\n    held = {u for u in range(USERS) if u % 5 == 0}\n    train = [r for r in by_time[:tcut] if r[1] not in held]\n    test_clean = [r for r in by_time[tcut:] if r[1] in held]\nhonest_score = fit_predict(train, test_clean)\n\nprint(f\"무작위 분할 정확도      {random_score:.3f}   ← 사용자 습성을 외워 맞힌다\")\nprint(f\"시간+사용자 분할 정확도 {honest_score:.3f}   ← 운영에서 보게 될 숫자\")\nprint(f\"부풀려진 폭            {random_score - honest_score:+.3f}\")\nprint(\"\\n배포 뒤 성능이 뚝 떨어지는 사고의 대부분이 이 차이다.\")" },
+
+  { t: "무엇을 배포할지 정한다", type: "build",
+    goal: "두 모델을 <b>같은 조건에서</b> 견주고 배포 여부를 판단하세요.\n지표 하나가 아니라 비용·운영 제약·안정성을 함께 봅니다.",
+    hint: "폴드마다 점수가 얼마나 흔들리는지(표준편차)를 함께 보세요. 평균이 조금 높아도 흔들림이 크면 실제로는 더 나쁠 수 있습니다. 차이가 흔들림보다 작으면 '더 낫다' 고 말할 근거가 없습니다.",
+    acc: "두 모델의 폴드별 점수·평균·표준편차·기대 비용이 출력되고, 차이가 흔들림보다 큰지에 대한 판단이 붙어 있으면 완료입니다.",
+    lang: "python",
+    sol: "import random\nimport statistics as st\n\nrandom.seed(20260907)\n\n# 시간 순서로 다섯 구간을 잘라, 앞을 학습하고 다음 구간으로 검증한다\n# (교차검증도 시계열에서는 '앞 → 뒤' 방향을 지켜야 한다)\nFOLDS = 5\nMISS_COST, ALERT_COST, MAX_ALERTS = 420_000, 2_000, 800\n\ndef simulate(model_recall, model_fpr, n=24_000, rate=0.018):\n    tp = fp = fn = 0\n    for _ in range(n):\n        if random.random() < rate:\n            if random.random() < model_recall: tp += 1\n            else: fn += 1\n        elif random.random() < model_fpr:\n            fp += 1\n    alerts = tp + fp\n    prec = tp / alerts if alerts else 0.0\n    rec = tp / (tp + fn) if tp + fn else 0.0\n    f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0\n    cost = fn * MISS_COST + fp * ALERT_COST\n    return f1, cost, alerts\n\ndef evaluate(name, recall, fpr):\n    f1s, costs, alerts = [], [], []\n    for _ in range(FOLDS):\n        f1, cost, a = simulate(recall, fpr)\n        f1s.append(f1); costs.append(cost); alerts.append(a)\n    print(f\"[{name}]\")\n    print(\"  폴드별 F1  \" + \"  \".join(f\"{v:.3f}\" for v in f1s))\n    print(f\"  F1 평균 {st.mean(f1s):.3f} ± {st.pstdev(f1s):.3f}\")\n    print(f\"  하루 기대비용 {st.mean(costs):>10,.0f}원\")\n    print(f\"  하루 알림 {st.mean(alerts):>6.0f}건  (상한 {MAX_ALERTS})\\n\")\n    return st.mean(f1s), st.pstdev(f1s), st.mean(costs), st.mean(alerts)\n\na = evaluate(\"모델 A — 넓게 잡는다\", recall=0.78, fpr=0.010)\nb = evaluate(\"모델 B — 좁게 잡는다\", recall=0.61, fpr=0.003)\n\ngap = abs(a[0] - b[0])\nnoise = max(a[1], b[1])\nprint(f\"F1 차이 {gap:.3f} · 폴드 흔들림 {noise:.3f}\")\nprint(\"→ 차이가 흔들림보다 \" + (\"크다. 구분할 근거가 있다.\" if gap > noise\n      else \"작다. F1 만으로는 우열을 말할 수 없다.\"))\n\nprint(\"\\n판단 근거는 비용과 제약이다:\")\nfor name, m in ((\"A\", a), (\"B\", b)):\n    ok = m[3] <= MAX_ALERTS\n    print(f\"  모델 {name}: 하루 {m[2]:>10,.0f}원 · 알림 {m[3]:>5.0f}건 · \"\n          + (\"운영 가능\" if ok else \"상담 인력으로 감당 불가\"))" },
+
+  { t: "무엇을 지켜볼지 적는다", type: "note",
+    goal: "배포한 뒤 <b>무엇이 나빠지면 되돌릴 것인지</b> 적으세요.\n모델은 데이터가 변하면 조용히 나빠집니다. 그 신호와 기준을 미리 정해 둡니다.",
+    ph: "예: 배포 = 모델 B, 임계값 0.55(알림 하루 예상 640건) / 지켜볼 것 — 주간 재현율(0.55 아래면 경보) · 알림 수(하루 800 초과면 임계값 상향) · 입력 분포 변화(금액·시간대 분포가 기준 대비 크게 벗어나면 재학습) · 라벨 지연 2주라 지표는 2주 뒤에야 확정 / 되돌리기 = 이전 규칙 기반 필터로 즉시 전환 가능 / 재학습 = 월 1회, 시간·사용자 분할 유지" }
+
+]};

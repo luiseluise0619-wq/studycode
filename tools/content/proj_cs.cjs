@@ -1,0 +1,108 @@
+/* CS 기초 트랙 전용 프로젝트 — 숫자 하나가 어긋나는 이유를 끝까지 쫓는다.
+   인코딩·부동소수점·엔디안·비트는 따로 배우면 잊지만,
+   '왜 합계가 1원 틀리는가' 를 쫓다 보면 한 줄에 꿰인다. */
+module.exports = {
+  lv: 2, em: "🔬",
+  title: "1원이 어긋난다",
+  desc: "합계가 1원 틀리고 이름이 깨지고 파일이 다르게 읽히는 증상을 인코딩·부동소수점·엔디안까지 내려가 원인을 찾고 구조로 막는다",
+  skills: ["cs", "code", "math"],
+  phases: [
+
+  { t: "어긋나는 자리를 적는다", type: "note",
+    goal: "지금 보이는 증상을 <b>재현할 수 있는 형태</b>로 적으세요.\n어떤 입력에서, 어느 화면에서, 얼마나 어긋나는지를 숫자로 적습니다. '가끔 이상하다' 는 조사할 수 없습니다.",
+    ph: "예: 주문 12건 합계가 화면 138,600원 · 정산 138,599원 (1원 차이) · 할인율 10%·3.3% 섞인 건에서만 · 이름 '김민준' 이 CSV 로 내보내면 '±öÙÁØ' · 파일 크기는 같은데 해시가 다름" },
+
+  { t: "돈을 어떻게 담을 것인가", type: "decide",
+    goal: "금액을 소수로 계산하고 있습니다. <code>0.1 + 0.2</code> 가 <code>0.30000000000000004</code> 가 되는 그 방식입니다.",
+    sit: "어떻게 바꾸시겠습니까?",
+    opts: [
+      { label: "가장 작은 단위(원)의 정수로 저장하고 계산도 정수로 한다",
+        fx: { coding: 3, debugging: 2 },
+        fb: "✅ <b>문제 자체를 없애는 방법</b>입니다. 2진 부동소수점이 0.1 을 정확히 담지 못하는 것이 원인이므로, 소수를 쓰지 않으면 오차도 없습니다. 화폐 단위가 더 잘게 나뉘는 통화라면 그 최소 단위(센트)로 잡습니다. 표시할 때만 나눠서 보여 줍니다.",
+        best: true },
+      { label: "계산할 때마다 소수점 둘째 자리에서 반올림한다",
+        fx: { coding: -1, debugging: -1 },
+        fb: "⚠️ 오차를 줄이지만 없애지는 못합니다. 반올림이 여러 번 쌓이면 방향이 한쪽으로 몰려 <b>건수가 많을수록 차이가 커집니다.</b> 그리고 '어디서 반올림했는가' 에 따라 결과가 달라져 대사가 어려워집니다." },
+      { label: "비교할 때 아주 작은 허용 오차를 두어 같다고 본다",
+        fx: { coding: -2 },
+        fb: "⚠️ 과학 계산에는 맞는 방법이지만 <b>돈에는 맞지 않습니다.</b> 1원이 어긋난 것을 '같다' 고 처리하면 장부가 맞지 않고, 감사에서 설명할 수 없습니다." },
+      { label: "합계만 따로 정수로 계산하고 나머지는 그대로 둔다",
+        fx: { coding: -2, debugging: -2 },
+        fb: "⚠️ 두 벌의 진실이 생깁니다. 어느 쪽이 맞는지 매번 따져야 하고, 화면과 정산이 다시 갈라집니다. 계산 경로 전체를 같은 방식으로 두는 것이 핵심입니다." }] },
+
+  { t: "어긋남을 눈으로 확인한다", type: "build",
+    goal: "부동소수점이 실제로 어떻게 어긋나는지 <b>출력해서 확인</b>하세요.\n소수로 계산한 합계와 정수로 계산한 합계를 나란히 찍어 차이를 봅니다.",
+    hint: "`toFixed` 로 보이는 값과 실제로 담긴 값은 다릅니다. 정확히 무엇이 담겼는지 보려면 `toPrecision(20)` 처럼 자릿수를 늘려 찍어 봅니다. 오차는 한 번에는 안 보이고 여러 번 더할수록 드러납니다.",
+    acc: "소수 방식과 정수 방식의 합계 차이가 출력되고, 건수를 늘릴수록 차이가 커지는 것이 보이면 완료입니다.",
+    lang: "javascript",
+    sol: "const out = [];\n\n/* 화면에 보이는 값과 실제로 담긴 값은 다르다 */\nout.push(\"0.1 + 0.2 = \" + (0.1 + 0.2).toPrecision(20));\n\n/* 같은 금액을 두 방식으로 더해 본다 */\nfunction sumFloat(prices) {\n  return prices.reduce((s, x) => s + x, 0);\n}\nfunction sumInt(prices) {\n  return prices.reduce((s, x) => s + Math.round(x * 100), 0) / 100;\n}\n\nfunction trial(n) {\n  const prices = [];\n  for (let i = 0; i < n; i++) prices.push(10.1, 20.2, 30.3);\n  const f = sumFloat(prices);\n  const d = sumInt(prices);\n  return [n * 3, f.toPrecision(20), d, Math.abs(f - d)];\n}\n\n[1, 100, 10000].forEach((n) => {\n  const r = trial(n);\n  out.push(\"건수 \" + r[0] + \"  소수 \" + r[1] + \"  정수 \" + r[2] + \"  차이 \" + r[3]);\n});\n\nout.push(\"\");\nout.push(\"건수가 늘수록 차이가 커진다 — 오차가 쌓이기 때문이다\");\nconsole.log(out.join(\"\\n\"));" },
+
+  { t: "글자가 깨진 자리를 찾는다", type: "build",
+    goal: "한글이 깨져 나오는 경로를 짚으세요. <b>어느 단계에서 바이트를 잘못 해석했는지</b>를 찾는 것이 목적입니다.\n같은 글자를 여러 인코딩으로 바꿔 보고, 깨진 결과와 대조합니다.",
+    hint: "글자가 깨지는 것은 대개 '어떤 인코딩으로 저장했는가' 와 '어떤 인코딩으로 읽었는가' 가 다르기 때문입니다. 깨진 모양을 보면 어느 조합인지 짐작할 수 있습니다. CSV 를 엑셀이 잘못 읽는 문제는 BOM 을 붙이면 대개 해결됩니다.",
+    acc: "같은 문자열의 UTF-8 바이트열이 출력되고, 그 바이트를 다른 인코딩으로 읽었을 때 어떻게 보이는지가 함께 나오면 완료입니다.",
+    lang: "javascript",
+    sol: "const out = [];\nconst text = \"김민준\";\n\n/* UTF-8 로 바이트를 만든다 — 한글 한 글자가 3바이트다 */\nconst bytes = Array.from(new TextEncoder().encode(text));\nout.push(text + \" → UTF-8 \" + bytes.length + \"바이트\");\nout.push(\"  \" + bytes.map((b) => b.toString(16).padStart(2, \"0\")).join(\" \"));\n\n/* 그 바이트를 라틴1 로 읽으면 깨진 글자가 된다 — 흔한 사고의 정체 */\nconst wrong = new TextDecoder(\"latin1\").decode(new Uint8Array(bytes));\nout.push(\"라틴1 로 읽으면: \" + wrong + \"  (\" + wrong.length + \"글자)\");\n\n/* 글자 수 세기도 인코딩마다 다르다 */\nout.push(\"\");\nout.push(\"length      \" + text.length + \"   ← UTF-16 코드 단위\");\nout.push(\"바이트 수   \" + bytes.length + \"   ← UTF-8 저장 크기\");\nout.push(\"사람이 세면 \" + Array.from(text).length + \"   ← 코드 포인트\");\n\n/* 이모지처럼 보조 평면 글자는 셋이 전부 다르다 */\nconst emo = \"가\\u{1F600}\";\nout.push(\"\");\nout.push(\"'\" + emo + \"' → length \" + emo.length +\n  \" · 코드포인트 \" + Array.from(emo).length +\n  \" · UTF-8 \" + new TextEncoder().encode(emo).length + \"바이트\");\nout.push(\"컬럼 길이를 length 로 잡으면 여기서 잘린다\");\n\nconsole.log(out.join(\"\\n\"));" },
+
+  { t: "파일을 어떻게 비교할 것인가", type: "decide",
+    goal: "두 서버에 있는 같은 이름의 파일이 같은지 확인해야 합니다. 크기는 같은데 정말 같은지 알 수 없습니다.",
+    sit: "어떻게 비교하시겠습니까?",
+    opts: [
+      { label: "내용의 해시를 구해 견주고, 다르면 그때 내용을 비교한다",
+        fx: { algorithms: 3, performance: 2 },
+        fb: "✅ <b>값싸고 확실합니다.</b> 해시가 다르면 확실히 다르고, 같으면 사실상 같습니다. 파일을 통째로 주고받지 않아도 되어 네트워크도 아낍니다. 큰 파일이라면 조각마다 해시를 구해 <b>다른 조각만</b> 주고받는 방식으로 넓힐 수 있습니다.",
+        best: true },
+      { label: "파일 크기와 수정 시각이 같으면 같다고 본다",
+        fx: { debugging: -2 },
+        fb: "⚠️ 빠르지만 틀릴 수 있습니다. 같은 크기의 다른 내용은 흔하고, 수정 시각은 복사 방식에 따라 바뀌거나 유지됩니다. <b>빠른 사전 검사로는 쓸 만하지만 판정 근거로는 부족합니다.</b>" },
+      { label: "두 파일을 모두 내려받아 바이트 단위로 비교한다",
+        fx: { performance: -2 },
+        fb: "⚠️ 확실하지만 비쌉니다. 대부분의 경우 파일은 같으므로, 같은 것을 확인하려고 매번 전부 주고받는 셈입니다. 해시로 먼저 거르면 이 비용이 거의 사라집니다." },
+      { label: "파일 이름과 확장자가 같으면 같다고 본다",
+        fx: { debugging: -3 },
+        fb: "⚠️ 이름은 내용과 아무 관계가 없습니다. 배포 사고의 상당수가 '이름은 같은데 내용이 다른' 파일에서 납니다." }] },
+
+  { t: "비트로 상태를 담아 본다", type: "build",
+    goal: "여러 개의 참·거짓 설정을 <b>정수 하나에</b> 담고 꺼내는 코드를 쓰세요.\n권한 플래그나 기능 스위치를 다루는 흔한 방식입니다.",
+    hint: "각 설정에 겹치지 않는 비트를 하나씩 줍니다. 켜기는 `|`, 끄기는 `& ~`, 확인은 `&` 입니다. 자바스크립트의 비트 연산은 32비트라 그 이상은 담기지 않는다는 점을 기억하세요.",
+    acc: "설정을 켜고 끄고 확인하는 세 동작이 모두 동작하고, 저장된 정수 값이 함께 출력되면 완료입니다.",
+    lang: "javascript",
+    sol: "const out = [];\n\n/* 겹치지 않는 비트를 하나씩 준다 */\nconst READ = 1;     // 0001\nconst WRITE = 2;    // 0010\nconst DELETE = 4;   // 0100\nconst ADMIN = 8;    // 1000\n\nconst on = (v, f) => (v | f) >>> 0;\nconst off = (v, f) => (v & ~f) >>> 0;\nconst has = (v, f) => (v & f) !== 0;\nconst show = (v) => v.toString(2).padStart(4, \"0\") + \" (\" + v + \")\";\n\nlet perm = 0;\nout.push(\"시작        \" + show(perm));\n\nperm = on(perm, READ);\nperm = on(perm, WRITE);\nout.push(\"읽기+쓰기   \" + show(perm));\n\nout.push(\"  삭제 가능? \" + has(perm, DELETE));\n\nperm = on(perm, DELETE);\nout.push(\"삭제 추가   \" + show(perm) + \"  삭제 가능? \" + has(perm, DELETE));\n\nperm = off(perm, WRITE);\nout.push(\"쓰기 제거   \" + show(perm) + \"  쓰기 가능? \" + has(perm, WRITE));\n\n/* 여러 개를 한 번에 확인한다 */\nconst NEED = READ | DELETE;\nout.push(\"\");\nout.push(\"읽기와 삭제를 모두 갖췄나? \" + ((perm & NEED) === NEED));\n\n/* 32비트가 한계다 — 설정이 더 늘면 다른 방법을 써야 한다 */\nout.push(\"32번째 비트: \" + ((1 << 31) >>> 0) + \"  그다음은 담기지 않는다\");\n\nconsole.log(out.join(\"\\n\"));" },
+
+  { t: "난수가 치우쳤다", type: "decide",
+    goal: "1~6 주사위를 <code>Math.floor(rand * 6) + 1</code> 로 만들었는데, 큰 표본에서 특정 값이 미세하게 자주 나옵니다.",
+    sit: "어떻게 보시겠습니까?",
+    opts: [
+      { label: "범위를 나누는 방식이 남는 구간을 만들어 치우침이 생겼는지 확인한다",
+        fx: { algorithms: 3, debugging: 2 },
+        fb: "✅ 난수의 범위가 원하는 개수로 <b>나누어떨어지지 않으면</b> 앞쪽 값이 조금 더 자주 나옵니다. 주사위 정도는 무시할 만하지만, 추첨이나 암호에서는 문제가 됩니다. 남는 구간이 나오면 <b>다시 뽑는</b> 방식으로 고르게 만듭니다.",
+        best: true },
+      { label: "표본이 더 커지면 저절로 고르게 되므로 그대로 둔다",
+        fx: { algorithms: -2 },
+        fb: "⚠️ 무작위 흔들림이라면 그렇지만, <b>구조적인 치우침은 표본이 커질수록 더 뚜렷해집니다.</b> 흔들림과 치우침을 구분하려면 기댓값과의 차이가 표본 크기에 따라 줄어드는지 봐야 합니다." },
+      { label: "난수 생성기를 더 좋은 것으로 바꾼다",
+        fx: { algorithms: -1 },
+        fb: "⚠️ 생성기가 문제인 경우도 있지만, 이 증상은 대개 <b>범위를 좁히는 방식</b>에서 생깁니다. 생성기를 바꿔도 나누는 방식이 그대로면 치우침도 그대로입니다." },
+      { label: "결과를 한 번 더 섞어 준다",
+        fx: { algorithms: -2, debugging: -1 },
+        fb: "⚠️ 치우친 분포를 섞어도 분포는 그대로입니다. 순서만 바뀔 뿐 각 값이 나오는 비율은 변하지 않습니다." }] },
+
+  { t: "치우침을 재고 고친다", type: "build",
+    goal: "범위를 좁히는 두 방식의 <b>분포를 실제로 재어</b> 비교하세요.\n나머지 연산을 쓴 방식과 남는 구간을 다시 뽑는 방식의 차이를 숫자로 봅니다.",
+    hint: "치우침을 드러내려면 범위가 작고 나누어떨어지지 않는 경우를 골라야 합니다. 예를 들어 0~9 를 3으로 나누면 0·1·2 중 앞쪽 둘이 더 자주 나옵니다. 결과를 재현할 수 있게 씨앗값을 고정한 생성기를 쓰세요.",
+    acc: "두 방식의 각 값 출현 횟수가 나란히 출력되고, 나머지 방식 쪽이 치우쳐 있는 것이 보이면 완료입니다.",
+    lang: "javascript",
+    sol: "const out = [];\n\n/* 씨앗을 고정해 결과를 재현 가능하게 만든다 */\nfunction rng(seed) {\n  let x = seed;\n  return () => {\n    x ^= x << 13; x >>>= 0;\n    x ^= x >> 17;\n    x ^= x << 5;  x >>>= 0;\n    return x % 10;          // 0~9 만 나오는 좁은 생성기\n  };\n}\n\n/* 방식 A — 나머지로 좁힌다. 10 은 3으로 나누어떨어지지 않는다 */\nfunction modWay(r) { return r() % 3; }\n\n/* 방식 B — 남는 구간(9)이 나오면 버리고 다시 뽑는다 */\nfunction rejectWay(r) {\n  let v = r();\n  while (v >= 9) v = r();   // 0~8 만 쓴다 → 3으로 딱 나뉜다\n  return v % 3;\n}\n\nfunction count(fn, n) {\n  const r = rng(20260907);\n  const c = [0, 0, 0];\n  for (let i = 0; i < n; i++) c[fn(r)]++;\n  return c;\n}\n\nconst N = 300000;\nconst a = count(modWay, N);\nconst b = count(rejectWay, N);\nconst pct = (c) => c.map((x) => (x * 100 / N).toFixed(2) + \"%\").join(\"  \");\n\nout.push(\"기대값        33.33%  33.33%  33.33%\");\nout.push(\"나머지 방식   \" + pct(a) + \"   ← 0 이 더 자주 나온다\");\nout.push(\"다시 뽑기     \" + pct(b));\nout.push(\"\");\nout.push(\"0~9 를 3으로 나누면 0·1·2 가 각각 4·3·3 번씩 대응한다.\");\nout.push(\"남는 구간을 버려야 고르게 된다 — 추첨과 암호에서는 필수다.\");\n\nconsole.log(out.join(\"\\n\"));" },
+
+  { t: "구조로 막는다", type: "build",
+    goal: "같은 종류의 사고가 다시 나지 않도록 <b>검사</b>를 만들어 두세요.\n금액 타입, 인코딩, 경계 문자에 대한 확인을 테스트로 못 박습니다.",
+    hint: "'이렇게 하지 말자' 는 합의는 잊히지만 <b>도구로 강제한 규칙</b>은 남습니다. 금액이 정수인지, 문자열 길이를 코드 포인트로 세는지, CSV 에 BOM 이 붙는지를 각각 확인하세요.",
+    acc: "소수 금액·잘린 이모지·BOM 없는 CSV 를 넣었을 때 각각 실패하고, 올바른 입력에서는 통과하면 완료입니다.",
+    lang: "javascript",
+    sol: "const out = [];\nfunction test(name, fn) {\n  try { fn(); out.push(\"PASS \" + name); }\n  catch (e) { out.push(\"FAIL \" + name + \" — \" + e.message); }\n}\nfunction expect(got) {\n  return { toBe(want) {\n    if (!Object.is(got, want))\n      throw new Error(\"기대 \" + JSON.stringify(want) + \", 실제 \" + JSON.stringify(got));\n  } };\n}\n\n/* 1) 금액은 언제나 정수(원) 여야 한다 */\nfunction isMoney(v) { return Number.isInteger(v) && Number.isFinite(v); }\ntest(\"정수 금액은 통과\", () => { expect(isMoney(138600)).toBe(true); });\ntest(\"소수 금액은 거부\", () => { expect(isMoney(1386.5)).toBe(false); });\n\n/* 2) 자르기는 코드 포인트 단위로 — length 로 자르면 이모지가 반토막 난다 */\nfunction cut(s, n) { return Array.from(s).slice(0, n).join(\"\"); }\ntest(\"이모지가 반으로 잘리지 않는다\", () => {\n  const s = \"가\\u{1F600}나\";\n  expect(cut(s, 2)).toBe(\"가\\u{1F600}\");\n});\ntest(\"length 로 자르면 깨진다(확인용)\", () => {\n  const s = \"가\\u{1F600}나\";\n  expect(s.slice(0, 2).length).toBe(2);   // 2칸이지만 이모지 절반이다\n});\n\n/* 3) 내보내는 CSV 에는 BOM 을 붙인다 — 엑셀이 UTF-8 로 읽게 만든다 */\nfunction toCsv(rows) { return \"\\uFEFF\" + rows.map((r) => r.join(\",\")).join(\"\\n\"); }\ntest(\"CSV 앞에 BOM 이 있다\", () => {\n  expect(toCsv([[\"이름\"], [\"김민준\"]]).charCodeAt(0)).toBe(0xFEFF);\n});\n\nconsole.log(out.join(\"\\n\"));" },
+
+  { t: "무엇을 알게 되었는지 적는다", type: "note",
+    goal: "쫓아 내려간 경로를 <b>한 줄씩</b> 적으세요.\n증상 → 의심 → 확인한 방법 → 원인 → 막은 방법 순서로 적으면 다음 사람이 같은 길을 다시 걷지 않습니다.",
+    ph: "예: 1원 차이 → 소수 누적 오차 의심 → 건수 늘려 재현(1만 건에서 0.0000002) → 원 단위 정수로 전환 → isMoney 검사를 CI 에 / 이름 깨짐 → 인코딩 불일치 → 바이트 찍어 확인(3바이트 UTF-8) → CSV 에 BOM 추가 → 내보내기 테스트 추가 / 남은 것: 외부 결제사 응답이 소수로 옴, 경계에서 즉시 정수 변환" }
+
+]};
