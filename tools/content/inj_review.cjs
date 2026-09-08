@@ -47,14 +47,20 @@ const plans=SPEC.entries.map(E=>{
      제목까지 함께 본다. */
   qs.forEach(q=>{ if(seen.has(norm(q.q+" "+q.k))) throw new Error(E.track+": 중복 문항 — "+q.k); });
   if(arr.some(u=>u.t===E.unit)) throw new Error(E.track+": 유닛 제목 중복");
-  /* 트랙이 유닛 순서(ord)를 적어 두었으면 새 유닛에도 자리를 준다.
-     하나라도 빠지면 앱이 순서를 통째로 무시하고, 맨 뒤로 보내는 도구도
-     '전부 적혀 있을 때만' 다시 매기므로 여기서 안 주면 영영 안 채워진다. */
+  /* 자리 정하기. '해 보는 유닛'(시뮬레이션·실행형 실전·설계 실전)은 배운 뒤에 오는 것이라
+     트랙 맨 뒤여야 하고 app 테스트가 그것을 검사한다. 리뷰는 배우는 단계이므로 그 무리
+     <b>앞에</b> 끼운다 — 맨 뒤에 붙이면 꼬리가 끊겨 검사가 걸린다.
+     순서(ord)를 적어 둔 트랙이면 전부 다시 매긴다. 하나라도 빠지면 앱이 순서를 통째로
+     무시하므로, 여기서 안 채우면 영영 안 채워진다. */
+  const TAILU=/시뮬레이션|실행형 실전|실행형 ·|설계 실전|설계 · 직접|직접 구현 —|직접 코딩 —|직접 SQL —|직접 만들며|직접 실행해/;
   const unit={ t:E.unit, l:[{ t:E.lesson, xp, th:E.th, q:qs }] };
-  if(arr.length && arr.every(u=>typeof u.ord==="number"))
-    unit.ord=Math.max.apply(null, arr.map(u=>u.ord))+1;
-  arr.push(unit);
-  return {E, path, out:raw.slice(0,a)+JSON.stringify(arr)+raw.slice(z+1), n:qs.length};
+  const hasOrd=arr.length>0 && arr.every(u=>typeof u.ord==="number");
+  const order=hasOrd ? arr.slice().sort((x,y)=>x.ord-y.ord) : arr.slice();
+  let at=order.findIndex(u=>TAILU.test(u.t));
+  if(at<0) at=order.length;
+  order.splice(at, 0, unit);
+  if(hasOrd) order.forEach((u,i)=>{ u.ord=i; });
+  return {E, path, out:raw.slice(0,a)+JSON.stringify(order)+raw.slice(z+1), n:qs.length};
 });
 
 plans.forEach(p=>{
