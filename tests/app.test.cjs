@@ -1581,6 +1581,70 @@ function check(name, cond, detail){
   await p.close();
  }
 
+ /* ---------- 끊긴 상태에서도 열린다 ----------
+    이 앱이 내세우는 것이 오프라인이라, 그 길만은 진짜로 걸어 봐야 한다.
+    나머지 검사는 file:// 로 도는데 서비스 워커는 보안 컨텍스트가 필요해서
+    여기서만 작은 서버를 띄운다. */
+ {
+  const http=require("http");
+  const TYPES={".html":"text/html",".js":"text/javascript",".json":"application/json",
+    ".webmanifest":"application/manifest+json",".png":"image/png",".css":"text/css"};
+  const ROOT=path.join(__dirname,"..");
+  const server=http.createServer((req,rep)=>{
+    let u=decodeURIComponent(req.url.split("?")[0]);
+    if(u==="/") u="/index.html";
+    const f=path.join(ROOT,u);
+    if(!f.startsWith(ROOT)||!fs.existsSync(f)||fs.statSync(f).isDirectory()){ rep.writeHead(404); rep.end(); return; }
+    rep.writeHead(200,{"content-type":TYPES[path.extname(f)]||"application/octet-stream"});
+    fs.createReadStream(f).pipe(rep);
+  });
+  await new Promise(res=>server.listen(0,"127.0.0.1",res));
+  const base="http://127.0.0.1:"+server.address().port+"/";
+  const ctx=await browser.newContext({viewport:{width:390,height:800}});
+  const offErrs=[];
+  try{
+   const p=await ctx.newPage();
+   p.on("pageerror",e=>offErrs.push(e.message));
+   await p.addInitScript(s=>{ try{ localStorage.setItem("coderun",JSON.stringify(s)); }catch(e){} },
+     {onboarded:true, goal:"free", freeMode:true});
+   await p.goto(base);
+   await p.waitForFunction(()=>typeof COURSES!=="undefined",{timeout:60000});
+   await p.evaluate(()=>navigator.serviceWorker.ready);
+   await p.evaluate(()=>ensureTrack("python"));
+   /* 미리 받기는 한가할 때 도는 일이라 잠깐 기다린다 */
+   await p.evaluate(()=>new Promise(r=>setTimeout(r,4000)));
+
+   const cached=await p.evaluate(async()=>{
+     const names=await caches.keys();
+     const shell=names.filter(n=>n.indexOf("shell")>=0)[0];
+     const data=names.filter(n=>n.indexOf("data")>=0)[0];
+     const keys=async n=>n?(await (await caches.open(n)).keys()).map(r=>new URL(r.url).pathname):[];
+     return {shell:(await keys(shell)).length, data:await keys(data)};
+   });
+   check("서비스 워커가 앱 셸을 캐시한다", cached.shell>=3, cached);
+   /* 데이터 청크까지 캐시해야 비행기 모드에서 문항이 열린다 */
+   check("쓰던 트랙의 문항 청크를 미리 받아 둔다",
+     cached.data.some(x=>/^\/data\/t-.*\.js$/.test(x)), cached.data);
+
+   await ctx.setOffline(true);
+   await p.reload({waitUntil:"load"});
+   const off=await p.evaluate(async()=>{
+     const shell=typeof COURSES!=="undefined";
+     let track="안 열림";
+     try{ await ensureTrack("python"); track=trackLoaded("python")?"열림":"안 열림"; }
+     catch(e){ track="오류: "+e.message; }
+     return {shell, tracks:shell?Object.keys(COURSES).length:0, track,
+       hero:(document.getElementById("hero")||{innerText:""}).innerText.length};
+   });
+   check("끊긴 상태에서 앱 셸이 뜬다", off.shell===true && off.tracks>=38 && off.hero>0, off);
+   check("끊긴 상태에서 쓰던 트랙의 문항이 열린다", off.track==="열림", off);
+   check("끊긴 상태에서 페이지 에러가 없다", offErrs.length===0, offErrs.slice(0,3));
+  } finally {
+   await ctx.close();
+   await new Promise(res=>server.close(res));
+  }
+ }
+
  const realErrs=errs.filter(e=>!/ERR_FILE_NOT_FOUND/.test(e));
  check("페이지 에러 없음", realErrs.length===0, realErrs.slice(0,3));
 
