@@ -782,6 +782,66 @@ function check(name, cond, detail){
   check("모든 트랙에 프로젝트 배너가 붙어 있다", cat10.projTracks===cat10.tracks,
     {붙은트랙:cat10.projTracks, 전체:cat10.tracks, 전용:cat10.projOwn});
 
+  /* 빌드랩의 미리보기는 <b>사용자가 붙여 넣은 코드</b>를 돌린다.
+     iframe 에 allow-scripts 와 allow-same-origin 을 함께 주면 샌드박스가 사실상
+     풀려서 그 코드가 parent 를 통해 진도와 AI 키(localStorage)에 닿는다.
+     그래서 (1) 그 조합이 셸에 없고 (2) 프레임이 실제로 부모에 못 닿으며
+     (3) 그러고도 채점이 되는지를 함께 본다 — 셋을 따로 두면 하나만 되돌려도 모른다. */
+  {
+    const shellSrc=fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8");
+    const sandboxes=(shellSrc.match(/sandbox="[^"]*"/g)||[]);
+    const loose=sandboxes.filter(x=>x.indexOf("allow-same-origin")>=0);
+    check("셸의 어떤 샌드박스에도 allow-same-origin 이 없다", loose.length===0,
+      {느슨한것:loose, 전체:sandboxes.length});
+
+    const lab=await p.evaluate(async ()=>{
+      const PASS='<!doctype html><html><head><style>.wrap{display:flex}</style></head>'
+        +'<body><header>로고</header><main><h1>제목</h1><button class="btn">시작</button></main></body></html>';
+      const FAIL='<!doctype html><html><body><p>아직 아무것도 없다</p></body></html>';
+      const out={};
+      openLab("fullstack",5);
+      lab.i=1; renderPhase();
+      const marks=()=>Array.prototype.map.call(
+        document.querySelectorAll("#lab-body .lchk"), e=>e.className.indexOf("pass")>=0);
+      const attempt=async src=>{
+        /* 앞 시도의 표시가 남아 있으면 그것을 결과로 읽는다 — 지우고 시작한다 */
+        Array.prototype.forEach.call(
+          document.querySelectorAll("#lab-body .lchk"), e=>{ e.className="lchk"; });
+        document.getElementById("lab-ed").value=src;
+        document.getElementById("lab-check").click();
+        for(let i=0;i<40;i++){
+          await new Promise(r=>setTimeout(r,100));
+          const m=marks();
+          if(m.length && document.querySelectorAll("#lab-body .lchk.pass,#lab-body .lchk.fail").length===m.length) return m;
+        }
+        return marks();
+      };
+      out.sandbox=document.getElementById("lab-prev").getAttribute("sandbox");
+      out.pass=await attempt(PASS);
+      out.fail=await attempt(FAIL);
+      /* 정말로 격리됐는지 — 프레임의 출처가 불투명(null)하면 부모의 저장소에 닿을 수 없고,
+         부모도 프레임 문서를 읽지 못한다. 일부러 예외를 내지 않고 확인한다. */
+      const fr=document.getElementById("lab-prev");
+      out.parentCanRead = (function(){ try{ return fr.contentDocument!==null; }catch(e){ return false; } })();
+      out.frameOrigin=await new Promise(res=>{
+        const on=e=>{ if(e.data&&e.data.__origin!==undefined){ removeEventListener("message",on); res(e.data.__origin); } };
+        addEventListener("message",on);
+        fr.srcdoc="<script>parent.postMessage({__origin:String(location.origin)},'*')<\/script>";
+        setTimeout(()=>{ removeEventListener("message",on); res("no-reply"); },3000);
+      });
+      closeLab();
+      return out;
+    });
+    check("빌드랩 프레임에 allow-same-origin 이 없다", lab.sandbox==="allow-scripts", {sandbox:lab.sandbox});
+    check("빌드랩 프레임이 불투명 출처로 격리된다",
+      lab.frameOrigin==="null" && lab.parentCanRead===false,
+      {프레임출처:lab.frameOrigin, 부모가읽을수있나:lab.parentCanRead});
+    check("맞는 코드는 빌드랩 채점을 전부 통과한다",
+      lab.pass.length===4 && lab.pass.every(Boolean), {검사결과:lab.pass});
+    check("틀린 코드는 빌드랩 채점을 통과하지 못한다",
+      lab.fail.length===4 && !lab.fail.some(Boolean), {검사결과:lab.fail});
+  }
+
   /* 트랙 하나가 너무 얇으면 그 트랙만 고른 사람에게는 앱이 비어 보인다.
      150문항은 '한 트랙을 붙들고 며칠은 갈 수 있다' 의 하한선이다. */
   const underFloor=await p.evaluate(()=>{

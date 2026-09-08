@@ -58,6 +58,7 @@ PLAYWRIGHT_CHROMIUM=<chrome 경로> node tests/app.test.cjs      # 실제 브라
 | D3 | 청크 로드 실패 시 안내와 재시도가 있다 | ❌ | `loadError()` |
 | D4 | **트랙 청크가 3MB 를 넘지 않는다** | ✅ | 트랙을 열 때 통째로 받으므로 첫 화면이 그만큼 늦는다 |
 | D5 | manifest 의 아이콘·scope·start_url 이 유효하다 | ❌ | 설치형으로 뜨지 않는다 |
+| D6 | **붙여 넣은 코드를 돌리는 iframe 에 `allow-same-origin` 이 없다** | ✅ | `allow-scripts` 와 함께 주면 샌드박스가 사실상 풀려 그 코드가 parent 를 통해 진도와 AI 키에 닿는다 |
 
 ## E. 접근성
 

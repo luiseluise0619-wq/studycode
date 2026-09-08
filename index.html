@@ -5870,7 +5870,7 @@ function renderPhase(){
     const draft=getDraft(lab.i)||ph.starter||"";
     inner=`${ph.hint?`<div class="hintline"> <b>힌트</b> ${nl2br(ph.hint)}</div>`:""}<textarea class="labed" id="lab-ed" spellcheck="false">${escHtml(draft)}</textarea>
       <div class="labrow"><button class="labrun" id="lab-run">▶ 실행/미리보기</button><button class="labcheck" id="lab-check">✓ 채점</button></div>
-      <iframe class="labprev" id="lab-prev" sandbox="allow-scripts allow-same-origin"></iframe>
+      <iframe class="labprev" id="lab-prev" sandbox="allow-scripts"></iframe>
       <div class="labchecks">${(ph.checks||[]).map((c,ci)=>`<div class="lchk" id="chk-${ci}"><span class="ci">◻</span>${escHtml(c.desc)}</div>`).join("")}</div>`;
   } else if(ph.type==="decide"){
     inner=`<div class="simsit">${nl2br(ph.sit)}</div>`+ph.opts.map((o,i)=>`<button class="simopt" data-i="${i}">${escHtml(o.label)}</button>`).join("");
@@ -5909,7 +5909,7 @@ function wirePhase(ph,isLast){
   const pv=$("lab-prev-btn"); if(pv) pv.onclick=()=>{ if(ed)setDraft(lab.i,ed.value); save(); lab.i--; renderPhase(); };
   if(ph.type==="web"){
     const prev=$("lab-prev");
-    const run=()=>{ if(prev) prev.srcdoc=$("lab-ed").value; };
+    const run=()=>{ if(prev) prev.srcdoc=$("lab-ed").value+LAB_PROBE; };
     $("lab-run").onclick=run; run();
     $("lab-check").onclick=()=>{ run(); setTimeout(()=>runChecks(ph),300); };
   } else if(ph.type==="decide"){
@@ -5925,20 +5925,64 @@ function wirePhase(ph,isLast){
     if(isLast) showScorecard(); else { lab.i++; renderPhase(); }
   };
 }
-function runChecks(ph){
-  const fr=$("lab-prev"); let doc=null; try{doc=fr.contentDocument;}catch(e){}
-  const src=$("lab-ed").value, low=src.toLowerCase(); let all=true;
-  (ph.checks||[]).forEach((c,ci)=>{ let ok=false;
-    try{
-      if(c.k==="dom") ok=!!(doc&&doc.querySelector(c.sel));
-      else if(c.k==="count") ok=!!(doc&&doc.querySelectorAll(c.sel).length>=(c.min||1));
-      else if(c.k==="text") ok=!!(doc&&((doc.body&&doc.body.innerText)||"").includes(c.has));
-      else if(c.k==="src"){ const arr=Array.isArray(c.has)?c.has:[c.has]; ok=arr.some(h=>low.includes(String(h).toLowerCase())); }
-    }catch(e){ok=false;}
-    const el=$("chk-"+ci); if(el){ el.className="lchk "+(ok?"pass":"fail"); const ci2=el.querySelector(".ci"); if(ci2)ci2.textContent=ok?"":"◻"; }
-    if(!ok) all=false;
+/* 빌드랩 미리보기는 <b>붙여 넣은 코드</b>를 그대로 돌린다. 그래서 iframe 에
+   allow-same-origin 을 주면 안 된다 — allow-scripts 와 함께 주는 순간 샌드박스가
+   사실상 풀려서, 그 코드가 parent 를 통해 진도와 AI 키(localStorage)에 닿는다.
+   대신 DOM 을 보는 검사를 <b>iframe 안에서</b> 돌리고 결과만 받아 온다.
+   (프레임 안에서 채점하므로 마음먹으면 통과를 흉내 낼 수 있지만, 그것은 자기 진도를
+    속이는 일이라 위험이 아니다. 막아야 하는 것은 남의 코드가 내 키를 가져가는 쪽이다.) */
+const LAB_PROBE = "\n<script>(function(){addEventListener('message',function(e){"
+  + "var d=e.data; if(!d||!d.__labChecks) return;"
+  + "var out=d.__labChecks.map(function(c){try{"
+  + "if(c.k==='dom') return !!document.querySelector(c.sel);"
+  + "if(c.k==='count') return document.querySelectorAll(c.sel).length>=(c.min||1);"
+  + "if(c.k==='text') return (((document.body&&document.body.innerText)||'').indexOf(c.has)>=0);"
+  + "return false;}catch(_){return false;}});"
+  + "(e.source||parent).postMessage({__labResult:out,__labId:d.__labId},'*');});})()<\/script>";
+
+/* 프레임에 검사를 보내고 답을 기다린다. 아직 안 떴을 수 있으므로 짧게 여러 번 보낸다. */
+function labProbe(checks){
+  return new Promise(res=>{
+    const fr=$("lab-prev");
+    if(!fr||!fr.contentWindow||!checks.length) return res(checks.map(()=>false));
+    const id=String(Math.random()).slice(2);
+    let done=false, tries=0, timer=0;
+    const onMsg=e=>{
+      const d=e.data;
+      if(!d||d.__labId!==id||!Array.isArray(d.__labResult)) return;
+      done=true; clearInterval(timer); removeEventListener("message",onMsg);
+      res(d.__labResult);
+    };
+    addEventListener("message",onMsg);
+    const send=()=>{
+      if(done) return;
+      if(++tries>16){ clearInterval(timer); removeEventListener("message",onMsg); return res(checks.map(()=>false)); }
+      try{ fr.contentWindow.postMessage({__labChecks:checks,__labId:id},"*"); }catch(e){}
+    };
+    send(); timer=setInterval(send,100);
   });
-  if(all){ setPhDone(lab.i); const nb=$("lab-next"); if(nb){ nb.disabled=false; nb.textContent=(lab.i>=lab.phases.length-1)?"프로젝트 완료":"다음 Phase →"; } }
+}
+
+function runChecks(ph){
+  const list=ph.checks||[];
+  const src=$("lab-ed").value, low=src.toLowerCase();
+  /* 소스만 보면 되는 검사는 여기서, DOM 을 봐야 하는 검사는 프레임 안에서 */
+  const need=[], at=[];
+  list.forEach((c,ci)=>{ if(c.k==="dom"||c.k==="count"||c.k==="text"){ need.push(c); at.push(ci); } });
+  labProbe(need).then(fromFrame=>{
+    let all=true;
+    list.forEach((c,ci)=>{
+      let ok=false;
+      try{
+        const j=at.indexOf(ci);
+        if(j>=0) ok=!!fromFrame[j];
+        else if(c.k==="src"){ const arr=Array.isArray(c.has)?c.has:[c.has]; ok=arr.some(h=>low.includes(String(h).toLowerCase())); }
+      }catch(e){ok=false;}
+      const el=$("chk-"+ci); if(el){ el.className="lchk "+(ok?"pass":"fail"); const ci2=el.querySelector(".ci"); if(ci2)ci2.textContent=ok?"":"◻"; }
+      if(!ok) all=false;
+    });
+    if(all){ setPhDone(lab.i); const nb=$("lab-next"); if(nb){ nb.disabled=false; nb.textContent=(lab.i>=lab.phases.length-1)?"프로젝트 완료":"다음 Phase →"; } }
+  });
 }
 function pickLabDecide(ph,i){
   const o=ph.opts[i]; for(const k in (o.fx||{})) awardSkill(k,o.fx[k]); renderRole();
