@@ -440,7 +440,10 @@
   .dbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--brand),#5b6cff); border-radius:6px; transition:width .4s}
   .roadmap{margin:14px 0 2px}
   .roadmap .rtitle{display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:15px; margin:0 2px 8px; color:var(--ink)}
-  .roadmap .rtitle button{background:none; border:1px solid var(--line); border-radius:9px; padding:5px 10px; font-size:12px; font-weight:700; color:var(--ink-soft)}
+  .roadmap .rtitle button{background:var(--card); border:.5px solid var(--line); border-radius:999px;
+    padding:6px 13px; font-size:13px; font-weight:500; color:var(--brand);
+    transition:transform .2s var(--ease), opacity .15s}
+  .roadmap .rtitle button:active{transform:scale(.96); opacity:.7}
   .rtrack{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px; -webkit-overflow-scrolling:touch}
   .rnode{flex:0 0 auto; min-width:98px; padding:11px 10px; border-radius:13px; border:2px solid var(--line); background:var(--card); text-align:center; box-shadow:var(--shadow)}
   .rnode.active{border-color:var(--brand)}
@@ -1296,6 +1299,68 @@
   .rc-tag{display:inline-block; margin-left:6px; padding:1px 8px; border-radius:20px; font-size:10.5px; font-weight:600}
   .rc-tag.on{background:var(--good); color:#fff}
   .rc-tag.off{border:1px solid var(--line); color:var(--ink-soft)}
+
+  /* ============================================================
+     iOS 레이아웃 — 색만 바꾸면 애플처럼 보이지 않는다.
+     애플의 화면을 애플처럼 만드는 것은 <b>세 가지 배치 습관</b>이다.
+       1) 큰 제목이 있고, 스크롤하면 작은 제목으로 접힌다
+       2) 목록은 흰 카드 하나에 담기고 줄 사이는 머리카락 한 올로 나뉜다
+       3) 고르는 것은 칩이 아니라 분절 컨트롤(segmented control)이다
+     ============================================================ */
+
+  /* 1) 큰 제목 — 스크롤하면 상단바의 작은 제목으로 넘어간다 */
+  .lgtitle{margin:4px 0 8px; font-size:34px; font-weight:700; letter-spacing:-.035em;
+    line-height:1.08; color:var(--ink)}
+  .topbar{border-bottom-color:transparent; transition:border-color .25s}
+  .topbar .wordmark{opacity:0; transform:translateY(5px);
+    transition:opacity .25s var(--ease), transform .25s var(--ease)}
+  body.scrolled .topbar .wordmark{opacity:1; transform:none}
+  body.scrolled .topbar{border-bottom-color:var(--line)}
+
+  /* 2) 묶음 목록 — 흰 카드 하나에 줄을 담고, 구분선은 글자 시작점부터 */
+  .practice-bar{display:block; padding:0; margin:2px 0 0;
+    background:var(--card); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow)}
+  .practice-bar .pbtn{display:flex; align-items:center; gap:10px; width:100%; min-width:0;
+    border:none; border-radius:0; background:none; box-shadow:none;
+    padding:15px 16px; font-size:16px; font-weight:400; color:var(--ink); text-align:left;
+    transition:background .12s}
+  .practice-bar .pbtn + .pbtn{position:relative}
+  .practice-bar .pbtn + .pbtn::before{content:""; position:absolute; left:16px; right:0; top:0;
+    height:.5px; background:var(--line)}
+  .practice-bar .pbtn::after{content:"›"; margin-left:auto; color:var(--line-strong);
+    font-size:22px; font-weight:400; line-height:1}
+  .practice-bar .pbtn:active{background:var(--bg-soft)}
+  .practice-bar #random-btn{background:none; color:var(--brand); font-weight:500}
+  .practice-bar .pbtn.ghost[aria-pressed="true"]{background:none; color:var(--brand); font-weight:500}
+
+  /* 둘러보기도 같은 줄 모양으로 */
+  .explore{margin:22px 0 2px; border-top:none;
+    background:var(--card); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow)}
+  .explore > summary{padding:15px 16px; font-size:16px; font-weight:400; color:var(--ink); letter-spacing:-.011em}
+  .explore > summary::after{content:"›"; margin-left:auto; color:var(--line-strong); font-size:22px; line-height:1;
+    transition:transform .25s var(--ease)}
+  .explore[open] > summary::after{transform:rotate(90deg)}
+  .explore .catbar, .explore .langbar{padding-left:16px; padding-right:16px}
+  .explore .langbar{padding-bottom:14px}
+
+  /* 3) 분절 컨트롤 — 칩이 흩어져 있던 자리 */
+  .catbar{background:var(--bg-soft); border-radius:11px; padding:2px; gap:2px;
+    flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; margin:2px 0 10px}
+  .catbar::-webkit-scrollbar{display:none}
+  .catchip{flex:1 0 auto; border:none; background:none; border-radius:9px; padding:7px 14px;
+    font-size:13.5px; font-weight:500; color:var(--ink); white-space:nowrap}
+  .catchip[aria-selected="true"]{background:var(--card); color:var(--ink); font-weight:600;
+    box-shadow:0 1px 3px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.04)}
+  .langchip{border-width:.5px; font-weight:500}
+
+  /* 카드는 테두리를 지우고 모서리를 키운다 — 회색 바탕 위에 떠 있게 */
+  .hero-card, .daily, .reco-card, .pjcard{border-width:0}
+  .hero-card{border-radius:var(--radius-lg); padding:20px}
+  .reco-card{border-width:.5px}
+
+  /* 본문 글씨는 iOS 본문 크기(17px)로 */
+  .opt{font-size:17px}
+  .q-title{letter-spacing:-.022em}
 </style>
 
 <!-- ================= HOME ================= -->
@@ -1308,6 +1373,7 @@
     <button id="rolechip" hidden></button>
   </header>
 
+  <h1 class="lgtitle">코드런</h1>
   <section id="hero"></section>
   <div class="reco" id="reco"></div>
   <div class="daily" id="daily"></div>
@@ -6474,6 +6540,18 @@ ensureTrack(curLang).then(function(){ renderCourse(); }).catch(function(){});
 prefetchRest();
 if(!S.onboarded) openOnboard();
 if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEventListener("load",function(){ navigator.serviceWorker.register("/sw.js").catch(function(){}); }); }
+
+/* 큰 제목이 스크롤을 따라 상단바의 작은 제목으로 넘어간다(iOS large title).
+   스크롤마다 클래스를 만지면 프레임을 잡아먹으므로, 넘는 순간에만 한 번 바꾼다. */
+(function(){
+  var on=false;
+  function tick(){
+    var now=(window.scrollY||document.documentElement.scrollTop||0)>28;
+    if(now!==on){ on=now; document.body.classList.toggle("scrolled", on); }
+  }
+  addEventListener("scroll", function(){ requestAnimationFrame(tick); }, {passive:true});
+  tick();
+})();
 
 /* 어디선가 예외가 새면 화면이 그리다 만 채로 멈춘다. 오프라인 앱이라 새로고침도
    사용자가 알아서 해야 하므로, 최소한 "멈췄다" 는 사실은 알려 준다.
