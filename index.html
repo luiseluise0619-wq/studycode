@@ -1028,6 +1028,12 @@
   .ach .a-n{font-size:11px;font-weight:800;margin-top:4px;line-height:1.3}
   .ach .a-d{font-size:10px;color:var(--ink-soft);margin-top:2px;line-height:1.35}
   .ach .a-p{font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);margin-top:3px}
+  /* 포트폴리오 — 붙여 넣을 글자 그대로 보여 준다. 줄바꿈을 지키고 가로로만 넘긴다 */
+  .pfmd{margin:10px 0 0;padding:12px 13px;border:1px solid var(--line);border-radius:12px;
+    background:var(--card);font-family:var(--mono);font-size:11.5px;line-height:1.65;
+    white-space:pre-wrap;word-break:break-word;max-height:46vh;overflow:auto;color:var(--ink)}
+  .pfbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .pfbtns .pbtn{flex:1 1 140px}
   /* ===== 학습 코치 (PRD §19) ===== */
   .cch-big{padding:13px 15px;border-radius:13px;border:1px solid rgba(120,140,255,.34);background:linear-gradient(135deg,rgba(59,125,216,.11),rgba(91,108,255,.11));margin-bottom:14px}
   .cch-big b{font-size:14.5px}
@@ -3113,6 +3119,144 @@ function openAchv(){
   $("ach-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
   body.scrollTop=0; o.classList.add("on"); document.body.style.overflow="hidden";
 }
+
+/* ===== 포트폴리오 — 배운 것이 아니라 '한 것'을 모은다 =====
+   업적은 앱 안에서만 뜻이 있는 숫자다. 여기서는 밖으로 가져갈 수 있는 것만
+   담는다 — 완주한 프로젝트, 통과시킨 구현, 100% 끝낸 트랙.
+   근거가 없는 항목은 아예 넣지 않는다. 빈 줄이 있는 이력서가 더 낫다. */
+function pfProjects(){
+  if(!__got.projects) return null;          // 아직 안 받았으면 '모른다'를 알린다
+  const out=[];
+  for(const g in PROJECTS) PROJECTS[g].forEach((p,i)=>{
+    const id=g+"-p"+i; if(!S.proj||!S.proj[id]) return;
+    const sc=S.proj[id+":score"];
+    out.push({title:p.title, desc:p.desc, lv:p.lv,
+      skills:(p.skills||[]).map(s=>(COURSES[s]&&COURSES[s].name)||s),
+      grade:sc?(sc.grade+"등급 "+sc.pct+"점"):""});
+  });
+  return out;
+}
+function pfTracks(){
+  const out=[];
+  for(const k in COURSES){ const p=trackProg(k); if(!p.d) continue;
+    out.push({name:COURSES[k].name, d:p.d, t:p.t, pct:p.pct}); }
+  out.sort((a,b)=>(b.pct-a.pct)||(b.d-a.d));
+  return out;
+}
+function pfSkills(){ ensureSkills();
+  return AXES.map(a=>({n:a.n, v:Math.round(S.skills[a.k]||0)}))
+    .filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+}
+/* 마크다운으로 내보낸다 — 이력서·README·이슈 어디에 붙여도 그대로 읽힌다 */
+function portfolioMd(){
+  const r=roleOf(skillAvg()), L=[];
+  const projs=pfProjects(), trks=pfTracks(), sks=pfSkills();
+  const impl=Object.keys(S.implByK||{}).length, bl=blDoneTotal();
+  const full=trks.filter(t=>t.pct===100);
+
+  L.push("# 개발 학습 기록 — 코드런");
+  L.push("");
+  L.push("종합 역량 **"+r.name+" "+r.avg+"/100** · 완료 레슨 "+Object.keys(S.done||{}).length+
+         " · 누적 "+fmt(S.xp||0)+" XP");
+  L.push("");
+
+  if(projs===null){ L.push("_프로젝트 기록은 프로젝트 화면을 한 번 연 뒤에 담깁니다._"); L.push(""); }
+  else if(projs.length){
+    L.push("## 만든 것 — 프로젝트 "+projs.length+"개");
+    L.push("");
+    projs.forEach(p=>{
+      L.push("- **"+p.title+"**"+(p.grade?" ("+p.grade+")":""));
+      L.push("  - "+p.desc);
+      if(p.skills.length) L.push("  - 사용: "+p.skills.join(", "));
+    });
+    L.push("");
+  }
+
+  if(impl||bl){
+    L.push("## 직접 통과시킨 것");
+    L.push("");
+    if(impl) L.push("- 실행형 문항 "+impl+"개 — 테스트를 통과하는 코드를 직접 작성");
+    if(bl) L.push("- 빌드 랩 "+bl+" Day — 요구사항만 보고 만들어 통과");
+    L.push("");
+  }
+
+  if(full.length){
+    L.push("## 끝까지 마친 트랙");
+    L.push("");
+    full.forEach(t=>L.push("- "+t.name+" ("+t.t+"레슨 전부)"));
+    L.push("");
+  }
+
+  const partial=trks.filter(t=>t.pct<100).slice(0,8);
+  if(partial.length){
+    L.push("## 진행 중");
+    L.push("");
+    partial.forEach(t=>L.push("- "+t.name+" "+t.d+"/"+t.t+" ("+t.pct+"%)"));
+    L.push("");
+  }
+
+  if(sks.length){
+    L.push("## 역량 축 (9축, 100점 만점)");
+    L.push("");
+    sks.forEach(s=>L.push("- "+s.n+" "+s.v));
+    L.push("");
+  }
+  L.push("---");
+  L.push("");
+  L.push("이 기록은 코드런 앱이 풀이 기록에서 계산한 것입니다.");
+  return L.join("\n");
+}
+function portfolioEmpty(){
+  return !Object.keys(S.done||{}).length && !blDoneTotal() &&
+         !Object.keys(S.implByK||{}).length;
+}
+function openPortfolio(){
+  const o=$("profile"), body=$("profile-body");
+  /* 프로젝트 청크가 없으면 '만든 것' 이 통째로 빠진다 — 열면서 받아 둔다 */
+  if(!__got.projects){
+    body.innerHTML='<div class="ovh">포트폴리오</div>'+loadingBar('기록을 모으는 중…');
+    o.classList.add("on"); document.body.style.overflow="hidden";
+    ensureProjects().then(openPortfolio).catch(openPortfolio);
+    return;
+  }
+  const md=portfolioMd();
+  const head='<div class="ovh">포트폴리오</div><h2>밖으로 가져갈 수 있는 기록</h2>';
+  if(portfolioEmpty()){
+    body.innerHTML=head+'<p class="sub">아직 담을 것이 없어요. 레슨을 풀거나 프로젝트를 하나 끝내면 '+
+      '여기에 <b>근거가 있는 항목만</b> 쌓입니다.</p>'+
+      '<button class="ovclose alt" id="pf-close" style="margin-top:14px">닫기</button>';
+  } else {
+    body.innerHTML=head+
+      '<p class="sub">이력서·GitHub README·지원서에 그대로 붙일 수 있는 마크다운입니다. '+
+      '앱 안에서만 뜻이 있는 숫자(연속일·랭크)는 넣지 않았어요.</p>'+
+      '<pre class="pfmd" id="pf-md">'+escHtml(md)+'</pre>'+
+      '<div class="pfbtns"><button class="pbtn" id="pf-copy">마크다운 복사</button>'+
+      '<button class="pbtn ghost" id="pf-dl">파일로 내려받기</button></div>'+
+      '<button class="ovclose alt" id="pf-close" style="margin-top:14px">닫기</button>';
+    $("pf-copy").onclick=()=>{
+      const done=()=>toast("포트폴리오를 복사했어요.");
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(md).then(done,()=>selectPf());
+      } else selectPf();
+    };
+    $("pf-dl").onclick=()=>{
+      try{ const blob=new Blob([md],{type:"text/markdown"});
+        const url=URL.createObjectURL(blob), a=document.createElement("a");
+        a.href=url; a.download="coderun-portfolio.md"; document.body.appendChild(a); a.click();
+        setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},100);
+        toast("포트폴리오를 파일로 내려받았어요."); }
+      catch(e){ toast("내려받기에 실패했어요."); }
+    };
+  }
+  $("pf-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
+  body.scrollTop=0; o.classList.add("on"); document.body.style.overflow="hidden";
+}
+/* 클립보드를 못 쓰는 환경(권한 거부·비보안 출처)에서는 골라 두기만 한다 */
+function selectPf(){ const el=$("pf-md"); if(!el) return;
+  try{ const rg=document.createRange(); rg.selectNodeContents(el);
+    const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(rg);
+    toast("복사 권한이 없어 글자를 골라 뒀어요 — 직접 복사하세요."); }
+  catch(e){ toast("복사할 수 없는 환경이에요."); } }
 
 /* 받침에 따라 조사 선택 — "시스템 설계을(를)" 같은 표기를 없앤다 */
 function hasJong(s){ s=String(s==null?"":s); if(!s) return false;
@@ -6149,7 +6293,8 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
    ["","성장 로드맵","입문→시니어 통합 경로","path"]]],
   ["④ 도구와 기록",[["▶","로컬 실행 서버",runnerReady()?"연결됨 · "+escHtml(runnerBase()):"C·C++·Java·Go 를 진짜 컴파일러로","run"],
    ["","AI 멘토",aiReady()?"연결됨 · "+escHtml(aiCfg().model):"BYOK 키 연결 · 힌트와 코드 리뷰","ai"],
-   ["","업적 · 활동 랭크",`${Object.keys(S.ach||{}).length}/${ACHV.length} 획득 · ${rankOf(S.xp||0).name}`,"ach"]]]]
+   ["","업적 · 활동 랭크",`${Object.keys(S.ach||{}).length}/${ACHV.length} 획득 · ${rankOf(S.xp||0).name}`,"ach"],
+   ["","포트폴리오","한 것만 모아 마크다운으로 — 이력서에 붙이기","pf"]]]]
   .map(g=>`<p class="sub" style="margin:14px 0 5px;font-weight:800">${g[0]}</p>`+hubHtml(g[1])).join("");
  body.innerHTML=`<div class="ovh">Developer Passport</div><h2>${r.name}</h2>
   <div class="rolebox"><div class="rolebig">종합 역량 ${r.avg}<span style="font-weight:700;opacity:.8">/100</span></div><div class="rolesub">${nx?`다음 <b>${nx.name}</b>까지 +${nx.need}`:"최고 등급 도달"}</div></div>
@@ -6163,7 +6308,7 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
  const half=f=>()=>{ o.classList.remove("on"); f(); };
  const GO={close:shut, diag:()=>{shut();startDiagnostic();}, review:()=>{shut();if(typeof startReview==="function")startReview();},
   build:half(openBuildLab), git:half(openGitLab), proj:half(openProjects), ai:half(openAiSetup), run:half(openRunnerSetup),
-  coach:openCoach, ach:openAchv, path:openPath, sim:openSims, cause:openDiags};
+  coach:openCoach, ach:openAchv, path:openPath, sim:openSims, cause:openDiags, pf:openPortfolio};
  body.querySelectorAll("[data-go]").forEach(b=>{ const f=GO[b.dataset.go]; if(f) b.onclick=f; });
  o.classList.add("on"); document.body.style.overflow="hidden";
 }

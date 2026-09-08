@@ -43,9 +43,20 @@ function check(name, cond, detail){
  {
   const fs=require("fs");
   const shell=fs.statSync(path.join(__dirname,"..","index.html")).size;
-  check("셸(index.html)이 600KB 미만이다", shell<600*1024, {bytes:shell});
+  /* 눈금을 600 → 640KB 로 올렸다(58차). 셸이 커진 것은 코드가 아니라 트랙이
+     늘어서다 — COURSES 개요만 171KB 이고 트랙 하나가 4~5KB 씩 더한다.
+     이 검사가 지키려는 것은 절대 크기가 아니라 '문항이 셸에 섞이지 않는 것'
+     이므로, 아래 두 검사를 함께 둔다. 눈금만 올리면 감시가 사라진다. */
+  check("셸(index.html)이 640KB 미만이다", shell<640*1024, {bytes:shell});
   const dataDir=path.join(__dirname,"..","data");
   const files=fs.readdirSync(dataDir);
+  const dataBytes=files.reduce((a,f)=>a+fs.statSync(path.join(dataDir,f)).size,0);
+  /* 문항이 셸로 새면 이 비율이 곧바로 커진다 — 지금은 2.5% 다 */
+  check("셸이 전체 콘텐츠의 5% 미만이다", shell < dataBytes*0.05,
+        {shell, dataBytes, pct:+(shell/dataBytes*100).toFixed(2)});
+  const shellText=fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8");
+  check("셸에 문항 청크가 인라인되어 있지 않다", shellText.indexOf("__CR('t:")<0,
+        {at:shellText.indexOf("__CR('t:")});
   /* 트랙 수는 COURSES 와 청크가 1:1 이어야 한다. 트랙을 늘릴 때 이 숫자도 함께 올린다 */
   check("트랙 청크가 38개 있다", files.filter(f=>/^t-.+\.js$/.test(f)).length===38,
         {n:files.filter(f=>/^t-.+\.js$/.test(f)).length});
@@ -1505,6 +1516,43 @@ function check(name, cond, detail){
   check("역량 분석이 할 일을 1·2·3 으로 보여 준다", g.steps==="123" && g.hasOrder, g);
   check("훈련 모드가 순서대로 묶여 있다", g.groups===4, g);
   check("역량 분석의 모든 줄이 눌린다", g.unwired===0, g);
+  await p.close();
+ }
+
+ /* ---------- 포트폴리오는 근거가 있는 것만 담는다 ---------- */
+ {
+  /* 기록이 없는 사람에게 빈 이력서를 만들어 주면 안 된다 — 그 자체가 거짓말이다 */
+  const p0=await page();
+  const e0=await p0.evaluate(async()=>{
+    await ensureProjects(); openPortfolio();
+    const b=document.getElementById("profile-body");
+    return {md:!!document.getElementById("pf-md"), says:b.innerText.indexOf("아직 담을 것이 없어요")>=0};
+  });
+  check("기록이 없으면 포트폴리오를 만들지 않는다", e0.md===false && e0.says===true, e0);
+  await p0.close();
+
+  const p=await page();
+  const r=await p.evaluate(async()=>{
+    await ensureProjects();
+    /* 완료 레슨은 앱이 쓰는 해시 열쇠라야 트랙 진도에 잡힌다 */
+    const g=COURSES.git; g.units.forEach((u,ui)=>u.lessons.forEach((l,li)=>{ S.done[lkey("git",ui,li)]=true; }));
+    let n=0; COURSES.python.units.forEach((u,ui)=>u.lessons.forEach((l,li)=>{ if(n<9){ S.done[lkey("python",ui,li)]=true; n++; } }));
+    S.implByK={a:1,b:1,c:1}; S.build={d1:{done:[1,2]}}; S.xp=4200; S.streak=9;
+    const gk=Object.keys(PROJECTS)[0];
+    S.proj={}; S.proj[gk+"-p0"]=true;
+    save(); openPortfolio();
+    const md=document.getElementById("pf-md").textContent;
+    return {md, copy:!!document.getElementById("pf-copy"), dl:!!document.getElementById("pf-dl"),
+      title:PROJECTS[gk][0].title};
+  });
+  check("포트폴리오에 완주한 프로젝트가 이름으로 실린다", r.md.indexOf(r.title)>=0, r.md.slice(0,200));
+  check("포트폴리오에 100% 끝낸 트랙이 실린다", /끝까지 마친 트랙[\s\S]*Git/.test(r.md), r.md.slice(0,400));
+  check("포트폴리오에 직접 통과시킨 것이 실린다",
+    r.md.indexOf("실행형 문항 3개")>=0 && r.md.indexOf("빌드 랩 2 Day")>=0, r.md.slice(0,400));
+  /* 연속일·활동 랭크는 앱 밖에서 뜻이 없다. 이력서에 넣으면 오히려 신뢰를 깎는다 */
+  check("앱 안에서만 뜻이 있는 숫자는 넣지 않는다",
+    r.md.indexOf("연속")<0 && r.md.indexOf("랭크")<0, r.md.slice(0,400));
+  check("포트폴리오를 복사·내려받을 수 있다", r.copy===true && r.dl===true, r);
   await p.close();
  }
 
