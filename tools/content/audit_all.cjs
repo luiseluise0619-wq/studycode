@@ -149,6 +149,39 @@ const COURSES = JSON.parse(html.slice(cs, ce + 1));
 Object.keys(COURSES).forEach(k => { if (!tracks[k]) hit("셸에만 있는 트랙", k); });
 Object.keys(tracks).forEach(k => { if (!COURSES[k]) hit("데이터에만 있는 트랙", k); });
 
+/* 프로젝트를 쓴 소스(tools/content/proj_*.cjs)와 데이터가 아직 같은지.
+
+   데이터를 스크립트로 고치고 소스를 안 고치면(또는 그 반대면) 둘이 갈라지는데,
+   앱은 데이터만 읽으므로 아무 검사에도 안 걸린다. 다음 사람이 소스를 고쳐
+   다시 넣는 순간 이미 고쳐 둔 것이 조용히 되돌아간다.
+   실제로 한 번 났다 — 제목으로 찾아 바꾸는 스크립트가 sol 안의 `" },` 를
+   끝으로 잘못 잡아 소스만 깨졌고, 테스트는 전부 통과했다. */
+{
+  const pj = path.join(ROOT, "data", "projects.js");
+  if (fs.existsSync(pj)) {
+    const raw = fs.readFileSync(pj, "utf8");
+    const DATA = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
+    const dir = path.join(ROOT, "tools", "content");
+    fs.readdirSync(dir).filter(f => /^proj_.*\.cjs$/.test(f)).forEach(f => {
+      let mod;
+      try { mod = require(path.join(dir, f)); }
+      catch (e) { hit("프로젝트 소스를 읽을 수 없다", f + " — " + e.message.split("\n")[0]); return; }
+      const list = Array.isArray(mod) ? mod : (mod.PROJECTS || (mod.title ? [mod] : null));
+      if (!list) return;                       // 프로젝트 파일이 아니다
+      const group = (mod && mod.group) || "tracks";
+      (DATA[group] || []).length;              // 없는 묶음이면 아래에서 걸린다
+      list.forEach(sp => {
+        const dp = (DATA[group] || []).filter(x => x.title === sp.title)[0];
+        if (!dp) { hit("소스에만 있는 프로젝트", f + " / " + sp.title); return; }
+        (sp.phases || []).forEach((ph, i) => {
+          if (JSON.stringify(ph) !== JSON.stringify((dp.phases || [])[i]))
+            hit("소스와 데이터가 다른 프로젝트 단계", f + " / " + sp.title + " / " + ph.t);
+        });
+      });
+    });
+  }
+}
+
 function report(bag, head) {
   const kinds = Object.keys(bag).sort((a, b) => bag[b].length - bag[a].length);
   if (!kinds.length) return 0;
