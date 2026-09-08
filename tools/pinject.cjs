@@ -88,6 +88,18 @@ NEW.forEach((p, i) => {
           " (일부러 하나 더 붙이는 것이면 파일에 extra:true 를 적으세요)");
   }
   if (titles.has(p.title)) say(at + ' 제목이 기존 프로젝트와 같다');
+  /* 제목만 다르고 주제가 같은 프로젝트를 걸러 낸다.
+     단계 제목이 둘 이상 겹치면 같은 것을 두 번 가르치고 있을 가능성이 크다 —
+     실제로 mleval 에서 '정확도 98%' 짜리를 두 개 만들 뻔했고, 겹친 단계
+     제목 하나가 유일한 신호였다. 우연히 겹치는 일반적인 이름도 있으므로
+     하나까지는 넘긴다. */
+  const mine = new Set((p.phases || []).map(x => x.t).filter(Boolean));
+  for (const persona in DATA) for (const ex of DATA[persona]) {
+    const same = (ex.phases || []).map(x => x.t).filter(t => mine.has(t));
+    if (same.length >= 2)
+      say(at + " 기존 '" + ex.title + "' 과(와) 단계 제목이 " + same.length +
+          '개 겹친다 — 주제가 같지 않은지 보세요: ' + same.slice(0, 3).join(' · '));
+  }
   if (!Array.isArray(p.phases) || p.phases.length < 5) say(at + ' 단계가 5개 미만');
   (p.phases || []).forEach((ph, j) => {
     const w = at + ' 단계' + (j + 1);
