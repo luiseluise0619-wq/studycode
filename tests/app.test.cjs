@@ -816,9 +816,17 @@ function check(name, cond, detail){
         }
         return marks();
       };
+      /* 저장소를 쓰는 과제가 있다. 불투명 출처에서는 localStorage 를 읽는 것만으로
+         예외가 나므로, 프레임 안에 흉내 낸 저장소를 깔아 두었다 — 그것이 도는지 본다. */
+      const STORE='<!doctype html><html><head><style>.wrap{display:grid}</style></head><body>'
+        +'<header>머리말</header><main><h1 id="t">비었음</h1><button class="btn">저장</button></main>'
+        +'<script>localStorage.setItem("todo","산책");'
+        +'document.getElementById("t").textContent=localStorage.getItem("todo");<\/script>'
+        +'</body></html>';
       out.sandbox=document.getElementById("lab-prev").getAttribute("sandbox");
       out.pass=await attempt(PASS);
       out.fail=await attempt(FAIL);
+      out.store=await attempt(STORE);
       /* 정말로 격리됐는지 — 프레임의 출처가 불투명(null)하면 부모의 저장소에 닿을 수 없고,
          부모도 프레임 문서를 읽지 못한다. 일부러 예외를 내지 않고 확인한다. */
       const fr=document.getElementById("lab-prev");
@@ -840,6 +848,8 @@ function check(name, cond, detail){
       lab.pass.length===4 && lab.pass.every(Boolean), {검사결과:lab.pass});
     check("틀린 코드는 빌드랩 채점을 통과하지 못한다",
       lab.fail.length===4 && !lab.fail.some(Boolean), {검사결과:lab.fail});
+    check("저장소를 쓰는 코드도 빌드랩에서 그대로 돈다",
+      lab.store.length===4 && lab.store.every(Boolean), {검사결과:lab.store});
   }
 
   /* 트랙 하나가 너무 얇으면 그 트랙만 고른 사람에게는 앱이 비어 보인다.
@@ -879,14 +889,20 @@ function check(name, cond, detail){
     })));
     return {n, exact:+(Math.max(...hit[0])/n*100).toFixed(1), human:+(Math.max(...hit[1])/n*100).toFixed(1)};
   });
-  /* 고치는 중이라 눈금이 한 번 올라간다 — 이유를 적어 둔다.
-     정답이 3등·4등인 문항이 거의 없어서(5.6%/3.1%) 어떤 배정을 해도
-     1등과 2등에 몰린다. 3·4등을 채우려면 오답을 정답보다 길게 다시
-     써야 하고, 그 일이 끝나기 전까지는 1등 쪽이 잠깐 두꺼워진다.
-     기계 눈금은 72.8 → 59.4 로 내려갔고, 사람 눈금만 29.3 → 37.7 로
-     올랐다. 남은 일 3952자리를 끝내면 둘 다 25% 근처로 간다.
-     이 두 숫자는 작업이 진행되는 동안 계속 내려가야 한다. */
-  const BIAS_EXACT=26.1, BIAS_HUMAN=24.6;
+  /* 눈금이 26.1/24.6 에서 37.6/39.5 로 <b>올라간다.</b> 콘텐츠가 나빠져서가 아니라
+     그때의 숫자가 <b>거짓이었기 때문</b>이다(59차).
+
+     길이 편향을 갚던 시절에 오답 보기 끝에 뜻 없는 꼬리를 붙여 길이를 맞췄다 —
+     "데이터베이스라고 부르는 바로 그런 기술이라고 실제로 차근차근 정리할 수 있다"
+     같은 것이 5천 문항 가까이 있었다. 지표는 26.1 이 됐지만 한국어가 아니었다.
+     `tools/content/depad.cjs` 로 그 꼬리를 전부 걷어냈고, 그러자 오답이 짧아지면서
+     <b>원래부터 있던 편향</b>이 드러났다: 정답이 단독으로 가장 긴 문항 2,431개.
+
+     그래서 이 눈금은 '지금까지 지켜 온 선' 이 아니라 <b>갚아야 할 빚의 크기</b>다.
+     갚는 방법은 하나뿐이다 — 오답을 정답만큼 <b>내용 있게</b> 다시 쓰는 것.
+     장식을 다시 붙여 숫자를 내리는 것은 같은 잘못을 되풀이하는 것이다.
+     `tools/content/BACKLOG.md` 의 '길이 편향' 항목에 남은 일이 적혀 있다. */
+  const BIAS_EXACT=37.6, BIAS_HUMAN=39.5;
   console.log("  길이로 찍기 최고 정답률: 기계(0자) "+bias.exact+"% · 사람(5자) "+bias.human+
               "% · 눈금 "+BIAS_EXACT+"/"+BIAS_HUMAN+"% · 찍기 기준선 25%");
   check("길이로 찍기(기계 기준)가 더 나빠지지 않았다", bias.exact<=BIAS_EXACT, {지금:bias.exact, 눈금:BIAS_EXACT});
@@ -933,7 +949,10 @@ function check(name, cond, detail){
     }
     return {worst, best, guess:+(sc*100/test.length).toFixed(1)};
   });
-  const TAIL_MIN=19.0, TAIL_GUESS=25.5;
+  /* 이 둘도 같은 이유로 눈금이 움직인다(59차) — 장식을 걷어내자 원래의 말버릇이
+     드러났다. '…않기 때문' 으로 끝나는 보기 92개 중 정답은 9.8% 뿐이다.
+     오답을 다시 쓰면서 함께 갚을 몫이다. */
+  const TAIL_MIN=9.8, TAIL_GUESS=26.3;
   console.log("  가장 오답에 쏠린 끝맺음: '"+tailBias.worst.k+"' "+tailBias.worst.n
               +"개 중 정답 "+tailBias.worst.r+"% · 가장 정답에 쏠린 끝맺음: '"
               +tailBias.best.k+"' "+tailBias.best.r+"%");
