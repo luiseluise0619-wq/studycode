@@ -901,8 +901,13 @@ function check(name, cond, detail){
      그래서 이 눈금은 '지금까지 지켜 온 선' 이 아니라 <b>갚아야 할 빚의 크기</b>다.
      갚는 방법은 하나뿐이다 — 오답을 정답만큼 <b>내용 있게</b> 다시 쓰는 것.
      장식을 다시 붙여 숫자를 내리는 것은 같은 잘못을 되풀이하는 것이다.
-     `tools/content/BACKLOG.md` 의 '길이 편향' 항목에 남은 일이 적혀 있다. */
-  const BIAS_EXACT=37.6, BIAS_HUMAN=39.5;
+     `tools/content/BACKLOG.md` 의 '길이 편향' 항목에 남은 일이 적혀 있다.
+
+     60차에 한 번 더 올라 50.1 이 됐다. 남아 있던 찌꺼기까지 걷어내고 3,323문항을
+     꼬리를 붙이기 전 글로 되돌린 결과다 — 이것이 원래 숫자다. 사람 눈금(5자 오차)은
+     39.5 → 31.5 로 오히려 내려갔다. 정답이 오답보다 겨우 몇 자 긴 문항이 많아
+     정확히 세는 눈금만 크게 잡힌다. */
+  const BIAS_EXACT=50.1, BIAS_HUMAN=31.5;
   console.log("  길이로 찍기 최고 정답률: 기계(0자) "+bias.exact+"% · 사람(5자) "+bias.human+
               "% · 눈금 "+BIAS_EXACT+"/"+BIAS_HUMAN+"% · 찍기 기준선 25%");
   check("길이로 찍기(기계 기준)가 더 나빠지지 않았다", bias.exact<=BIAS_EXACT, {지금:bias.exact, 눈금:BIAS_EXACT});
@@ -951,8 +956,8 @@ function check(name, cond, detail){
   });
   /* 이 둘도 같은 이유로 눈금이 움직인다(59차) — 장식을 걷어내자 원래의 말버릇이
      드러났다. '…않기 때문' 으로 끝나는 보기 92개 중 정답은 9.8% 뿐이다.
-     오답을 다시 쓰면서 함께 갚을 몫이다. */
-  const TAIL_MIN=9.8, TAIL_GUESS=26.3;
+     오답을 다시 쓰면서 함께 갚을 몫이다. 60차에 옛 글로 되돌리자 9.8 → 17.7 로 나아졌다. */
+  const TAIL_MIN=17.7, TAIL_GUESS=26.3;
   console.log("  가장 오답에 쏠린 끝맺음: '"+tailBias.worst.k+"' "+tailBias.worst.n
               +"개 중 정답 "+tailBias.worst.r+"% · 가장 정답에 쏠린 끝맺음: '"
               +tailBias.best.k+"' "+tailBias.best.r+"%");
