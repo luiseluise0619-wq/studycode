@@ -90,10 +90,9 @@ for (let i = 0; i < Q.length; i += 1) {
   const st = q.q.slice(0, 40); if (stems.has(st)) fail("문제 줄기 중복"); stems.add(st);
   if (q.cat !== "debug") fail('cat 이 "debug" 가 아니다');
   if (!q.track) fail("track 이 없다");
-  if (!/(^|
-)원인/.test(q.ex) || !/(^|
-)해결/.test(q.ex) || !/(^|
-)재발 방지/.test(q.ex))
+  /* 7차에 이모지를 걷어내면서 정규식 안에 진짜 개행이 들어가 깨져 있었다.
+     원래 뜻은 '해설에 원인·해결·재발 방지가 각각 있는가' 다. */
+  if (!/원인/.test(q.ex) || !/해결/.test(q.ex) || !/재발\s*방지/.test(q.ex))
     fail("해설에 원인·해결·재발방지가 없다");
   if (String(q.ex).length < 200) fail("해설이 200자 미만");
   if (!q.tests || q.tests.length < 4) fail("tests 4개 미만");

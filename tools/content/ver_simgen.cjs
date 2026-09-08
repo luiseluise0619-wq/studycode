@@ -26,7 +26,9 @@ Q.forEach((q,i)=>{
   const st=String(q.q).replace(/<[^>]*>/g,"").slice(0,40);
   if(stems.has(st)) probs.push("문제 줄기 중복"); stems.add(st);
   if(/setTimeout|Promise|async |await |Math\.random/.test(q.ref)) probs.push("참조 구현이 비동기이거나 난수를 쓴다");
-  if(!//.test(q.ex)||String(q.ex).length<200) probs.push("해설이 부실하다");
+  /* 예전에는 해설에 🎯 가 있는지도 봤다. 7차에 이모지를 걷어내면서
+     그 정규식이 빈 채로 남아 파일이 통째로 깨져 있었다 — 길이만 본다. */
+  if(String(q.ex).length<200) probs.push("해설이 부실하다");
   if(!/RESULT\s*=/.test(q.src)) probs.push("시작 코드에 RESULT 대입이 없다");
 
   const r=runSim(q.ref, q.tests);

@@ -61,12 +61,18 @@ module.exports = [
   q:"긴 문자열을 <code>n</code> <b>글자</b>까지만 남기고 <code>…</code> 을 붙입니다. 한글·영문은 맞는데, <b>이모지</b>가 섞이면 잘린 자리에서 글자가 깨지고 개수도 모자랍니다.",
   src:"function truncate(s, n) {\n  return s.length <= n ? s : s.slice(0, n) + '…';\n}",
   sol:"function truncate(s, n) {\n  const cp = [...s];\n  return cp.length <= n ? s : cp.slice(0, n).join('') + '…';\n}",
-  tests:[["truncate('', 2)","'…'"],
-         ["truncate('', 2)","''"],
+  /* 이 문항의 요지는 대리 쌍이므로 테스트에 반드시 이모지가 들어가야 한다.
+     예전에는 한글·영문뿐이라 고장난 코드와 고친 코드가 같은 답을 냈고,
+     빈 문자열에 대한 기대가 두 줄로 엇갈려 있었다('…' 와 '' 를 동시에). */
+  /* 데이터(data/t-code.js)에 이미 들어가 있는 값과 똑같이 맞춘다.
+     소스만 옛 값('' 에 대한 기대가 두 줄로 엇갈리고 이모지가 없던 것)으로
+     남아 있었고, 검사기가 깨져 있어 몇 달 동안 아무도 몰랐다. */
+  tests:[["truncate('👍👍👍', 2)","'👍👍…'"],
+         ["truncate('👍👍', 2)","'👍👍'"],
          ["truncate('안녕하세요', 3)","'안녕하…'"],
          ["truncate('abc', 5)","'abc'"]],
   edge:[["truncate('', 3)","''"],
-        ["truncate('ab', 2)","'a…'"]],
+        ["truncate('a👍b', 2)","'a👍…'"]],
   ex:"원인: 자바스크립트의 <code>length</code> 와 <code>slice</code> 는 <b>UTF-16 코드 단위</b>를 셉니다. 이모지 대부분은 코드 단위 <b>두 칸</b>을 차지하는 대리 쌍이라, <code>slice(0, 2)</code> 는 이모지 한 개만 남기거나 <b>쌍의 절반</b>을 잘라 깨진 글자를 만듭니다.\n해결: 스프레드(<code>[...s]</code>)는 문자열을 <b>코드 포인트 단위</b>로 나눕니다. 세는 것도 자르는 것도 그 배열로 하면 이모지가 쪼개지지 않습니다.\n재발 방지: 사용자에게 보여 줄 글자 수(<b>미리보기·요약·글자 수 제한</b>)에는 <code>.length</code> 를 쓰지 마세요. 국기나 가족 이모지처럼 여러 코드 포인트가 <b>한 글자로 보이는</b> 경우까지 맞추려면 <code>Intl.Segmenter</code> 가 필요합니다 — 테스트에 이모지 하나만 넣어도 이 층위 차이가 즉시 드러납니다." },
 
 { track:"code", cat:"debug", k:"replace 는 첫 번째 하나만 바꾼다",

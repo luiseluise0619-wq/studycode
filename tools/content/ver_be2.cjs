@@ -49,7 +49,8 @@ Q.forEach((q,i)=>{
   const tag="["+(i+1)+"] "+q.k;
   const fail=m=>{ bad++; console.log("✗ "+tag+" — "+m); };
   const st=q.q.slice(0,40); if(stems.has(st)) fail("문제 줄기 중복"); stems.add(st);
-  if(!//.test(q.ex)) fail("해설에 요지가 없다");
+  /* 7차에 이모지를 걷어내면서 이 정규식이 빈 채로 남아
+     파일이 통째로 깨져 있었다. 이모지는 더 없으므로 길이만 본다. */
   if(String(q.ex).length<200) fail("해설이 200자 미만");
   if(q.tests.length<4) fail("tests 4개 미만");
   if(!q.edge||q.edge.length<2) fail("edge 2개 미만");

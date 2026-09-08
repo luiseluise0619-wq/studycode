@@ -149,6 +149,32 @@ const COURSES = JSON.parse(html.slice(cs, ce + 1));
 Object.keys(COURSES).forEach(k => { if (!tracks[k]) hit("셸에만 있는 트랙", k); });
 Object.keys(tracks).forEach(k => { if (!COURSES[k]) hit("데이터에만 있는 트랙", k); });
 
+/* 도구가 문법적으로 성립하는지.
+
+   7차에 이모지를 걷어내면서 정규식 안의 이모지까지 지워져
+   `if(!//.test(x))` 같은 줄이 남았고, 검증기 11개가 통째로 깨졌다.
+   CI 에 물려 있지 않은 도구라 몇 달 동안 아무도 몰랐다 —
+   그 사이 dbg_code 의 소스가 데이터와 갈라진 것도 못 잡았다.
+   도구는 늘 돌지 않으므로, 최소한 '읽히기는 하는가' 만은 여기서 본다. */
+{
+  const dirs = [path.join(ROOT, "tools"), path.join(ROOT, "tools", "content")];
+  const seenFile = new Set();
+  dirs.forEach(d => {
+    if (!fs.existsSync(d)) return;
+    fs.readdirSync(d).filter(f => /\.c?js$/.test(f)).forEach(f => {
+      const full = path.join(d, f);
+      if (seenFile.has(full) || fs.statSync(full).isDirectory()) return;
+      seenFile.add(full);
+      const r = require("child_process").spawnSync(process.execPath, ["--check", full],
+        { encoding: "utf8" });
+      if (r.status !== 0) {
+        const why = String(r.stderr || "").split("\n").filter(x => /Error/.test(x))[0] || "";
+        hit("도구가 문법 오류로 안 읽힌다", path.relative(ROOT, full) + " — " + why.trim());
+      }
+    });
+  });
+}
+
 /* 프로젝트를 쓴 소스(tools/content/proj_*.cjs)와 데이터가 아직 같은지.
 
    데이터를 스크립트로 고치고 소스를 안 고치면(또는 그 반대면) 둘이 갈라지는데,
