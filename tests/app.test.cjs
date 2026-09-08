@@ -1155,14 +1155,21 @@ function check(name, cond, detail){
     wraps:document.querySelectorAll(".node-wrap").length }));
   check("학습 경로에 노드가 렌더된다", rendered.nodes>0 && rendered.wraps>0, rendered);
 
-  // 별의 중심과 라벨의 중심이 어긋나지 않는다 (가로 위치는 래퍼가 담당해야 함)
-  const align=await p.evaluate(()=>[...document.querySelectorAll(".node-wrap")].slice(0,8).map(w=>{
+  // 단계는 목록의 한 줄이다(60차에 지그재그에서 바꿨다) — 번호와 제목이 같은 줄에
+  // 나란히 서야 하고, 번호가 비어 있으면 안 된다. 예전에 이모지를 걷어내면서
+  // 안이 빈 파란 덩어리만 남은 적이 있어 그 회귀를 함께 막는다.
+  const rows=await p.evaluate(()=>[...document.querySelectorAll(".node-wrap")]
+    .filter(w=>w.offsetParent!==null).slice(0,8).map(w=>{   /* 접힌 유닛은 재도 0 이 나온다 */
     const n=w.querySelector(".node"), l=w.querySelector(".node-label");
-    if(!n||!l) return 0;
+    if(!n||!l) return null;
     const a=n.getBoundingClientRect(), c=l.getBoundingClientRect();
-    return Math.round((a.x+a.width/2)-(c.x+c.width/2));
-  }));
-  check("별과 라벨이 세로로 정렬된다", align.every(d=>Math.abs(d)<=2), align);
+    return {dy:Math.round((a.y+a.height/2)-(c.y+c.height/2)),
+            ahead:Math.round(c.x-a.x), mark:(n.textContent||"").trim()};
+  }).filter(Boolean));
+  check("단계 번호와 제목이 한 줄에 나란히 선다",
+        rows.length>0 && rows.every(r=>Math.abs(r.dy)<=2 && r.ahead>0), rows.slice(0,4));
+  check("단계 배지가 비어 있지 않다", rows.every(r=>r.mark.length>0),
+        rows.map(r=>r.mark).slice(0,6));
 
   // 손가락을 움직이지 않고 눌렀다 떼면 레슨이 열려야 한다.
   // (.node 에 위치용 translateX 와 :active 의 translateY 가 함께 걸리면

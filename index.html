@@ -149,57 +149,69 @@
   .ub-btn:hover{border-color:var(--brand); color:var(--brand)}
 
   .unit-sec{scroll-margin-top:12px}
-  .unit-head{margin:22px 0 4px; padding:16px 18px; border-radius:var(--radius); color:#fff;
+  /* 유닛 머리는 화면에서 가장 큰 덩어리다. 색으로 꽉 채우면 그것부터 눈에 들어와
+     정작 '지금 할 단계' 가 묻힌다. 흰 카드로 두고 트랙 색은 <b>왼쪽 띠</b>로만 남긴다. */
+  .unit-head{margin:22px 0 0; padding:15px 16px 15px 20px; color:var(--ink);
+    background:var(--card); border-radius:var(--radius-lg); position:relative; overflow:hidden;
     box-shadow:var(--shadow); display:flex; justify-content:space-between; align-items:center; gap:12px;
-    width:100%; text-align:left; border:0; font:inherit; cursor:pointer}
-  .unit-head .k{font-size:12px; font-weight:600; letter-spacing:.01em; opacity:.85;
+    width:100%; text-align:left; border:0; font:inherit; cursor:pointer;
+    transition:transform .2s var(--ease)}
+  .unit-head::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
+    background:var(--u-accent, var(--brand))}
+  .unit-head:active{transform:scale(.99)}
+  .unit-head .k{font-size:12.5px; font-weight:600; letter-spacing:.01em; color:var(--ink-soft);
     display:flex; align-items:center; gap:7px; flex-wrap:wrap}
-  .unit-head h2{margin:2px 0 0; font-size:19px; font-weight:600; letter-spacing:-.01em}
+  .unit-head h2{margin:3px 0 0; font-size:20px; font-weight:600; letter-spacing:-.022em; color:var(--ink)}
   .unit-head .guide{font-size:22px}
   .unit-head .u-main{min-width:0; flex:1}
-  .u-chip{font-size:10.5px; font-weight:600; letter-spacing:0; text-transform:none;
-    padding:2px 7px; border-radius:999px; background:rgba(255,255,255,.22); white-space:nowrap}
-  .u-chip.now{background:#fff; color:#111}
-  .u-chip.lock{background:rgba(0,0,0,.28)}
+  .u-chip{font-size:11.5px; font-weight:600; letter-spacing:0; text-transform:none;
+    padding:2px 8px; border-radius:999px; background:var(--bg-soft); color:var(--ink-soft); white-space:nowrap}
+  .u-chip.now{background:var(--brand); color:#fff}
+  .u-chip.done{background:var(--good-soft); color:var(--good)}
+  .u-chip.lock{background:var(--bg-soft); color:var(--line-strong)}
   .u-prog{display:flex; align-items:center; gap:8px; margin-top:8px}
-  .u-bar{flex:1; height:5px; border-radius:999px; background:rgba(255,255,255,.28); overflow:hidden; max-width:220px}
-  .u-bar i{display:block; height:100%; border-radius:999px; background:#fff}
-  .u-num{font-size:11.5px; font-weight:600; opacity:.9; white-space:nowrap}
-  .u-caret{font-size:15px; opacity:.85; transition:transform .18s ease; flex:none}
+  .u-bar{flex:1; height:5px; border-radius:999px; background:var(--bg-soft); overflow:hidden; max-width:220px}
+  .u-bar i{display:block; height:100%; border-radius:999px; background:var(--u-accent, var(--brand))}
+  .u-num{font-size:12px; font-weight:600; color:var(--ink-soft); white-space:nowrap; font-variant-numeric:tabular-nums}
+  .u-caret{font-size:15px; color:var(--line-strong); transition:transform .18s ease; flex:none}
   .unit-head.open .u-caret{transform:rotate(180deg)}
   /* 지금 할 유닛은 한눈에 보이게 테두리를 준다 — 초보자가 "여기부터" 를 찾는 단서 */
-  .unit-sec.is-current .unit-head{outline:2px solid var(--brand); outline-offset:2px}
+  .unit-sec.is-current .unit-head{box-shadow:0 0 0 2px var(--brand), var(--shadow)}
   .unit-sec.is-done .unit-head{opacity:.72}
   @media (prefers-reduced-motion: reduce){ .u-caret{transition:none} }
 
-  /* ---------- path ---------- */
-  .path{display:flex; flex-direction:column; align-items:center; gap:10px; padding:20px 0 8px; position:relative}
+  /* ---------- path : 단계 목록 ----------
+     지그재그로 떠 있는 큰 원 대신 <b>묶음 목록</b>으로 둔다. 홈 화면과 같은 문법이고,
+     제목이 왼쪽에 나란히 서므로 '다음에 무엇을 하는지' 가 훑어보기만 해도 읽힌다. */
+  .path{display:flex; flex-direction:column; align-items:stretch; gap:0; padding:0; position:relative;
+    background:var(--card); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow); margin:8px 0 0}
   /* display 를 준 클래스가 UA 의 [hidden] 규칙을 이기므로 직접 눌러 준다 */
   .path[hidden]{display:none}
-  .node-wrap{position:relative; display:flex; flex-direction:column; align-items:center; gap:6px}
+  .node-wrap{position:relative; display:flex; flex-direction:row; align-items:center; gap:12px;
+    padding:11px 16px; transform:none}
+  .node-wrap + .node-wrap::before{content:""; position:absolute; left:62px; right:0; top:0;
+    height:.5px; background:var(--line)}
+  .node-wrap::after{content:"›"; margin-left:auto; color:var(--line-strong); font-size:22px; line-height:1; flex:0 0 auto}
   .node{
-    width:74px; height:66px; border-radius:50%/58%; border:none; position:relative;
-    background:var(--line-strong); box-shadow:var(--shadow); color:#fff; font-size:26px;
+    width:34px; height:34px; border-radius:10px; border:none; position:relative; flex:0 0 auto;
+    background:var(--line-strong); box-shadow:none; color:#fff; font-size:15px; font-weight:600;
+    font-variant-numeric:tabular-nums;
     display:grid; place-items:center; transition:transform .2s var(--ease), opacity .2s;
     touch-action:manipulation; -webkit-tap-highlight-color:transparent;
   }
-  .node:active{transform:scale(.94); opacity:.86}
+  .node:active{transform:scale(.9); opacity:.8}
   .node.locked{background:var(--bg-soft); color:var(--line-strong); box-shadow:none}
-  .node.done{}
-  .node .crown{position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:15px}
-  .node.first-current::after{content:"시작"; position:absolute; top:-34px; left:50%; transform:translateX(-50%);
-    background:var(--card); color:var(--brand); font-weight:600; font-size:11px; padding:4px 10px; border-radius:9px;
-    border:1px solid var(--line); box-shadow:var(--shadow); white-space:nowrap}
-  .node-label{font-size:12px; font-weight:700; color:var(--ink-soft); max-width:120px; text-align:center}
-  /* 좌우 위치는 .node-wrap 이 맡는다. .node 의 transform 은 :active 눌림 전용 —
-     같은 요소에 두면 누르는 순간 translateX 가 덮여 별이 원위치로 튀고 클릭이 빗나간다. */
-  .node-wrap.n0{transform:translateX(0)} .node-wrap.n1{transform:translateX(64px)} .node-wrap.n2{transform:translateX(96px)}
-  .node-wrap.n3{transform:translateX(64px)} .node-wrap.n4{transform:translateX(0)} .node-wrap.n5{transform:translateX(-64px)}
-  .node-wrap.n6{transform:translateX(-96px)} .node-wrap.n7{transform:translateX(-64px)}
-  @media (max-width:400px){
-    .node-wrap.n1,.node-wrap.n3{transform:translateX(44px)} .node-wrap.n2{transform:translateX(66px)}
-    .node-wrap.n5,.node-wrap.n7{transform:translateX(-44px)} .node-wrap.n6{transform:translateX(-66px)}
-  }
+  .node .crown{display:none}
+  /* '시작' 은 줄 오른쪽에 알약으로 — 위로 띄우면 줄 사이가 벌어진다 */
+  .node.first-current{box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 22%,transparent)}
+  .node-wrap:has(.first-current)::after{content:"시작"; font-size:12.5px; font-weight:600;
+    color:var(--brand); line-height:1.2}
+  .node-label{flex:1; min-width:0; font-size:16px; font-weight:400; color:var(--ink);
+    max-width:none; text-align:left; letter-spacing:-.011em}
+  /* 지그재그로 밀어 두던 n0~n7 자리 클래스는 목록이 되면서 쓸 일이 없어졌다.
+     클래스는 마크업에 남아 있으므로 여기서 확실히 눌러 둔다 — 남은 translateX 가
+     하나라도 살아 있으면 누르는 순간 줄이 옆으로 튄다. */
+  .node-wrap[class*=" n"]{transform:none}
 
   /* ---------- lesson view ---------- */
   .lesson{position:fixed; inset:0; background:var(--bg); z-index:50; display:none; flex-direction:column}
@@ -523,8 +535,15 @@
   .phgoal b{color:var(--brand)}
   .labed{width:100%; min-height:150px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.8px; line-height:1.5; padding:12px; border-radius:12px; border:1px solid var(--line); background:#0f1117; color:#e6e9f2; resize:vertical; white-space:pre; overflow:auto}
   .labrow{display:flex; gap:8px; margin:10px 0}
-  .labrow button{flex:1; padding:11px; border-radius:11px; border:none; font-weight:600; font-size:14px; cursor:pointer}
-  .labrun{background:#1aa38a; color:#fff} .labcheck{background:#5b6cff; color:#fff} .labsol{background:var(--card); color:var(--ink); border:1px solid var(--line)!important}
+  /* 코드를 적는 자리는 어두워도 되지만, <b>글</b>을 적는 자리까지 코드 편집기로
+     보여 주면 '여기는 코드를 쓰는 곳' 이라고 잘못 읽힌다. */
+  .labed.note{background:var(--card); color:var(--ink); font-family:var(--sans); font-size:16px;
+    line-height:1.6; border:.5px solid var(--line); border-radius:var(--radius); padding:14px}
+  .labed.note::placeholder{color:var(--ink-soft)}
+  .labrow button{flex:1; padding:12px; border-radius:var(--radius); border:none; font-weight:600; font-size:15px; cursor:pointer;
+    transition:transform .2s var(--ease), opacity .15s}
+  .labrow button:active{transform:scale(.97); opacity:.88}
+  .labrun{background:var(--good); color:#fff} .labcheck{background:var(--brand); color:#fff} .labsol{background:var(--card); color:var(--ink); border:.5px solid var(--line)!important}
   .labprev{width:100%; height:210px; border:1px solid var(--line); border-radius:12px; background:#fff; margin-bottom:6px}
   .labchecks{margin:6px 0}
   .lchk{display:flex; align-items:center; gap:8px; padding:7px 11px; margin-bottom:6px; border-radius:10px; background:var(--card); border:1px solid var(--line); font-size:13px; font-weight:600; color:var(--ink)}
@@ -610,9 +629,10 @@
   .opt{border-radius:12px}
   .opt.sel{border-color:var(--brand); background:color-mix(in srgb, var(--brand) 8%, var(--card))}
   .opt.sel .key{border-color:var(--brand); color:var(--brand)}
-  .unit-head{border-radius:var(--radius); box-shadow:none}
+  .unit-head{border-radius:var(--radius-lg)}
   /* eyebrows / labels → monospace, engineering register */
-  .q-kind, .unit-head .k, .lab-title, .simstep, .reward .rl, .roadmap .rtitle, .simh, .dglabel{font-family:var(--mono); letter-spacing:.04em}
+  /* 라틴용 고정폭 글꼴과 넓은 자간을 한글 머리표에 주면 '유 닛 2 · L v 1' 처럼 흩어진다 */
+  .q-kind, .unit-head .k, .lab-title, .simstep, .reward .rl, .roadmap .rtitle, .simh, .dglabel{letter-spacing:.005em}
   .lab-title{font-size:12px; color:var(--ink-soft); font-weight:700; margin:20px 0 4px}
   .q-title, .unit-head h2, .ovcard h2, .done-view h1{letter-spacing:-.02em; text-wrap:balance}
   .catbadge{border-radius:7px; font-family:var(--mono); letter-spacing:.02em}
@@ -3618,7 +3638,7 @@ function renderCourse(){
     const head=document.createElement("button");
     head.type="button";
     head.className="unit-head"+(open?" open":"");
-    head.style.background=c.g;
+    head.style.setProperty("--u-accent", c.color);
     head.setAttribute("aria-expanded", open?"true":"false");
     const _lv=unitLevel(ui,c.units.length);
     const chip = finished ? '<span class="u-chip done">✓ 완료</span>'
@@ -3643,9 +3663,10 @@ function renderCourse(){
       const btn=document.createElement("button");
       let cls="node";
       let inner="";
-      if(done){ cls+=" done"; btn.style.background=c.g; inner=`<span class="crown"></span>✓`; }
-      else if(unlocked){ cls+=" current"; if(firstCurrent){ cls+=" first-current"; firstCurrent=false; } btn.style.background=c.color; inner=""; }
-      else { cls+=" locked"; inner=""; }
+      /* 안이 비어 있으면 그냥 파란 덩어리로 보인다 — 몇 번째 단계인지를 넣는다 */
+      if(done){ cls+=" done"; btn.style.background=c.color; inner="✓"; }
+      else if(unlocked){ cls+=" current"; if(firstCurrent){ cls+=" first-current"; firstCurrent=false; } btn.style.background=c.color; inner=String(li+1); }
+      else { cls+=" locked"; inner=String(li+1); }
       btn.className=cls; btn.innerHTML=inner;
       btn.disabled=!unlocked && !done;
       btn.setAttribute("aria-label", les.title+(done?" 완료":unlocked?" 시작하기":" 잠김"));
@@ -5995,7 +6016,7 @@ function renderPhase(){
       ${ph.sol?`<div class="labrow"><button class="labsol" id="lab-solbtn"> 정답 예시 보기</button></div><div class="labsolbox" id="lab-solbox"><pre>${escHtml(ph.sol)}</pre></div>`:""}`;
   } else {
     const draft=getDraft(lab.i)||"";
-    inner=`<textarea class="labed" id="lab-ed" style="min-height:130px;white-space:pre-wrap" spellcheck="false" placeholder="${escHtml(ph.ph||'여기에 적어보세요...')}">${escHtml(draft)}</textarea>`;
+    inner=`<textarea class="labed note" id="lab-ed" style="min-height:130px;white-space:pre-wrap" spellcheck="false" placeholder="${escHtml(ph.ph||'여기에 적어보세요...')}">${escHtml(draft)}</textarea>`;
   }
   const isLast=lab.i>=lab.phases.length-1;
   const done=phDone(lab.i);
