@@ -74,13 +74,13 @@ RESULT = replay(["commit c1", "commit c2", "reset --hard c0", "reset --hard HEAD
 
 RESULT = replay(["commit c1", "commit c2", "reset --hard c0", "reset --hard HEAD@{1}"]);`,
   tests:[
-    { d:"reflog 로 c0 이전 자리로 돌아온다", js:"RESULT==='c0'" },
+    { d:"reset 으로 잃은 줄 알았던 c2 로 돌아온다", js:"RESULT==='c2'" },
     { d:"명령마다 장면이 남았다(시작 포함)", js:"FRAMES.length===5" },
     { d:"c2 를 거쳐 갔다", js:"FRAMES.some(f=>f.value==='c2')" },
     { d:"기록이 명령마다 하나씩 늘어난다", js:"FRAMES.every((f,i)=>f.opt.reflog.length===i+1)" },
     { d:"기록은 새 것이 앞이다", js:"FRAMES[FRAMES.length-1].opt.reflog[0]===RESULT" },
     { d:"reset 뒤에도 옛 커밋이 기록에 남아 있다", js:"FRAMES[FRAMES.length-1].opt.reflog.indexOf('c2')>=0" }],
-  ex:"reset 이 '<b>지운다</b>' 고 느껴지지만 실제로는 <b>HEAD 를 옮길 뿐</b>입니다. 옛 커밋은 그대로 있고 아무도 가리키지 않게 될 뿐이라, 가리키기만 하면 되살아납니다.\nreflog 는 그 '가리키는 법' 을 적어 둔 기록입니다. HEAD 가 지나온 자리를 시간순으로 남기므로 <code>HEAD@{1}</code> 은 '한 번 전의 자리' 를 뜻합니다. 되감아 보면 <code>reset --hard c0</code> 뒤에도 기록에 <code>c2</code> 가 남아 있는 것이 보입니다.\n이것이 '잘못 reset 했다' 가 거의 언제나 복구되는 이유입니다. 다만 <b>기한이 있습니다</b> — 아무도 안 가리키는 커밋은 정리 작업에서 결국 지워지므로, 알아챈 즉시 되살리는 것이 안전합니다.\nreflog 는 <b>내 저장소에만</b> 있습니다. 남의 컴퓨터에는 그 기록이 없으므로, 강제 푸시로 남의 이력을 덮어쓴 것은 이 방법으로 못 되돌립니다." },
+  ex:"reset 이 '<b>지운다</b>' 고 느껴지지만 실제로는 <b>HEAD 를 옮길 뿐</b>입니다. 옛 커밋은 그대로 있고 아무도 가리키지 않게 될 뿐이라, 가리키기만 하면 되살아납니다.\nreflog 는 그 '가리키는 법' 을 적어 둔 기록입니다. HEAD 가 지나온 자리를 시간순으로 남기므로 <code>HEAD@{1}</code> 은 '한 번 전의 자리' 를 뜻합니다. 되감아 보면 <code>reset --hard c0</code> 뒤에도 기록 맨 앞이 <code>c0</code>, 그 다음이 <code>c2</code> 인 것이 보입니다. 그래서 <code>HEAD@{1}</code> 로 <b>reset 직전의 자리</b>인 <code>c2</code> 가 그대로 돌아옵니다.\n이것이 '잘못 reset 했다' 가 거의 언제나 복구되는 이유입니다. 다만 <b>기한이 있습니다</b> — 아무도 안 가리키는 커밋은 정리 작업에서 결국 지워지므로, 알아챈 즉시 되살리는 것이 안전합니다.\nreflog 는 <b>내 저장소에만</b> 있습니다. 남의 컴퓨터에는 그 기록이 없으므로, 강제 푸시로 남의 이력을 덮어쓴 것은 이 방법으로 못 되돌립니다." },
 
 /* ══ linux ══ */
 { k:"파이프가 흘러가는 모양",

@@ -42,7 +42,13 @@ const plans=SPEC.entries.map(E=>{
     return { t:"sim", k:x.k, cat:x.cat||"design", q:x.q, src:x.src,
              tests:x.tests.map(t=>({d:t.d, js:t.js})), ex:x.ex };
   });
-  arr.push({ t:E.unit, l:[{ t:E.lesson, xp, th:E.th, q:qs }] });
+  /* 트랙이 유닛 순서(ord)를 적어 두었으면 새 유닛에도 자리를 준다.
+     하나라도 빠지면 앱이 순서를 통째로 무시하고, 맨 뒤로 보내는 도구도
+     '전부 적혀 있을 때만' 다시 매기므로 여기서 안 주면 영영 안 채워진다. */
+  const unit={ t:E.unit, l:[{ t:E.lesson, xp, th:E.th, q:qs }] };
+  if(arr.length && arr.every(u=>typeof u.ord==="number"))
+    unit.ord=Math.max.apply(null, arr.map(u=>u.ord))+1;
+  arr.push(unit);
   return {E, path, out:raw.slice(0,a)+JSON.stringify(arr)+raw.slice(z+1), n:qs.length};
 });
 
