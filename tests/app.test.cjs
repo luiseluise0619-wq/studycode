@@ -1556,6 +1556,31 @@ function check(name, cond, detail){
   await p.close();
  }
 
+ /* ---------- 프로젝트 화면에 만든 프로젝트가 전부 나온다 ----------
+    예전에는 목표(S.goal)에 맞는 묶음 하나만 보여 줘서 61개 중 10~14개만
+    나왔다. 나머지는 트랙 배너로만 닿을 수 있어 사실상 숨어 있었다. */
+ {
+  const p=await page({goal:"backend"});
+  const r=await p.evaluate(async()=>{
+    await ensureProjects(); openProjects();
+    const b=document.getElementById("proj-body");
+    const total=Object.keys(PROJECTS).reduce((a,k)=>a+PROJECTS[k].length,0);
+    let dead=0;
+    [...b.querySelectorAll(".pjstartbtn")].forEach(x=>{
+      const g=x.dataset.tk, i=+x.dataset.i;
+      if(!PROJECTS[g]||!PROJECTS[g][i]) dead++; });
+    return {cards:b.querySelectorAll(".pjcard").length, total,
+      groups:b.querySelectorAll(".pjgh").length,
+      firstIsMine:(b.querySelector(".pjgh")||{textContent:""}).textContent.indexOf("내 목표")>=0,
+      dead, unwired:[...b.querySelectorAll(".pjstartbtn")].filter(x=>typeof x.onclick!=="function").length};
+  });
+  check("프로젝트 화면에 전부 나온다", r.cards===r.total && r.cards>=61, r);
+  check("프로젝트가 묶음으로 나뉘어 있다", r.groups===4, r);
+  check("내 목표 묶음이 맨 앞에 온다", r.firstIsMine===true, r);
+  check("프로젝트 버튼이 전부 실제 프로젝트를 가리킨다", r.dead===0 && r.unwired===0, r);
+  await p.close();
+ }
+
  const realErrs=errs.filter(e=>!/ERR_FILE_NOT_FOUND/.test(e));
  check("페이지 에러 없음", realErrs.length===0, realErrs.slice(0,3));
 

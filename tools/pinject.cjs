@@ -23,7 +23,15 @@ const path = require('path');
 
 const src = process.env.PSRC || process.argv[2];
 if (!src) { console.error('PSRC 환경변수나 인자로 프로젝트 파일을 지정하세요'); process.exit(2); }
-const { PROJECTS: NEW } = require(path.resolve(src));
+const SRC = require(path.resolve(src));
+const NEW = SRC.PROJECTS;
+/* 어느 묶음에 넣을 것인가. 프로젝트 화면은 이제 모든 묶음을 보여 주므로
+   'tracks' 말고 다른 묶음에도 넣을 수 있다. 없으면 예전대로 tracks 다. */
+const GROUP = SRC.group || 'tracks';
+/* 전용 프로젝트가 이미 있는 트랙에 하나 더 붙이는 경우.
+   배너는 먼저 찾은 것이 잡으므로 새 프로젝트가 그 자리를 빼앗지는 않는다 —
+   그래도 '모르고 두 개를 만든 것' 과 구분하려고 파일이 직접 밝히게 한다. */
+const EXTRA = !!SRC.extra;
 
 const ROOT = path.join(__dirname, '..');
 const P = path.join(ROOT, 'data', 'projects.js');
@@ -75,7 +83,9 @@ NEW.forEach((p, i) => {
     const tk = p.skills[0];
     if (!TRACKS.includes(tk) && !Object.values(ALIAS).includes(tk))
       say(at + ' skills[0] 이 트랙 키가 아니다: ' + tk);
-    if (before[tk] && before[tk].own) say(at + ' 그 트랙에는 이미 전용 프로젝트가 있다: ' + before[tk].title);
+    if (before[tk] && before[tk].own && !EXTRA)
+      say(at + ' 그 트랙에는 이미 전용 프로젝트가 있다: ' + before[tk].title +
+          " (일부러 하나 더 붙이는 것이면 파일에 extra:true 를 적으세요)");
   }
   if (titles.has(p.title)) say(at + ' 제목이 기존 프로젝트와 같다');
   if (!Array.isArray(p.phases) || p.phases.length < 5) say(at + ' 단계가 5개 미만');
@@ -102,14 +112,15 @@ NEW.forEach((p, i) => {
 
 if (bad) { console.log('\n' + bad + '건 문제 — 넣지 않았다'); process.exit(1); }
 
-DATA.tracks = (DATA.tracks || []).concat(NEW);
+DATA[GROUP] = (DATA[GROUP] || []).concat(NEW);
 fs.writeFileSync(P, "__CR('" + m[1] + "'," + JSON.stringify(DATA) + ");\n");
 const back = JSON.parse(fs.readFileSync(P, 'utf8').match(/^__CR\('[^']+',(.*)\);\s*$/s)[1]);
 if (JSON.stringify(back) !== JSON.stringify(DATA)) throw new Error('왕복에서 내용이 달라졌다');
 
 const after = covered();
 const gained = TRACKS.filter(t => !before[t] && after[t]);
-console.log('프로젝트 ' + NEW.length + '개 추가 · 단계 ' + NEW.reduce((s, p) => s + p.phases.length, 0) + '개');
+console.log('프로젝트 ' + NEW.length + "개를 '" + GROUP + "' 묶음에 추가 · 단계 " +
+  NEW.reduce((s, p) => s + p.phases.length, 0) + '개');
 gained.forEach(t => console.log('  ' + t.padEnd(11) + after[t].title + (after[t].own ? '' : '  (곁다리)')));
 const none = TRACKS.filter(t => !after[t]);
 const side = TRACKS.filter(t => after[t] && !after[t].own);
