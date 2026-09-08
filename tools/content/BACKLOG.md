@@ -1,23 +1,19 @@
 # 남은 콘텐츠 배치 큐
 
-## 상태: 수량 목표는 전부 달성했다 (2026-08)
+## 상태: 수량 목표는 전부 달성했다 (2026-09 기준)
 
 이 파일의 예전 완료 기준이었던 **"모든 트랙 exec ≥ 10%"** 는 달성됐습니다.
-가장 낮은 트랙이 react 12.0% 이고, 34개 트랙 모두 10% 를 넘습니다.
 `docs/CONTENT_POLICY.md` 의 유형별 목표와 비율 하한도 모두 넘겼습니다.
 
 ```
-choice 6,259 (상한 없음) · input 1,878/1,500 · code 2,438/2,000 · debug 1,013/1,000
-review 883/800 · log 513/500 · sim 500/500 · arch 158/150      → 남은 총량 0
-비율: choice 49.7% · input 14.9% · exec 24.5% · review 6.6% · log 4.1%   → 전부 달성
+choice 6,891 (상한 없음) · input 2,078/1,500 · code 2,710/2,000 · debug 1,110/1,000
+review 931/800 · log 565/500 · sim 508/500 · arch 168/150      → 남은 총량 0
+비율: choice 49.8% · input 15.0% · exec 24.4% · review 6.7% · log 4.1%   → 전부 달성
 ```
 
 log 은 45차에서 919 → 373 으로 줄었습니다. 서비스 이름과 시각만 바꾼 <b>복제가 546개</b>
-있었기 때문입니다. 그 자리를 새 문항 140개로 메워 513 입니다 — 비어 있던 다섯 트랙
-(ml·mleval·react·web·ai) 60개와, 복제를 걷어내며 크게 줄어든 여덟 트랙
-(java·python·javascript·go·rust·c·security·backend) 80개입니다.
-**수를 채우려고 이름만 바꿔 찍어내지 마세요** — `tests/engine.test.cjs` 가 뼈대나
-해설이 같은 문항을 실패로 잡습니다.
+있었기 때문입니다. **수를 채우려고 이름만 바꿔 찍어내지 마세요** —
+`tests/engine.test.cjs` 가 뼈대나 해설이 같은 문항을 실패로 잡습니다.
 
 이 수치들은 이제 **진행률 보고가 아니라 회귀 검사**입니다. `tests/app.test.cjs` 가
 아래 넷을 실패로 잡으므로, 콘텐츠를 지우거나 `cat`·`t` 값을 잘못 바꾸면 CI 가 막습니다.
@@ -38,21 +34,16 @@ log 은 45차에서 919 → 373 으로 줄었습니다. 서비스 이름과 시�
 
 | 유형 | 0 인 트랙 |
 |---|---|
-| review | arch arduino cs dbt dl math mobile stat |
-| log | algo arch arduino code compiler cs dbt dl fp math mobile numpy pandas php stat |
-| (log 은 어울리는 트랙을 모두 채웠습니다 — 남은 칸은 대부분 억지입니다) | |
-| arch(설계 배치) | algo arduino c code compiler cpp cs dbt dl fp go java javascript math ml mleval mobile numpy pandas php python react rust stat |
-
-세 유형 모두 **어울리는 트랙에만** 넣어야 합니다.
+| review | **없음** — 38트랙 전부에 있다 |
+| sim | **없음** — 38트랙 전부에 있다 |
+| log | algo arch arduino code compiler cs fp git math numpy pandas stat test |
+| arch(설계 배치) | 26트랙 (설계가 실제로 갈리는 트랙에만 넣는다) |
 
 - `log` 는 **운영 중 남는 기록을 읽고 원인을 짚는** 트랙에서만 뜻이 있습니다.
-  45차에 ml·mleval·react·web·ai 를 채웠고(각 12), 남은 칸은 대부분 억지입니다 —
-  math·fp·cs 에 로그를 넣을 이유는 없습니다. numpy·pandas 정도가 그나마 후보입니다.
-- `review` 는 **남의 코드에 한 줄 지적을 다는** 형태라 코드가 있는 트랙에 맞습니다.
-  45차에 algo·code·compiler·fp·php·security 를 채웠고(각 8), 남은 칸은 코드가 거의
-  없는 트랙이라 대부분 억지입니다 — mobile 정도가 그나마 후보입니다.
+  php·dbt·dl·mobile 은 51차에 채웠습니다(각 8). 남은 칸 중 그나마 후보는
+  **numpy·pandas** 정도이고, math·fp·cs·algo·compiler 에 로그를 넣을 이유는 없습니다.
 - `arch` 는 **배치도를 직접 그리는** 유형이라 설계가 실제로 갈리는 트랙에만 —
-  ml(학습 파이프라인), mleval(평가 파이프라인), pandas/numpy 는 어울리지 않습니다.
+  ml·mleval·pandas·numpy 는 어울리지 않습니다.
 
 ## 도구 (전부 검증기가 있습니다)
 
@@ -62,8 +53,8 @@ log 은 45차에서 919 → 373 으로 줄었습니다. 서비스 이름과 시�
 | 파이썬 실행형·디버깅 | `dbg_*.cjs` → `ver_dbgpy.cjs` → `inj_pyexec.cjs` |
 | PHP 실행형·디버깅 | `dbg_php.cjs` → `ver_dbgphp.cjs`(러너 필요) → `inj_phpexec.cjs` |
 | 단답형 | `in_*.cjs` → `ver_input.cjs` + `chk_predict{,_py,_php}.cjs` → `inj_qa.cjs` |
-| 로그 분석 | `log_*.cjs` → `ver_log.cjs` → `inj_qa.cjs` |
-| 코드 리뷰 | `rev_*.cjs` → `ver_review.cjs` → `inj_qa.cjs` |
+| 로그 분석 | `log_*.cjs` → `ver_log.cjs` → `inj_qa.cjs` (트랙마다 spec 하나) |
+| 코드 리뷰 | `rev_*.cjs` → `ver_review.cjs` → `inj_review.cjs` (여러 트랙 한 번에) |
 | 이론 교체 | — → `inj_theory.cjs` |
 | 시뮬레이션 | `sim_*.cjs` → `ver_simgen.cjs` → `inj_sim.cjs` |
 
@@ -87,7 +78,7 @@ grep -h 'fn:"' tools/content/exec_*.cjs | sort   # 실행형 함수 이름
 
 ```
 node tests/engine.test.cjs                                                    # 163
-PLAYWRIGHT_CHROMIUM=... node tests/app.test.cjs                               # 145
+PLAYWRIGHT_CHROMIUM=... node tests/app.test.cjs                               # 166
 ```
 
 두 벌은 따로 돌리세요 — 한 명령으로 묶으면 메모리가 모자라 죽습니다(exit 137).
@@ -119,9 +110,9 @@ node tools/content/ver_all.cjs            # 전부
 기준선은 *아무 줄이나 찍었을 때* — 7줄짜리면 14% 입니다.
 
 ```
-로그 513문항 · 아무 줄이나 찍기 13.3%
-  첫 WARN 이상  8.4%   첫 WARN 직전 17.3%   마지막 INFO 14.8%
-  최고 등급     1.0%   가장 긴 줄   22.4%   가장 짧은 줄 0.8%   한 자리 34.5%
+로그 565문항 · 아무 줄이나 찍기 13.4%
+  첫 WARN 이상  7.6%   첫 WARN 직전 15.8%   마지막 INFO 14.0%
+  최고 등급     0.9%   가장 긴 줄   21.6%   가장 짧은 줄 1.4%   한 자리 34.5%
 ```
 
 `--track` 은 트랙별로, `--list <트랙>` 은 고쳐야 할 문항을 짚어 줍니다.
@@ -300,3 +291,20 @@ node tools/content/ver_lenbias.cjs                                # 저장소 �
 
 `--info` 로 보는 참고 항목(단답 정답에 못 쓰이는 항목, 아주 짧은 해설)은
 동작에 영향이 없어 경고로 올리지 않습니다.
+
+## 리뷰를 새로 쓸 때 지킬 것
+
+`ver_review.cjs` 가 세 가지 편향을 잽니다. 48~50차에 연달아 걸린 것이 **길이**와
+**말투**인데, 둘 다 구조적인 버릇이라 미리 알고 쓰는 편이 빠릅니다.
+
+- **자리** — 결함 위치를 미리 배분하고 쓰세요. 그냥 쓰면 두 번째 자리에 몰립니다.
+- **길이** — 결함은 증거를 대야 해서 길어지고 디스트랙터는 '아니다' 로 끝나서
+  짧아집니다. 그대로 두면 16문항 전부에서 가장 긴 보기가 결함이 됩니다.
+  디스트랙터에 **'왜 지금은 아닌지'와 '언제는 문제가 되는지'** 를 함께 적으면
+  길이도 맞고 내용도 좋아집니다.
+- **말투** — 결함만 '…해야 한다' 로 끝나면 그것이 단서입니다. 디스트랙터에도
+  '…정한다', '…권한다' 같은 맺음을 나눠 주세요.
+
+해설에는 **디스트랙터가 왜 결함이 아닌지**를 반드시 적습니다(검증기가 확인합니다).
+보기 자리를 가리키는 표현('마지막 줄이', '두 번째 보기는')은 쓸 수 없습니다 —
+앱이 보기를 섞으면 뜻이 깨집니다.
