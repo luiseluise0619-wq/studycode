@@ -40,7 +40,7 @@ function apply(SPEC) {
     const L = f.o.map(x => plain(x).length);
     /* 사람 눈금(5자) 안이면 된다 — 정확히 맞추려다 또 장식이 붙는다 */
     const gap = L[a] - Math.max(...L.filter((x, i) => i !== a));
-    if (gap > 5) { bad.push(f.k + ": 새 보기에서도 정답이 " + gap + "자 길다 (" + L.join("/") + ")"); continue; }
+    if (gap >= 5) { bad.push(f.k + ": 새 보기에서도 정답이 " + gap + "자 길다 (" + L.join("/") + ")"); continue; }
     if (f.o.some(x => /(라고|다고)\s+(본다|보면 된다|볼 수 있다)$/.test(plain(x)))) { bad.push(f.k + ": 꼬리를 붙이지 마세요"); continue; }
     hit.push([q, f.o, a, f.ex]);
   }

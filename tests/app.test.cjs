@@ -938,9 +938,13 @@ function check(name, cond, detail){
         const key=w.slice(-2).join(" ");
         cnt[key]=(cnt[key]||0)+1; if(i===q.a) ok[key]=(ok[key]||0)+1; });
     })));
-    let worst=null, best=null;
-    for(const k in cnt){ if(cnt[k]<80) continue;
+    let worst=null, best=null; const skewed=[];
+    for(const k in cnt){
       const r=(ok[k]||0)/cnt[k]*100;
+      /* 30회 이상 나오는데 정답이 15% 아래인 끝맺음 — '에러가 발생한다(2.7%)' 처럼
+         80회 문턱 아래에 숨어 있던 열네 가지를 72차에 전부 갚았다. 다시 생기지 않게 지킨다. */
+      if(cnt[k]>=30 && r<=15) skewed.push(k+" "+cnt[k]+"개 "+r.toFixed(1)+"%");
+      if(cnt[k]<80) continue;
       if(!worst||r<worst.r) worst={k, n:cnt[k], r:+r.toFixed(1)};
       if(!best||r>best.r) best={k, n:cnt[k], r:+r.toFixed(1)}; }
     /* 한 끝맺음이 얼마나 치우쳤나 보는 것만으로는 모자란다.
@@ -964,13 +968,15 @@ function check(name, cond, detail){
       rr.forEach((v,i)=>{ if(v===mx) pick.push(i); });
       if(pick.includes(q.a)) sc+=1/pick.length;
     }
-    return {worst, best, guess:+(sc*100/test.length).toFixed(1)};
+    return {worst, best, skewed, guess:+(sc*100/test.length).toFixed(1)};
   });
   /* 이 둘도 같은 이유로 눈금이 움직인다(59차) — 장식을 걷어내자 원래의 말버릇이
      드러났다. '…않기 때문' 으로 끝나는 보기 92개 중 정답은 9.8% 뿐이다.
      오답을 다시 쓰면서 함께 갚을 몫이다. 60차에 옛 글로 되돌리자 9.8 → 17.7,
-     61차에 오답을 다시 쓰자 19.1 로 나아졌다. */
-  const TAIL_MIN=19.1, TAIL_GUESS=26.3;
+     61차에 오답을 다시 쓰자 19.1 로 나아졌다.
+     72차에 '…오류가 난다'·'…필요 없다'·'…문제가 없다' 같은 무성의한 오답 570개를
+     구체적인 틀린 답으로 다시 써서 찍기 26.3 → 26.2. 15% 아래 끝맺음은 0개다. */
+  const TAIL_MIN=19.1, TAIL_GUESS=26.2;
   console.log("  가장 오답에 쏠린 끝맺음: '"+tailBias.worst.k+"' "+tailBias.worst.n
               +"개 중 정답 "+tailBias.worst.r+"% · 가장 정답에 쏠린 끝맺음: '"
               +tailBias.best.k+"' "+tailBias.best.r+"%");
@@ -980,6 +986,7 @@ function check(name, cond, detail){
         {끝맺음:tailBias.worst.k, 개수:tailBias.worst.n, 정답비율:tailBias.worst.r});
   check("끝맺음으로 찍기가 더 나아지지 않았다", tailBias.guess<=TAIL_GUESS,
         {지금:tailBias.guess, 눈금:TAIL_GUESS});
+  check("정답률 15% 아래인 끝맺음(30회 이상)이 없다", tailBias.skewed.length===0, {목록:tailBias.skewed});
 
   /* '항상·언제나·반드시' 같은 단정어가 든 보기는 거의 다 오답이었다.
      그래서 내용을 몰라도 '단정어가 든 보기를 피한다' 만으로 27.5% 를 맞혔다.
