@@ -43,7 +43,8 @@ if (args[0] === "--apply") {
   for (const f of SPEC.fixes) {
     let cands = all.filter(q => q.k === f.k);
     if (f.q) cands = cands.filter(q => plain(q.q).indexOf(f.q) >= 0);
-    if (cands.length !== 1) throw new Error(f.k + ": 짝이 " + cands.length + "개다 (q 로 좁히세요)");
+    if (f.ex0) cands = cands.filter(q => plain(q.ex).indexOf(f.ex0) >= 0);   /* 지금 해설의 한 토막으로 좁힌다 */
+    if (cands.length !== 1) throw new Error(f.k + ": 짝이 " + cands.length + "개다 (q · ex0 로 좁히세요)");
     if (plain(f.ex).length < 80) throw new Error(f.k + ": 새 해설이 80자 미만이다");
     if (/<[a-z]+(?![^>]*>)/i.test(f.ex)) throw new Error(f.k + ": 태그가 닫히지 않았다");
     hit.push([cands[0], f.ex]);
