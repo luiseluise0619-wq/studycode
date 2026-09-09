@@ -5,7 +5,7 @@
      node ex_short.cjs python --json   # 같은 것을 JSON 으로
      node ex_short.cjs --apply fix.js  # 새 해설을 적용한다
 
-   fix.js 는 {track, fixes:[{k, ex}]} 를 내보낸다. k 는 문항 제목이고,
+   fix.js 는 {track, fixes:[{k, q?, ex0?, ex}]} 를 내보낸다(배열이면 트랙 여러 개). k 는 문항 제목이고,
    한 트랙 안에서 k 가 겹치면(그런 트랙이 있다) 물음까지 함께 봐서 고른다.
    전부 찾아야 쓴다(all-or-nothing) — 하나라도 못 찾으면 아무것도 안 바꾼다.
 
@@ -34,8 +34,7 @@ function walk(arr, fn) {
 const args = process.argv.slice(2);
 
 /* ---------- 적용 ---------- */
-if (args[0] === "--apply") {
-  const SPEC = require(path.resolve(args[1]));
+function apply(SPEC) {
   const T = load(SPEC.track);
   const all = [];
   walk(T.arr, q => all.push(q));
@@ -55,6 +54,10 @@ if (args[0] === "--apply") {
   if (JSON.stringify(back) !== JSON.stringify(T.arr)) throw new Error("왕복 검증 실패");
   fs.writeFileSync(T.p, out);
   console.log(SPEC.track + ": 해설 " + hit.length + "개를 새로 썼다");
+}
+if (args[0] === "--apply") {
+  const SPEC = require(path.resolve(args[1]));
+  (Array.isArray(SPEC) ? SPEC : [SPEC]).forEach(apply);   /* 여러 트랙을 한 파일에 배열로 담아도 된다 */
   process.exit(0);
 }
 
