@@ -93,7 +93,7 @@ if(process.argv.indexOf("--apply")<0){ console.log("\n(미리보기입니다. �
 
 /* 실제 삭제 — 트랙별로 뒤에서부터 */
 let h=fs.readFileSync(path.join(ROOT,"index.html"),"utf8");
-const cut=shellCut(h), COURSES=cut.obj;
+const CL=require("./lib/courses.cjs"); const cut=CL.readCourses(h), COURSES=cut.obj;   /* 셸 개요는 압축된 꼴 */
 const byTrack={}; picked.forEach(r=>(byTrack[r.track]=byTrack[r.track]||[]).push(r));
 const writes=[];
 Object.keys(byTrack).forEach(t=>{
@@ -111,6 +111,6 @@ Object.keys(byTrack).forEach(t=>{
   writes.push([t,units]);
 });
 writes.forEach(([t,u])=>saveTrack(t,u));
-h=h.slice(0,cut.br)+JSON.stringify(COURSES)+h.slice(cut.end+1);
+h=CL.writeCourses(h,COURSES,cut);
 fs.writeFileSync(path.join(ROOT,"index.html"),h);
 console.log("\n삭제 완료: "+picked.length+"문항");

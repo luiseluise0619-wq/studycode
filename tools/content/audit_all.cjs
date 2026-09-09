@@ -140,13 +140,7 @@ Object.keys(tracks).forEach(tk => {
 
 /* 셸의 트랙 목록과 데이터 청크가 서로 맞는지 */
 const html = fs.readFileSync(ROOT + "/index.html", "utf8");
-const cs = html.indexOf("COURSES = ") + 10;
-let d = 0, ce = cs;
-for (let i = cs; i < html.length; i++) {
-  if (html[i] === "{") d++;
-  else if (html[i] === "}") { d--; if (!d) { ce = i; break; } }
-}
-const COURSES = JSON.parse(html.slice(cs, ce + 1));
+const COURSES = require("../lib/courses.cjs").readCourses(html).obj;   /* 셸 개요는 압축된 꼴 — 도구로 읽는다 */
 Object.keys(COURSES).forEach(k => { if (!tracks[k]) hit("셸에만 있는 트랙", k); });
 Object.keys(tracks).forEach(k => { if (!COURSES[k]) hit("데이터에만 있는 트랙", k); });
 
@@ -158,7 +152,7 @@ Object.keys(tracks).forEach(k => { if (!COURSES[k]) hit("데이터에만 있는 
    그 사이 dbg_code 의 소스가 데이터와 갈라진 것도 못 잡았다.
    도구는 늘 돌지 않으므로, 최소한 '읽히기는 하는가' 만은 여기서 본다. */
 {
-  const dirs = [path.join(ROOT, "tools"), path.join(ROOT, "tools", "content")];
+  const dirs = [path.join(ROOT, "tools"), path.join(ROOT, "tools", "content"), path.join(ROOT, "tools", "lib")];
   const seenFile = new Set();
   dirs.forEach(d => {
     if (!fs.existsSync(d)) return;

@@ -67,17 +67,12 @@ fs.writeFileSync(path, raw.slice(0,a)+JSON.stringify(arr)+raw.slice(z+1));
 
 const ih=ROOT+"/index.html";
 const html=fs.readFileSync(ih,"utf8");
-const mark="COURSES = ";
-const start=html.indexOf(mark+"{")+mark.length;
-let depth=0, end=start;
-for(let i=start;i<html.length;i++){
-  if(html[i]==="{")depth++;
-  else if(html[i]==="}"){ depth--; if(!depth){ end=i; break; } }
-}
-const C=JSON.parse(html.slice(start,end+1));
+const {readCourses,writeCourses}=require("../lib/courses.cjs");   /* 셸 개요는 압축된 꼴 — 이 도구로 읽고 쓴다 */
+const __g=readCourses(html);
+const C=__g.obj;
 if(!C.php) throw new Error("COURSES 에 php 가 없다 — inj_php.cjs 를 먼저 돌려야 한다");
 if(C.php.units.some(u=>u.title===UNIT)) throw new Error("목차 유닛 중복");
 C.php.units.push({ title:UNIT, guide:"", lessons:LESSONS.map(L=>({ title:L.t, xp:80, n:L.n })) });
-fs.writeFileSync(ih, html.slice(0,start)+JSON.stringify(C)+html.slice(end+1));
+fs.writeFileSync(ih, writeCourses(html,C,__g));
 
 console.log("주입 완료: php 실행형 +"+Q.length);

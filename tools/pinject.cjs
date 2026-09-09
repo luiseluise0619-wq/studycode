@@ -42,7 +42,7 @@ const DATA = JSON.parse(m[2]);
 
 /* 셸이 아는 트랙 목록 */
 const shell = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const TRACKS = Object.keys(JSON.parse(shell.match(/^const COURSES = (\{.*\});$/m)[1]));
+const TRACKS = Object.keys(require('./lib/courses.cjs').readCourses(shell).obj);   /* 셸 개요는 압축된 꼴 */
 const ALIAS = JSON.parse('{' + shell.match(/const TRACK_ALIAS=\{([^}]*)\}/)[1]
   .replace(/(\w+):/g, '"$1":') + '}');
 

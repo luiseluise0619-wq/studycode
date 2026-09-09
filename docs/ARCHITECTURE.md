@@ -85,6 +85,12 @@ Developer Passport는 `radarSVG()`로 9축을 SVG 레이더로 그립니다.
 ## 5. 콘텐츠·엔진 4종
 
 ### (a) 지식 엔진 — `COURSES`
+
+셸에는 개요(트랙·유닛·레슨 제목, xp, 문항 수)만 들어 있고 문항은 `data/t-<track>.js` 청크가
+`mergeTrack()` 으로 제목을 맞춰 얹는다. 개요는 셸 안에 **압축된 꼴**로 적혀 있다 —
+`{u:[{t, x, l:[{t, n}]}]}` 처럼 키를 줄이고 xp 는 유닛에 한 번만 적는다(63차, 셸 30KB 절약).
+`__expandCourses()` 가 읽자마자 아래 꼴로 펼치므로 앱 코드는 `units·lessons·title·xp·n` 을 그대로 쓴다.
+도구는 `tools/lib/courses.cjs` 의 `readCourses`/`writeCourses` 로 읽고 쓴다 — 직접 JSON.parse 하지 않는다.
 ```
 COURSES[track] = { name, units:[ { title, lessons:[ { q:[ 문항 ] } ] } ] }
 문항 t: "choice" | "input" | "code"

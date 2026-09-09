@@ -453,8 +453,7 @@ function check(name, cond, detail){
 
   /* 트랙을 처음 열었을 때 만나는 유닛이 심화·리뷰·로그면 초보는 거기서 막힌다 */
   const badStart=[];
-  for(const k of Object.keys(JSON.parse(fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8")
-      .match(/^const COURSES = (\{.*\});$/m)[1]))){
+  for(const k of Object.keys(require("../tools/lib/courses.cjs").readCourses(fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8")).obj)){
     const first=await p.evaluate(async k=>{ await window.ensureTrack(k); const u=COURSES[k].units[0]; return u&&u.title; }, k);
     if(first&&/심화|시니어|스태프|코드 리뷰|로그 분석/.test(first)) badStart.push(k+" — "+first);
   }

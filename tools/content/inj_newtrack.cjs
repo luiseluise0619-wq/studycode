@@ -45,13 +45,14 @@ function grab(mark){
 }
 function put(g,obj){ html=html.slice(0,g.start)+JSON.stringify(obj)+html.slice(g.end+1); }
 
-const gc=grab("COURSES = ");
+const {readCourses,writeCourses}=require("../lib/courses.cjs");   /* 셸 개요는 압축된 꼴 */
+const gc=readCourses(html);
 if(gc.obj[SPEC.id]) throw new Error("COURSES 에 "+SPEC.id+" 가 이미 있다");
 gc.obj[SPEC.id]={ name:SPEC.name, em:"", color:SPEC.color,
   g:SPEC.g||("linear-gradient(135deg,"+SPEC.color+","+SPEC.color+")"),
   units:UNITS.map(u=>({ title:u.t, guide:"",
     lessons:u.l.map(L=>({ title:L.t, xp:L.xp, n:L.q.length })) })) };
-put(gc,gc.obj);
+html=writeCourses(html,gc.obj,gc);
 
 /* 트랙 소개는 셸이 아니라 data/intro.js 청크에 있다 */
 const introPath=ROOT+"/data/intro.js";

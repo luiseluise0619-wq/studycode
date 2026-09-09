@@ -37,12 +37,13 @@ function grab(mark){
 function put(g, obj){ html=html.slice(0,g.start)+JSON.stringify(obj)+html.slice(g.end+1); }
 
 /* COURSES */
-const gc=grab("COURSES = ");
+const {readCourses,writeCourses}=require("../lib/courses.cjs");   /* 셸 개요는 압축된 꼴 */
+const gc=readCourses(html);
 if(gc.obj.php) throw new Error("COURSES 에 php 가 이미 있다");
 gc.obj.php={ name:"PHP", em:"", color:"#6b7ab8", g:"linear-gradient(135deg,#6b7ab8,#8892bf)",
   units:UNITS.map(u=>({ title:u.t, guide:"",
     lessons:u.l.map(L=>({ title:L.t, xp:L.xp, n:L.q.length })) })) };
-put(gc, gc.obj);
+html=writeCourses(html, gc.obj, gc);
 
 /* TRACK_INTRO */
 const gi=grab("const TRACK_INTRO=");

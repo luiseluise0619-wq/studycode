@@ -91,9 +91,8 @@ function split(q) {
 const targets = [];
 {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  const m = html.match(/^const COURSES = (\{.*\});$/m);
-  if (!m) throw new Error('셸에서 COURSES 를 못 찾았다');
-  targets.push({ kind: 'shell', file: 'index.html', raw: html, json: m[1], data: JSON.parse(m[1]) });
+  const g = require('./lib/courses.cjs').readCourses(html);   /* 셸 개요는 압축된 꼴 */
+  targets.push({ kind: 'shell', file: 'index.html', raw: html, pos: g, data: g.obj });
 }
 fs.readdirSync(path.join(ROOT, 'data')).filter(f => /^t-.*\.js$/.test(f)).forEach(f => {
   const raw = fs.readFileSync(path.join(ROOT, 'data', f), 'utf8');
@@ -166,10 +165,10 @@ targets.forEach(t => {
   if (!t.changed) return;
   files++;
   if (t.kind === 'shell') {
-    const out = t.raw.replace(t.json, JSON.stringify(t.data));
-    fs.writeFileSync(path.join(ROOT, 'index.html'), out);
-    const back = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').match(/^const COURSES = (\{.*\});$/m)[1];
-    if (JSON.stringify(JSON.parse(back)) !== JSON.stringify(t.data)) throw new Error('셸 왕복에서 내용이 달라졌다');
+    const L = require('./lib/courses.cjs');
+    fs.writeFileSync(path.join(ROOT, 'index.html'), L.writeCourses(t.raw, t.data, t.pos));
+    const back = L.readCourses(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')).obj;
+    if (JSON.stringify(back) !== JSON.stringify(t.data)) throw new Error('셸 왕복에서 내용이 달라졌다');
   } else {
     const p = path.join(ROOT, t.file);
     fs.writeFileSync(p, "__CR('t:" + t.key + "'," + JSON.stringify(t.data) + ");\n");

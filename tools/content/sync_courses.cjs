@@ -10,15 +10,10 @@ const path=require("path");
 const ROOT=path.resolve(__dirname,"..","..");
 const IH=ROOT+"/index.html";
 
+const {readCourses,writeCourses}=require("../lib/courses.cjs");   /* 셸 개요는 압축된 꼴 — 이 도구로 읽고 쓴다 */
 let html=fs.readFileSync(IH,"utf8");
-const s=html.indexOf("COURSES = ")+10;
-if(s<10) throw new Error("COURSES 를 찾지 못했다");
-let d=0,e=s;
-for(let i=s;i<html.length;i++){
-  if(html[i]==="{")d++;
-  else if(html[i]==="}"){ d--; if(!d){ e=i; break; } }
-}
-const C=JSON.parse(html.slice(s,e+1));
+const G=readCourses(html);
+const C=G.obj;
 
 const only=process.argv.slice(2);
 const report=[];
@@ -48,7 +43,7 @@ if(report.length) console.log("어긋난 트랙\n  "+report.join("\n  "));
 else console.log("전 트랙 COURSES ↔ 데이터 일치");
 
 if(changed){
-  html=html.slice(0,s)+JSON.stringify(C)+html.slice(e+1);
+  html=writeCourses(html,C,G);
   fs.writeFileSync(IH,html);
   console.log("\n유닛 "+changed+"개를 개요에 더했다: "+only.join(" "));
 }else if(only.length){

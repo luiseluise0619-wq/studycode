@@ -12,14 +12,9 @@ const xp=SPEC.xp||70;
 const norm=s=>String(s).replace(/\s+/g," ").trim();
 const ih=ROOT+"/index.html";
 let html=fs.readFileSync(ih,"utf8");
-const mark="COURSES = ";
-const start=html.indexOf(mark+"{")+mark.length;
-let depth=0, end=start;
-for(let i=start;i<html.length;i++){
-  if(html[i]==="{")depth++;
-  else if(html[i]==="}"){ depth--; if(!depth){ end=i; break; } }
-}
-const C=JSON.parse(html.slice(start,end+1));
+const {readCourses,writeCourses}=require("../lib/courses.cjs");   /* 셸 개요는 압축된 꼴 — 이 도구로 읽고 쓴다 */
+const __g=readCourses(html);
+const C=__g.obj;
 
 /* 먼저 전부 검사한 뒤에 쓴다 */
 const plans=SPEC.entries.map(E=>{
@@ -69,6 +64,6 @@ plans.forEach(p=>{
   if(p.E.guide) unit.guide=p.E.guide;
   C[p.E.track].units.push(unit);
 });
-fs.writeFileSync(ih, html.slice(0,start)+JSON.stringify(C)+html.slice(end+1));
+fs.writeFileSync(ih, writeCourses(html,C,__g));
 
 console.log("주입 완료: "+plans.map(p=>p.E.track+" +"+p.n).join(" · "));

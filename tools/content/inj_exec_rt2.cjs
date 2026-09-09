@@ -125,21 +125,16 @@ Object.keys(EXPECT).forEach(lang=>{
 
 const ih=ROOT+"/index.html";
 const html=fs.readFileSync(ih,"utf8");
-const mark="COURSES = ";
-const start=html.indexOf(mark+"{")+mark.length;
-let depth=0, end=start;
-for(let i=start;i<html.length;i++){
-  if(html[i]==="{")depth++;
-  else if(html[i]==="}"){ depth--; if(!depth){ end=i; break; } }
-}
-const C=JSON.parse(html.slice(start,end+1));
+const {readCourses,writeCourses}=require("../lib/courses.cjs");   /* 셸 개요는 압축된 꼴 — 이 도구로 읽고 쓴다 */
+const __g=readCourses(html);
+const C=__g.obj;
 Object.keys(EXPECT).forEach(lang=>{
   if(!C[lang]) throw new Error(lang+": COURSES 에 없음");
   const pl=PLAN[lang];
   if(C[lang].units.some(u=>u.title===pl.unit)) throw new Error(lang+": 목차 유닛 중복");
   C[lang].units.push({ title:pl.unit, lessons:pl.lessons.map(L=>({ title:L.t, xp:80, n:L.n })) });
 });
-writes.push({ path:ih, content: html.slice(0,start)+JSON.stringify(C)+html.slice(end+1) });
+writes.push({ path:ih, content: writeCourses(html,C,__g) });
 
 writes.forEach(w=>fs.writeFileSync(w.path,w.content));
 console.log("주입 완료: "+Object.keys(EXPECT).map(k=>k+" +"+EXPECT[k]).join(" · ")+" (파일 "+writes.length+"개)");

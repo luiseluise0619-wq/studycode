@@ -63,16 +63,11 @@ fs.writeFileSync(path, raw.slice(0,a)+JSON.stringify(arr)+raw.slice(z+1));
 
 const ih=ROOT+"/index.html";
 const html=fs.readFileSync(ih,"utf8");
-const mark="COURSES = ";
-const start=html.indexOf(mark+"{")+mark.length;
-let depth=0, end=start;
-for(let i=start;i<html.length;i++){
-  if(html[i]==="{")depth++;
-  else if(html[i]==="}"){ depth--; if(!depth){ end=i; break; } }
-}
-const C=JSON.parse(html.slice(start,end+1));
+const {readCourses,writeCourses}=require("../lib/courses.cjs");   /* 셸 개요는 압축된 꼴 — 이 도구로 읽고 쓴다 */
+const __g=readCourses(html);
+const C=__g.obj;
 if(C.python.units.some(u=>u.title===UNIT)) throw new Error("목차 유닛 중복");
 C.python.units.push({ title:UNIT, lessons:LESSONS.map(L=>({ title:L.t, xp:80, n:L.n })) });
-fs.writeFileSync(ih, html.slice(0,start)+JSON.stringify(C)+html.slice(end+1));
+fs.writeFileSync(ih, writeCourses(html,C,__g));
 
 console.log("주입 완료: python 실행형 +"+Q.length);
