@@ -17,6 +17,7 @@ const INFO = process.argv.indexOf("--info") >= 0;
 
 const norm = s => String(s == null ? "" : s).replace(/\s+/g, " ").trim();
 const strip = s => String(s == null ? "" : s).replace(/<[^>]*>/g, "");
+const { padded } = require("./unrestate.cjs");
 /* 앱이 단답을 맞힐 때 쓰는 규칙과 같다(index.html 의 norm) */
 const ansNorm = s => String(s == null ? "" : s).toLowerCase().replace(/\s+/g, "").replace(/;$/, "");
 
@@ -113,6 +114,9 @@ Object.keys(tracks).forEach(tk => {
             if (q.o.some(x => !String(x).trim())) hit("빈 보기가 있다", w);
             if (new Set(q.o.map(String)).size !== q.o.length) hit("보기가 겹친다", w);
             q.o.forEach((o, i) => tagBalance(o, w + " (보기" + i + ")"));
+            /* 앞 문장을 되풀이하거나 8자 토막을 덧붙여 길이를 맞춘 보기 — 71차에 277개를
+               걷어내고 오답을 내용 있게 다시 썼다. 다시 생기지 않도록 고칠 것으로 잡는다. */
+            q.o.forEach((o, i) => { if (padded(o)) hit("보기 뒤에 앞 문장을 되풀이하거나 토막을 덧붙였다", w + " (보기" + i + ")"); });
             if (!(Number.isInteger(q.a) && q.a >= 0 && q.a < 4)) hit("정답 자리가 범위 밖", w);
           }
         } else if (t === "input") {

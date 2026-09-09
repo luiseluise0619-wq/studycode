@@ -25,8 +25,7 @@ function load(track) {
 const walk = (arr, fn) => arr.forEach(u => u.l.forEach(l => (l.q || []).forEach(q => fn(q, u, l))));
 
 const args = process.argv.slice(2);
-if (args[0] === "--apply") {
-  const SPEC = require(path.resolve(args[1]));
+function apply(SPEC) {
   const T = load(SPEC.track);
   const all = []; walk(T.arr, q => all.push(q));
   const hit = [], bad = [];
@@ -52,6 +51,10 @@ if (args[0] === "--apply") {
   if (JSON.stringify(back) !== JSON.stringify(T.arr)) throw new Error("왕복 검증 실패");
   fs.writeFileSync(T.p, out);
   console.log(SPEC.track + ": 보기 " + hit.length + "문항을 새로 썼다");
+}
+if (args[0] === "--apply") {
+  const SPEC = require(path.resolve(args[1]));
+  (Array.isArray(SPEC) ? SPEC : [SPEC]).forEach(apply);   /* 여러 트랙을 한 파일에 배열로 담아도 된다 */
   process.exit(0);
 }
 
