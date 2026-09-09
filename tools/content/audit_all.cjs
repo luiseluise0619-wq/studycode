@@ -89,9 +89,10 @@ Object.keys(tracks).forEach(tk => {
         else tagBalance(q.q, w + " (질문)");
         if (!q.ex) hit("해설이 없다", w);
         else {
-          /* 첫 레슨의 'int 는 정수형입니다' 같은 한 줄은 짧은 것이 맞다.
-             길이는 참고로만 보고, 없는 것만 고칠 것으로 잡는다. */
-          if (strip(q.ex).trim().length < 20) note("해설이 아주 짧다", w + " (" + strip(q.ex).trim().length + "자)");
+          /* 40자 미만 해설은 대개 정답을 되풀이한 것이다("int 는 정수형이다").
+             62차에 748개를 전부 '왜 맞고 나머지는 왜 아닌가' 로 다시 써서 0이 됐다.
+             다시 늘지 않도록 고칠 것으로 잡는다. 새로 쓸 때는 ex_short.cjs 를 쓴다. */
+          if (strip(q.ex).trim().length < 40) hit("해설이 40자 미만이다", w + " (" + strip(q.ex).trim().length + "자)");
           tagBalance(q.ex, w + " (해설)");
         }
 
