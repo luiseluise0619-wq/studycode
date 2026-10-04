@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),path=require('node:path'),{chromium}=require('playwright');
 const base=require('../data/vibe-scenarios.js'),additional=require('../data/vibe-challenges.js')(base);
-(async()=>{const browser=await chromium.launch({channel:'msedge'});try{
+(async()=>{const browser=await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM?{executablePath:process.env.PLAYWRIGHT_CHROMIUM}:process.platform==='win32'?{channel:'msedge'}:{});try{
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{if(top===window)localStorage.setItem('coderun',JSON.stringify({onboarded:true,goal:'free',freeMode:true,recall:false}));});
  await page.goto('file:///'+path.resolve(__dirname,'../index.html').replace(/\\/g,'/'));await page.waitForFunction(()=>typeof VibeLab!=='undefined');
