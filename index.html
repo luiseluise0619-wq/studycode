@@ -1923,6 +1923,7 @@ function __CR(key, val){
   if(key==="diags"){ DIAGS=val; return; }
   if(key==="projects"){ PROJECTS=val; return; }
   if(key==="build"){ BUILD_PROJECTS=val.projects; BUILD_SOL=val.sol; return; }
+  if(key==="servicebuild"){ BUILD_PROJECTS=BUILD_PROJECTS.filter(p=>!val.projects.some(x=>x.id===p.id)).concat(val.projects); Object.assign(BUILD_SOL,val.sol); return; }
   if(key==="lib:react"){ window.__reactSrc=val; return; }
 }
 /* 트랙 문항을 제목으로 맞춰 구조에 얹는다 — 유닛 순서는 reorderUnits() 로 이미 바뀌어 있다 */
@@ -2018,7 +2019,7 @@ function ensureIntro(){ return __got.intro?Promise.resolve(true):loadChunk("intr
 function ensureSims(){ return __got.sims?Promise.resolve(true):loadChunk("sims.js"); }
 function ensureDiags(){ return __got.diags?Promise.resolve(true):loadChunk("diags.js"); }
 function ensureProjects(){ return __got.projects?Promise.resolve(true):loadChunk("projects.js"); }
-function ensureBuild(){ return __got.build?Promise.resolve(true):loadChunk("build.js"); }
+function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=12")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=12")); }
 /* TypeScript·JSX 변환기 (sucrase, 288KB). 파서만 필요하므로 부모 문서에서 돌린다. */
 function ensureSucrase(){
   if(typeof Sucrase!=="undefined" && Sucrase.transform) return Promise.resolve(true);
@@ -2089,7 +2090,7 @@ function prefetchRest(){
 /* ===== 빌드 프로젝트 — 요구사항을 읽고 직접 만든다 ===== */
 let BUILD_PROJECTS=[], BUILD_SOL={};
 /* 실제 데이터는 data/build.js — 셸에는 총 Day 수만 둔다 (허브 라벨용) */
-const BUILD_DAYS=66;
+const BUILD_DAYS=84;
 
 /* ===== 빌드 랩 =====
    기존 프로젝트 34개는 '선택지를 고르는' 형식이었다. 여기서는 요구사항만 주고
@@ -2154,7 +2155,7 @@ function blDoneTotal(){ const b=S.build||{}; return Object.keys(b).reduce((a,k)=
 function openBuildLab(){
   $("blab").classList.add("on"); document.body.style.overflow="hidden";
   try{history.pushState({cr:1},"")}catch(e){}
-  if(!__got.build){
+  if(!__got.build || !__got.servicebuild){
     $("bl-name").textContent="빌드 랩"; $("bl-prog").textContent="불러오는 중…"; $("bl-menu").style.display="none";
     $("bl-body").innerHTML='<div class="bl-req"><h3>불러오는 중…</h3></div>';
     return ensureBuild().then(blRenderList).catch(function(){
@@ -2175,21 +2176,21 @@ function blRenderList(){
   $("bl-name").textContent="빌드 랩";
   const tot=BUILD_PROJECTS.reduce((a,p)=>a+p.days.length,0)||BUILD_DAYS;
   const done=BUILD_PROJECTS.reduce((a,p)=>a+blDoneDays(p),0);
-  $("bl-prog").textContent=done+" / "+tot+" Day 완료";
+  $("bl-prog").textContent=done+" / "+tot+" 단계 완료";
   $("bl-menu").style.display="none";
   const cards=BUILD_PROJECTS.map((p,i)=>{
     const st=blState(p.id), d=st.done.length;
     return '<button class="blp'+(d>=p.days.length?" done":"")+'" data-i="'+i+'">'+
       '<span class="bp-m">'+
-      '<span class="bp-t">'+escHtml(p.title)+' <span style="font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)">Lv'+p.lv+(p.blank?" · 빈 프로젝트":"")+'</span></span>'+
+      '<span class="bp-t">'+escHtml(p.title)+' <span style="font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)">'+(p.servicePath?'입문 → 운영':p.lv?'Lv'+p.lv:String(p.lang||'JS').toUpperCase())+(p.blank?" · 빈 프로젝트":"")+'</span></span>'+
       '<span class="bp-s">'+escHtml(p.sub)+'</span></span>'+
       '<span class="bp-go">'+d+'/'+p.days.length+'</span></button>';
   }).join("");
   $("bl-body").innerHTML=
     '<div class="bl-req"><h3>요구사항을 읽고 직접 만듭니다</h3>'+
     '<p style="margin:6px 0 0;font-size:13.5px;line-height:1.7">선택지를 고르는 것이 아니라 파일을 씁니다. '+
-    '작성한 코드는 샌드박스에서 <b>실제로 실행</b>되고, 그날의 수용 기준을 통과해야 다음 날이 열립니다. '+
-    '파일은 Day 사이에 그대로 남습니다 — 어제 대충 짠 구조 위에서 오늘을 짓게 됩니다.</p></div>'+
+    '작성한 코드를 <b>실제로 실행</b>해 요구사항을 확인합니다. 한 단계의 검사를 마치면 다음 단계가 열립니다. '+
+    '이전에 쓴 파일을 유지하며 기능을 더하고, 새 기능이 앞의 동작을 깨뜨리지 않았는지도 확인해요.</p></div>'+
     '<div class="bl-h">프로젝트</div>'+cards;
   $("bl-body").querySelectorAll(".blp").forEach(b=>b.onclick=()=>blOpen(+b.dataset.i));
   $("bl-body").scrollTop=0;
@@ -6621,8 +6622,10 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEvent
 <script src="vendor/acorn.js"></script>
 <script src="data/dom-practice.js"></script>
 <script src="data/code-literacy.js"></script>
-<script src="data/vibe-scenarios.js?v=11"></script>
-<script src="data/vibe-challenges.js?v=11"></script>
-<script src="data/vibe-projects.js?v=11"></script>
-<script src="data/vibe-journey.js?v=11"></script>
-<script src="data/vibe-lab.js?v=11"></script>
+<script src="data/vibe-scenarios.js?v=12"></script>
+<script src="data/vibe-challenges.js?v=12"></script>
+<script src="data/vibe-projects.js?v=12"></script>
+<script src="data/vibe-journey.js?v=12"></script>
+<script src="data/vibe-lab.js?v=12"></script>
+<script src="data/service-export.js?v=12"></script>
+<script src="data/service-path.js?v=12"></script>

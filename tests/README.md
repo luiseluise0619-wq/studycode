@@ -1,10 +1,13 @@
 # 테스트
 
+`node tests/service-path.test.cjs`는 이어지는 예약 서버 18단계의 예시·미완성 코드, 333회 누적 동작 검사, 실제 Worker에서 코드와 개념 확인 후 잠금 해제, 코드 변경 시 이후 기록 취소, 도움 기록 유지, 중급·시니어 시작점의 제공 코드와 직접 완료 구분, 실제 내려받은 Node.js 서버의 HTTP·저장·재시작, 360px 화면을 검사합니다.
+
 `node tests/vibe-projects.test.cjs`는 새 완성 앱 5개의 25개 예시 풀이와 미완성 초안, 누적 동작 검사, 실제 편집·개념 확인·파일 다운로드, 내보낸 앱의 저장·복원, 손상된 저장 형식, 미리보기와 채점 데이터 분리, 독립 확장 기록과 모바일 화면을 검사합니다. Windows에서는 Edge를 사용하고 다른 환경에서는 설치된 Playwright Chromium을 사용합니다. `PLAYWRIGHT_CHROMIUM`으로 실행 파일을 지정할 수 있습니다.
 
 `index.html` 은 배포되는 그 파일 하나이므로, 테스트도 **사본이 아니라 그 파일을 직접 읽어** 검사합니다.
 
 ```bash
+node tests/service-path.test.cjs
 node tests/engine.test.cjs     # 브라우저 불필요 · 1초 이내
 node tests/app.test.cjs        # playwright 필요 (없으면 자동 스킵)
 node tests/learning-path.test.cjs

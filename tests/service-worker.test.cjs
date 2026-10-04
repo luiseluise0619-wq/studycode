@@ -13,5 +13,6 @@ function request(url,method='GET'){let response;events.fetch({request:new Reques
  offline=false;assert.equal(await(await request('/data/t-new.js')).text(),'fresh');count++;console.log('PASS uncached online lesson loads normally');
  assert.equal(await(await request('/data/t-python.js')).text(),'lesson');await new Promise(r=>setTimeout(r,0));assert.equal(await(await data.match('/data/t-python.js')).text(),'fresh');count++;console.log('PASS cached lessons revalidate in the background');
  assert.equal(request('/api/check'),undefined);assert.equal(request('https://example.com/lib.js'),undefined);assert.equal(request('/data/vibe-lab.js','POST'),undefined);count+=3;console.log('PASS API, external requests and writes bypass the cache');
+ let reported;events.message({data:{type:'version'},ports:[{postMessage:value=>reported=value}]});assert.equal(reported.version,version);count++;console.log('PASS the controlling worker reports its actual version');
  console.log(count+' service worker checks passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

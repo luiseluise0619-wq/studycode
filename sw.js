@@ -2,13 +2,15 @@
    - 앱 셸(index.html 등): network-first — 배포하면 바로 갱신된다
    - /data/*.js 청크: 캐시 우선·백그라운드 갱신 — 처음 오프라인에서도 미리 받은 앱 코드를 읽는다
    - /api/* 와 교차 출처(Monaco/Pyodide CDN)는 건드리지 않는다 */
-const VERSION = "v11-projects";
+const VERSION = "v12-service-path";
 const SHELL_CACHE = "coderun-shell-" + VERSION;
 const DATA_CACHE  = "coderun-data-" + VERSION;
 const KEEP = [SHELL_CACHE, DATA_CACHE];
 
 const SHELL = [
-  "/data/vibe-scenarios.js?v=11", "/data/vibe-challenges.js?v=11", "/data/vibe-projects.js?v=11", "/data/vibe-journey.js?v=11", "/data/vibe-lab.js?v=11",
+  "/data/vibe-scenarios.js?v=12", "/data/vibe-challenges.js?v=12", "/data/vibe-projects.js?v=12", "/data/vibe-journey.js?v=12", "/data/vibe-lab.js?v=12",
+  "/data/build.js?v=12", "/data/service-project.js?v=12", "/data/service-path.js?v=12", "/data/service-export.js?v=12",
+  "/data/build.js", "/data/service-project.js", "/data/service-path.js", "/data/service-export.js",
   "/", "/index.html", "/manifest.webmanifest",
   "/data/study-design.css", "/data/study-ui.css",
   "/data/coderun-design.css", "/data/vibe-challenges.js", "/data/vibe-projects.js", "/data/vibe-journey.js", "/data/vibe-lab.css", "/data/vibe-scenarios.js", "/data/vibe-lab.js",
@@ -37,6 +39,7 @@ self.addEventListener("activate", (e) => {
 /* 앱이 "이 트랙 미리 받아둬" 라고 알려주면 백그라운드로 캐시에 채운다 */
 self.addEventListener("message", (e) => {
   const d = e.data || {};
+  if (d.type === "version") { if (e.ports && e.ports[0]) e.ports[0].postMessage({ version: VERSION }); return; }
   if (d.type !== "precache" || !Array.isArray(d.urls)) return;
   e.waitUntil(caches.open(DATA_CACHE).then((c) =>
     Promise.all(d.urls.map((u) =>

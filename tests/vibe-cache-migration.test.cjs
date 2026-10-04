@@ -1,7 +1,69 @@
-/* Isolated local fixture: old SW and cached JS, then the versioned delivery. */
-const {chromium}=require('playwright'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'..');let legacy=true;
-const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://localhost'),file=path.resolve(root,'.'+(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+path.sep)||!fs.existsSync(file)){res.writeHead(404);res.end();return;}let body=fs.readFileSync(file);if(legacy&&url.pathname==='/sw.js')body=body.toString().replaceAll('v11-projects','v10-journey').replace(/"\/data\/vibe-[^"]+\?v=11",?\s*/g,'');if(legacy&&(url.pathname==='/'||url.pathname==='/index.html'))body=body.toString().replaceAll('.js?v=11','.js');const ext=path.extname(file),types={'.js':'text/javascript','.css':'text/css','.html':'text/html','.webmanifest':'application/manifest+json','.json':'application/json','.png':'image/png'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream','Cache-Control':'no-store'});res.end(body);});
-(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+server.address().port+'/',browser=await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM?{executablePath:process.env.PLAYWRIGHT_CHROMIUM}:process.platform==='win32'?{channel:'msedge'}:{});try{const context=await browser.newContext(),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(()=>{if(top===window&&!localStorage.getItem('coderun'))localStorage.setItem('coderun',JSON.stringify({onboarded:true,goal:'free',freeMode:true,recall:false}));});await page.goto(url);await page.waitForFunction(()=>typeof VibeLab!=='undefined');await page.evaluate(async()=>{await navigator.serviceWorker.ready;S.vibeLab.cart={source:VibeLab.projects[0].source,missions:{quantity:{passed:true}}};save();});await page.reload();await page.waitForFunction(()=>!!navigator.serviceWorker.controller&&typeof VibeLab!=='undefined');await page.evaluate(async()=>{const c=await caches.open('coderun-data-v10-journey');await c.put('/data/vibe-lab.js',new Response('throw new Error("stale cached module was executed");',{headers:{'Content-Type':'text/javascript'}}));});legacy=false;await page.reload();await page.waitForFunction(()=>typeof VibeJourney!=='undefined'&&VibeLab.projects.length===30);assert.equal(await page.evaluate(()=>S.vibeLab.cart.missions.quantity.passed),true);assert.deepEqual(errors,[]);console.log('PASS old cached modules are bypassed and progress survives the update');
-await page.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();await r.update();});await page.waitForFunction(async()=>{const c=await caches.open('coderun-shell-v11-projects');const ready=await Promise.all(['vibe-lab','vibe-scenarios','vibe-challenges','vibe-projects','vibe-journey'].map(n=>c.match('/data/'+n+'.js?v=11')));return ready.every(Boolean)&&navigator.serviceWorker.controller?.scriptURL.endsWith('/sw.js');});await context.setOffline(true);await page.reload();await page.waitForFunction(()=>typeof VibeJourney!=='undefined');assert.equal(await page.evaluate(()=>S.vibeLab.cart.missions.quantity.passed),true);assert.deepEqual(errors,[]);console.log('PASS updated app reopens offline with versioned modules and saved progress');
-}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
+/* An old active worker and poisoned module cache, followed by a complete offline upgrade. */
+'use strict';
+const { chromium } = require('playwright');
+const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
+const root = path.resolve(__dirname, '..');
+let legacy = true;
+const server = http.createServer((req, res) => {
+  const url = new URL(req.url, 'http://localhost');
+  const file = path.resolve(root, '.' + (url.pathname === '/' ? '/index.html' : url.pathname));
+  if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) { res.writeHead(404); res.end(); return; }
+  let body = fs.readFileSync(file);
+  if (legacy && url.pathname === '/sw.js') body = body.toString()
+    .replaceAll('v12-service-path', 'v11-projects')
+    .replace(/"\/data\/(?:service-[^"]+|build\.js)[^"]*",?\s*/g, '')
+    .replaceAll('?v=12', '?v=11');
+  if (legacy && (url.pathname === '/' || url.pathname === '/index.html')) body = body.toString()
+    .replace(/<script src="data\/service-(?:path|export)\.js\?v=12"><\/script>\s*/g, '')
+    .replaceAll('.js?v=12', '.js?v=11');
+  const types = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.png': 'image/png' };
+  res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' }); res.end(body);
+});
+async function waitVersion(page, expected) {
+  await page.waitForFunction(expected => new Promise(async resolve => {
+    const registration = await navigator.serviceWorker.getRegistration(), worker = navigator.serviceWorker.controller;
+    if (!worker || registration?.active?.state !== 'activated' || registration.installing || registration.waiting) { resolve(false); return; }
+    const channel = new MessageChannel();
+    const timer = setTimeout(() => { channel.port1.close(); resolve(false); }, 500);
+    channel.port1.onmessage = e => { clearTimeout(timer); channel.port1.close(); resolve(e.data?.version === expected); };
+    worker.postMessage({ type: 'version' }, [channel.port2]);
+  }), expected);
+}
+(async () => {
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const url = 'http://127.0.0.1:' + server.address().port + '/';
+  const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM } : process.platform === 'win32' ? { channel: 'msedge' } : {});
+  try {
+    const context = await browser.newContext(), page = await context.newPage(), errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.addInitScript(() => { if (top === window && !localStorage.getItem('coderun')) localStorage.setItem('coderun', JSON.stringify({ onboarded: true, goal: 'free', freeMode: true, recall: false })); });
+    await page.goto(url); await page.waitForFunction(() => typeof VibeLab !== 'undefined');
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+      S.vibeLab.cart = { source: VibeLab.projects[0].source, missions: { quantity: { passed: true } } }; save();
+    });
+    await page.reload(); await waitVersion(page, 'v11-projects');
+    await page.evaluate(async () => {
+      const cache = await caches.open('coderun-data-v11-projects');
+      for (const name of ['/data/vibe-lab.js', '/data/vibe-lab.js?v=11']) await cache.put(name, new Response('throw new Error("stale cached module was executed");', { headers: { 'Content-Type': 'text/javascript' } }));
+    });
+    legacy = false;
+    await page.reload(); await page.waitForFunction(() => typeof ServicePath !== 'undefined' && VibeLab.projects.length === 30);
+    assert.equal(await page.evaluate(() => S.vibeLab.cart.missions.quantity.passed), true); assert.deepEqual(errors, []);
+    console.log('PASS old cached modules are bypassed and progress survives the update');
+    await page.evaluate(async () => { const registration = await navigator.serviceWorker.getRegistration(); await registration.update(); });
+    await waitVersion(page, 'v12-service-path');
+    await page.waitForFunction(async () => {
+      const cache = await caches.open('coderun-shell-v12-service-path');
+      const names = ['vibe-lab', 'vibe-scenarios', 'vibe-challenges', 'vibe-projects', 'vibe-journey', 'service-path', 'service-export', 'service-project', 'build'];
+      const found = await Promise.all(names.map(name => cache.match('/data/' + name + '.js?v=12')));
+      return found.every(Boolean) && !!(await cache.match('/index.html'));
+    });
+    await context.setOffline(true); await page.reload();
+    await page.waitForFunction(() => typeof ServicePath !== 'undefined');
+    assert.equal(await page.evaluate(() => S.vibeLab.cart.missions.quantity.passed), true);
+    await page.evaluate(() => ServicePath.open()); await page.waitForSelector('[data-service-day]');
+    assert.equal(await page.locator('[data-service-day]').count(), 18); assert.deepEqual(errors, []);
+    console.log('PASS activated upgrade reopens offline with saved progress and all service stages');
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => server.close());

@@ -31,7 +31,7 @@
  function route(){
   cancel();flush();selected=null;$('vibe-catalog').hidden=false;
   const stats=VibeJourney.stats(S,today());
-  const choices=[['projects','작은 완성 앱 다섯 개','가계부·습관·퀴즈·예약·게시판을 만들며 저장과 혼자 확장을 연습해요.'],['project','독서 목록 다시 다듬기','독서 목록의 코드를 수정하거나 내 앱 파일을 받아요.'],['build','서버 기능 직접 만들기','다음에는 주문·인증·작업 큐를 요구사항과 실제 검사로 구현해요.'],['git','변경을 기록하고 되돌리기','커밋·브랜치·충돌을 연습해 AI가 바꾼 코드도 관리해요.'],['diag','장애의 원인 좁히기','증상과 근거를 구분하고 먼저 확인할 원인을 찾아요.'],['sim','설계와 운영 판단하기','제약 안에서 선택하고 결과와 비용을 확인해요.']];
+  const choices=[['growth','예약 서비스, 입문부터 운영까지','같은 서비스를 18단계로 고쳐요. 권한·저장·성능·장애 대응을 이어서 연습해요.'],['projects','작은 완성 앱 다섯 개','가계부·습관·퀴즈·예약·게시판을 만들며 저장과 혼자 확장을 연습해요.'],['project','독서 목록 다시 다듬기','독서 목록의 코드를 수정하거나 내 앱 파일을 받아요.'],['build','서버 기능 직접 만들기','주문·인증·작업 큐를 요구사항과 실제 검사로 구현해요.'],['git','변경을 기록하고 되돌리기','커밋·브랜치·충돌을 연습해 AI가 바꾼 코드도 관리해요.'],['diag','장애의 원인 좁히기','증상과 근거를 구분하고 먼저 확인할 원인을 찾아요.'],['sim','설계와 운영 판단하기','제약 안에서 선택하고 결과와 비용을 확인해요.']];
   $('vibe-body').innerHTML='<div class="vibe-route"><span class="home-kicker">나의 성장 과정</span><h1>내 앱을 만든 다음에는</h1><p>독서 앱에서 배운 것을 다른 앱으로 넓혀 봐요. 그다음 서버 기능과 변경 이력, 장애 원인까지 이어가요.</p><div class="vibe-route-evidence"><span>따라 고치기 <b>'+stats.practice+'/12</b></span><span>앱 도움 없이 적용 <b>'+stats.independent+'/6</b></span><span>완성 프로젝트 <b>'+stats.collectionDone+'/'+stats.collectionTotal+'</b></span></div><div class="vibe-route-grid">'+choices.map(item=>'<button data-vibe-route="'+item[0]+'"><b>'+item[1]+'</b><span>'+item[2]+'</span><i>→</i></button>').join('')+'</div><p class="study-muted">이 기록은 앱 안에서 확인한 학습 기록이에요. 직무 등급은 실제 제품을 만들고 운영한 경험과 함께 판단해야 해요.</p></div>';
   $('vibe-body').scrollTop=0;
   $('vibe-body').querySelectorAll('[data-vibe-route]').forEach(button=>button.onclick=async()=>{
@@ -39,6 +39,7 @@
    if(key==='projects'){catalog();$('vibe-complete-projects').scrollIntoView({block:'start',behavior:'smooth'});return;}
    if(key==='project'){select('bookshelf',2);return;}
    close();
+   if(key==='growth'){ServicePath.open();return;}
    if(key==='build'){await openBuildLab();if(__got.build){const i=BUILD_PROJECTS.findIndex(p=>p.lv<=3);if(i>=0)blOpen(i);}}
    else ({git:openGitLab,diag:openDiags,sim:openSims})[key]();
   });
