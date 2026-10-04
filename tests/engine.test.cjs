@@ -237,7 +237,7 @@ const vm=require("vm");
 /* 빌드 랩 데이터는 셸이 아니라 청크에 있다 (data/build.js) */
 const BUILDJS = fs.readFileSync(path.join(__dirname,"..","data","build.js"),"utf8");
 /* 채점 엔진은 복사하지 않고 index.html 에서 그대로 꺼내 쓴다 — 복사본은 반드시 원본과 어긋난다 */
-const BLENGINE = (()=>{ const a=HTML.indexOf("const BL_HELP ="); const m="\n   +'</scr'+'ipt></body>';\n}"; const b=HTML.indexOf(m,a); return HTML.slice(a,b+m.length); })();
+const BLENGINE = (()=>{ const a=HTML.indexOf("const BL_HELP ="); const b=HTML.indexOf("let BL=null;",a); if(a<0||b<0)throw new Error("Build engine section not found"); return HTML.slice(a,b); })();
 const bsand={};
 new Function("ctx","with(ctx){ var __got={}; function __CR(k,v){ ctx.data=v; }\n"+BUILDJS+"\n"+BLENGINE+"\nctx.api={buildDoc}; }")(bsand);
 const BUILD_PROJECTS=bsand.data.projects, BUILD_SOL=bsand.data.sol;

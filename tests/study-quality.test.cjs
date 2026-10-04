@@ -1,0 +1,68 @@
+'use strict';
+const assert=require('node:assert/strict'),path=require('node:path');
+const {chromium}=require('playwright');
+const FILE=process.env.CR_URL||'file:///'+path.resolve(__dirname,'../index.html').replace(/\\/g,'/');
+let passed=0;function check(name,value){assert.ok(value,name);passed++;console.log('PASS '+name);}
+(async()=>{
+ const browser=await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM?{executablePath:process.env.PLAYWRIGHT_CHROMIUM}:{channel:'msedge'});
+ try{
+  const page=await browser.newPage({viewport:{width:390,height:844},timezoneId:'Asia/Seoul'}),errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>{if(top!==window)return;const Original=Date,now=Original.parse('2026-10-02T16:30:00Z');window.Date=class extends Original{constructor(...args){super(...(args.length?args:[now]));}static now(){return now;}};if(!localStorage.getItem('coderun'))localStorage.setItem('coderun',JSON.stringify({onboarded:true,freeMode:true,goal:'free',recall:false,learning:{experience:'new',minutes:10,configured:true}}));});
+  await page.goto(FILE);await page.waitForFunction(()=>typeof PracticeWorker!=='undefined'&&trackLoaded('python'));
+  check('한국 자정 뒤 학습 날짜가 오늘이다',await page.evaluate(()=>today()==='2026-10-03'));
+  check('복습 1일·3일·90일 간격과 주 시작이 정확하다',await page.evaluate(()=>srsAddDays(today(),1)==='2026-10-04'&&srsAddDays(today(),3)==='2026-10-06'&&srsAddDays(today(),90)==='2027-01-01'&&weekKey()==='2026-09-28'));
+  check('학습 그래프 마지막 칸은 오늘 기록이다',await page.evaluate(()=>{S.hist={[today()]:{q:3,ok:2}};const rows=recentHist(7);return rows.at(-1).d===today()&&rows.at(-1).q===3;}));
+  check('같은 문장도 다른 분야의 오답과 섞이지 않는다',await page.evaluate(()=>{S.wrongs=[];const q={t:'choice',q:'값?',o:['1','2'],a:0};recordWrong('python',q);recordWrong('javascript',q);run={lang:'python'};srsPromote(q);return S.wrongs.length===2&&S.wrongs[0].due==='2026-10-04'&&S.wrongs[1].due===today();}));
+  await page.locator('#study-search-toggle').click();await page.locator('#study-search-input').fill('함수');
+  check('레슨 찾기는 접힌 단원의 해당 내용까지 보여 준다',await page.evaluate(()=>{const sections=[...document.querySelectorAll('#course .unit-sec')].filter(s=>!s.hidden);return sections.length>0&&sections.every(s=>!s.querySelector('.path').hidden)&&$('study-search-status').textContent.includes('개 레슨');}));
+  await page.locator('#study-search-input').fill('없는검색어000');check('검색 결과가 없으면 이유와 다음 행동을 알려 준다',await page.locator('#study-search-status').innerText().then(t=>t.includes('검색어를 짧게')));await page.locator('#study-search-toggle').click();check('검색을 닫으면 평소 단원 목록으로 돌아온다',await page.evaluate(()=>$('study-course-search').hidden&&[...document.querySelectorAll('#course .unit-sec')].filter(s=>!s.hidden).length<=6));
+  await page.locator('#study-tools').click();await page.waitForSelector('.study-tool-grid');
+  check('도구 선택에 역할 등급 대신 구체적인 연습이 보인다',await page.locator('#profile-body').innerText().then(t=>t.includes('직접 만드는 프로젝트')&&!t.includes('Developer Passport')));
+  check('열린 대화상자와 배경의 접근성이 분리된다',await page.evaluate(()=>$('profile').getAttribute('aria-modal')==='true'&&document.querySelector('.study-shell').inert));
+  await page.evaluate(()=>$('study-tools-close').focus());await page.keyboard.press('Tab');
+  check('Tab이 대화상자 바깥으로 나가지 않는다',await page.evaluate(()=>$('profile').contains(document.activeElement)));
+  await page.keyboard.press('Escape');
+  check('Escape로 닫은 뒤 원래 버튼으로 돌아온다',await page.evaluate(()=>!$('profile').classList.contains('on')&&document.activeElement.id==='study-tools'&&!document.querySelector('.study-shell').inert));
+  async function fixture(q,count=1){await page.evaluate(({q,count})=>{S.recall=false;run={lang:'javascript',les:{title:'검증용 연습',xp:10,q:Array.from({length:count},()=>({...q}))},i:0,correct:0,total:count,hearts:5,id:'quality:fixture',color:'#32664b',free:true,studyStarted:Date.now(),studyAnswers:[]};openRun();},{q,count});}
+  const slow={t:'code',run:'js',k:'slow',q:'함수 구현',src:'function value(){return new Promise(r=>setTimeout(()=>r(7),750));}',tests:[{in:'value()',out:'7'}],ex:'7을 반환해요.'};
+  await fixture(slow);await page.locator('#check').click();await page.waitForTimeout(400);
+  check('360ms가 지나도 아직 끝나지 않은 코드에 오답을 매기지 않는다',await page.evaluate(()=>!run.answered));
+  check('검사할 코드를 실행 도중 바꾸지 못하게 한다',await page.evaluate(()=>$('livecode').readOnly));
+  await page.waitForSelector('.study-explanation.correct');
+  check('비동기 코드가 끝난 결과로 정확히 채점한다',await page.evaluate(()=>run.correct===1&&liveTest.gate));
+  const loop={...slow,k:'loop',src:'function value(){while(true){}}'};
+  await fixture(loop);await page.waitForTimeout(450);
+  check('시작 코드와 입력 중 코드를 자동 실행하지 않는다',await page.evaluate(()=>!run.answered));
+  await page.locator('#check').click();await page.waitForSelector('#study-retry',{timeout:9000});
+  check('개별 코드 문제의 무한 루프도 종료된다',await page.locator('.study-explanation').innerText().then(t=>t.includes('5초')));
+  await page.locator('#study-retry').click();await page.locator('#livecode').fill('function value(){return 7;}');await page.locator('#check').click();await page.waitForSelector('.study-explanation.correct');
+  check('오답 뒤 같은 문제의 코드를 고쳐 다시 검사한다',await page.evaluate(()=>run.correct===1&&run.studyAnswers[0].hinted&&run.studyAnswers[0].firstCorrect===false));
+  check('고친 뒤 맞힌 문제는 다음 날 복습하고 혼자 해결한 것으로 부풀리지 않는다',await page.evaluate(()=>S.wrongs.find(w=>w.q.k==='loop').due==='2026-10-04'&&S.learning.recent.at(-1).hinted===true));
+  await page.locator('#check').click();
+  check('레슨을 마친 사실과 독립 해결 기록을 구분한다',await page.evaluate(()=>S.done['quality:fixture']&&S.lessonChecks['quality:fixture'].independent===0));
+  await page.locator('.study-reflection summary').click();await page.locator('#study-note').fill('함수는 입력을 받아 결과를 반환한다.');await page.waitForTimeout(400);check('내 말로 정리한 문장을 학습 기록에 저장한다',await page.evaluate(()=>S.studyNotes['quality:fixture'].text==='함수는 입력을 받아 결과를 반환한다.'));
+  await page.locator('#study-finish-home').click();
+  const py={t:'py',k:'python',q:'반환하기',src:'def f():\n    return 1',tests:[{in:'f()',out:'1'}],ex:'1을 반환해요.'};
+  await page.evaluate(()=>{window.WorkerOriginal=Worker;window.Worker=function(){throw new Error('지원 안 됨');};});await fixture(py);const before=await page.evaluate(()=>S.qTotal);await page.locator('#check').click();await page.waitForFunction(()=>!$('check').disabled);
+  check('Python을 준비하지 못한 상황을 학습자의 오답으로 기록하지 않는다',await page.evaluate(n=>!run.answered&&S.qTotal===n&&$('check').textContent==='다시 검사하기',before));
+  await page.evaluate(()=>{window.Worker=window.WorkerOriginal;});
+  const simulation={t:'sim',k:'frames',q:'합을 장면으로 남기세요.',src:'RESULT=3;snap("합",RESULT);',tests:[{d:'합과 장면',js:'RESULT===3&&FRAMES.length===1'}],ex:'snap으로 실행 중인 값을 기록해요.'};await fixture(simulation);await page.locator('#check').click();await page.waitForSelector('.study-explanation.correct');check('코드 시뮬레이션은 결과와 장면을 함께 검사한다',await page.evaluate(()=>run.correct===1&&simFrames.length===1&&simFrames[0].value===3));
+  await fixture(slow);await page.locator('#check').click();await fixture({...slow,k:'next',src:'function value(){return 7;}'});await page.waitForTimeout(1100);
+  check('이전 문제의 늦은 결과가 새 문제를 채점하지 않는다',await page.evaluate(()=>!run.answered&&run.correct===0));
+  const choice={t:'choice',k:'time',q:'답을 고르세요.',o:['1','2'],a:0,ex:'1이에요.'};await fixture(choice,2);await page.evaluate(()=>{run.studyStarted=Date.now()-600001;});await page.locator('.opt[data-i="0"]').click();await page.locator('#check').click();
+  check('공부 시간이 지나면 답을 저장하고 쉬는 선택을 제공한다',await page.locator('#study-pause-save').count()===1);
+  await page.locator('#study-pause-save').click();
+  check('쉬어 가도 확인한 다음 문제부터 이어 풀 수 있다',await page.evaluate(()=>!$('lesson').classList.contains('on')&&S.studyResume.next===1));
+  check('오답이 많았던 완료 레슨을 이해한 레슨으로 넘기지 않는다',await page.evaluate(()=>{const u=COURSES.python.units[0],l=u.lessons[0],id=LearningPath.lessonId('python',u,l);S.studyResume=null;S.done={[id]:true};S.lessonChecks={[id]:{accuracy:20,independent:1,total:5}};const rec=LearningPath.recommendation(S,COURSES,{track:'python',today:today()});return rec.lesson.id===id&&rec.lesson.review===true;}));
+  await page.evaluate(async()=>{await ensureTrack('javascript');S.studyResume=null;S.studyDraft=null;curLang='javascript';curCat=catOf(curLang);renderCourse();const ui=COURSES.javascript.units.findIndex(u=>/첫걸음/.test(u.title)),li=COURSES.javascript.units[ui].lessons.findIndex(l=>l.q.some(q=>q.t==='code'));startLesson('javascript',ui,li);});
+  if(await page.locator('.theory').count())await page.locator('#check').click();
+  const draft='function greet(name) {\n  return "계속 고치는 중: " + name;\n}';await page.locator('#livecode').fill(draft);await page.locator('#quit').click();await page.locator('#confirm-yes').click();await page.reload();await page.waitForFunction(()=>trackLoaded(curLang));
+  check('새로고침해도 공부하던 분야가 유지된다',await page.evaluate(()=>curLang==='javascript'&&curCat===catOf(curLang)));
+  await page.locator('#study-new-lesson').count().then(async count=>{await page.locator(count?'#study-new-lesson':'#hero-cta').click();});
+  check('첫 문제에서 아직 검사하지 않은 코드도 복원한다',await page.evaluate(value=>run.i===0&&$('livecode').value===value,draft));
+  check('쉬었다 이어 쓰는 것을 힌트 사용으로 잘못 기록하지 않는다',await page.evaluate(()=>run.studyHinted===false));
+  check('브라우저 실행 오류가 없다',errors.length===0);
+  console.log('\n'+passed+' quality checks passed');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

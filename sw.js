@@ -1,14 +1,18 @@
 /* CodeRun service worker
    - 앱 셸(index.html 등): network-first — 배포하면 바로 갱신된다
-   - /data/*.js 청크: cache-first — 문항 데이터는 무거우므로 한 번 받으면 다시 받지 않는다
+   - /data/*.js 청크: 캐시 우선·백그라운드 갱신 — 처음 오프라인에서도 미리 받은 앱 코드를 읽는다
    - /api/* 와 교차 출처(Monaco/Pyodide CDN)는 건드리지 않는다 */
-const VERSION = "v3";
+const VERSION = "v10-journey";
 const SHELL_CACHE = "coderun-shell-" + VERSION;
 const DATA_CACHE  = "coderun-data-" + VERSION;
 const KEEP = [SHELL_CACHE, DATA_CACHE];
 
 const SHELL = [
+  "/data/vibe-scenarios.js?v=10", "/data/vibe-challenges.js?v=10", "/data/vibe-journey.js?v=10", "/data/vibe-lab.js?v=10",
   "/", "/index.html", "/manifest.webmanifest",
+  "/data/study-design.css", "/data/study-ui.css",
+  "/data/coderun-design.css", "/data/vibe-challenges.js", "/data/vibe-journey.js", "/data/vibe-lab.css", "/data/vibe-scenarios.js", "/data/vibe-lab.js",
+  "/data/learning-path.js", "/data/study-ui.js", "/data/build-worker.js", "/data/practice-worker.js", "/data/sql-practice.js", "/data/study-quality.js", "/data/dom-practice.js", "/data/code-literacy.js", "/vendor/acorn.js",
   "/icons/icon-192.png", "/icons/icon-512.png"
 ];
 
@@ -54,7 +58,9 @@ self.addEventListener("fetch", (e) => {
   if (isData(url.pathname)) {
     e.respondWith(
       caches.open(DATA_CACHE).then((c) =>
-        c.match(req).then((hit) => {
+        c.match(req)
+          .then((hit) => hit || caches.open(SHELL_CACHE).then((shell) => shell.match(req)))
+          .then((hit) => {
           const net = fetch(req).then((res) => {
             if (res && res.ok) c.put(req, res.clone()).catch(() => {});
             return res;

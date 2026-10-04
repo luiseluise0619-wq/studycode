@@ -1,18 +1,37 @@
 {
-  "name": "코드런 — 개발자 성장 시뮬레이터",
+  "name": "코드런 — 한 단계씩 배우는 개발 공부",
   "short_name": "코드런",
-  "description": "주니어를 시니어로 훈련시키는 개발자 성장 시뮬레이터 — 실무 판단·직접 코딩·SQL·Python 실행",
+  "description": "처음 쓰는 코드부터 실무 설계까지. 쉬운 설명, 직접 코딩, 맞춤 학습과 복습으로 배우세요.",
   "lang": "ko",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0e141c",
-  "theme_color": "#0e141c",
-  "categories": ["education", "developer", "productivity"],
+  "background_color": "#f6f7f2",
+  "theme_color": "#32664b",
+  "categories": [
+    "education",
+    "developer",
+    "productivity"
+  ],
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

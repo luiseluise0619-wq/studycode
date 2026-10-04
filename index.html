@@ -3,9 +3,9 @@
 <meta charset="utf-8" />
 <title>코드런 · CodeRun</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="description" content="입문에서 시니어까지, 하나의 프로그램. 단계별 마일스톤(지식·직접 코딩·실무 판단·프로젝트)을 실제로 해내며 레벨업. SQL·Python·JS 브라우저 실행, 장애·설계 시뮬레이션." />
+<meta name="description" content="처음 쓰는 코드부터 실무 설계까지. 쉬운 설명과 직접 코딩, 맞춤 학습 계획과 복습으로 한 단계씩 배우는 코드런." />
 <link rel="manifest" href="/manifest.webmanifest" />
-<meta name="theme-color" content="#0e141c" id="theme-color-meta" />
+<meta name="theme-color" content="#f6f7f3" id="theme-color-meta" />
 <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 <link rel="icon" href="/icons/icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -1383,6 +1383,10 @@
   .opt{font-size:17px}
   .q-title{letter-spacing:-.022em}
 </style>
+<link rel="stylesheet" href="data/study-design.css">
+<link rel="stylesheet" href="data/study-ui.css">
+<link rel="stylesheet" href="data/vibe-lab.css">
+<link rel="stylesheet" href="data/coderun-design.css">
 
 <!-- ================= HOME ================= -->
 <div class="app" id="home">
@@ -1505,7 +1509,7 @@ const COURSES = __expandCourses({"sysd":{"name":"시스템 설계","color":"#2f6
 
 /* ================= 상태 ================= */
 const MAX_HEARTS=5;
-const DEF={xp:0,doneV:0,recall:true,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,dayCount:0,dayDate:null,dailyTarget:10,proj:{},introSeen:{},git:{done:{}},build:{},trk:{},ax:{},axj:{},skillsLegacy:null,hist:{},ach:{},miss:null,qTotal:0,okTotal:0,lvN:{},lvOk:{},catN:{},catOk:{},trkN:{},skills:{},sims:{},diags:{},implByK:{},ai:{provider:"proxy",model:"gemini-2.0-flash",key:""}};
+const DEF={xp:0,doneV:0,recall:true,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,learning:null,studyResume:null,dayCount:0,dayDate:null,dailyTarget:10,proj:{},introSeen:{},git:{done:{}},build:{},trk:{},ax:{},axj:{},skillsLegacy:null,hist:{},ach:{},miss:null,qTotal:0,okTotal:0,lvN:{},lvOk:{},catN:{},catOk:{},trkN:{},skills:{},sims:{},diags:{},implByK:{},ai:{provider:"proxy",model:"gemini-2.0-flash",key:""}};
 let S=load();
 function load(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("coderun")||"{}"))}catch(e){return Object.assign({},DEF)}}
 /* 저장은 실패할 수 있다 — 사파리 사생활 모드는 setItem 자체를 막고, 용량이 차면 던진다.
@@ -1520,10 +1524,11 @@ function save(){
     }
   }
 }
-function today(){return new Date().toISOString().slice(0,10)}
+function localDay(d){ d=d||new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function today(){return localDay(new Date())}
 function refillHearts(){ if(S.heartsDay!==today()){S.hearts=MAX_HEARTS;S.heartsDay=today();save();} }
 
-let curLang="python", run=null;
+let curLang=(S.studyTrack&&COURSES[S.studyTrack])?S.studyTrack:"python", run=null;
 let TRACK_INTRO={};   /* data/intro.js 에서 채운다 */
 const CATS=[
  {id:"lang",name:"언어",tracks:["python","c","cpp","java","go","rust","php","arduino"]},
@@ -1534,7 +1539,7 @@ const CATS=[
  {id:"tool",name:"도구·인프라",tracks:["git","devops","linux","test","cloud"]},
  {id:"etc",name:"실습·기타",tracks:["code","mobile","fp"]}
 ];
-let curCat="lang";
+let curCat=catOf(curLang);
 
 /* ================= 렌더: 홈 ================= */
 const $=id=>document.getElementById(id);
@@ -1809,7 +1814,7 @@ function mountMonaco(taId, lang){
       var host=document.createElement("div"); host.className="mon-host";
       ta.style.display="none"; ta.__mon=true;
       ta.parentNode.insertBefore(host, ta);
-      var ed=monaco.editor.create(host,{value:ta.value,language:lang,theme:monTheme(),
+      var ed=monaco.editor.create(host,{value:ta.value,language:lang,theme:monTheme(),readOnly:ta.readOnly,
         minimap:{enabled:false},fontSize:13,lineNumbers:"on",scrollBeyondLastLine:false,automaticLayout:true,
         tabSize:2,insertSpaces:true,wordWrap:"on",padding:{top:8,bottom:8},fontFamily:"ui-monospace,SFMono-Regular,Menlo,monospace",
         renderLineHighlight:"line",smoothScrolling:true,cursorBlinking:"smooth"});
@@ -3023,9 +3028,9 @@ function logAnswer(ok,q){
   save();
 }
 function accPct(ok,n){ return n?Math.round(ok/n*100):null; }
-function recentHist(days){ const out=[]; const base=new Date(today()+"T00:00:00");
-  for(let i=days-1;i>=0;i--){ const d=new Date(base); d.setDate(d.getDate()-i);
-    const k=d.toISOString().slice(0,10); const v=(S.hist&&S.hist[k])||null;
+function recentHist(days){ const out=[];
+  for(let i=days-1;i>=0;i--){
+    const k=srsAddDays(today(),-i); const v=(S.hist&&S.hist[k])||null;
     out.push({d:k, q:v?v.q:0, ok:v?v.ok:0}); }
   return out; }
 
@@ -3119,9 +3124,9 @@ function achvHtml(){
 }
 
 /* ===== 일일 · 주간 미션 (PRD §37 / §14) ===== */
-function weekKey(){ const d=new Date(today()+"T00:00:00");
-  const day=(d.getDay()+6)%7;                 // 월요일 시작
-  d.setDate(d.getDate()-day); return d.toISOString().slice(0,10); }
+function weekKey(){ const d=new Date(today()+"T00:00:00Z");
+  const day=(d.getUTCDay()+6)%7;                 // 월요일 시작
+  return srsAddDays(today(),-day); }
 function snapStats(){ const s=achStats(); return {les:s.les, impl:s.impl, dbg:s.dbg, sims:s.sims+s.diags, xp:s.xp, q:s.q}; }
 function ensureWeek(){ const wk=weekKey();
   if(!S.miss||S.miss.wk!==wk){ S.miss={wk:wk, base:snapStats(), paid:{}}; save(); }
@@ -3404,7 +3409,7 @@ function hasJong(s){ s=String(s==null?"":s); if(!s) return false;
 }
 function jos(s,withJ,noJ){ return String(s==null?"":s)+(hasJong(s)?withJ:noJ); }
 /* ===== 난이도 5단계 (PRD §10) ===== */
-const QLV=[null,{n:"입문",e:""},{n:"기초",e:""},{n:"응용",e:""},{n:"실무",e:""},{n:"시니어",e:""}];
+const QLV=[null,{n:"입문",e:""},{n:"기초",e:""},{n:"응용",e:""},{n:"실무",e:""},{n:"심화",e:""}];
 function qLevel(q,ui,utotal){
   /* 저자가 적어 둔 난이도를 먼저 쓴다. 필드 이름이 d 와 lv 두 가지로 갈려 있어
      둘 다 받는다 — 한쪽만 보면 668문항의 난이도가 조용히 무시된다. */
@@ -3598,8 +3603,9 @@ function renderCourse(){
 
   /* 어느 유닛이 '지금 할 곳' 인가 — 완료되지 않은 첫 유닛 */
   let curUnit=-1;
+  if(window.LearningPath){ const pick=window.LearningPath.recommendation(S,COURSES,{track:curLang,today:today()}).lesson; if(pick) curUnit=pick.ui; }
   {
-    let allDone=true;
+    let allDone=curUnit<0;
     for(let i=0;i<c.units.length && curUnit<0;i++){
       const us=c.units[i];
       for(let j=0;j<us.lessons.length;j++){
@@ -3741,23 +3747,23 @@ function openRun(){
 function wKey(q){ return (q.q||"")+"|"+(q.code||"")+"|"+(q.o?q.o.join("~"):""); }
 /* ── 간격 반복 (Leitner SRS): 맞히면 다음 상자로 승급(복습 간격 늘어남), 틀리면 리셋 ── */
 const SRS_DAYS=[1,3,7,16,35,90];
-function srsAddDays(d,n){ try{ const t=new Date((d||today())+"T00:00:00"); t.setDate(t.getDate()+n); return t.toISOString().slice(0,10); }catch(e){ return today(); } }
+function srsAddDays(d,n){ try{ const t=new Date((d||today())+"T00:00:00Z"); t.setUTCDate(t.getUTCDate()+n); return t.toISOString().slice(0,10); }catch(e){ return today(); } }
 function srsDue(w,t){ return !w.due || w.due<=(t||today()); }
 function dueCount(){ if(!Array.isArray(S.wrongs))return 0; const t=today(); return S.wrongs.filter(w=>srsDue(w,t)).length; }
 function recordWrong(lang,q){
   if(!Array.isArray(S.wrongs)) S.wrongs=[];
   const k=wKey(q);
-  const ex=S.wrongs.find(w=>wKey(w.q)===k);
+  const ex=S.wrongs.find(w=>w.lang===lang&&wKey(w.q)===k);
   if(ex){ ex.box=0; ex.due=today(); }          // 다시 틀림 → 상자 0으로 리셋
   else { S.wrongs.push({lang,q,box:0,due:today()}); if(S.wrongs.length>200) S.wrongs.shift(); }
   save(); paintReview();
 }
 function srsPromote(q){                         // 복습에서 맞힘 → 다음 상자로 승급
   if(!Array.isArray(S.wrongs)) return;
-  const k=wKey(q); const w=S.wrongs.find(x=>wKey(x.q)===k); if(!w) return;
+  const k=wKey(q), lang=q._studyTrack||(run&&run.lang); const w=S.wrongs.find(x=>(!lang||x.lang===lang)&&wKey(x.q)===k); if(!w) return;
   w.box=(w.box||0)+1;
   histToday().rev++;
-  if(w.box>=SRS_DAYS.length){ S.wrongs=S.wrongs.filter(x=>wKey(x.q)!==k); }  // 졸업 → 노트에서 제거
+  if(w.box>SRS_DAYS.length){ S.wrongs=S.wrongs.filter(x=>x!==w); }  // 마지막 복습 간격까지 거친 뒤 졸업
   else { w.due=srsAddDays(today(), SRS_DAYS[w.box-1]); }
   save(); paintReview();
 }
@@ -3891,7 +3897,7 @@ function showQ(){
   const chk=$("check"); chk.className="btn"; chk.textContent="확인"; chk.disabled=true;
   chk.onclick=onCheck;
   afterRender();
-  const CATMAP={debug:["디버깅","#e0533d"],review:["코드리뷰","#8b5cf6"],perf:["성능","#dd8a1e"],design:["설계","#3b7dd8"],ops:["실무 판단","#1aa38a"],interview:["면접","#d6336c"],internals:["내부동작","#0ea5a5"],logs:["로그 분석","#8b5cf6"],security:["보안","#d6336c"],predict:["출력 예측","#7c5cd6"]};
+  const CATMAP={debug:["디버깅","#e0533d"],review:["코드리뷰","#8b5cf6"],perf:["성능","#dd8a1e"],design:["설계","#3b7dd8"],ops:["실무 판단","#1aa38a"],interview:["면접","#d6336c"],internals:["동작 이해","#0ea5a5"],logs:["로그 분석","#8b5cf6"],security:["보안","#d6336c"],predict:["출력 예측","#7c5cd6"]};
   const cb=q.cat&&CATMAP[q.cat]?`<span class="catbadge" style="background:${CATMAP[q.cat][1]}">${CATMAP[q.cat][0]}</span> `:"";
   const _ut=(run.lang&&COURSES[run.lang])?COURSES[run.lang].units.length:0;
   const _ql=qLevel(q, run.ui, _ut);
@@ -4751,13 +4757,15 @@ function reactTestDoc(userJs, tests, libSrc){
 }
 function renderReactTest(q, code){
   var f=$("liveview"); if(!f) return; liveTest=null;
+  var studyToken=q._studyDOM;
   Promise.all([ensureSucrase(), ensureReactSrc()]).then(function(r){
     var lib=r[1];
     var t=tsToJs(code, true);
     if(t.error){ liveTest={pass:0,total:(q.tests||[]).length,impl:0,gate:false,
       detail:[{d:"문법 오류: "+t.error, ok:false}]};
-      f.srcdoc='<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#ff6b6b">[문법 오류] '+escHtml(t.error)+'</body>'; return; }
-    f.srcdoc=reactTestDoc(t.code, q.tests, lib);
+      var syntaxResult={__cr:"test",__studyToken:studyToken,pass:0,total:(q.tests||[]).length,gate:false,error:"문법 오류: "+t.error};
+      f.srcdoc='<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#ff6b6b">[문법 오류] '+escHtml(t.error)+'<scr'+'ipt>parent.postMessage('+JSON.stringify(syntaxResult).replace(/</g,"\\u003c")+',"*");</scr'+'ipt></body>'; return; }
+    f.srcdoc=reactTestDoc(t.code, q.tests, lib, studyToken);
   }).catch(function(){
     f.srcdoc='<!doctype html><meta charset=utf-8><body style="margin:0;padding:12px;font-family:ui-monospace,monospace;font-size:13px;background:#0f1117;color:#ffc773">React 실행 엔진을 불러오지 못했어요.</body>';
   });
@@ -4792,7 +4800,7 @@ let htmlLoaded=false;
 function renderHtmlTest(q, code){ var f=$("liveview"); if(!f) return;
   liveTest=null; htmlLoaded=false;
   f.onload=function(){ htmlLoaded=true; };
-  f.srcdoc=htmlTestDoc(code, q.tests); }
+  f.srcdoc=htmlTestDoc(code, q.tests, q._studyDOM); }
 function setupHtml(q){ var ta=$("livecode"); if(!ta) return; ta.value=q.src||"";
   var go=function(){ renderHtmlTest(q, ta.value); }; var tmr;
   ta.oninput=function(){ clearTimeout(tmr); tmr=setTimeout(go,300); }; go(); }
@@ -5251,7 +5259,7 @@ function endLesson(passed){
     // streak
     const t=today();
     if(S.lastDay!==t){
-      const y=new Date(Date.now()-86400000).toISOString().slice(0,10);
+      const y=srsAddDays(t,-1);
       S.streak = (S.lastDay===y)? S.streak+1 : 1;
       S.lastDay=t;
     }
@@ -5283,7 +5291,7 @@ function endLesson(passed){
 }
 
 /* ================= 컨트롤 ================= */
-$("quit").onclick=()=>{ confirmModal("레슨을 나갈까요? 진행 중인 문제는 저장되지 않아요.", ()=>{ disposeMon(); $("lesson").classList.remove("on"); document.body.style.overflow=""; S.hearts=run.hearts; save(); renderCourse(); }, {yes:"나가기"}); };
+$("quit").onclick=()=>{ confirmModal("잠시 멈출까요? 확인한 문제까지 저장해 두고 다음에 이어서 풀 수 있어요.", ()=>{ disposeMon(); $("lesson").classList.remove("on"); document.body.style.overflow=""; S.hearts=run.hearts; save(); renderCourse(); }, {yes:"나가기"}); };
 $("reset-link").onclick=e=>{ e.preventDefault(); confirmModal("모든 진행상황(XP·연속학습·완료 레슨)을 초기화할까요? 되돌릴 수 없어요.", ()=>{ S=Object.assign({},DEF); save(); location.reload(); }, {yes:"초기화", danger:true}); };
 $("backup-link").onclick=e=>{ e.preventDefault(); backupState(); };
 $("restore-link").onclick=e=>{ e.preventDefault(); $("restore-file").click(); };
@@ -5856,7 +5864,7 @@ function buildPlan(){
   return {weeks,tracks,weak,perWeek,remain:remain.length,mods};
 }
 function pathPct(){ const t=planTracks(); let d=0,tot=0; t.forEach(k=>{const p=trackProg(k);d+=p.d;tot+=p.t;}); return tot?Math.round(d/tot*100):0; }
-function addDays(iso,n){ const dt=new Date(iso+"T00:00:00"); dt.setDate(dt.getDate()+n); return dt.toISOString().slice(0,10); }
+function addDays(iso,n){ return srsAddDays(iso,n); }
 function openCurriculum(){
   if(!S.planStart){ S.planStart=today(); save(); }
   const o=$("curr"), body=$("curr-body"); const plan=buildPlan();
@@ -6512,8 +6520,8 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
    ["","업적 · 활동 랭크",`${Object.keys(S.ach||{}).length}/${ACHV.length} 획득 · ${rankOf(S.xp||0).name}`,"ach"],
    ["","포트폴리오","한 것만 모아 마크다운으로 — 이력서에 붙이기","pf"]]]]
   .map(g=>`<p class="sub" style="margin:14px 0 5px;font-weight:600">${g[0]}</p>`+hubHtml(g[1])).join("");
- body.innerHTML=`<div class="ovh">Developer Passport</div><h2>${r.name}</h2>
-  <div class="rolebox"><div class="rolebig">종합 역량 ${r.avg}<span style="font-weight:700;opacity:.8">/100</span></div><div class="rolesub">${nx?`다음 <b>${nx.name}</b>까지 +${nx.need}`:"최고 등급 도달"}</div></div>
+ body.innerHTML=`<div class="ovh">학습 기록 상세</div><h2>풀이 기록으로 본 현재 경향</h2>
+  <div class="rolebox"><div class="rolebig">학습 점수 ${r.avg}<span style="font-weight:700;opacity:.8">/100</span></div><div class="rolesub">앱 안의 풀이 기록을 요약한 값이에요. 직무 수준이나 실무 경험을 인증하는 점수는 아니에요.</div></div>
   <div class="ovh" style="margin-top:16px">지금 이 순서로</div>${steps}
   <div class="ovh" style="margin-top:16px">역량 분석</div>${anal}
   <p class="sub" style="margin:12px 0 6px">완료 레슨 ${done} · ${fmt(S.xp)} XP · 연속 ${S.streak}일 · 오답 ${(S.wrongs||[]).length}</p>
@@ -6603,3 +6611,17 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEvent
   window.addEventListener("unhandledrejection", function(e){ report(e && e.reason); });
 })();
 </script>
+
+<script src="data/learning-path.js"></script>
+<script src="data/study-ui.js"></script>
+<script src="data/build-worker.js"></script>
+<script src="data/practice-worker.js"></script>
+<script src="data/sql-practice.js"></script>
+<script src="data/study-quality.js"></script>
+<script src="vendor/acorn.js"></script>
+<script src="data/dom-practice.js"></script>
+<script src="data/code-literacy.js"></script>
+<script src="data/vibe-scenarios.js?v=10"></script>
+<script src="data/vibe-challenges.js?v=10"></script>
+<script src="data/vibe-journey.js?v=10"></script>
+<script src="data/vibe-lab.js?v=10"></script>

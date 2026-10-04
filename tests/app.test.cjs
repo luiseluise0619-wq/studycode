@@ -2,6 +2,7 @@
    PLAYWRIGHT 가 없으면 조용히 건너뛴다(로컬에서 엔진 테스트만 돌릴 수 있게). */
 const path=require("path");
 const fs=require("fs");
+const vm=require("vm");
 let chromium;
 try { chromium=require("playwright").chromium; }
 catch(e){ console.log("playwright 미설치 — 브라우저 테스트를 건너뜁니다."); process.exit(0); }
@@ -15,6 +16,51 @@ function check(name, cond, detail){
   if(TRACE) console.log((cond?"  ok  ":"  NO  ")+name);
   if(cond) pass++;
   else { fail++; console.log("FAIL  "+name+(detail?("\n      "+JSON.stringify(detail)):"")); }
+}
+
+/* 학습용 시작 코드에는 의도적인 무한 루프도 있다(chunk(..., 0) 등).
+   메인 Node에서 제한 없이 실행하면 회귀 검사 자체가 메모리를 소진한다.
+   동기 실행에 제한을 두고, 검사가 만든 타이머도 문항마다 정리한다. */
+function runBounded(source, values, timeout){
+  const timers=new Set(), intervals=new Set();
+  const sandbox=Object.assign({console, performance, URL, URLSearchParams,
+    AbortController, TextEncoder, TextDecoder, Buffer, structuredClone,
+    queueMicrotask, fetch,
+    setTimeout:(fn, ms, ...args)=>{ const id=setTimeout(fn, ms, ...args); timers.add(id); return id; },
+    clearTimeout:id=>{ timers.delete(id); clearTimeout(id); },
+    setInterval:(fn, ms, ...args)=>{ const id=setInterval(fn, ms, ...args); intervals.add(id); return id; },
+    clearInterval:id=>{ intervals.delete(id); clearInterval(id); }
+  }, values||{});
+  try { return vm.runInNewContext(source, sandbox, {timeout:timeout||1000}); }
+  finally { timers.forEach(clearTimeout); intervals.forEach(clearInterval); }
+}
+
+function runBrowserLoopFixture(executablePath){
+  const cp=require('child_process');
+  return new Promise(resolve=>{
+    const child=cp.spawn(process.execPath,[path.join(__dirname,'browser-loop.fixture.cjs')],{
+      env:Object.assign({},process.env,{PLAYWRIGHT_CHROMIUM:executablePath}),
+      detached:process.platform!=="win32",windowsHide:true,stdio:["ignore","pipe","pipe"]
+    });
+    let out="", err="", done=false;
+    const stop=()=>{
+      if(process.platform==="win32"){
+        try{cp.execFileSync("taskkill",["/PID",String(child.pid),"/T","/F"],{windowsHide:true,stdio:"ignore"});}catch(e){}
+      }else{
+        try{process.kill(-child.pid,"SIGKILL");}catch(e){}
+      }
+    };
+    const finish=(result,terminate=true)=>{if(done)return;done=true;clearTimeout(timer);if(terminate)stop();resolve(result);};
+    const timer=setTimeout(()=>finish({timeout:true}),60000);
+    child.stdout.on("data",chunk=>{
+      out+=chunk;
+      const line=out.split(/\r?\n/).slice(0,-1).find(s=>s.indexOf("LOOP_RESULT ")===0);
+      if(line){try{finish(JSON.parse(line.slice(12)));}catch(e){finish({err:"fixture result is not JSON"});}}
+    });
+    child.stderr.on("data",chunk=>{err+=chunk;});
+    child.on("error",e=>finish({err:e.message}));
+    child.on("exit",code=>{if(!done)finish({err:"fixture exited "+code,detail:err.slice(-1000)},false);});
+  });
 }
 
 (async()=>{
@@ -291,7 +337,7 @@ function check(name, cond, detail){
       else jsCode.push(row);
     })));
   });
-  const freePass=[];
+  const freePass=[], stalled=[];
   const realLog=console.log, realErr=console.error, realWarn=console.warn, hush=()=>{};
   /* 시작 코드는 대개 undefined 를 돌려주므로, 테스트 식이 인자로 만든 프라미스가
      아무에게도 잡히지 않은 채 남을 수 있다 (예: withTimeout(Promise.reject(...), 50)).
@@ -304,20 +350,29 @@ function check(name, cond, detail){
     let rows;
     console.log=hush; console.error=hush; console.warn=hush;
     try{
-      rows=new Function("__ALL", x.src+"\n"+
+      const body=x.src+"\n"+
         'const __eq=(a,b)=>{try{return JSON.stringify(a)===JSON.stringify(b);}catch(e){return String(a)===String(b);}};'+
         'const __no=()=>{};'+
         'const __sync=(v)=>{ if(v&&typeof v.then==="function"){ v.then(__no,__no); return Symbol("pending"); } return v; };'+
         'return __ALL.map(t=>{try{'+
         '  const got=__sync(eval(t.in)), exp=__sync(eval("("+t.out+")"));'+
         '  return typeof got==="symbol"||typeof exp==="symbol" ? false : __eq(got,exp);'+
-        '}catch(e){return false;}});')(x.all);
-    }catch(e){ rows=null; }   /* 시작 코드가 문법 오류면 통과할 리 없다 */
+        '}catch(e){return false;}});';
+      rows=runBounded('new Function("__ALL",'+JSON.stringify(body)+')(__ALL)', {__ALL:x.all});
+    }catch(e){
+      rows=null;  /* 문법 오류나 멈추는 시작 코드는 정답이 아니다 */
+      if(e.code==="ERR_SCRIPT_EXECUTION_TIMEOUT") stalled.push(x.t+" / "+x.l+" · "+x.k);
+    }
     finally{ console.log=realLog; console.error=realErr; console.warn=realWarn; }
     if(rows&&rows.length&&rows.every(Boolean)) freePass.push(x.t+" / "+x.u+" / "+x.l+" · "+x.k);
   });
   check("실행형(js) 시작 코드는 통과하지 않는다", freePass.length===0,
     {검사:jsCode.length, 시간으로가르는문항은따로검사:timed.length, 삼킨거부:swallowed, 통과해버림:freePass.slice(0,5)});
+  if(TRACE && stalled.length) console.log("  시작 코드 실행 제한: "+stalled.join(" · "));
+  let guardWorks=false;
+  try { runBounded('while(true){}', null, 25); }
+  catch(e){ guardWorks=e.code==="ERR_SCRIPT_EXECUTION_TIMEOUT"; }
+  check("의도적으로 멈추는 시작 코드가 회귀 검사를 중단시키지 않는다", guardWorks);
 
   /* 시간으로 가르는 문항은 위 검사로 판정할 수 없으니 여기서 따로 본다.
      느린 시작 코드가 예산을 얼마나 넘는지가 이 문항들의 생명이다 — 여유가 1.3배까지
@@ -332,7 +387,8 @@ function check(name, cond, detail){
     let ms=-1;
     console.log=hush; console.error=hush; console.warn=hush;
     try{
-      ms=new Function("__IN", x.src+"\nconst __t=Date.now(); eval(__IN); return Date.now()-__t;")(naked);
+      const body=x.src+"\nconst __t=Date.now(); eval(__IN); return Date.now()-__t;";
+      ms=runBounded('new Function("__IN",'+JSON.stringify(body)+')(__IN)', {__IN:naked}, 30000);
     }catch(e){ ms=-1; }
     finally{ console.log=realLog; console.error=realErr; console.warn=realWarn; }
     if(ms<0) return;
@@ -428,7 +484,7 @@ function check(name, cond, detail){
      code 트랙은 예외다 — 트랙 전체가 실습이라 '직접 구현' 이 중간에 있는 것이 맞다. */
   const TAILU=/시뮬레이션|실행형 실전|실행형 ·|설계 실전|설계 · 직접|직접 구현 —|직접 코딩 —|직접 SQL —|직접 만들며|직접 실행해/;
   const tailBad=[];
-  for(const k of Object.keys(await p.evaluate(()=>COURSES))){
+  for(const k of await p.evaluate(()=>Object.keys(COURSES))){
     if(k==="code") continue;
     const t=await p.evaluate(async k2=>{ await window.ensureTrack(k2); return COURSES[k2].units.map(u=>u.title); }, k);
     const idx=t.map((x,i)=>TAILU.test(x)?i:-1).filter(i=>i>=0);
@@ -1180,19 +1236,20 @@ function check(name, cond, detail){
     wraps:document.querySelectorAll(".node-wrap").length }));
   check("학습 경로에 노드가 렌더된다", rendered.nodes>0 && rendered.wraps>0, rendered);
 
-  // 단계는 목록의 한 줄이다(60차에 지그재그에서 바꿨다) — 번호와 제목이 같은 줄에
-  // 나란히 서야 하고, 번호가 비어 있으면 안 된다. 예전에 이모지를 걷어내면서
-  // 안이 빈 파란 덩어리만 남은 적이 있어 그 회귀를 함께 막는다.
+  // 번호와 제목은 하나의 클릭 가능한 레슨 행 안에 나란히 놓인다.
+  // 제목이 버튼 바깥에 남거나 번호가 비어 있는 회귀를 함께 확인한다.
   const rows=await p.evaluate(()=>[...document.querySelectorAll(".node-wrap")]
     .filter(w=>w.offsetParent!==null).slice(0,8).map(w=>{   /* 접힌 유닛은 재도 0 이 나온다 */
-    const n=w.querySelector(".node"), l=w.querySelector(".node-label");
+    const button=w.querySelector(".node"), n=w.querySelector(".study-lesson-number"),
+      l=w.querySelector(".study-lesson-label");
     if(!n||!l) return null;
     const a=n.getBoundingClientRect(), c=l.getBoundingClientRect();
     return {dy:Math.round((a.y+a.height/2)-(c.y+c.height/2)),
-            ahead:Math.round(c.x-a.x), mark:(n.textContent||"").trim()};
+            ahead:Math.round(c.x-a.x), insideButton:!!button&&button.contains(n)&&button.contains(l),
+            mark:(n.textContent||"").trim()};
   }).filter(Boolean));
   check("단계 번호와 제목이 한 줄에 나란히 선다",
-        rows.length>0 && rows.every(r=>Math.abs(r.dy)<=2 && r.ahead>0), rows.slice(0,4));
+        rows.length>0 && rows.every(r=>Math.abs(r.dy)<=2 && r.ahead>0 && r.insideButton), rows.slice(0,4));
   check("단계 배지가 비어 있지 않다", rows.every(r=>r.mark.length>0),
         rows.map(r=>r.mark).slice(0,6));
 
@@ -1204,7 +1261,8 @@ function check(name, cond, detail){
   const press=[];
   const visN=await p.evaluate(`${VIS}.length`);
   for(const idx of [0,1,2,3].filter(i=>i<visN)){
-    await p.evaluate(`${VIS}[${idx}].scrollIntoView({block:"center"})`);
+    // 부드러운 스크롤 도중의 좌표로 누르면 down/up의 대상이 달라진다.
+    await p.evaluate(`${VIS}[${idx}].scrollIntoView({block:"center",behavior:"instant"})`);
     await p.waitForTimeout(180);
     const box=await p.evaluate(`(()=>{const r=${VIS}[${idx}].getBoundingClientRect();
       return {x:r.x+r.width/2, y:r.y+r.height/2};})()`);
@@ -1245,10 +1303,13 @@ function check(name, cond, detail){
   check("'지금 할 곳으로' 가 다시 한 유닛만 남긴다", fold.afterHere===1, fold);
   check("유닛 머리글이 펼침 상태를 스크린리더에 알린다", fold.aria==="true"||fold.aria==="false", fold);
 
-  /* 홈에서 첫 레슨까지 가는 거리 — 처음 온 사람이 여기서 이탈한다.
+  /* 홈에서 첫 공부를 시작할 수 있는 거리 — 처음 온 사람이 여기서 이탈한다.
+     앱 실습이 기본 시작점이므로 첫 실습 버튼의 접근성과 실제 진입을 확인한다.
      기능을 빼지 않고 접어서 줄였으므로, 접힌 것을 펴면 항목이 그대로 다 있어야 한다. */
   const reach=await p.evaluate(()=>{
     const first=document.querySelector(".unit-sec");
+    const start=document.getElementById("vibe-start");
+    const startBox=start&&start.getBoundingClientRect();
     const fold=document.getElementById("msn-fold");
     const closed=Math.round(document.getElementById("daily").getBoundingClientRect().height);
     fold.open=true;
@@ -1257,12 +1318,15 @@ function check(name, cond, detail){
     fold.open=false;
     return {
       첫유닛까지: first ? Math.round(first.getBoundingClientRect().top+scrollY) : null,
+      첫공부버튼끝: startBox ? Math.round(startBox.bottom+scrollY) : null,
+      첫공부버튼표시: !!(startBox&&startBox.width>0&&startBox.height>0),
+      화면높이: innerHeight,
       접힘높이: closed, 펼침높이: opened, 미션줄: rows,
       로드맵이레슨뒤: !!(document.getElementById("course").compareDocumentPosition(
         document.getElementById("roadmap")) & Node.DOCUMENT_POSITION_FOLLOWING)
     };
   });
-  check("첫 레슨까지 두 화면 안에 닿는다", reach.첫유닛까지!==null && reach.첫유닛까지<1200, reach);
+  check("첫 공부 시작 버튼이 첫 화면 안에 보인다", reach.첫공부버튼표시 && reach.첫공부버튼끝>0 && reach.첫공부버튼끝<reach.화면높이, reach);
   check("미션은 접혀 있고 펼치면 전부 보인다", reach.접힘높이<160 && reach.미션줄>=9 && reach.펼침높이>reach.접힘높이+200, reach);
   check("성장 로드맵은 레슨 목록 뒤에 있다", reach.로드맵이레슨뒤===true, reach);
 
@@ -1270,6 +1334,10 @@ function check(name, cond, detail){
   const mode=await p.evaluate(()=>({compat:document.compatMode, lang:document.documentElement.lang}));
   check("표준 모드로 렌더된다 (quirks 아님)", mode.compat==="CSS1Compat", mode);
   check("문서 언어가 한국어로 선언돼 있다", mode.lang==="ko", mode);
+  await p.evaluate(()=>scrollTo({top:0,behavior:"instant"}));
+  await p.locator("#vibe-start").click();
+  await p.waitForSelector("#vibe-code");
+  check("첫 공부 버튼으로 실제 앱 실습이 열린다", await p.locator("#vibe-code").count()===1);
   await p.close();
  }
 
@@ -1330,10 +1398,10 @@ function check(name, cond, detail){
 
   // 흐름: 성공 / 실패 / 건너뛰기 / 끄기
   const flow=await p.evaluate(()=>{
-    const open=(ui,li)=>{ startLesson("python",ui,li);
+    const open=(ui,li)=>{ S.studyResume=null; startLesson("python",ui,li);
       if(document.querySelector("#qbody .th-sum")) document.getElementById("check").click(); };
     const out={};
-    S.rc=null; save();
+    S.rc=null; S.recall=true; S.freeMode=true; save();
     /* 고정 좌표(0,0)를 믿지 않는다 — 문항이 늘거나 줄면 그 자리가 선택형이 아닐 수 있다.
        첫 문항이 선택형인 레슨들을 먼저 찾고, 그중 인출로 채점 가능한 것을 성공 경로에 쓴다.
        ("Hello" vs "\"Hello\"" 처럼 오답과 글자만 다른 문항은 인출로 구분할 수 없고, 거절하는 채점기가 옳다) */
@@ -1427,33 +1495,7 @@ function check(name, cond, detail){
   if(!FULL){
    console.log("  건너뜀: 무한 루프 검사에는 완전한 크로미움이 필요합니다 (headless_shell 에서는 재현 불가)");
   } else {
-  const b2=await chromium.launch({executablePath:FULL});
-  let r=null;
-  try{
-   const p2=await b2.newPage({viewport:{width:390,height:800}});
-   await p2.addInitScript(()=>{ try{ localStorage.setItem("coderun",
-     JSON.stringify({onboarded:true, goal:"free", freeMode:true})); }catch(e){} });
-   await p2.goto(FILE);
-   await p2.waitForFunction(()=>typeof COURSES!=="undefined", {timeout:60000});
-   await p2.evaluate(()=>ensureBuild());
-   r=await Promise.race([
-    p2.evaluate(async()=>{
-      S.build={}; save();
-      await openBuildLab(); blOpen(0); BL.di=0; blApplyDayFiles(); blRender();
-      S.build.orders.files["app.js"]="function handle(){ while(true){} }\nmodule.exports={handle};\n";
-      save(); blRender(); blRun(); await new Promise(r=>setTimeout(r,6500));
-      const loopGuard=!BL.running && (BL.res||[]).some(x=>/무한 루프/.test(x.err||""));
-      /* 고쳐서 다시 실행 — 굳은 프레임을 갈아 끼우지 않으면 여기서 영영 안 끝난다 */
-      Object.assign(S.build.orders.files, BUILD_SOL.orders[0]); save(); BL.res=null; blRender();
-      blRun(); await new Promise(r=>setTimeout(r,2500));
-      const res=BL.res||[];
-      closeBuildLab();
-      return {loopGuard, again:res.filter(x=>x.ok).length, againTotal:res.length};
-    }),
-    new Promise(res=>setTimeout(()=>res({timeout:true}), 60000))
-   ]);
-  }catch(e){ r={err:String(e&&e.message||e).split("\n")[0]}; }
-  await b2.close();
+  const r=await runBrowserLoopFixture(FULL);
   check("무한 루프가 있어도 앱이 멈추지 않는다", r && r.loopGuard===true, r);
   check("무한 루프 뒤에 고쳐서 다시 실행하면 채점된다", !!(r && r.againTotal>0 && r.again===r.againTotal), r);
   }
@@ -1592,10 +1634,15 @@ function check(name, cond, detail){
   const p=await page();
   const r=await p.evaluate(()=>{
     const out={};
-    const tryOpen=(name,fn,sel)=>{ try{ fn(); out[name]=!!document.querySelector(sel);
+    const tryOpen=(name,fn,sel,confirm)=>{ try{ fn(); out[name]=!!document.querySelector(sel)&&(!confirm||confirm());
       document.getElementById("profile").classList.remove("on"); }catch(e){ out[name]="ERR "+e.message; } };
     tryOpen("분야 소개", ()=>openIntro("python"), ".in-cta");
-    tryOpen("성장 로드맵", ()=>openPath(), ".pstage");
+    tryOpen("성장 과정", ()=>openPath(), ".study-growth-stage", ()=>{
+      const stages=document.querySelectorAll(".study-growth-stage"), close=document.getElementById("path-close");
+      return document.getElementById("profile").classList.contains("on") && stages.length===5 &&
+        !!close && typeof close.onclick==="function" &&
+        [...document.querySelectorAll("[data-growth-track]")].every(b=>typeof b.onclick==="function");
+    });
     tryOpen("학습 코치", ()=>openCoach(), ".cch-days");
     tryOpen("업적", ()=>openAchv(), ".achgrid");
     /* 9축 막대(.skb)는 푼 문제가 없으면 그리지 않는다 — 0 만 아홉 줄 늘어놓지 않으려는 것.
