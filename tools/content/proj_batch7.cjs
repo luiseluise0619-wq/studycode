@@ -48,7 +48,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\n/* 배열을 만드는 비용이 측정에 섞이면 안 된다 — 미리 만들어 두고 훑기만 잰다 */\nfunction make(n) {\n  const a = new Float64Array(n * n);\n  for (let i = 0; i < a.length; i++) a[i] = i % 7;\n  return a;\n}\nfunction sumRow(a, n) { let s = 0; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) s += a[r * n + c]; return s; }\nfunction sumCol(a, n) { let s = 0; for (let c = 0; c < n; c++) for (let r = 0; r < n; r++) s += a[r * n + c]; return s; }\n\nfunction timeIt(fn, reps) {\n  fn();                                    // 예열 — 첫 실행은 컴파일이 섞인다\n  let best = Infinity;\n  for (let i = 0; i < reps; i++) {\n    const t0 = Date.now();\n    if (fn() === -1) throw new Error(\"최적화로 사라지지 않게 결과를 쓴다\");\n    const d = Date.now() - t0;\n    if (d < best) best = d;\n  }\n  return Math.max(best, 1);\n}\n\n/* 작은 배열은 한 번 훑는 데 1ms 도 안 걸려 재는 눈금보다 짧다.\n   같은 총 작업량이 되도록 여러 번 반복해서 잰다. */\nconst WORK = 40000000;\nout.push(\"크기          훑는 횟수   행 우선   열 우선   배수\");\n[256, 700, 1500].forEach((n) => {\n  const a = make(n);                       // 시간 밖에서 만든다\n  const passes = Math.max(1, Math.round(WORK / (n * n)));\n  const many = (fn) => () => { let s = 0; for (let i = 0; i < passes; i++) s += fn(a, n); return s; };\n  const rm = timeIt(many(sumRow), 3);\n  const cm = timeIt(many(sumCol), 3);\n  out.push((n + \"×\" + n).padEnd(14) + String(passes).padEnd(12) +\n    (rm + \"ms\").padEnd(10) + (cm + \"ms\").padEnd(10) + (cm / rm).toFixed(1) + \"배\");\n});\n\nout.push(\"\");\nout.push(\"작은 배열은 통째로 캐시에 들어가 차이가 거의 없다\");\nout.push(\"커질수록 벌어진다 — 캐시에 안 들어가는 순간부터 순서가 값을 갖는다\");\nout.push(\"\");\nout.push(\"재는 코드에서 조심할 것 셋\");\nout.push(\"  · 배열을 만드는 비용을 시간 안에 넣지 않는다\");\nout.push(\"  · 첫 실행은 컴파일이 섞이므로 예열한다\");\nout.push(\"  · 여러 번 재서 가장 빠른 값끼리 견준다 — 잡음은 시간을 늘리기만 한다\");\nconsole.log(out.join(\"\\n\"));\n" },
 
-  { t: "무엇에 이 지식을 쓸 것인가", type: "decide",
+  { t: "무엇에 이 지식을 쓸 것인가요", type: "decide",
     goal: "이 성질을 실제 코드에 어떻게 반영할지 정해야 해요.",
     sit: "어디에 적용할까요?",
     opts: [
@@ -83,7 +83,7 @@ module.exports = {
     goal: "실제로 나온 <b>틀린 답들을 모아</b> 유형별로 나누세요.\n유형마다 대응이 다르므로 뭉뚱그리면 고칠 수 없어요.",
     ph: "예: 없는 정책 조항을 만들어 냄(사실 지어내기) · 있는 조항인데 내용이 다름(왜곡) · 옛 규정으로 답함(오래된 지식) · 질문을 잘못 알아들음(오해) · 100건 중 12건 · 그중 8건이 지어내기" },
 
-  { t: "무엇으로 줄일 것인가", type: "decide",
+  { t: "무엇으로 줄일 것인가요", type: "decide",
     goal: "정책 문서를 근거로 답해야 하는데 없는 조항을 만들어 내요.",
     sit: "무엇부터 할까요?",
     opts: [
@@ -115,7 +115,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nlet seed = 777001;\nfunction rnd() { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }\n\n/* 질문마다 '가장 관련 있는 조각의 점수' 와 '문서에 답이 실제로 있는가'.\n   두 무리는 겹친다 — 겹치지 않으면 문턱을 고르는 일 자체가 없다. */\nconst qs = [];\nfor (let i = 0; i < 400; i++) {\n  const has = rnd() < 0.65;\n  const score = Math.max(0, Math.min(1, (has ? 0.62 : 0.34) + (rnd() - 0.5) * 0.5));\n  qs.push({ has: has, score: score });\n}\n\nfunction run(thresh) {\n  let answered = 0, right = 0, made = 0, refusedButHad = 0;\n  qs.forEach((q) => {\n    if (q.score < thresh) { if (q.has) refusedButHad++; return; }\n    answered++;\n    if (q.has) right++; else made++;          // 근거 없이 답하면 지어낸 것이다\n  });\n  return { answered: answered, right: right, made: made, refusedButHad: refusedButHad,\n    acc: answered ? right / answered : 1 };\n}\n\nout.push(\"질문 \" + qs.length + \"건 · 그중 문서에 답이 있는 것 \" +\n  qs.filter((q) => q.has).length + \"건\");\nout.push(\"\");\nout.push(\"문턱   답한 비율   답 중 정답률   지어낸 건수   답할 수 있었는데 거절\");\nconst rows = [];\n[0, 0.2, 0.35, 0.45, 0.55, 0.65, 0.8].forEach((t) => {\n  const r = run(t);\n  rows.push({ t: t, r: r });\n  out.push(t.toFixed(2).padEnd(7) +\n    (r.answered / qs.length * 100).toFixed(0).padStart(6) + \"%   \" +\n    (r.acc * 100).toFixed(0).padStart(9) + \"%   \" +\n    String(r.made).padStart(10) + \"   \" + String(r.refusedButHad).padStart(14));\n});\n\n/* 지어낸 답 한 건이 거절 한 건보다 몇 배 비싼가 — 그 비로 총 손해를 잰다 */\nout.push(\"\");\nout.push(\"지어내기가 거절보다 비싼 정도에 따른 최적 문턱\");\n[1, 5, 20].forEach((ratio) => {\n  const best = rows.slice().sort((a, b) =>\n    (a.r.made * ratio + a.r.refusedButHad) - (b.r.made * ratio + b.r.refusedButHad))[0];\n  out.push(\"  \" + String(ratio).padStart(2) + \"배   문턱 \" + best.t.toFixed(2) +\n    \"   지어냄 \" + String(best.r.made).padStart(3) +\n    \"   헛거절 \" + String(best.r.refusedButHad).padStart(3));\n});\n\nout.push(\"\");\nout.push(\"두 무리가 겹치므로 지어내기를 0으로 만들면 답할 수 있던 것도 거절하게 된다\");\nout.push(\"거절은 공짜가 아니다 — 너무 자주 하면 쓸모없는 도우미가 된다\");\nout.push(\"어느 쪽이 더 비싼지를 정해야 문턱이 정해진다\");\nconsole.log(out.join(\"\\n\"));\n" },
 
-  { t: "무엇을 사람에게 넘길 것인가", type: "decide",
+  { t: "무엇을 사람에게 넘길 것인가요", type: "decide",
     goal: "거절하거나 근거가 약한 질문을 어떻게 처리할지 정해야 해요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -135,7 +135,7 @@ module.exports = {
 
   { t: "회고 — 어디까지 믿기로 했나", type: "note",
     goal: "이 시스템이 <b>무엇을 보장하고 무엇은 안 하는지</b> 적으세요.\n사용자에게 그것을 어떻게 알리는지도 적어요.",
-    ph: "지어내기 비율(전 vs 후) / 거절 비율과 그 대가 / 사람에게 넘기는 주제 / 근거 인용을 사용자에게 보이는가 / 틀린 답이 나왔을 때의 경로 / 보장하지 않는 것" }]
+    ph: "지어내기 비율(전 vs 후) / 거절 비율과 그 대가 / 사람에게 넘기는 주제 / 근거 인용을 사용자에게 보이나요 / 틀린 답이 나왔을 때의 경로 / 보장하지 않는 것" }]
 },
 
 /* ─────────────────────────────────────────────── math */
@@ -152,7 +152,7 @@ module.exports = {
 
   { t: "99% 정확한 검사가 왜 못 믿을까", type: "decide",
     goal: "정확도 99% 인 사기 탐지가 경보를 울렸어요. 전체 거래 중 사기는 0.3% 예요.",
-    sit: "이 경보가 진짜일 확률은?",
+    sit: "이 경보가 진짜일 확률은 무엇일까요?",
     opts: [
       { label: "약 23% — 사기가 드물어서, 헛경보의 절대 수가 진짜보다 훨씬 많아요",
         fx: { algorithms: 3, communication: 2 },
@@ -196,10 +196,10 @@ module.exports = {
   phases: [
 
   { t: "어디서 멈추는지 적어요", type: "note",
-    goal: "끊긴 상황에서 <b>화면이 어떻게 되는지</b> 적으세요.\n'안 된다' 가 아니라 무엇이 얼마나 기다려요 어떻게 되는지 적어요.",
-    ph: "예: 목록 화면이 빈 채로 30초 이상 회전 · 글쓰기 버튼을 누르면 아무 반응 없이 멈춤 · 다시 연결돼도 저절로 안 채워짐 · 앱을 껐어요 켜야 함 · 지하철 구간에서 하루 20분쯤" },
+    goal: "끊긴 상황에서 <b>화면이 어떻게 되는지</b> 적으세요.\n'안 된다' 가 아니라 무엇이 얼마나 기다려요. 어떻게 되는지 적어요.",
+    ph: "예: 목록 화면이 빈 채로 30초 이상 회전 · 글쓰기 버튼을 누르면 아무 반응 없이 멈춤 · 다시 연결돼도 저절로 안 채워짐 · 앱을 껐다가 켜야 함 · 지하철 구간에서 하루 20분쯤" },
 
-  { t: "끊겼을 때 무엇을 보여 줄 것인가", type: "decide",
+  { t: "끊겼을 때 무엇을 보여 줄 것인가요", type: "decide",
     goal: "네트워크가 끊기면 화면이 빈 채로 계속 기다려요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -255,7 +255,7 @@ module.exports = {
     goal: "코드를 읽으며 <b>위험한 자리</b>를 목록으로 만드세요.\n고칠 순서를 정하려면 먼저 무엇이 있는지 알아야 해요.",
     ph: "예: 쿼리를 문자열로 이어 붙이는 곳 34군데 · 사용자 입력을 그대로 출력하는 곳 12군데 · 전역 $conn 을 파일 40개가 씀 · 세션에 평문 비밀번호 · 오류를 화면에 그대로 출력 · 테스트 0개" },
 
-  { t: "어디부터 손댈 것인가", type: "decide",
+  { t: "어디부터 손댈 것인가요", type: "decide",
     goal: "고칠 것이 많고, 동시에 새 기능도 넣어야 해요.",
     sit: "무엇부터 할까요?",
     opts: [
@@ -287,7 +287,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst input = \"</script><img src=x onerror=alert(1)>\";\nconst input2 = \"x onmouseover=alert(1)\";\n\nconst escHtml = (s) => String(s).replace(/&/g, \"&amp;\").replace(/</g, \"&lt;\")\n  .replace(/>/g, \"&gt;\").replace(/\\\"/g, \"&quot;\").replace(/'/g, \"&#39;\");\nconst escJs = (s) => JSON.stringify(String(s));\nconst escUrl = (s) => encodeURIComponent(String(s));\n\nout.push(\"입력: \" + input);\nout.push(\"\");\nout.push(\"HTML 본문에\");\nout.push(\"  안 막음: <p>\" + input + \"</p>   ← 태그가 살아난다\");\nout.push(\"  HTML 이스케이프: <p>\" + escHtml(input) + \"</p>\");\n\nout.push(\"\");\nout.push(\"자바스크립트 안에\");\nout.push(\"  HTML 이스케이프만: var s = '\" + escHtml(input) + \"';\");\nout.push(\"    → &lt; 로 바뀌어 문자열은 안전하지만, 스크립트 문맥에서는 따옴표가 문제다\");\nout.push(\"  JS 이스케이프: var s = \" + escJs(input) + \";\");\n\nout.push(\"\");\nout.push(\"속성값에 (따옴표 없이)\");\nout.push(\"  <img src=\" + input2 + \">   ← 공백만으로 새 속성이 붙는다\");\nout.push(\"  <img src=\\\"\" + escHtml(input2) + \"\\\">   ← 따옴표로 두르고 이스케이프\");\n\nout.push(\"\");\nout.push(\"URL 자리에\");\nout.push(\"  <a href=\\\"/s?q=\" + escUrl(input) + \"\\\">\");\n\nout.push(\"\");\nout.push(\"문맥마다 위험한 글자가 다르다 — 한 가지 이스케이프로 전부 되지 않는다\");\nout.push(\"'어디에 들어가는가' 를 모르면 어떤 처리가 맞는지 정할 수 없다\");\nout.push(\"템플릿 엔진이 문맥을 알고 자동으로 하는 것이 가장 안전하다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "옛 코드를 어떻게 밀어 낼 것인가", type: "decide",
+  { t: "옛 코드를 어떻게 밀어 낼 것인가요", type: "decide",
     goal: "보안 결함은 막았어요. 이제 구조를 정리하려 해요.",
     sit: "어떻게 할까요?",
     opts: [

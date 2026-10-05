@@ -27,10 +27,16 @@ node tests/vibe-journey.test.cjs
 node tests/vibe-reference.test.cjs
 node tests/vibe-lab.test.cjs
 node tests/service-worker.test.cjs
+node tests/reader-copy.test.cjs
+node tests/reader-polish.test.cjs
 node tests/vibe-cache-migration.test.cjs
 ```
 
 ## 작은 앱 실습
+
+`reader-copy.test.cjs`는 문장 갱신 뒤에도 진도와 오답 복습 간격이 이어지는지, 출력 문제를 대소문자까지 구분해 채점하는지 확인해요. 용어의 비유, 배열·DB 인덱스 구분과 모바일 표시도 검사해요.
+
+`reader-polish.test.cjs`는 학습 화면에 쓰는 문자열을 전부 읽어 알려진 말투 변환 오류와 작성자 자기 언급을 검사해요. 연결 표현·질문·코드 보존·DB 용어의 맥락도 확인해요. 전체 13,852개 원본 문항의 ID와 레슨·단원 개수가 유지되는지 검사하며, 앱은 오류가 알려진 1개 문항을 제외해요. 이 검사는 모든 설명의 사실관계를 수동으로 검수했다는 뜻은 아니에요.
 
 `vibe-challenges.test.cjs`는 새 상황 18개 변형과 독서 앱 3단계의 예시 풀이를 실제 화면에서 실행합니다. 검사 141개를 통과하고, 오류 초안 21개는 실패해야 합니다.
 

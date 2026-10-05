@@ -19,7 +19,7 @@ module.exports = {
     lang: "bash",
     sol: "# 로그인할 수 없는 서비스 전용 계정\nsudo useradd -r -s /usr/sbin/nologin -d /srv/app appsvc\n\nsudo mkdir -p /srv/app\nsudo chown -R appsvc:appsvc /srv/app\nsudo chmod 750 /srv/app          # 그룹까지만, 나머지는 접근 불가\n\n# 확인\nid appsvc\nls -ld /srv/app\nsudo -u appsvc touch /srv/app/test && echo \"쓰기 OK\"\nsu - appsvc 2>&1 | tail -1        # 로그인은 거부되어야 한다" },
 
-  { t: "이 서비스를 어떻게 띄울 것인가", type: "decide",
+  { t: "이 서비스를 어떻게 띄울 것인가요", type: "decide",
     goal: "앱을 실행해 두어야 하는데, 지금은 SSH 로 들어가 <code>./app &</code> 로 띄운 상태예요.",
     sit: "어떻게 바꿀까요?",
     opts: [
@@ -76,7 +76,7 @@ module.exports = {
     lang: "bash",
     sol: "# journald 상한\nsudo tee /etc/systemd/journald.conf.d/limit.conf > /dev/null <<'EOF'\n[Journal]\nSystemMaxUse=500M\nMaxRetentionSec=14day\nEOF\nsudo systemctl restart systemd-journald\njournalctl --disk-usage\n\n# 앱 파일 로그 회전\nsudo tee /etc/logrotate.d/myapp > /dev/null <<'EOF'\n/srv/app/logs/*.log {\n    daily\n    rotate 14\n    size 100M\n    compress\n    delaycompress\n    missingok\n    notifempty\n    copytruncate      # 앱이 파일을 계속 열고 있을 때\n}\nEOF\n\nsudo logrotate -d /etc/logrotate.d/myapp   # 예행연습으로 계획만 확인\n\n# 디스크 점검 — 90% 넘으면 알린다\ndf -h --output=pcent,target | awk 'NR>1 && $1+0 >= 90 {print \"경고:\", $2, $1}'" },
 
-  { t: "무엇을 백업할 것인가", type: "decide",
+  { t: "무엇을 백업할 것인가요", type: "decide",
     goal: "서버가 사라졌을 때 무엇이 있어야 다시 만들 수 있을지 정해야 해요.",
     sit: "백업 대상으로 무엇을 고를까요?",
     opts: [

@@ -23,7 +23,11 @@
     '경사 하강':['경사 하강','gradient descent'], '브로드캐스팅':['브로드캐스팅','broadcasting'],
     '웹소켓':['웹소켓','WebSocket'], 'DOM':['DOM','querySelector'],
     '인증과 권한':['인증과 권한','authentication','authorization'], '요청 ID':['요청 ID','request ID'],
-    '준비 상태':['준비 상태','readiness'], '커버리지':['커버리지','coverage']
+    '준비 상태':['준비 상태','readiness'], '커버리지':['커버리지','coverage'],
+    '불변식':['불변식','invariant'], '트레이드오프':['트레이드오프','trade-off','tradeoff'],
+    '임계 영역':['임계 영역','임계영역','critical section'], '오케스트레이션':['오케스트레이션','orchestration'],
+    '선형화 지점':['선형화 지점','linearization point'], '사전조건':['사전조건','사전 조건','precondition'],
+    '사후조건':['사후조건','사후 조건','postcondition'], '관측가능성':['관측가능성','관측 가능성','observability']
   };
   function plain(v){return String(v||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();}
   function matches(text,term){
@@ -31,9 +35,10 @@
     return text.includes(term);
   }
   function compatible(name,track,text){
-    const db=['sql','dbt','backend','sysd','security'].includes(track)||/데이터베이스|DB|쿼리|CREATE INDEX/i.test(text);
+    const db=['sql','dbt'].includes(track)||/데이터베이스|\bDB\b|쿼리|CREATE INDEX|조회할? 열|테이블|외래키/i.test(text);
     const ml=['ai','ml','dl','mleval','stat'].includes(track);
-    if(name==='인덱스'||name==='정규화')return db;
+    if(name==='인덱스')return db&&!/배열의 인덱스|문자열의 인덱스|리스트의 인덱스/.test(text);
+    if(name==='정규화')return db&&!/대소문자|문자열|URL|헤더|유니코드|평균|표준편차|스케일링/i.test(text);
     if(name==='힙')return track!=='algo'&&!/힙 정렬|최소 힙|최대 힙|우선순위 큐/.test(text);
     if(name==='토큰')return /인증|로그인|JWT|권한|세션/.test(text);
     if(name==='정밀도'||name==='재현율')return ml;

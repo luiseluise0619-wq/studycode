@@ -17,7 +17,7 @@ module.exports = {
     goal: "동적으로 잡는 자리마다 <b>누가 해제하는지</b>를 적으세요.\n적을 수 없는 자리가 있으면 그곳이 바로 새는 자리예요.",
     ph: "예: parse_config() 가 반환한 포인터 — 호출자가 free · buffer_new() — 짝인 buffer_free 가 있음 · handle_request 안의 tmp — 오류 경로에서 안 지움(누수) · 리스트 노드 — 누가 지우는지 아무도 모름" },
 
-  { t: "소유권을 어떻게 드러낼 것인가", type: "decide",
+  { t: "소유권을 어떻게 드러낼 것인가요", type: "decide",
     goal: "함수가 포인터를 돌려주는데, 호출자가 해제해야 하는지 아닌지 이름만 봐서는 몰라요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -44,7 +44,7 @@ module.exports = {
 
   { t: "경계를 넘는 자리를 잡아요", type: "build",
     goal: "버퍼에 쓰는 코드가 <b>경계를 넘는지</b> 판정하는 계산을 만드세요.\n널 종료 문자 자리를 빼먹는 흔한 실수도 함께 봐요.",
-    hint: "문자열을 담으려면 <b>길이 + 1</b> 바이트가 필요해요. 널 종료 자리를 빼먹는 것이 C 에서 가장 흔한 한 칸 차이 실수예요. 복사 함수마다 이 규칙이 달라서, 어떤 것은 널을 붙이고 어떤 것은 자리가 모자라면 안 붙이에요. '몇 바이트 쓰는가' 와 '몇 바이트 필요한가' 를 따로 세면 판정이 분명해져요.",
+    hint: "문자열을 담으려면 <b>길이 + 1</b> 바이트가 필요해요. 널 종료 자리를 빼먹는 것이 C 에서 가장 흔한 한 칸 차이 실수예요. 복사 함수마다 이 규칙이 달라서, 어떤 것은 널을 붙이고 어떤 것은 자리가 모자라면 안 붙여요. '몇 바이트 쓰는가' 와 '몇 바이트 필요한가' 를 따로 세면 판정이 분명해져요.",
     acc: "경우별로 필요한 크기와 버퍼 크기, 넘치는지 여부가 출력되고, 널 종료가 빠지는 경우가 따로 지목되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\n/* 마지막 열은 '문자열로 쓸 것인가' — memcpy 로 옮긴 바이트는\n   문자열이 아니라면 널 종료가 없어도 된다. 쓰임을 알아야 판정할 수 있다. */\nconst cases = [\n  { n: \"strcpy\", buf: 8, src: \"hello\", writes: (s) => s.length + 1, nulls: true, asStr: true },\n  { n: \"strcpy\", buf: 5, src: \"hello\", writes: (s) => s.length + 1, nulls: true, asStr: true },\n  { n: \"strncpy(n=8)\", buf: 8, src: \"hello world\", writes: () => 8, nulls: false, asStr: true },\n  { n: \"snprintf(n=8)\", buf: 8, src: \"hello world\", writes: () => 8, nulls: true, asStr: true },\n  { n: \"memcpy(len) → 문자열로\", buf: 5, src: \"hello\", writes: (s) => s.length, nulls: false, asStr: true },\n  { n: \"memcpy(len) → 바이트로\", buf: 5, src: \"hello\", writes: (s) => s.length, nulls: false, asStr: false }\n];\n\nout.push(\"함수                     버퍼  원본  쓰는 양  판정\");\ncases.forEach((c) => {\n  const w = c.writes(c.src);\n  let verdict;\n  if (w > c.buf) verdict = \"넘침 (\" + (w - c.buf) + \"바이트)\";\n  else if (c.asStr && !c.nulls && w === c.buf) verdict = \"널 종료 없음 — 다음 읽기가 버퍼 밖으로 나간다\";\n  else verdict = \"안전\";\n  out.push(c.n.padEnd(25) + String(c.buf).padEnd(6) +\n    String(c.src.length).padEnd(6) + String(w).padEnd(9) + verdict);\n});\n\nout.push(\"\");\nout.push(\"문자열을 담으려면 길이 + 1 바이트가 필요하다 — 널 종료 자리\");\nout.push(\"strncpy 는 자리가 모자라면 널을 안 붙인다. 이름이 비슷해도 규칙이 다르다\");\nout.push(\"snprintf 는 언제나 널로 끝내고 잘라 낸다 — 그래서 대개 이쪽을 쓴다\");\nout.push(\"같은 memcpy 라도 그 바이트를 문자열로 읽을 것인가에 따라 판정이 갈린다\");\nconsole.log(out.join(\"\\n\"));\n" },
@@ -73,7 +73,7 @@ module.exports = {
     goal: "컴파일러가 거절한 자리와 <b>그때 하려던 일</b>을 적으세요.\n오류 메시지가 아니라 '무엇을 하려 했는가' 를 적는 것이 중요해요.",
     ph: "예: 목록을 순회하면서 그 안의 항목을 지우려 했어요 · 두 곳에서 같은 설정을 고치려 했어요 · 콜백에 self 를 넘기려 했어요 · 반환한 참조가 지역 변수를 가리켰어요 · 각각 clone 이나 unsafe 로 넘겼어요" },
 
-  { t: "막혔을 때 무엇을 먼저 생각할 것인가", type: "decide",
+  { t: "막혔을 때 무엇을 먼저 생각할 것인가요", type: "decide",
     goal: "빌림 검사기가 거절해요. `clone()` 을 붙이면 통과해요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -105,7 +105,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst ways = [\n  { n: \"순서를 나눈다\", pass: true, copy: 0, complexity: 1,\n    note: \"읽는 구간과 쓰는 구간을 겹치지 않게 한다\" },\n  { n: \"인덱스를 들고 다닌다\", pass: true, copy: 0, complexity: 2,\n    note: \"참조 대신 위치를 저장한다. 대신 유효성은 손으로 지켜야 한다\" },\n  { n: \"새 값을 만들어 반환\", pass: true, copy: 1, complexity: 1,\n    note: \"고치는 대신 만들어 돌려준다. 대개 코드가 더 단순해진다\" },\n  { n: \"소유권을 넘긴다\", pass: true, copy: 0, complexity: 2,\n    note: \"원본을 못 쓰게 된다. 넘긴 뒤에 필요하면 못 쓴다\" },\n  { n: \"clone 을 붙인다\", pass: true, copy: 2, complexity: 0,\n    note: \"가장 쉽다. 데이터가 크면 비싸고 두 벌이 생긴다\" },\n  { n: \"Rc<RefCell<T>>\", pass: true, copy: 0, complexity: 3,\n    note: \"검사가 실행 시점으로 옮겨간다 — 어기면 패닉\" },\n  { n: \"unsafe\", pass: true, copy: 0, complexity: 4,\n    note: \"컴파일러가 막아 준 것을 손으로 뚫는다\" }\n];\n\nout.push(\"방법                    복사  복잡도  설명\");\nways.forEach((w) => out.push(w.n.padEnd(24) + String(w.copy).padEnd(6) +\n  String(w.complexity).padEnd(8) + w.note));\n\n/* 데이터 크기와 '고친 뒤에도 원본이 필요한가' 로 고른다 */\nconst scenes = [\n  { n: \"작은 값 · 원본 필요\", big: false, needOrig: true },\n  { n: \"큰 값 · 원본 불필요\", big: true, needOrig: false },\n  { n: \"큰 값 · 원본 필요\", big: true, needOrig: true }\n];\nout.push(\"\");\nout.push(\"상황                    추천\");\nscenes.forEach((s) => {\n  let pick;\n  if (!s.big) pick = \"clone — 싸고 단순하다\";\n  else if (!s.needOrig) pick = \"소유권을 넘긴다 — 복사가 없다\";\n  else pick = \"순서를 나누거나 새 값을 만들어 반환\";\n  out.push(s.n.padEnd(24) + pick);\n});\n\nout.push(\"\");\nout.push(\"clone 이 나쁜 것이 아니라 '생각 없이 붙이는 clone' 이 나쁘다\");\nout.push(\"막힌 자리는 대개 설계를 다시 보라는 신호다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "오류를 어떻게 다룰 것인가", type: "decide",
+  { t: "오류를 어떻게 다룰 것인가요", type: "decide",
     goal: "함수마다 `unwrap()` 이 흩어져 있어 실패하면 패닉으로 죽어요.",
     sit: "어떻게 바꿀까요?",
     opts: [
@@ -140,7 +140,7 @@ module.exports = {
     goal: "<b>파일별로</b> 한 줄 고쳤을 때의 빌드 시간을 재서 적으세요.\n평균이 아니라 '자주 고치는 파일' 의 시간이 중요해요.",
     ph: "예: 전체 클린 빌드 21분 · common.h 한 줄 → 19분 · user_service.cpp 한 줄 → 40초 · 하루에 common.h 를 3~4번 건드림 · 파일 480개 · 헤더 하나가 300개 파일에 포함됨" },
 
-  { t: "왜 전부 다시 빌드되는가", type: "decide",
+  { t: "왜 전부 다시 빌드되나요", type: "decide",
     goal: "헤더 하나를 고치면 그것을 포함한 모든 파일이 다시 컴파일돼요.",
     sit: "무엇이 문제인가요?",
     opts: [
@@ -172,7 +172,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst MS = 2600, EDITS = 4;\nconst before = { affected: 300, headerReasons: [\"인라인 구현\", \"private 멤버\", \"다른 헤더 포함 5개\", \"공개 API\"] };\n\nconst fixes = [\n  { n: \"전방 선언으로 바꾸기\", cut: 90, effort: 1,\n    why: \"포인터·참조로만 쓰는 타입은 정의가 필요 없다\" },\n  { n: \"구현을 숨기기(pImpl)\", cut: 120, effort: 3,\n    why: \"private 멤버가 바뀌어도 헤더가 안 바뀐다\" },\n  { n: \"인라인 구현을 .cpp 로\", cut: 60, effort: 2,\n    why: \"구현이 바뀔 이유가 헤더에서 사라진다\" },\n  { n: \"헤더를 역할별로 쪼개기\", cut: 40, effort: 2,\n    why: \"필요한 것만 포함하게 된다\" }\n];\n\nout.push(\"조치                    줄어드는 파일  하루 절감   품\");\nlet cur = before.affected;\nfixes.forEach((f) => {\n  const save = f.cut * MS * EDITS / 1000;\n  out.push(f.n.padEnd(24) + String(f.cut).padEnd(15) +\n    ((save / 60).toFixed(1) + \"분\").padEnd(12) + f.effort);\n});\n\nout.push(\"\");\nout.push(\"조치                    누적 영향 파일  한 번 빌드\");\nfixes.slice().sort((a, b) => (b.cut / b.effort) - (a.cut / a.effort)).forEach((f) => {\n  cur = Math.max(cur - f.cut, 10);\n  out.push(f.n.padEnd(24) + String(cur).padEnd(16) + (cur * MS / 1000).toFixed(0) + \"초\");\n});\n\nout.push(\"\");\nout.push(\"처음 \" + (before.affected * MS / 1000 / 60).toFixed(1) + \"분 → \" +\n  (cur * MS / 1000 / 60).toFixed(1) + \"분\");\nout.push(\"품 대비 효과가 큰 것부터 했다 — 전부 할 필요는 없다\");\nout.push(\"\");\nout.push(\"헤더는 '무엇이 있는지' 만 적는 얇은 것이어야 한다\");\nout.push(\"구현이 헤더에 있으면 구현이 바뀔 때마다 세상이 다시 빌드된다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "무엇을 더 할 것인가", type: "decide",
+  { t: "무엇을 더 할 것인가요", type: "decide",
     goal: "헤더를 정리해 빌드가 21분에서 6분이 됐어요. 더 줄이고 싶어요.",
     sit: "다음으로 무엇을 할까요?",
     opts: [
@@ -207,7 +207,7 @@ module.exports = {
     goal: "'가끔' 을 <b>어떤 조건에서</b> 로 바꾸세요.\n부하·스레드 수·타이밍 중 무엇과 상관있는지 적어요.",
     ph: "예: 초당 200건 이상에서만 · 스레드 8개일 때 하루 3건, 2개면 0건 · 같은 사용자가 빠르게 두 번 누를 때 · 로컬에서는 재현 안 됨 · 로그에는 둘 다 '성공' 으로 남음" },
 
-  { t: "어디를 의심할 것인가", type: "decide",
+  { t: "어디를 의심할 것인가요", type: "decide",
     goal: "여러 스레드가 같은 코드를 도는데 가끔 결과가 어긋나요.",
     sit: "무엇을 먼저 볼까요?",
     opts: [
@@ -263,7 +263,7 @@ module.exports = {
     goal: "동작을 <b>항목별로</b> 나누고 각각 얼마나 자주, 얼마나 오래 도는지 적으세요.\n합이 실제 소모와 맞지 않으면 빠뜨린 것이 있어요.",
     ph: "예: 배터리 2000mAh · 목표 6개월 · 온도 측정 1초마다 (80ms, 12mA) · 무선 전송 1분마다 (300ms, 120mA) · LED 항상 켜짐 (2mA) · MCU 항상 깨어 있음 (8mA) · 실측 사흘" },
 
-  { t: "무엇부터 줄일 것인가", type: "decide",
+  { t: "무엇부터 줄일 것인가요", type: "decide",
     goal: "사흘밖에 못 버텨요. 줄일 수 있는 것이 여럿 보여요.",
     sit: "무엇부터 볼까요?",
     opts: [
@@ -295,7 +295,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\nconst BATTERY = 2000, GOAL_DAYS = 180;\nconst NEED = BATTERY / GOAL_DAYS;\n\nfunction daily(cfg) {\n  const mcuAwakeMs = cfg.sleep\n    ? (86400 / cfg.measureSec) * 80 + 1440 * 300      // 일할 때만 깬다\n    : 86400000;\n  const mcu = 8 * mcuAwakeMs / 3600000 + (cfg.sleep ? 0.005 * 24 : 0);\n  const meas = 12 * ((86400 / cfg.measureSec) * 80) / 3600000;\n  const tx = 120 * ((1440 / cfg.txMult) * 300) / 3600000;\n  const led = cfg.led ? 2 * 24 : 0;\n  return mcu + meas + tx + led;\n}\n\nconst steps = [\n  { n: \"지금 그대로\", cfg: { sleep: false, measureSec: 1, txMult: 1, led: true } },\n  { n: \"+ LED 끄기\", cfg: { sleep: false, measureSec: 1, txMult: 1, led: false } },\n  { n: \"+ MCU 재우기\", cfg: { sleep: true, measureSec: 1, txMult: 1, led: false } },\n  { n: \"+ 측정 1초→30초\", cfg: { sleep: true, measureSec: 30, txMult: 1, led: false } },\n  { n: \"+ 전송 1분→10분\", cfg: { sleep: true, measureSec: 30, txMult: 10, led: false } }\n];\n\nout.push(\"조치                  하루 mAh   수명       목표(180일)\");\nlet firstOk = null;\nsteps.forEach((s) => {\n  const d = daily(s.cfg);\n  const days = BATTERY / d;\n  if (!firstOk && days >= GOAL_DAYS) firstOk = s.n;\n  out.push(s.n.padEnd(22) + d.toFixed(2).padStart(8) + \"   \" +\n    (days.toFixed(0) + \"일\").padEnd(11) + (days >= GOAL_DAYS ? \"만족\" : \"부족\"));\n});\n\nout.push(\"\");\nout.push(\"목표를 처음 만족한 단계: \" + (firstOk || \"없음\"));\nout.push(\"필요한 하루 소모: \" + NEED.toFixed(2) + \"mAh 이하\");\nout.push(\"\");\nout.push(\"MCU 를 재우는 것 하나가 나머지를 전부 합친 것보다 크다\");\nout.push(\"목표를 채우는 최소 조합을 찾으면 사용자 경험을 덜 해친다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "얼마나 자주 보낼 것인가", type: "decide",
+  { t: "얼마나 자주 보낼 것인가요", type: "decide",
     goal: "전송을 10분마다로 늘리면 목표를 채워요. 그런데 사용자는 실시간에 가까운 값을 원해요.",
     sit: "어떻게 할까요?",
     opts: [

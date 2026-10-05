@@ -15,9 +15,9 @@ module.exports = {
 
   { t: "무엇을 정해야 하는지 적어요", type: "note",
     goal: "결정해야 할 것 <b>하나</b>를 고르고, 그것이 왜 지금 필요한지 적으세요.\n여러 개를 한 문서에 담으면 아무것도 못 정해요.",
-    ph: "예: 알림 발송을 동기 호출에서 큐로 바꿀 것인가 · 지금 필요한 이유: 발송이 느려 주문 API 의 p99 가 2초 · 되돌릴 수 있는가: 6주치 작업이라 어려워요 · 정하지 않으면: 다음 분기 트래픽에 못 버텨요" },
+    ph: "예: 알림 발송을 동기 호출에서 큐로 바꿀 것인가요 · 지금 필요한 이유: 발송이 느려 주문 API 의 p99 가 2초 · 되돌릴 수 있나요: 6주치 작업이라 어려워요 · 정하지 않으면: 다음 분기 트래픽에 못 버텨요" },
 
-  { t: "선택지를 몇 개로 둘 것인가", type: "decide",
+  { t: "선택지를 몇 개로 둘 것인가요", type: "decide",
     goal: "설계 문서를 쓰려는데 후보가 하나밖에 떠오르지 않아요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -49,7 +49,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst DAU = 2000000;\nconst PER_USER = 8;              // 하루 알림 수\nconst PAYLOAD = 1200;            // 바이트\nconst PEAK = 4;                  // 피크는 평균의 몇 배\nconst KEEP_DAYS = 365;\n\nconst perDay = DAU * PER_USER;\nconst avgQps = perDay / 86400;\nconst peakQps = avgQps * PEAK;\nconst yearBytes = perDay * PAYLOAD * KEEP_DAYS;\nconst peakBps = peakQps * PAYLOAD;\n\nconst fmt = (n) => n >= 1e12 ? (n / 1e12).toFixed(1) + \"T\"\n  : n >= 1e9 ? (n / 1e9).toFixed(1) + \"G\"\n  : n >= 1e6 ? (n / 1e6).toFixed(1) + \"M\"\n  : n >= 1e3 ? (n / 1e3).toFixed(1) + \"K\" : String(Math.round(n));\n\nout.push(\"하루 알림      \" + fmt(perDay) + \"건\");\nout.push(\"평균 QPS       \" + Math.round(avgQps));\nout.push(\"피크 QPS       \" + Math.round(peakQps) + \"  (평균의 \" + PEAK + \"배)\");\nout.push(\"1년 저장량     \" + fmt(yearBytes) + \"B\");\nout.push(\"피크 대역폭    \" + fmt(peakBps * 8) + \"bps\");\n\n/* 흔한 한 대의 한계와 견준다 — 몇 대가 필요한지가 아니라 자릿수가 목적이다 */\nconst limits = [\n  { n: \"앱 서버 1대(2,000 QPS)\", need: peakQps / 2000 },\n  { n: \"DB 쓰기 1대(5,000 QPS)\", need: peakQps / 5000 },\n  { n: \"1Gbps 회선\", need: peakBps * 8 / 1e9 },\n  { n: \"1TB 디스크\", need: yearBytes / 1e12 }\n];\nout.push(\"\");\nout.push(\"자원              필요 배수\");\nlimits.forEach((l) => out.push(l.n.padEnd(24) + l.need.toFixed(1) + \"배\"));\n\nconst worst = limits.slice().sort((a, b) => b.need - a.need)[0];\nout.push(\"\");\nout.push(\"가장 먼저 한계에 닿는 것: \" + worst.n + \" (\" + worst.need.toFixed(1) + \"배)\");\nout.push(\"어림 계산의 목적은 정확한 값이 아니라 자릿수다\");\nout.push(\"평균이 아니라 피크로 계산해야 한다 — 시스템은 피크에서 무너진다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "반대 의견을 어떻게 다룰 것인가", type: "decide",
+  { t: "반대 의견을 어떻게 다룰 것인가요", type: "decide",
     goal: "문서에 '큐를 도입하면 운영이 복잡해진다' 는 반대가 달렸어요. 맞는 지적이에요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -84,7 +84,7 @@ module.exports = {
     goal: "지금 노트북에서 되는 것과 <b>서비스에 필요한 것</b>을 나란히 적으세요.\n빠진 것이 대개 사고가 나는 자리예요.",
     ph: "예: 노트북 — 전처리를 셀에서 손으로 · 특징 12개를 그때그때 계산 · 응답 시간 상관없음\n서비스 — 전처리 코드가 없음 · 특징 중 3개는 실시간에 못 구함 · p99 100ms 이내 · 하루 40만 건" },
 
-  { t: "학습과 서빙이 왜 어긋나는가", type: "decide",
+  { t: "학습과 서빙이 왜 어긋나나요", type: "decide",
     goal: "검증 정확도는 94% 인데 서비스에 올리니 78% 예요.",
     sit: "무엇을 먼저 의심할까요?",
     opts: [
@@ -116,7 +116,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\nconst TARGET = 100;   // ms\n\nconst base = [\n  { n: \"특징 DB 조회(3회)\", ms: 66, fix: \"미리 계산해 캐시\", after: 4 },\n  { n: \"특징 변환\", ms: 12, fix: \"벡터화\", after: 5 },\n  { n: \"모델 추론\", ms: 41, fix: \"경량화(정확도 -1%p)\", after: 14 },\n  { n: \"후처리·직렬화\", ms: 7, fix: \"—\", after: 7 }\n];\n\nconst total = base.reduce((s, x) => s + x.ms, 0);\nout.push(\"단계                시간    목표 대비\");\nbase.forEach((x) => out.push(x.n.padEnd(20) + (x.ms + \"ms\").padEnd(8) +\n  Math.round(x.ms / TARGET * 100) + \"%\"));\nout.push(\"합계\".padEnd(20) + (total + \"ms\").padEnd(8) +\n  (total <= TARGET ? \"목표 안\" : \"목표 초과 \" + (total - TARGET) + \"ms\"));\n\nout.push(\"\");\nout.push(\"조치                        절감    누적 시간  목표\");\n/* 효과 큰 것부터 하나씩 적용한다 */\nconst order = base.filter((x) => x.after < x.ms).sort((a, b) => (b.ms - b.after) - (a.ms - a.after));\nlet cur = total;\nconst applied = [];\nfor (const x of order) {\n  cur -= (x.ms - x.after);\n  applied.push(x.fix);\n  out.push(x.fix.padEnd(28) + (\"-\" + (x.ms - x.after) + \"ms\").padEnd(8) +\n    (cur + \"ms\").padEnd(11) + (cur <= TARGET ? \"만족\" : \"아직\"));\n  if (cur <= TARGET) break;\n}\n\nout.push(\"\");\nout.push(\"필요한 조치: \" + applied.join(\" + \"));\nout.push(applied.some((x) => x.indexOf(\"경량화\") >= 0)\n  ? \"모델을 건드려야 했다 — 정확도 손실을 감수할지 따로 판단해야 한다\"\n  : \"모델은 건드리지 않았다 — 정확도를 지키면서 목표를 맞췄다\");\nout.push(\"\");\nout.push(\"추론 시간의 대부분은 모델이 아니라 특징을 모으는 데 든다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "성능이 떨어지는 것을 어떻게 알 것인가", type: "decide",
+  { t: "성능이 떨어지는 것을 어떻게 알 것인가요", type: "decide",
     goal: "배포 3개월 뒤 정확도가 조용히 떨어지고 있어요. 정답은 며칠 뒤에나 알 수 있어요.",
     sit: "무엇으로 감지할까요?",
     opts: [
@@ -151,7 +151,7 @@ module.exports = {
     goal: "실험을 시작할 때 정했어야 할 것들을 적으세요.\n<b>끝난 뒤에 정하면</b> 어떤 결과든 원하는 대로 읽을 수 있어요.",
     ph: "예: 주요 지표 — 결제 전환율 하나 · 최소 관심 차이 — 상대 3% · 실험 기간 — 14일 고정 · 표본 — 그룹당 최소 8만 · 보조 지표 — 객단가·이탈률(참고만) · 중간에 안 봐요" },
 
-  { t: "언제 결과를 볼 것인가", type: "decide",
+  { t: "언제 결과를 볼 것인가요", type: "decide",
     goal: "실험 3일째에 실험군이 8% 높게 나왔어요. 팀에서 지금 배포하자고 해요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -203,7 +203,7 @@ module.exports = {
 
   { t: "회고 — 무엇을 미리 정했어야 했나", type: "note",
     goal: "이번 실험에서 <b>시작 전에 정했어야 했는데 안 정한 것</b>을 적으세요.\n다음 실험의 사전 등록 양식으로 만들어요.",
-    ph: "주요 지표 하나 / 최소 관심 차이 / 필요한 표본과 기간 / 중간에 볼 것인가와 그 방법 / 보조 지표는 참고만 / 결과가 반대여도 그대로 따를 것인가" }]
+    ph: "주요 지표 하나 / 최소 관심 차이 / 필요한 표본과 기간 / 중간에 볼 것인가와 그 방법 / 보조 지표는 참고만 / 결과가 반대여도 그대로 따를 것인가요" }]
 },
 
 /* ─────────────────────────────────────────────── dbt */
@@ -218,7 +218,7 @@ module.exports = {
     goal: "무엇이 어떤 상태로 남았는지, <b>기대한 상태는 무엇이었는지</b> 적으세요.\n원본 이벤트 순서와 처리 순서를 함께 적으면 원인이 반쯤 보여요.",
     ph: "예: 주문 8821 이 '결제완료' 여야 하는데 '생성됨' · 발생 순서는 created→paid 인데 처리 순서는 paid→created · 하루 30건쯤 · 워커를 3대로 늘린 날부터 시작" },
 
-  { t: "왜 순서가 뒤바뀌는가", type: "decide",
+  { t: "왜 순서가 뒤바뀌나요", type: "decide",
     goal: "워커를 한 대에서 세 대로 늘린 뒤부터 순서 문제가 생겼어요.",
     sit: "무엇이 원인인가요?",
     opts: [
@@ -250,7 +250,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst STAGE = { created: 1, paid: 2, shipped: 3 };\nconst events = [];\nfor (let id = 1; id <= 20; id++) {\n  [\"created\", \"paid\", \"shipped\"].forEach((s, i) => events.push({ id: id, stage: s, ver: i + 1, at: id * 10 + i }));\n}\nconst speed = [1.0, 1.4, 0.7];\n\nfunction run(mode, workers) {\n  const arrivals = events.map((e, i) => {\n    /* 열쇠로 워커를 정하면 같은 주문은 언제나 같은 워커로 간다 */\n    const w = mode === \"key\" ? e.id % workers : i % workers;\n    return { e: e, done: e.at * speed[w % speed.length] };\n  }).sort((a, b) => a.done - b.done);\n\n  const state = {}, ver = {};\n  arrivals.forEach((a) => {\n    if (mode === \"version\") {\n      if ((ver[a.e.id] || 0) >= a.e.ver) return;      // 낮은 버전은 버린다\n      ver[a.e.id] = a.e.ver;\n    }\n    state[a.e.id] = a.e.stage;\n  });\n  return Object.keys(state).filter((id) => state[id] !== \"shipped\").length;\n}\n\nout.push(\"방법                        워커 3대에서 어긋난 건수\");\nout.push(\"아무것도 안 함\".padEnd(28) + run(\"none\", 3) + \"/20\");\nout.push(\"같은 열쇠는 같은 워커로\".padEnd(24) + run(\"key\", 3) + \"/20\");\nout.push(\"낮은 버전은 무시\".padEnd(26) + run(\"version\", 3) + \"/20\");\n\nout.push(\"\");\nout.push(\"각 방법의 한계\");\nout.push(\"  열쇠로 나누기 — 특정 열쇠에 부하가 몰리면 그 워커만 바빠진다\");\nout.push(\"                 워커 수를 바꾸면 배정이 통째로 달라진다\");\nout.push(\"  버전으로 거르기 — 뒤바뀌어도 결과가 맞다. 더 넓게 통한다\");\nout.push(\"                   대신 버전을 어디서 매길지 정해야 한다\");\nout.push(\"\");\nout.push(\"둘을 함께 쓰는 것이 흔하다 — 나누어 순서를 지키고, 버전으로 한 번 더 막는다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "버전을 어디서 매길 것인가", type: "decide",
+  { t: "버전을 어디서 매길 것인가요", type: "decide",
     goal: "버전으로 거르기로 했는데, 그 번호를 누가 매길지 정해야 해요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -285,7 +285,7 @@ module.exports = {
     goal: "지금 캐시하는 것들을 <b>낡아도 되는 정도</b>로 나눠 적으세요.\n같은 캐시에 성격이 다른 것이 섞이면 규칙을 정할 수 없어요.",
     ph: "예: 상품 상세 — 5분 낡아도 됨 · 재고 수량 — 낡으면 안 됨(주문 실패) · 사용자 프로필 — 1분 · 환율 — 10분 · 권한 정보 — 낡으면 보안 문제 · 지금은 전부 TTL 60초로 통일" },
 
-  { t: "무엇을 캐시하지 말아야 하는가", type: "decide",
+  { t: "무엇을 캐시하지 말아야 하나요", type: "decide",
     goal: "재고 수량도 캐시에 들어 있어, 품절인데 주문이 들어오는 일이 생겨요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -326,7 +326,7 @@ module.exports = {
 
   { t: "회고 — 무엇을 명시적으로 정했나", type: "note",
     goal: "캐시하는 것마다 <b>낡아도 되는 시간과 무효화 방법</b>을 적어 두세요.\n적어 두지 않은 캐시는 시간이 지나면 아무도 규칙을 모르게 돼요.",
-    ph: "데이터별 허용 낡음과 전략 / 캐시하지 않기로 한 것과 이유 / 적중률 실측 / 만료 몰림을 막은 방법 / 캐시를 껐을 때 서비스가 버티는가" }]
+    ph: "데이터별 허용 낡음과 전략 / 캐시하지 않기로 한 것과 이유 / 적중률 실측 / 만료 몰림을 막은 방법 / 캐시를 껐을 때 서비스가 버티나요" }]
 }
 
 ]};

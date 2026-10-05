@@ -17,7 +17,7 @@ module.exports = {
     goal: "지금 아는 것과 모르는 것을 <b>나눠서</b> 적으세요.\n장애 대응이 어긋나는 가장 흔한 이유는 추측을 사실로 다루기 때문이에요.",
     ph: "아는 것: 오류율 0.2%→12% (03:04부터) · 결제 API 만 · 배포는 없었음\n모르는 것: 몇 명이 영향받는지 · DB 인지 외부 결제사인지 · 03:00에 무슨 일이 있었는지" },
 
-  { t: "가장 먼저 무엇을 하는가", type: "decide",
+  { t: "가장 먼저 무엇을 하나요", type: "decide",
     goal: "오류율이 12% 로 뛰었고 사용자 문의가 들어오기 시작했어요.",
     sit: "무엇을 먼저 할까요?",
     opts: [
@@ -36,7 +36,7 @@ module.exports = {
         fb: "△ 필요한 일이고 빠를수록 좋아요. 다만 <b>영향 범위를 모른 채 공지하면</b> 나중에 정정해야 하고, 정정한 공지는 신뢰를 더 깎아요. 조치를 시작한 직후, 아는 만큼만 알리는 것이 순서예요." }] },
 
   { t: "되돌릴 수 있는 조치를 골라요", type: "build",
-    goal: "지금 쓸 수 있는 조치들을 <b>효과와 되돌릴 수 있는가</b>로 견주는 표를 만드세요.\n무엇을 먼저 할지 순서가 나오게 해요.",
+    goal: "지금 쓸 수 있는 조치들을 <b>효과와 되돌릴 수 있는지</b>로 견주는 표를 만드세요.\n무엇을 먼저 할지 순서가 나오게 해요.",
     hint: "장애 중에 고르는 기준은 '가장 좋은 것' 이 아니라 <b>가장 빨리 되돌릴 수 있는 것</b>예요. 효과가 커도 되돌리기 어려우면 뒤로 미뤄요. 각 조치가 무엇을 희생하는지도 함께 적어야 나중에 설명할 수 있어요.",
     acc: "조치별 효과·소요 시간·되돌릴 수 있는지·희생하는 것이 표로 나오고, 권장 순서가 계산되어 출력되면 완료예요.",
     lang: "javascript",
@@ -49,7 +49,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\n/* 분당 오류율 — 03:00 부터 한 시간 */\nconst series = [];\nfor (let m = 0; m < 20; m++) series.push({ min: m, err: 0.2 + (m % 3) * 0.05 });\nfor (let m = 20; m < 40; m++) series.push({ min: m, err: 11 + (m % 4) * 0.4 });\n\nfunction findBreak(xs) {\n  const warm = 10;\n  const base = xs.slice(0, warm).reduce((s, x) => s + x.err, 0) / warm;\n  const sd = Math.sqrt(xs.slice(0, warm).reduce((s, x) => s + (x.err - base) ** 2, 0) / warm) || 0.01;\n  for (let i = warm; i < xs.length; i++) {\n    if (xs[i].err > base + sd * 6) return { at: xs[i].min, base: +base.toFixed(2), sd: +sd.toFixed(3) };\n  }\n  return null;\n}\n\nconst brk = findBreak(series);\nout.push(\"보통 오류율 \" + brk.base + \"% (표준편차 \" + brk.sd + \")\");\nout.push(\"처음 크게 벗어난 시각: 03:\" + String(brk.at).padStart(2, \"0\"));\n\nconst changes = [\n  { at: 5, what: \"모니터링 대시보드 수정\" },\n  { at: 19, what: \"결제사 API 키 교체\" },\n  { at: 21, what: \"캐시 서버 재시작\" },\n  { at: 35, what: \"로그 수집기 배포\" }\n];\nconst near = changes.filter((c) => Math.abs(c.at - brk.at) <= 3);\nout.push(\"\");\nout.push(\"변곡 앞뒤 3분 안의 변경 — 후보\");\nnear.forEach((c) => out.push(\"  03:\" + String(c.at).padStart(2, \"0\") + \"  \" + c.what));\nout.push(\"\");\nout.push(near.length ? \"후보가 있다 — 여기부터 본다\" : \"후보가 없다 — 바깥에서 온 것을 의심한다\");\nout.push(\"변곡보다 뒤에 있는 변경은 원인이 아니다 (03:35 로그 수집기)\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "무엇을 회고에 남길 것인가", type: "decide",
+  { t: "무엇을 회고에 남길 것인가요", type: "decide",
     goal: "복구했어요. 원인은 결제사 API 키를 교체하면서 새 키의 한도가 낮았던 것이었어요.",
     sit: "회고를 어떻게 쓸까요?",
     opts: [
@@ -87,7 +87,7 @@ module.exports = {
   skills: ["backend", "database", "devops"],
   phases: [
 
-  { t: "무엇을 어디로 옮기는가", type: "note",
+  { t: "무엇을 어디로 옮기나요", type: "note",
     goal: "바꿀 대상과 <b>지금 그것을 쓰는 곳</b>을 전부 적으세요.\n옮기는 중에 어긋나는 것은 대개 '이것도 그 컬럼을 쓰고 있었다' 예요.",
     ph: "예: users.phone (문자열) → users.phone_e164 (정규화) · 쓰는 곳: 가입 API · 알림 발송 배치 · 관리자 검색 · CS 툴 · 리포트 뷰 3개 · 행 4,200만 · 초당 쓰기 90건" },
 
@@ -130,7 +130,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\n/* 옛 값 → 새 값 변환 규칙 (E.164) */\nfunction toE164(s) {\n  const d = String(s).replace(/[^0-9+]/g, \"\");\n  if (d.indexOf(\"+\") === 0) return d;\n  if (d.indexOf(\"0\") === 0) return \"+82\" + d.slice(1);\n  return null;                     // 규칙이 모르는 모양\n}\n\nconst sample = [\n  { old: \"010-1234-5678\", stored: \"+821012345678\" },\n  { old: \"01098765432\", stored: \"+8210987654 32\" },\n  { old: \"+81 90 1111 2222\", stored: \"+819011112222\" },\n  { old: \"02)555-1234\", stored: \"+8225551234\" },\n  { old: \"1588-1588\", stored: null },\n  { old: \"010 0000 0000\", stored: \"+821000000000\" }\n];\n\nconst bad = [];\nlet ok = 0;\nsample.forEach((r) => {\n  const want = toE164(r.old);\n  if (want === r.stored) { ok++; return; }\n  let kind = \"값이 다름\";\n  if (want === null) kind = \"규칙이 모르는 모양\";\n  else if (r.stored === null) kind = \"채워지지 않음\";\n  else if (String(r.stored).replace(/\\s/g, \"\") === want) kind = \"공백이 섞임\";\n  bad.push({ old: r.old, want: want, got: r.stored, kind: kind });\n});\n\nout.push(\"표본 \" + sample.length + \"건 · 일치 \" + ok + \" · 불일치 \" + bad.length);\nout.push(\"\");\nconst byKind = {};\nbad.forEach((b) => { (byKind[b.kind] = byKind[b.kind] || []).push(b); });\nObject.keys(byKind).forEach((k) => {\n  out.push(k + \" (\" + byKind[k].length + \"건)\");\n  byKind[k].forEach((b) => out.push(\"  \" + b.old + \"  기대 \" + b.want + \"  실제 \" + b.got));\n});\n\nout.push(\"\");\nout.push(\"모양별로 묶으면 규칙의 어디가 빠졌는지가 드러난다\");\nout.push(\"'채웠다' 와 '맞게 채웠다' 는 다르다 — 세어 보기 전에는 알 수 없다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "언제 옛 칸을 지울 것인가", type: "decide",
+  { t: "언제 옛 칸을 지울 것인가요", type: "decide",
     goal: "새 칸으로 읽고 쓰기 시작한 지 하루가 지났아요. 옛 칸은 아직 남아 있어요.",
     sit: "언제 지울까요?",
     opts: [
@@ -165,7 +165,7 @@ module.exports = {
     goal: "'다르다' 를 <b>숫자로</b> 적으세요. 어느 지표가 얼마나, 몇 번 중 몇 번 달라지는지 적어요.",
     ph: "예: 일일 매출 합계가 같은 원본으로 두 번 돌리면 0.3% 차이 · 5번 중 2번 · 사용자 수는 항상 같음 · 국가별로 나누면 KR 만 다름 · 파일 순서가 매번 다르게 읽힘" },
 
-  { t: "무엇이 결과를 흔드는가", type: "decide",
+  { t: "무엇이 결과를 흔드나요", type: "decide",
     goal: "같은 입력에 같은 코드인데 결과가 달라요.",
     sit: "무엇을 먼저 의심할까요?",
     opts: [
@@ -197,7 +197,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst rows = [\n  { id: 1, user: \"a\", amt: 100, at: 5 },\n  { id: 2, user: \"a\", amt: 200, at: 3 },\n  { id: 3, user: \"b\", amt: 50, at: 7 },\n  { id: 4, user: \"b\", amt: 50, at: 7 },\n  { id: 5, user: \"c\", amt: 300, at: 1 }\n];\n\nfunction shuffled(xs, seed) {\n  const a = xs.slice();\n  for (let i = a.length - 1; i > 0; i--) {\n    seed = (seed * 1103515245 + 12345) % 2147483648;\n    const j = seed % (i + 1);\n    const t = a[i]; a[i] = a[j]; a[j] = t;\n  }\n  return a;\n}\n\n/* 무엇을 하든 먼저 순서를 못 박는다 — 동점을 깨는 id 까지 */\nconst canon = (xs) => xs.slice().sort((a, b) => (a.at - b.at) || (a.id - b.id));\n\nconst steps = {\n  \"중복 제거\": (xs) => {\n    const seen = new Set(), keep = [];\n    canon(xs).forEach((r) => { const k = r.user + \"|\" + r.amt; if (!seen.has(k)) { seen.add(k); keep.push(r.id); } });\n    return keep.join(\",\");\n  },\n  \"그룹의 첫 행\": (xs) => {\n    const first = {};\n    canon(xs).forEach((r) => { if (first[r.user] === undefined) first[r.user] = r.id; });\n    return JSON.stringify(first);\n  },\n  \"사용자별 합계\": (xs) => {\n    const m = {};\n    canon(xs).forEach((r) => { m[r.user] = (m[r.user] || 0) + r.amt; });\n    return Object.keys(m).sort().map((k) => k + \"=\" + m[k]).join(\" \");\n  }\n};\n\nout.push(\"단계              판정\");\nlet allOk = true;\nObject.keys(steps).forEach((name) => {\n  const got = new Set();\n  for (let s = 1; s <= 20; s++) got.add(String(steps[name](shuffled(rows, s * 97))));\n  if (got.size !== 1) allOk = false;\n  out.push(name.padEnd(18) + (got.size === 1 ? \"결정적  \" + [...got][0] : \"아직 흔들림\"));\n});\n\nout.push(\"\");\nout.push(\"20가지 순서로 돌려 전부 같은가: \" + allOk);\nout.push(\"결과를 내보낼 때도 열쇠로 정렬해야 파일 자체가 같아진다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "품질 검사를 어디에 둘 것인가", type: "decide",
+  { t: "품질 검사를 어디에 둘 것인가요", type: "decide",
     goal: "원본이 이상해도 파이프라인은 그냥 돌아가고, 리포트를 본 사람이 며칠 뒤에 알아채요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -239,7 +239,7 @@ module.exports = {
     goal: "평균 말고 <b>분위수</b>로 적으세요. p50·p95·p99 와 최댓값을 적고, 언제 나빠지는지도 적어요.",
     ph: "예: p50 40ms · p95 180ms · p99 2,400ms · 최대 31초 · 평균 92ms(멀쩡해 보임) · 오전 9시와 매시 정각에 집중 · 특정 API 아니고 전 구간" },
 
-  { t: "평균이 왜 거짓말을 하는가", type: "decide",
+  { t: "평균이 왜 거짓말을 하나요", type: "decide",
     goal: "대시보드의 평균 응답 시간은 92ms 로 목표 안이에요. 그런데 느리다는 문의가 계속 와요.",
     sit: "무엇이 문제인가요?",
     opts: [
@@ -271,7 +271,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst normal = { \"DNS\": 1, \"TCP 연결\": 2, \"TLS\": 3, \"큐 대기\": 2, \"서버 처리\": 28, \"응답 전송\": 4 };\nconst slow = { \"DNS\": 1, \"TCP 연결\": 32, \"TLS\": 48, \"큐 대기\": 1900, \"서버 처리\": 31, \"응답 전송\": 5 };\n\nconst FIX = {\n  \"DNS\": \"결과를 캐시한다\",\n  \"TCP 연결\": \"연결을 재사용한다(keep-alive·풀)\",\n  \"TLS\": \"세션 재개 · 연결 재사용\",\n  \"큐 대기\": \"처리 능력을 늘리거나 부하를 덜어낸다\",\n  \"서버 처리\": \"코드·쿼리를 본다\",\n  \"응답 전송\": \"응답을 줄이거나 압축한다\"\n};\n\nconst keys = Object.keys(normal);\nconst tn = keys.reduce((s, k) => s + normal[k], 0);\nconst ts = keys.reduce((s, k) => s + slow[k], 0);\n\nout.push(\"층            보통(ms)  느림(ms)   배수\");\nkeys.forEach((k) => {\n  const r = normal[k] ? (slow[k] / normal[k]).toFixed(0) : \"—\";\n  out.push(k.padEnd(14) + String(normal[k]).padEnd(10) + String(slow[k]).padEnd(11) + r + \"배\");\n});\nout.push(\"합계          \" + String(tn).padEnd(10) + String(ts).padEnd(11) +\n  (ts / tn).toFixed(0) + \"배\");\n\nconst worst = keys.slice().sort((a, b) => (slow[b] - normal[b]) - (slow[a] - normal[a]))[0];\nout.push(\"\");\nout.push(\"가장 많이 늘어난 층: \" + worst + \" (+\" + (slow[worst] - normal[worst]) + \"ms, 전체의 \" +\n  Math.round((slow[worst] - normal[worst]) / (ts - tn) * 100) + \"%)\");\nout.push(\"처방: \" + FIX[worst]);\nout.push(\"\");\nout.push(\"층마다 처방이 다르다 — 나누지 않으면 엉뚱한 곳을 고친다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "재시도를 어떻게 할 것인가", type: "decide",
+  { t: "재시도를 어떻게 할 것인가요", type: "decide",
     goal: "느린 요청을 줄이려고 2초가 넘으면 다시 보내는 재시도를 넣으려 해요.",
     sit: "어떻게 넣을까요?",
     opts: [
@@ -313,7 +313,7 @@ module.exports = {
     goal: "총액이 아니라 <b>늘어난 항목</b>을 적으세요. 지난달과 이번 달을 항목별로 견주고, 그 시점에 무슨 일이 있었는지 함께 적어요.",
     ph: "예: 총액 210만→640만 · 데이터 전송 40만→310만(가장 큼) · 컴퓨트 120만→150만 · 저장 30만→90만 · 15일에 이미지 서비스를 앱에 직접 연결 · 로그 보존을 90일로 늘림" },
 
-  { t: "무엇부터 볼 것인가", type: "decide",
+  { t: "무엇부터 볼 것인가요", type: "decide",
     goal: "요금이 세 배가 됐어요. 항목이 40개가 넘어요.",
     sit: "무엇부터 할까요?",
     opts: [
@@ -345,7 +345,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst RATE = { \"인터넷(아웃)\": 120, \"리전 간\": 25, \"AZ 간\": 12, \"인터넷(인)\": 0 };\nconst traffic = { \"인터넷(아웃)\": 22000, \"리전 간\": 3000, \"AZ 간\": 9000, \"인터넷(인)\": 18000 };\n\nout.push(\"경로            GB       단가(원/GB)  요금\");\nlet total = 0;\nObject.keys(traffic).forEach((k) => {\n  const cost = traffic[k] * RATE[k];\n  total += cost;\n  out.push(k.padEnd(16) + String(traffic[k]).padEnd(9) +\n    String(RATE[k]).padEnd(13) + (cost / 10000).toFixed(0) + \"만원\");\n});\nout.push(\"합계\".padEnd(16) + \"\".padEnd(22) + (total / 10000).toFixed(0) + \"만원\");\n\nout.push(\"\");\nout.push(\"CDN 적중률   인터넷 전송   요금      절감\");\nconst outGb = traffic[\"인터넷(아웃)\"];\nconst CDN_RATE = 40;\n[0, 0.5, 0.8, 0.95].forEach((hit) => {\n  const origin = outGb * (1 - hit);\n  const cost = origin * RATE[\"인터넷(아웃)\"] + outGb * hit * CDN_RATE;\n  const save = outGb * RATE[\"인터넷(아웃)\"] - cost;\n  out.push((hit * 100).toFixed(0).padStart(3) + \"%\" + \"\".padEnd(9) +\n    String(Math.round(origin)).padEnd(14) +\n    ((cost / 10000).toFixed(0) + \"만\").padEnd(10) +\n    (save > 0 ? \"-\" + (save / 10000).toFixed(0) + \"만원\" : \"—\"));\n});\n\nout.push(\"\");\nout.push(\"들어오는 데이터는 무료지만 나가는 데이터에는 붙는다\");\nout.push(\"이미지를 그대로 서비스하면 전송비가 저장비를 훌쩍 넘는다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "무엇부터 실행할 것인가", type: "decide",
+  { t: "무엇부터 실행할 것인가요", type: "decide",
     goal: "절감 후보가 여섯 개 나왔어요. 어떤 것은 위험하고 어떤 것은 시간이 오래 걸려요.",
     sit: "어떤 기준으로 고를까요?",
     opts: [
@@ -364,7 +364,7 @@ module.exports = {
         fb: "△ 합의는 필요하지만 기준이 아니에요. <b>기준을 먼저 정하고</b> 그 기준으로 줄 세운 것을 합의하는 순서가 맞아요." }] },
 
   { t: "절감 계획을 세워요", type: "build",
-    goal: "후보들을 <b>절감액·위험도·되돌릴 수 있는가</b>로 줄 세우고, 안전한 것만으로 얼마를 아낄 수 있는지 계산하세요.",
+    goal: "후보들을 <b>절감액·위험도·되돌릴 수 있는지</b>로 줄 세우고, 안전한 것만으로 얼마를 아낄 수 있는지 계산하세요.",
     hint: "위험한 조치를 뺐을 때 <b>목표를 채울 수 있는지</b>가 핵심 질문이에요. 채울 수 있으면 위험한 것은 아예 안 해도 되고, 못 채우면 그때 위험을 감수할지 논의하면 돼요. 순서를 계산으로 내면 논쟁이 줄어들어요.",
     acc: "안전한 조치만의 누적 절감액과 목표 달성 여부가 출력되고, 위험한 조치가 왜 뒤로 밀렸는지 함께 나오면 완료예요.",
     lang: "javascript",

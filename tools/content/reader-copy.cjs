@@ -5,7 +5,14 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
 const acorn=require('../../vendor/acorn.js');
+const polish=require('./reader-polish.cjs');
 const ROOT=path.resolve(__dirname,'../..');
+function save(file,content){
+  const temporary=file+'.reader-'+process.pid+'.tmp';
+  fs.writeFileSync(temporary,content,{flag:'wx'});
+  try{for(let attempt=0;;attempt++)try{fs.renameSync(temporary,file);break;}catch(error){if(attempt===5)throw error;Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,100);}}
+  finally{if(fs.existsSync(temporary))fs.unlinkSync(temporary);}
+}
 const PROTECTED=new Set(['a','answer','code','src','source','html','css','js','c','in','out','expect','expected','seed','sol','solution','solutions','reference','ref','files','addFiles','fixture','validate','setup','test','check','assert','run','stepsCode','starter','sample','data','rows','logs','log','cmd','commands','accept','replace','from','to','schema']);
 const KEEP_NAMES=new Set(['title','id','k','lang','type','t0','ord','color','em','icon','selector','storageKey']);
 const PROSE_KEYS=new Set(['q','ex','t','sum','hint','brief','goal','desc','description','text','txt','why','teach','cap']);
@@ -170,6 +177,7 @@ function copula(prefix){
 function friendlyWord(word){
   if(WHOLE_WORD[word])return WHOLE_WORD[word];
   if(NON_ENDINGS.has(word)||word.endsWith('마다')||word.endsWith('보다')||/려다$/.test(word)||['데다','가져다','내려다','어쩌다','람다','다','과다','다대다','일대다','가나다'].includes(word))return word;
+  if(word.endsWith('다')&&['링크','디스크','네트워크','프레임워크','헬프데스크','리스크'].includes(word.slice(0,-1)))return copula(word.slice(0,-1));
   for(const [from,to] of ENDINGS)if(word.endsWith(from))return word.slice(0,-from.length)+to;
   for(const [from,to] of SUFFIXES)if(word.endsWith(from))return word.slice(0,-from.length)+to;
   if(word.endsWith('입니다'))return copula(word.slice(0,-3));
@@ -199,11 +207,13 @@ function replaceWords(text){
 }
 // Leave examples, inline code, tag attributes and machine output untouched.
 function prose(text){
+  text=polish.before(text);
   text=text.replace(/(<(b|strong|em)\b[^>]*>([^<]+)<\/\2>)(?:이)?다(?=$|[\s.!?…,:;）)\]”’])/gi,(_,markup,tag,word)=>markup+copula(word).slice(word.length));
   text=text.replace(/\)다(?=$|[\s.!?…,:;）)\]”’])/g,')예요');
   const fragments=[];
-  const masked=text.replace(/<(?:b|strong|em)\b[^>]*>[^<]+(?:다|가)<\/(?:b|strong|em)>(?=는|를)|<(pre|code|script|style)\b[^>]*>[\s\S]*?<\/\1\s*>|`[^`]*`|<[^>]*>/gi,m=>{fragments.push(m);return '\uE000'+(fragments.length-1)+'\uE001';});
-  return replaceWords(masked).replace(/\uE000(\d+)\uE001/g,(_,i)=>fragments[Number(i)]);
+  const masked=text.replace(/<(?:b|strong|em)\b[^>]*>(?:[^<]|<(?!\/?(?:b|strong|em)\b)[^>]*>)*?(?:다|가)<\/(?:b|strong|em)>\s*(?=는|를|고)|\*\*[^*]+(?:다|가)\*\*\s*(?=는|를|고)|(?:만들다 만|읽다 만|껐다가|갔다가|멈췄다가|올렸다가|몰렸다가|갈라졌다가|늘었다가|죽었다가|붙었다가|끊겼다가|넣었다가|뽑았다가|접었다가|비웠다가|떨어졌다가)|<(pre|code|script|style)\b[^>]*>[\s\S]*?<\/\1\s*>|`[^`]*`|<[^>]*>/gi,m=>{fragments.push(m);return '\uE000'+(fragments.length-1)+'\uE001';});
+  const result=polish.after(replaceWords(masked)).replace(/\uE000(\d+)\uE001/g,(_,i)=>fragments[Number(i)]);
+  return polish.finish(result,copula);
 }
 function keyOf(p){return p&&p.type==='Property'&&!p.computed?(p.key.name??p.key.value):null;}
 function eligible(n,ancestors){
@@ -237,7 +247,12 @@ function walk(n,parents,visit){
 }
 function stringNodes(code,offset=0){
   const result=[];
-  walk(acorn.parse(code,{ecmaVersion:'latest',sourceType:'script'}),[],(n,a)=>{if(eligible(n,a))result.push({n,a,start:n.start+offset,end:n.end+offset,text:n.type==='TemplateElement'?n.value.cooked:n.value});});
+  walk(acorn.parse(code,{ecmaVersion:'latest',sourceType:'script'}),[],(n,a)=>{if(eligible(n,a)){
+    // Keep only the metadata needed for editing. Retaining every ancestor kept
+    // the complete AST of all 38 tracks alive during a whole-corpus review.
+    const property=[...a].reverse().find(x=>x.type==='Property');
+    result.push({n:{type:n.type},a:property?[{type:'Property',key:property.key}]:[],start:n.start+offset,end:n.end+offset,text:n.type==='TemplateElement'?n.value.cooked:n.value});
+  }});
   return result;
 }
 function sources(){
@@ -270,7 +285,7 @@ function apply(){
   const changed=[];let count=0;
   for(const file of sources()){
     const edits=[];
-    for(const item of file.nodes){const updated=prose(item.text);if(updated===item.text)continue;
+    for(const item of file.nodes){let updated=prose(item.text);const property=[...item.a].reverse().find(n=>n.type==='Property');if(['q','question','sit'].includes(keyOf(property)))updated=polish.question(updated);if(updated===item.text)continue;
       if(item.n.type==='TemplateElement'){
         // Quasi ranges omit delimiters. Preserve interpolation and escape literal syntax.
         edits.push({start:item.start,end:item.end,text:updated.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$\{/g,'\\${')});
@@ -279,7 +294,7 @@ function apply(){
     let next=file.raw;for(const e of edits.sort((a,b)=>b.start-a.start))next=next.slice(0,e.start)+e.text+next.slice(e.end);
     if(file.name==='index.html')next=prose(next);
     if(next===file.raw)continue;
-    fs.writeFileSync(path.join(ROOT,file.name),next);count+=edits.length;changed.push({file:file.name,strings:edits.length});
+    save(path.join(ROOT,file.name),next);count+=edits.length;changed.push({file:file.name,strings:edits.length});
   }
   return {changed,count};
 }
@@ -292,21 +307,22 @@ function writeConcepts(){
   // Keep existing keys for tooltips and add the newly explained service terms.
   const original={};for(const p of obj.properties)original[p.key.value??p.key.name]=p.value.value;
   Object.assign(original,definitions);
-  fs.writeFileSync(filename,raw.slice(0,obj.start)+JSON.stringify(original,null,2)+raw.slice(obj.end));
+  save(filename,raw.slice(0,obj.start)+JSON.stringify(original,null,2)+raw.slice(obj.end));
   const introFile=path.join(ROOT,'data/intro.js'),introRaw=fs.readFileSync(introFile,'utf8');
   const introAst=acorn.parse(introRaw,{ecmaVersion:'latest'}),introCall=introAst.body.find(n=>n.type==='ExpressionStatement'&&n.expression.callee?.name==='__CR').expression;
   const introNode=introCall.arguments[1],intro=JSON.parse(introRaw.slice(introNode.start,introNode.end));
   const analogies=JSON.parse(fs.readFileSync(path.join(__dirname,'reader-tracks.json'),'utf8'));
   for(const key of Object.keys(intro)){if(!analogies[key])throw Error('Missing track analogy: '+key);intro[key].analogy=prose(analogies[key]);}
-  fs.writeFileSync(introFile,introRaw.slice(0,introNode.start)+JSON.stringify(intro)+introRaw.slice(introNode.end));
+  save(introFile,introRaw.slice(0,introNode.start)+JSON.stringify(intro)+introRaw.slice(introNode.end));
   const runtime=fs.readFileSync(path.join(__dirname,'reader-guide-runtime.js'),'utf8');
   const titles={};
-  for(const file of sources().filter(f=>/^data\/t-/.test(f.name))){
-    const ast=acorn.parse(file.raw,{ecmaVersion:'latest'}),call=ast.body.find(n=>n.type==='ExpressionStatement'&&n.expression.callee?.name==='__CR').expression;
-    const units=JSON.parse(file.raw.slice(call.arguments[1].start,call.arguments[1].end));
+  for(const name of fs.readdirSync(path.join(ROOT,'data')).filter(n=>/^t-.*\.js$/.test(n))){
+    const raw=fs.readFileSync(path.join(ROOT,'data',name),'utf8');
+    const ast=acorn.parse(raw,{ecmaVersion:'latest'}),call=ast.body.find(n=>n.type==='ExpressionStatement'&&n.expression.callee?.name==='__CR').expression;
+    const units=JSON.parse(raw.slice(call.arguments[1].start,call.arguments[1].end));
     for(const u of units)for(const item of [u,...u.l]){const text=prose(item.t);if(text!==item.t)titles[item.t]=text;}
   }
-  fs.writeFileSync(path.join(ROOT,'data/reader-guide.js'),'/* Generated from tools/content/reader-concepts.json and track titles. */\n'+runtime.replace('/* DEFINITIONS */ {}',JSON.stringify(definitions)).replace('/* TITLES */ {}',JSON.stringify(titles)));
+  save(path.join(ROOT,'data/reader-guide.js'),'/* Generated from tools/content/reader-concepts.json and track titles. */\n'+runtime.replace('/* DEFINITIONS */ {}',JSON.stringify(definitions)).replace('/* TITLES */ {}',JSON.stringify(titles)));
   return Object.keys(definitions).length;
 }
 function writeOptions(){
@@ -333,7 +349,7 @@ function writeOptions(){
       const finished=q.o.map(s=>s.replace(/때문(?=[.!]?$)/,'때문이에요').replace(/기 위해(?=[.!]?$)/,'기 위해서예요').replace(/때(?=[.!]?$)/,'때예요').replace(/것(?=[.!]?$)/,'거예요').replace(/경우(?=[.!]?$)/,'경우예요'));
       if(JSON.stringify(finished)!==JSON.stringify(q.o)){q.o=finished;changed=true;}
     }
-    if(changed)fs.writeFileSync(file,raw.slice(0,node.start)+JSON.stringify(units)+raw.slice(node.end));
+    if(changed)save(file,raw.slice(0,node.start)+JSON.stringify(units)+raw.slice(node.end));
   }
   for(const key of Object.keys(overrides))if(!seen.has(key))throw Error('Missing editorial question: '+key);
   for(const key of Object.keys(answers))if(!converted.has(key))throw Error('Missing output question: '+key);

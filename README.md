@@ -44,13 +44,15 @@ AI 도움은 선택 사항이에요. 질문을 만들고 복사하는 기능은 
 
 화면 안내·문제·보기·해설·이론·프로젝트 설명의 문체와 표현을 다듬었어요. 설명은 해요체로 맞추고, 메뉴와 짧은 제목은 간결하게 유지해요. 코드 안의 문자열, 실제 출력, 실행 검사와 정답 판정에 쓰는 값은 일반 문장과 구분해 보존해요.
 
-38개 분야에 비유를 추가하고 175개 용어의 뜻·예시·비유의 한계를 정리했어요. 배열의 인덱스와 DB 인덱스, 통계의 회귀와 회귀 테스트처럼 이름이 같은 개념은 맥락을 확인해 설명해요. 보기 80묶음과 추가 보기 89개를 다시 썼으며 일부 항목은 서로 겹쳐요. 출력 읽기 문제 39개는 직접 적도록 바꾸고 대소문자를 구분해 채점해요.
+38개 분야에 비유를 추가하고 182개 용어의 뜻·예시·비유의 한계를 정리했어요. 배열의 인덱스와 DB 인덱스, 통계의 회귀와 회귀 테스트처럼 이름이 같은 개념은 맥락을 확인해 설명해요. 보기 80묶음과 추가 보기 103개를 다시 썼으며 일부 항목은 서로 겹쳐요. 출력 읽기 문제 72개는 직접 적도록 바꾸고 대소문자를 구분해 채점해요. 공백 자체를 구분하는 문제는 공백이 보이는 선택형으로 유지해요.
 
-문장을 바꿔도 기존 진도가 이어지도록 문제 ID와 레슨의 저장용 이름을 유지해요. 저장된 오답은 해당 분야를 불러온 뒤 새 설명으로 갱신하며, 기존 복습 간격과 완료 기록을 보존해요. 앱 코드와 오프라인 캐시는 v13이에요.
+전체 학습 문장을 대상으로 어색한 연결 표현과 말투 변환 오류를 검사하고, 짧은 질문을 완성된 문장으로 다듬었어요. 컴파일 경고와 HTTP 입력 검증 등 과장되거나 부정확한 설명도 고쳤어요. 문장을 바꿔도 기존 진도가 이어지도록 문제 ID와 레슨의 저장용 이름을 유지해요. 저장된 오답은 해당 분야를 불러온 뒤 새 설명으로 갱신하며, 기존 복습 간격과 완료 기록을 보존해요. 앱 코드와 오프라인 캐시는 v14이에요.
 
-문체·구조 검사와 대표 내용 검토를 진행했어요. 전체 문제의 사실관계를 사람이 하나씩 재검수했거나 실제 학습자의 습득 속도를 측정한 결과는 아니에요.
+87개 파일의 학습 문장 필드 113,011개를 읽어 알려진 말투 변환 오류를 검사했어요. 이전 main과 비교해 학습 문구 9,941곳이 바뀌었어요. 출력형 문항의 정답을 직접 입력용으로 옮기는 변경을 확인한 뒤, 실행 코드·정답과 채점 정보가 유지되는지 검사했어요. 문체·구조 검사와 대표 내용 검토를 진행했으며, 전체 문제의 사실관계를 사람이 하나씩 재검수했거나 실제 학습자의 습득 속도를 측정한 결과는 아니에요.
 
 수정한 C의 오버플로·패딩 설명은 [C11 위원회 초안의 6.5와 6.2.6.1](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)을 확인했어요. 시각 비교와 스레드 설명은 [Go time 문서](https://pkg.go.dev/time#Time.Equal)와 [Python threading 문서](https://docs.python.org/3/library/threading.html)를 참고했어요.
+
+추가한 고급 용어 설명은 [Lamport의 불변식 설명](https://lamport.azurewebsites.net/tla/tutorial/session6.html), [Herlihy와 Wing의 선형화 논문](https://www.cs.cmu.edu/~wing/publications/HerlihyWing90.pdf), [OpenTelemetry의 관측가능성 설명](https://opentelemetry.io/docs/concepts/observability-primer/), [Google Cloud의 워크플로 설명](https://docs.cloud.google.com/workflows/docs/overview)을 참고했어요.
 
 ## 검증과 수정 도구
 
@@ -60,6 +62,7 @@ Node.js로 검사를 실행해요. 브라우저 검사는 Playwright와 Chromium
 node tests/app.test.cjs
 node tests/engine.test.cjs
 node tests/reader-copy.test.cjs
+node tests/reader-polish.test.cjs
 node tests/vibe-cache-migration.test.cjs
 node tests/service-path.test.cjs
 node tests/vibe-projects.test.cjs

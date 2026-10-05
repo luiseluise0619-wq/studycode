@@ -443,5 +443,75 @@
     "qid": "cku4rk",
     "index": 0,
     "text": "IntStream은 정수의 기본형 값을 다뤄요. 원소마다 Integer 객체를 거치는 박싱·언박싱 비용을 줄여요."
+  },
+  {
+    "qid": "1vuotu1",
+    "index": 3,
+    "text": "데드락을 확인하지 않고 각 트랜잭션이 스스로 끝날 때까지 기다려요."
+  },
+  {
+    "qid": "je5lws",
+    "index": 3,
+    "text": "클라이언트의 시계가 틀어져 인증서 유효 기간을 잘못 판정하기 때문이에요."
+  },
+  {
+    "qid": "jdv7y6",
+    "index": 0,
+    "text": "목록을 스크롤할 수 없게 만들어 같은 이미지에 대한 재요청을 막아요."
+  },
+  {
+    "qid": "1suz477",
+    "index": 0,
+    "text": "현재 네임스페이스에서 Exception 클래스를 찾고, 그 클래스가 없으면 오류가 나요."
+  },
+  {
+    "qid": "ohq6ck",
+    "index": 3,
+    "text": "ref.current가 바뀔 때마다 자동으로 다시 렌더링해야 하는 경우예요."
+  },
+  {
+    "qid": "10qyumc",
+    "index": 2,
+    "text": "스켈레톤을 매번 다른 모양으로 바꿔 사용자의 시선을 계속 붙잡아요."
+  },
+  {
+    "qid": "gl0b6t",
+    "index": 0,
+    "text": "useCallback은 계산한 값을 보관하고, useMemo는 함수 참조를 보관해요."
+  },
+  {
+    "qid": "rk710v",
+    "index": 2,
+    "text": "상태와 관계없는 useEffect가 하나만 있어도 useReducer로 바꿔야 해요."
+  },
+  {
+    "qid": "1g9n6g6",
+    "index": 3,
+    "text": "React 문법이 함수 안의 컴포넌트 정의를 금지해서 빌드가 실패하기 때문이에요."
+  },
+  {
+    "qid": "aemiyt",
+    "index": 0,
+    "text": "React Testing Library가 reducer의 각 상태를 전용 함수로 자동 검사해 주기 때문이에요."
+  },
+  {
+    "qid": "1e8y7pu",
+    "index": 2,
+    "text": "함수 컴포넌트는 children을 받을 수 없어 자식의 오류를 처리하지 못하기 때문이에요."
+  },
+  {
+    "qid": "it3s89",
+    "index": 1,
+    "text": "서로 잠금이 풀리기를 기다려 진행하지 못하는 데드락이에요."
+  },
+  {
+    "qid": "aqe3yh",
+    "index": 1,
+    "text": "메시지를 DB에 저장하고, B에게 새 메시지를 알려 주는 경로는 만들지 않아요."
+  },
+  {
+    "qid": "b5yrb4",
+    "index": 2,
+    "text": "별도 큐나 작업자 없이 앱 서버가 외부 푸시 제공자를 직접 기다리며 호출해요."
   }
 ]

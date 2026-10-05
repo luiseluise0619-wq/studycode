@@ -12,7 +12,7 @@ module.exports = {
     goal: "지금 보이는 증상을 <b>재현할 수 있는 형태</b>로 적으세요.\n어떤 입력에서, 어느 화면에서, 얼마나 어긋나는지를 숫자로 적어요. '가끔 이상하다' 는 조사할 수 없어요.",
     ph: "예: 주문 12건 합계가 화면 138,600원 · 정산 138,599원 (1원 차이) · 할인율 10%·3.3% 섞인 건에서만 · 이름 '김민준' 이 CSV 로 내보내면 '±öÙÁØ' · 파일 크기는 같은데 해시가 다름" },
 
-  { t: "돈을 어떻게 담을 것인가", type: "decide",
+  { t: "돈을 어떻게 담을 것인가요", type: "decide",
     goal: "금액을 소수로 계산하고 있어요. <code>0.1 + 0.2</code> 가 <code>0.30000000000000004</code> 가 되는 그 방식이에요.",
     sit: "어떻게 바꿀까요?",
     opts: [
@@ -44,7 +44,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\nconst text = \"김민준\";\n\n/* UTF-8 로 바이트를 만든다 — 한글 한 글자가 3바이트다 */\nconst bytes = Array.from(new TextEncoder().encode(text));\nout.push(text + \" → UTF-8 \" + bytes.length + \"바이트\");\nout.push(\"  \" + bytes.map((b) => b.toString(16).padStart(2, \"0\")).join(\" \"));\n\n/* 그 바이트를 라틴1 로 읽으면 깨진 글자가 된다 — 흔한 사고의 정체 */\nconst wrong = new TextDecoder(\"latin1\").decode(new Uint8Array(bytes));\nout.push(\"라틴1 로 읽으면: \" + wrong + \"  (\" + wrong.length + \"글자)\");\n\n/* 글자 수 세기도 인코딩마다 다르다 */\nout.push(\"\");\nout.push(\"length      \" + text.length + \"   ← UTF-16 코드 단위\");\nout.push(\"바이트 수   \" + bytes.length + \"   ← UTF-8 저장 크기\");\nout.push(\"사람이 세면 \" + Array.from(text).length + \"   ← 코드 포인트\");\n\n/* 이모지처럼 보조 평면 글자는 셋이 전부 다르다 */\nconst emo = \"가\\u{1F600}\";\nout.push(\"\");\nout.push(\"'\" + emo + \"' → length \" + emo.length +\n  \" · 코드포인트 \" + Array.from(emo).length +\n  \" · UTF-8 \" + new TextEncoder().encode(emo).length + \"바이트\");\nout.push(\"컬럼 길이를 length 로 잡으면 여기서 잘린다\");\n\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "파일을 어떻게 비교할 것인가", type: "decide",
+  { t: "파일을 어떻게 비교할 것인가요", type: "decide",
     goal: "두 서버에 있는 같은 이름의 파일이 같은지 확인해야 해요. 크기는 같은데 정말 같은지 알 수 없어요.",
     sit: "어떻게 비교할까요?",
     opts: [

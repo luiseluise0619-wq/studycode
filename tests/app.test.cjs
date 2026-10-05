@@ -45,7 +45,9 @@ function runBrowserLoopFixture(executablePath){
     let out="", err="", done=false;
     const stop=()=>{
       if(process.platform==="win32"){
-        try{cp.execFileSync("taskkill",["/PID",String(child.pid),"/T","/F"],{windowsHide:true,stdio:"ignore"});}catch(e){}
+        // Some Windows utility processes cannot be killed as part of the tree.
+        // Bound cleanup too, so a completed disposable fixture cannot hang CI.
+        try{cp.execFileSync("taskkill",["/PID",String(child.pid),"/T","/F"],{windowsHide:true,stdio:"ignore",timeout:10000});}catch(e){}
       }else{
         try{process.kill(-child.pid,"SIGKILL");}catch(e){}
       }

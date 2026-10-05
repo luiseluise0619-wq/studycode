@@ -16,6 +16,7 @@ jobs:
           node-version: 22
       - run: node tests/engine.test.cjs
       - run: node tests/service-worker.test.cjs
+      - run: node tests/reader-polish.test.cjs
 
   app:
     name: 앱 (브라우저)

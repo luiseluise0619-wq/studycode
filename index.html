@@ -255,7 +255,7 @@
   .opt.no{border-color:var(--bad); background:var(--bad-soft)}
   .opt.mono{font-family:var(--mono); font-size:15px}
   .opt .ov{white-space:pre-wrap; overflow-wrap:anywhere; min-width:0}
-  .opt.ws .ov{outline:1px dashed var(--line); border-radius:5px; padding:1px 4px} /* 공백이 유의미한 보기: 경계 표시 */
+  .opt.ws .ov{outline:1px dashed var(--line); border-radius:5px; padding:1px 4px} /* 공백이 의미 있는 보기: 경계 표시 */
   /* ── 개념(이론) 화면 ── */
   .theory{max-width:640px; margin:0 auto}
   .th-badge{display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.06em; color:var(--brand); background:color-mix(in srgb,var(--brand) 12%,transparent); border-radius:999px; padding:5px 11px}
@@ -1386,7 +1386,7 @@
 <link rel="stylesheet" href="data/study-design.css">
 <link rel="stylesheet" href="data/study-ui.css">
 <link rel="stylesheet" href="data/vibe-lab.css">
-<link rel="stylesheet" href="data/coderun-design.css?v=13">
+<link rel="stylesheet" href="data/coderun-design.css?v=14">
 
 <!-- ================= HOME ================= -->
 <div class="app" id="home">
@@ -1706,7 +1706,7 @@ const ASK_MODES={
   hint:   {label:"힌트만",     ask:"정답은 알려주지 말고, 어디를 봐야 하는지 힌트만 주세요."},
   concept:{label:"개념 설명",   ask:"이 문제를 풀려면 알아야 하는 개념을 설명해 주세요."},
   how:    {label:"접근법",     ask:"어떤 순서로 생각하면 되는지 접근법만 알려주세요. 완성된 답이나 코드는 주지 마세요."},
-  why:    {label:"왜 이 답인가", ask:"정답이 왜 정답인지, 제 답은 왜 틀렸는지 설명해 주세요."},
+  why:    {label:"왜 이 답인가요", ask:"정답이 왜 정답인지, 제 답은 왜 틀렸는지 설명해 주세요."},
   deep:   {label:"더 깊게",    ask:"이 주제를 실무 관점에서 한 단계 더 깊게, 흔한 실수와 함께 설명해 주세요."},
   free:   {label:"직접 질문",      ask:""}
 };
@@ -2033,7 +2033,7 @@ function ensureIntro(){ return __got.intro?Promise.resolve(true):loadChunk("intr
 function ensureSims(){ return __got.sims?Promise.resolve(true):loadChunk("sims.js"); }
 function ensureDiags(){ return __got.diags?Promise.resolve(true):loadChunk("diags.js"); }
 function ensureProjects(){ return __got.projects?Promise.resolve(true):loadChunk("projects.js"); }
-function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=13")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=13")); }
+function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=14")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=14")); }
 /* TypeScript·JSX 변환기 (sucrase, 288KB). 파서만 필요하므로 부모 문서에서 돌린다. */
 function ensureSucrase(){
   if(typeof Sucrase!=="undefined" && Sucrase.transform) return Promise.resolve(true);
@@ -2838,7 +2838,7 @@ const GIT_MISSIONS=[
 {
  id:"m9", title:"핫픽스만 골라 가져오기",
  brief:"hotfix 브랜치에 커밋이 둘 있는데, main 에는 보안 패치 커밋 하나만 필요해요. 그 커밋만 가져오세요.",
- teach:"`cherry-pick` 은 특정 커밋의 **변경분만** 현재 브랜치에 복사해요. 브랜치 전체를 병합하면 아직 준비 안 된 작업까지 딸려오는 상황에서 써요. 단, 같은 변경이 두 히스토리에 각각 존재하게 되므로 남발하면 중복이 쌓이에요.",
+ teach:"`cherry-pick` 은 특정 커밋의 **변경분만** 현재 브랜치에 복사해요. 브랜치 전체를 병합하면 아직 준비 안 된 작업까지 딸려오는 상황에서 써요. 단, 같은 변경이 두 히스토리에 각각 존재하게 되므로 남발하면 중복이 쌓여요.",
  hint:"git log 로 hotfix 를 확인하려면 git checkout hotfix 후 git log, 다시 main 으로 → git cherry-pick <보안 패치 해시>",
  setup:{ commits:[{m:"init",f:{"app.js":"v1"}}],
    branches:{hotfix:{commits:[{m:"experiment: 실험 코드",f:{"lab.js":"실험"}},{m:"fix: 보안 패치",f:{"auth.js":"patched"}}]}} },
@@ -2961,7 +2961,7 @@ function glRender(){
     '<div class="gl-brief"><b>'+escHtml(m.title)+'</b><p>'+escHtml(m.brief)+'</p>'+
       (m.pre?'<p style="font-size:12.5px;opacity:.8"> '+escHtml(m.pre)+'</p>':"")+
       '<div class="gl-goal'+(met?" met":"")+'">'+(met?"달성 — ":"목표 — ")+escHtml(m.goalTxt)+'</div>'+
-      '<details class="gl-teach"><summary> 이 명령이 무엇을 하는가</summary><p>'+thText(m.teach)+'</p></details>'+
+      "<details class=\"gl-teach\"><summary> 이 명령이 무엇을 하나요</summary><p>"+thText(m.teach)+'</p></details>'+
     '</div>'+
     '<div class="gl-h">저장소 상태 · '+(g.H.t==="b"?("On branch "+escHtml(g.H.n)):"detached HEAD")+
       (st.clean?" · 깨끗함":" · 변경 있음")+(g.ms?" · 병합 충돌 해결 중":"")+(g.rs?" · 리베이스 진행 중":"")+'</div>'+
@@ -3380,7 +3380,7 @@ function openPortfolio(){
   const head='<div class="ovh">포트폴리오</div><h2>밖으로 가져갈 수 있는 기록</h2>';
   if(portfolioEmpty()){
     body.innerHTML=head+'<p class="sub">아직 담을 것이 없어요. 레슨을 풀거나 프로젝트를 하나 끝내면 '+
-      "여기에 <b>근거가 있는 항목만</b> 쌓이에요.</p>"+
+      "여기에 <b>근거가 있는 항목만</b> 쌓여요.</p>"+
       '<button class="ovclose alt" id="pf-close" style="margin-top:14px">닫기</button>';
   } else {
     body.innerHTML=head+
@@ -3526,7 +3526,7 @@ function renderReco(){
       '<div class="reco-t"> 첫 레슨부터 시작하세요</div>'+
       "<div class=\"reco-w\">아직 완료한 레슨이 없어요. 한 레슨(개념 → 문제 5~8개)이면 5분이에요. 먼저 이 트랙이 무엇인지 읽고 시작해도 좋아요.</div>"+
       '<div class="reco-b"><button class="pri" data-go="lesson">▶ 지금 시작</button>'+
-      (TRACK_INTRO[k]?'<button data-go="intro"> '+escHtml(jos(COURSES[k].name,"은","는"))+' 어떤 분야인가</button>':'')+'</div></div>';
+      (TRACK_INTRO[k]?'<button data-go="intro"> '+escHtml(jos(COURSES[k].name,"은","는"))+" 어떤 분야인가요</button>":'')+'</div></div>';
     wire=b=>{ if(b.dataset.go==="lesson"){ const cta=$("hero-cta"); if(cta) cta.click(); }
               else if(b.dataset.go==="intro") openIntro(k); };
   } else if(r.kind==="axis"||r.kind==="keep"){
@@ -5569,7 +5569,7 @@ function traceRun(src, ctx){
 function ensureTraceDemo(){ return __got.traceDemo?Promise.resolve(true):loadChunk("trace-demo.js"); }
 function ensureTraceDemoSql(){ return __got.traceDemoSql?Promise.resolve(true):loadChunk("trace-demo-sql.js"); }
 function ensureTraceDemoJs(){ return __got.traceDemoJs?Promise.resolve(true):loadChunk("trace-demo-js.js"); }
-/* acorn 은 243KB 다. 예제만 볼 사람에게 받게 하지 않는다 — 직접 돌릴 때만 받는다. */
+/* acorn 은 243KB예요. 예제만 볼 사람에게 받게 하지 않는다 — 직접 돌릴 때만 받는다. */
 function ensureJsTracer(){
   return (typeof acorn!=="undefined"?Promise.resolve(true):loadChunk("acorn.js"))
     .then(function(){ return __got.jsTracer?true:loadChunk("trace-js.js"); });
@@ -5938,7 +5938,7 @@ function codingBreakdownHtml(){
   const implAvg=impls.length?Math.round(impls.reduce((a,b)=>a+b,0)/impls.length):null;
   const ps=[]; if(S.proj)for(const k in S.proj){ if(/:score$/.test(k)&&S.proj[k]&&typeof S.proj[k].pct==="number") ps.push(S.proj[k].pct); }
   const prod=ps.length?Math.round(ps.reduce((a,b)=>a+b,0)/ps.length):null;
-  const items=[["Knowledge (아는가)","",Math.round(S.skills.coding||0)],["Implementation (만드는가)","",implAvg],["Debugging (고치는가)","",Math.round(S.skills.debugging||0)],["Production (운영하는가)","",prod]];
+  const items=[["Knowledge (아나요)","",Math.round(S.skills.coding||0)],["Implementation (만드나요)","",implAvg],["Debugging (고치나요)","",Math.round(S.skills.debugging||0)],["Production (운영하나요)","",prod]];
   const bars=items.map(it=>{ const n=it[0],e=it[1],v=it[2]; const val=v==null?0:v, show=v==null?"—":(v+"/100");
     return `<div style="margin:5px 0"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span>${e} ${n}</span><span>${show}</span></div><div style="height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:2px"><i style="display:block;height:100%;width:${val}%;background:var(--brand)"></i></div></div>`;
   }).join("");
@@ -6581,7 +6581,7 @@ function reorderUnits(){ for(const k in COURSES){ const u=COURSES[k].units; if(!
   const idx=u.map((x,i)=>[i,unitDiff(x.title)]); idx.sort((a,b)=> (a[1]-b[1]) || (a[0]-b[0]) );
   COURSES[k].units=idx.map(pr=>u[pr[0]]); } }
 const ANSWER_FIX={};
-const ANSWER_DROP=new Set(["아래데이터를mon순으로정렬했을때mon='mar'행에서lag(rev,1)이반환하는값은?\u0001--rows(mon,rev)--jan,100--feb,150--mar,120--apr,200lag(rev,1)over(orderbymon)"]);
+const ANSWER_DROP=new Set(["아래데이터를mon순으로정렬했을때mon='mar'행에서lag(rev,1)이반환하는값은 무엇일까요?\u0001--rows(mon,rev)--jan,100--feb,150--mar,120--apr,200lag(rev,1)over(orderbymon)"]);
 function __afHelpers(){ function dc(s){let p;s=String(s==null?"":s);do{p=s;s=s.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/&apos;/g,"'");}while(s!==p);return s;} function sc(c){let s=String(c||"");s=s.replace(/<br\s*\/?>/gi,"\n").replace(/<\/(div|p)>/gi,"\n").replace(/<[^>]+>/g,"");return dc(s);} return {nm:function(s){return dc(String(s||"")).replace(/\s+/g,"").toLowerCase();}, nc:function(c){return sc(c).replace(/\s+/g,"").toLowerCase();}}; }
 function applyAnswerFixesFor(t){ try{ const H=__afHelpers(); var SEP="\u0001"; var c=COURSES[t]; if(!c)return;
   c.units.forEach(function(u){ u.lessons.forEach(function(l){ if(!Array.isArray(l.q))return;
@@ -6637,20 +6637,20 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEvent
 })();
 </script>
 
-<script src="data/learning-path.js?v=13"></script>
-<script src="data/reader-guide.js?v=13"></script>
-<script src="data/study-ui.js?v=13"></script>
+<script src="data/learning-path.js?v=14"></script>
+<script src="data/reader-guide.js?v=14"></script>
+<script src="data/study-ui.js?v=14"></script>
 <script src="data/build-worker.js"></script>
 <script src="data/practice-worker.js"></script>
 <script src="data/sql-practice.js"></script>
-<script src="data/study-quality.js?v=13"></script>
+<script src="data/study-quality.js?v=14"></script>
 <script src="vendor/acorn.js"></script>
 <script src="data/dom-practice.js"></script>
-<script src="data/code-literacy.js?v=13"></script>
-<script src="data/vibe-scenarios.js?v=13"></script>
-<script src="data/vibe-challenges.js?v=13"></script>
-<script src="data/vibe-projects.js?v=13"></script>
-<script src="data/vibe-journey.js?v=13"></script>
-<script src="data/vibe-lab.js?v=13"></script>
-<script src="data/service-export.js?v=13"></script>
-<script src="data/service-path.js?v=13"></script>
+<script src="data/code-literacy.js?v=14"></script>
+<script src="data/vibe-scenarios.js?v=14"></script>
+<script src="data/vibe-challenges.js?v=14"></script>
+<script src="data/vibe-projects.js?v=14"></script>
+<script src="data/vibe-journey.js?v=14"></script>
+<script src="data/vibe-lab.js?v=14"></script>
+<script src="data/service-export.js?v=14"></script>
+<script src="data/service-path.js?v=14"></script>

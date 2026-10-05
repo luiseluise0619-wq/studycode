@@ -37,7 +37,7 @@ module.exports = {
     lang: "python",
     sol: "def confusion(y_true, y_pred):\n    tp = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 1)\n    fp = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 1)\n    fn = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 0)\n    tn = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 0)\n    return tp, fp, fn, tn\n\ndef metrics(y_true, y_pred):\n    tp, fp, fn, tn = confusion(y_true, y_pred)\n    acc = (tp + tn) / len(y_true)\n    prec = tp / (tp + fp) if tp + fp else 0.0\n    rec = tp / (tp + fn) if tp + fn else 0.0\n    f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0\n    return tp, fp, fn, tn, acc, prec, rec, f1\n\n# 하루치 결과 (12만 건, 이상 1.8%)\nimport random\nrandom.seed(20260907)\nN, RATE = 120_000, 0.018\ny = [1 if random.random() < RATE else 0 for _ in range(N)]\n\n# 모델 A — 이상의 62% 를 잡고 정상의 0.9% 를 잘못 알린다\npred_a = [1 if (t == 1 and random.random() < 0.62) or\n               (t == 0 and random.random() < 0.009) else 0 for t in y]\n\n# 더미 — 전부 정상이라고 답한다\npred_d = [0] * N\n\ndef show(name, pred):\n    tp, fp, fn, tn, acc, prec, rec, f1 = metrics(y, pred)\n    print(f\"[{name}]\")\n    print(f\"  잡음 TP {tp:>6,}   헛경보 FP {fp:>6,}\")\n    print(f\"  놓침 FN {fn:>6,}   정상   TN {tn:>6,}\")\n    print(f\"  정확도 {acc:.4f}  정밀도 {prec:.3f}  재현율 {rec:.3f}  F1 {f1:.3f}\\n\")\n\nshow(\"모델 A\", pred_a)\nshow(\"전부 정상이라 답하는 더미\", pred_d)\n\nprint(\"더미의 정확도가 98%대인 이유는 이상이 1.8% 뿐이기 때문이다.\")\nprint(\"아무것도 학습하지 않아도 나오는 숫자를 성과로 보고하면 안 된다.\")" },
 
-  { t: "어떤 곡선을 볼 것인가", type: "decide",
+  { t: "어떤 곡선을 볼 것인가요", type: "decide",
     goal: "두 모델을 견주려는데 ROC-AUC 는 둘 다 0.95 안팎으로 비슷해요.",
     sit: "무엇으로 견줄까요?",
     opts: [
@@ -50,7 +50,7 @@ module.exports = {
         fb: "⚠️ 앞 단계에서 확인한 그대로예요. 불균형에서 정확도는 <b>다수 클래스 비율</b>을 되풀이할 뿐이에요." },
       { label: "학습 손실이 더 낮은 쪽을 골라요",
         fx: { algorithms: -2, debugging: -1 },
-        fb: "⚠️ 학습 손실은 <b>학습 데이터에 얼마나 맞췄는가</b>이지 새 데이터에서의 성능이 아니에요. 과적합된 모델일수록 이 숫자는 좋아요." },
+        fb: "⚠️ 학습 손실은 <b>학습 데이터에 얼마나 맞췄나요</b>이지 새 데이터에서의 성능이 아니에요. 과적합된 모델일수록 이 숫자는 좋아요." },
       { label: "F1 이 높은 쪽을 골라요",
         fx: { algorithms: 1 },
         fb: "⚠️ 정확도보다는 낫지만 F1 은 <b>정밀도와 재현율을 같은 무게로</b> 봐요. 놓침이 42만원이고 헛경보가 2천원인 상황에서 두 실수를 같게 다루는 것은 맞지 않아요." }] },
@@ -62,7 +62,7 @@ module.exports = {
     lang: "python",
     sol: "import random\n\nrandom.seed(20260907)\nN, RATE = 120_000, 0.018\nMISS_COST = 420_000      # 놓쳤을 때 피해\nALERT_COST = 2_000       # 헛경보 한 건 처리 비용\nMAX_ALERTS = 800         # 하루에 처리 가능한 알림 수\n\n# 모델이 내놓은 확률 (실제 이상일수록 높게 나오도록 흉내)\nrows = []\nfor _ in range(N):\n    is_bad = random.random() < RATE\n    score = random.betavariate(6, 3) if is_bad else random.betavariate(2, 12)\n    rows.append((1 if is_bad else 0, score))\n\ndef at(th):\n    tp = fp = fn = 0\n    for y, s in rows:\n        if s >= th:\n            tp += y\n            fp += 1 - y\n        else:\n            fn += y\n    cost = fn * MISS_COST + fp * ALERT_COST\n    alerts = tp + fp\n    prec = tp / alerts if alerts else 0.0\n    rec = tp / (tp + fn) if tp + fn else 0.0\n    return tp, fp, fn, alerts, prec, rec, cost\n\nprint(\"임계값   잡음   헛경보   알림수   정밀도  재현율      기대비용   운영가능\")\nbest = None\nbest_ok = None\nfor i in range(1, 20):\n    th = i / 20\n    tp, fp, fn, alerts, prec, rec, cost = at(th)\n    ok = alerts <= MAX_ALERTS\n    print(f\" {th:.2f}   {tp:>5,}  {fp:>6,}  {alerts:>6,}   {prec:>6.3f} {rec:>6.3f}  {cost:>12,}원   {'예' if ok else '아니오'}\")\n    if best is None or cost < best[1]:\n        best = (th, cost)\n    if ok and (best_ok is None or cost < best_ok[1]):\n        best_ok = (th, cost)\n\nprint(f\"\\n비용만 보면 최적 임계값 {best[0]:.2f}  (하루 {best[1]:,}원)\")\nprint(f\"운영 제약(알림 {MAX_ALERTS}건)까지 지키면 {best_ok[0]:.2f}  (하루 {best_ok[1]:,}원)\")\nprint(\"\\n임계값은 모델이 정하는 것이 아니라 비용과 제약이 정한다.\")" },
 
-  { t: "검증을 어떻게 나눌 것인가", type: "decide",
+  { t: "검증을 어떻게 나눌 것인가요", type: "decide",
     goal: "결제 데이터에는 같은 사용자의 거래가 여러 건 있고, 시간 순서도 있어요.",
     sit: "학습·검증 데이터를 어떻게 나눌까요?",
     opts: [

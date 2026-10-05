@@ -14,7 +14,7 @@ module.exports = {
     goal: "'느리다' 대신 <b>어떤 조회가, 어떤 조건에서, 얼마나</b> 느린지 적으세요.\n호출 빈도와 데이터 규모도 함께 적어요. 하루 한 번 도는 3초와 초당 백 번 도는 300ms 는 완전히 다른 문제예요.",
     ph: "예: 주문 목록 조회 p95 3.1초 · 초당 40회 · orders 1,200만 행 · 조건은 고객ID + 기간 + 상태 · 정렬은 주문일 내림차순 · 페이지 20개씩 · 최근 3개월 조회가 90%" },
 
-  { t: "무엇부터 볼 것인가", type: "decide",
+  { t: "무엇부터 볼 것인가요", type: "decide",
     goal: "조회가 느려요. 팀에서 여러 제안이 나왔어요.",
     sit: "어디서부터 시작할까요?",
     opts: [
@@ -24,7 +24,7 @@ module.exports = {
         best: true },
       { label: "조건에 쓰인 컬럼마다 인덱스를 하나씩 만들어요",
         fx: { database: -2, performance: -1 },
-        fb: "⚠️ 인덱스는 공짜가 아니에요. 쓰기마다 함께 갱신되고 저장 공간도 늘어요. 무엇보다 <b>여러 개를 따로 만드는 것보다 잘 고른 복합 인덱스 하나</b>가 대개 나아요. 재 보지 않고 만들면 안 쓰이는 인덱스만 쌓이에요." },
+        fb: "⚠️ 인덱스는 공짜가 아니에요. 쓰기마다 함께 갱신되고 저장 공간도 늘어요. 무엇보다 <b>여러 개를 따로 만드는 것보다 잘 고른 복합 인덱스 하나</b>가 대개 나아요. 재 보지 않고 만들면 안 쓰이는 인덱스만 쌓여요." },
       { label: "데이터베이스 인스턴스 사양을 올려요",
         fx: { database: -2, system_design: -1 },
         fb: "⚠️ 전체 스캔을 더 빠른 기계로 하는 것일 뿐이에요. 데이터가 두 배가 되면 다시 느려지고, 그때는 사양으로 감당할 수 없어요. <b>알고리즘이 바뀌지 않으면 규모가 문제를 되돌려요.</b>" },
@@ -46,7 +46,7 @@ module.exports = {
     lang: "sql",
     sol: "-- 같음 조건 → 범위 조건 → 정렬 순서로 놓는다\n--   customer_id, status : = 로 걸린다   → 앞\n--   ordered_at          : 범위이자 정렬 → 뒤, 정렬 방향까지 맞춘다\nCREATE INDEX CONCURRENTLY idx_orders_cust_status_at\n    ON orders (customer_id, status, ordered_at DESC);\n\n-- 조회하는 컬럼을 담아 두면 테이블을 다시 보지 않는다(커버링)\nCREATE INDEX CONCURRENTLY idx_orders_cover\n    ON orders (customer_id, status, ordered_at DESC)\n INCLUDE (total);\n\n-- 최근 3개월 조회가 90% 라면 부분 인덱스가 훨씬 작고 빠르다\n-- (주의: 조건이 고정 시각이면 시간이 지나며 쓸모없어진다)\nCREATE INDEX CONCURRENTLY idx_orders_recent_paid\n    ON orders (customer_id, ordered_at DESC)\n WHERE status = 'PAID';\n\n-- 다시 재고, 실제로 쓰이는지 확인한다\nEXPLAIN (ANALYZE) SELECT ... ;\n\n-- 안 쓰이는 인덱스는 쓰기 비용만 만든다 — 정기적으로 확인해 지운다\nSELECT indexrelname, idx_scan, pg_size_pretty(pg_relation_size(indexrelid))\n  FROM pg_stat_user_indexes\n WHERE relname = 'orders'\n ORDER BY idx_scan;" },
 
-  { t: "페이지를 어떻게 넘길 것인가", type: "decide",
+  { t: "페이지를 어떻게 넘길 것인가요", type: "decide",
     goal: "목록을 20개씩 나눠 보여 줘요. 뒤쪽 페이지로 갈수록 눈에 띄게 느려져요.",
     sit: "어떻게 바꿀까요?",
     opts: [
@@ -87,7 +87,7 @@ module.exports = {
         fb: "⚠️ 재시도는 필요해요 — 데드락은 완전히 없앨 수 없기 때문이에요. 다만 <b>그것만</b> 하면 원인이 남아 부하가 늘수록 재시도도 늘어요. 순서 통일이 먼저이고 재시도는 그 위의 안전망이에요." },
       { label: "잠금 대기 시간 상한을 늘려 기다리게 해요",
         fx: { performance: -2, database: -1 },
-        fb: "⚠️ 오류는 줄지만 <b>기다리는 요청이 쌓이에요.</b> 연결이 고갈되면 멀쩡하던 조회까지 함께 막혀, 좁은 문제가 서비스 전체로 번져요." }] },
+        fb: "⚠️ 오류는 줄지만 <b>기다리는 요청이 쌓여요.</b> 연결이 고갈되면 멀쩡하던 조회까지 함께 막혀, 좁은 문제가 서비스 전체로 번져요." }] },
 
   { t: "잠금 순서를 통일해요", type: "build",
     goal: "여러 행을 함께 바꾸는 처리에서 <b>언제나 같은 순서</b>로 잠그도록 고치세요.\n트랜잭션 안에서 외부 호출을 하지 않도록 경계도 정리해요.",

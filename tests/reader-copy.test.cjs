@@ -11,12 +11,12 @@ const all=Object.entries(tracks).flatMap(([track,units])=>units.flatMap(u=>u.l.f
 check('13,852 questions retain an explicit stable identity',all.length===13852&&all.every(({q})=>/^[a-z0-9]+$/.test(q.qid)));
 check('legacy question hashes still find the current question',fixtures.every(f=>LP.questionId(f.q)===f.qid&&tracks[f.track].some(u=>u.l.some(l=>l.q.some(q=>LP.questionId(q)===f.qid)))));
 check('38 tracks have their own analogy',Object.values(register('intro.js')).length===38&&Object.values(register('intro.js')).every(t=>t.analogy?.length>40));
-check('175 definitions are available without an AI request',Object.keys(Guide.definitions).length===175);
+check('182 definitions are available without an AI request',Object.keys(Guide.definitions).length===182);
 check('an array index never gets a database-index explanation',!Guide.related({q:'배열의 인덱스 0은 어떤 위치일까요?'},null,'javascript',3).some(x=>x.name==='인덱스'));
 check('SQL index gets its database explanation',Guide.related({q:'조회 인덱스는 왜 만들까요?'},null,'sql',1)[0].name==='인덱스');
 check('precision, regression and tokens respect their domain',!Guide.compatible('정밀도','javascript','소수점 정밀도')&&!Guide.compatible('회귀','ml','선형 회귀')&&!Guide.compatible('토큰','ai','언어 모델의 토큰')&&Guide.compatible('회귀','test','회귀 테스트'));
 check('glossary examples cannot inject markup',!Guide.html([{name:'<img src=x>',text:'<script>alert(1)</script>'}]).includes('<script>')&&Guide.html([{name:'<img src=x>',text:'safe'}]).includes('&lt;img'));
-check('output recall keeps code while requiring case-aware answers',Object.keys(answers).length===39&&all.filter(({q})=>q.outputRecall).length===39&&all.filter(({q})=>q.outputRecall).every(({q})=>q.t==='input'&&q.caseSensitive&&JSON.stringify(q.a)===JSON.stringify(answers[q.qid])));
+check('output recall keeps code while requiring case-aware answers',Object.keys(answers).length===72&&all.filter(({q})=>q.outputRecall).length===72&&all.filter(({q})=>q.outputRecall).every(({q})=>q.t==='input'&&q.caseSensitive&&JSON.stringify(q.a)===JSON.stringify(answers[q.qid])));
 const {prose}=require('../tools/content/reader-copy.cjs');
 check('tone changes preserve clauses joined through emphasis tags',prose('<b>값이 원인이 아니다</b>는 증거입니다.')==='<b>값이 원인이 아니다</b>는 증거예요.');
 check('parenthesized prose changes without changing inline examples',prose('숫자는 그대로 쓴다(`42`).')==='숫자는 그대로 써요(`42`).');
@@ -41,7 +41,7 @@ check('the smallest-counterexample question describes its real boundary',all.fin
    await page.locator('#fill').fill(q.a[0]);await page.locator('#check').click();
    assert.equal(await page.evaluate(()=>run.correct),1,q.qid+' accepted output');
   }
-  check('all 39 output questions accept their real output in the app',true);
+  check('all 72 output questions accept their expected output in the app',true);
   const upper=list.find(({q})=>q.qid==='1lbwfip');
   await page.evaluate(({track,q})=>{run={lang:track,les:{title:'출력 읽기',xp:10,q:[q]},i:0,correct:0,total:1,hearts:5,id:null,color:'#b94e2b',free:true,review:true};openRun();},upper);
   await page.locator('#fill').fill('hello');await page.locator('#check').click();

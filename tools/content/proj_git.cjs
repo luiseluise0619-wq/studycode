@@ -21,13 +21,13 @@ module.exports = {
     lang: "bash",
     sol: "mkdir demo && cd demo\ngit init -q\n\n# 무시 규칙을 '먼저' 만든다 — 추적이 시작되기 전에\ncat > .gitignore <<'EOF'\nnode_modules/\ndist/\n.env\n*.log\n!.env.example\nEOF\n\necho 'API_KEY=' > .env.example\necho '# demo' > README.md\n\ngit add .\ngit commit -qm \"저장소 초기화와 무시 규칙\"\n\n# 확인: 무시가 실제로 먹는지\necho 'API_KEY=secret' > .env\ngit status --short          # .env 가 보이지 않아야 한다\ngit check-ignore -v .env    # 어떤 규칙이 걸렸는지 알려 준다" },
 
-  { t: "무엇을 커밋에 담을 것인가", type: "decide",
+  { t: "무엇을 커밋에 담을 것인가요", type: "decide",
     goal: "버그 수정 하나와, 하는 김에 정리한 코드 포맷 변경이 같은 파일에 섞였어요.",
     sit: "커밋을 어떻게 나눌까요?",
     opts: [
       { label: "git add -p 로 조각을 나눠 버그 수정과 포맷 정리를 각각 커밋해요",
         fx: { coding: 3, debugging: 2, leadership: 1 },
-        fb: "✅ 커밋의 단위는 크기가 아니라 <b>되돌릴 수 있는 단위</b>예요. 나중에 버그 수정만 다른 브랜치로 옮기거나 되돌려야 할 때, 섞여 있으면 방법이 없어요. 리뷰어도 '이 줄은 버그 때문인가 정리 때문인가' 를 묻지 않게 돼요.",
+        fb: "✅ 커밋의 단위는 크기가 아니라 <b>되돌릴 수 있는 단위</b>예요. 나중에 버그 수정만 다른 브랜치로 옮기거나 되돌려야 할 때, 섞여 있으면 방법이 없어요. 리뷰어도 '이 줄은 버그 때문인가요 정리 때문인가' 를 묻지 않게 돼요.",
         best: true },
       { label: "한 번에 커밋하고 메시지에 두 가지를 다 적어요",
         fx: { coding: -1 },

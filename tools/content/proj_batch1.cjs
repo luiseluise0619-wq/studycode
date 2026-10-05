@@ -18,7 +18,7 @@ module.exports = {
     goal: "'느리다' 는 조사할 수 없어요. <b>무엇이 · 얼마나 · 어느 규모에서</b> 느린지를 적으세요.\n지금 걸리는 시간, 견딜 만한 시간, 데이터 크기, 언제부터 느려졌는지를 함께 적어요.",
     ph: "예: 일일 정산 배치가 32분 (작년 4분) · 주문 180만 건 · 메모리 3.2GB 까지 오름 · 목표는 5분 이내 · 건수는 6배인데 시간은 8배가 됐어요" },
 
-  { t: "어디부터 볼 것인가", type: "decide",
+  { t: "어디부터 볼 것인가요", type: "decide",
     goal: "배치가 32분 걸려요. 코드는 2,000줄이고 어디가 느린지 아무도 몰라요.",
     sit: "무엇부터 할까요?",
     opts: [
@@ -50,7 +50,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\nconst ROWS = 1200;\nconst TRIP_MS = 4;        // 왕복 한 번에 드는 고정 비용\nconst PER_ROW_MS = 0.02;  // 한 건을 실어 나르는 비용\n\nfunction cost(rows, batch) {\n  const trips = Math.ceil(rows / batch);\n  return { trips: trips, ms: +(trips * TRIP_MS + rows * PER_ROW_MS).toFixed(1) };\n}\n\nconst one = cost(ROWS, 1);\nout.push(\"건별 조회   왕복 \" + one.trips + \"회  \" + one.ms + \"ms\");\nout.push(\"\");\nout.push(\"묶음   왕복   시간(ms)  건별 대비\");\n[10, 50, 200, 600, 1200].forEach((b) => {\n  const c = cost(ROWS, b);\n  out.push(String(b).padEnd(7) + String(c.trips).padEnd(7) +\n    String(c.ms).padEnd(10) + (one.ms / c.ms).toFixed(1) + \"배 빠름\");\n});\n\nout.push(\"\");\nout.push(\"묶음을 키울수록 빨라지지만 이득은 금세 줄어든다\");\nout.push(\"한 번 실패했을 때 다시 해야 할 양도 함께 커진다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "메모리는 어떻게 할 것인가", type: "decide",
+  { t: "메모리는 어떻게 할 것인가요", type: "decide",
     goal: "속도는 잡았지만 메모리가 3.2GB 까지 올라요. 배치가 파일 전체를 리스트로 읽어 들이고 있어요.",
     sit: "어떻게 바꿀까요?",
     opts: [
@@ -99,7 +99,7 @@ module.exports = {
     goal: "'오래 켜 두면 느려진다' 를 <b>재현 절차</b>로 바꾸세요.\n어떤 조작을 몇 번 반복하면, 얼마 만에, 어떤 증상이 나오는지 적어요.",
     ph: "예: 목록↔상세를 40번 오가면 스크롤이 끊김 · 30분 뒤 탭 메모리 180MB→1.1GB · 새로고침하면 바로 정상 · 상세를 안 열고 목록만 넘기면 안 늘어남" },
 
-  { t: "무엇을 먼저 의심할 것인가", type: "decide",
+  { t: "무엇을 먼저 의심할 것인가요", type: "decide",
     goal: "화면을 오갈 때마다 메모리가 조금씩 늘고 돌아오지 않아요.",
     sit: "어디부터 볼까요?",
     opts: [
@@ -119,7 +119,7 @@ module.exports = {
 
   { t: "붙잡고 있는 것을 드러내요", type: "build",
     goal: "리스너를 등록만 하고 지우지 않을 때 <b>무엇이 남는지</b>를 눈으로 확인하세요.\n정리하는 판과 안 하는 판을 나란히 두고 남은 수를 세요.",
-    hint: "이벤트 대상을 흉내 내는 작은 객체를 만들면 브라우저 없이도 확인돼요. 핵심은 <b>등록한 함수가 바깥의 무엇을 붙잡고 있는가</b>예요. 화면 데이터를 쓰는 함수는 그 데이터 전체를 붙잡아요.",
+    hint: "이벤트 대상을 흉내 내는 작은 객체를 만들면 브라우저 없이도 확인돼요. 핵심은 <b>등록한 함수가 바깥의 무엇을 붙잡고 있나요</b>예요. 화면 데이터를 쓰는 함수는 그 데이터 전체를 붙잡아요.",
     acc: "40번 오갔을 때 정리 있는 쪽과 없는 쪽의 남은 리스너 수·붙잡힌 데이터 크기가 함께 출력되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\n/* 오래 사는 대상 — 실제로는 window 나 document 다 */\nfunction makeHub() {\n  const subs = [];\n  return {\n    on(fn) { subs.push(fn); return () => { const i = subs.indexOf(fn); if (i >= 0) subs.splice(i, 1); }; },\n    count() { return subs.length; },\n    heldRows() { return subs.reduce((s, fn) => s + fn.rows, 0); }\n  };\n}\n\n/* 화면 하나를 열었다 닫는다. 리스너가 화면 데이터를 붙잡는다. */\nfunction visit(hub, cleanUp) {\n  const rows = new Array(5000).fill(0);      // 이 화면이 들고 있는 데이터\n  const handler = () => rows.length;         // 이 함수가 rows 를 붙잡는다\n  handler.rows = rows.length;\n  const off = hub.on(handler);\n  if (cleanUp) off();                        // 떠날 때 지운다\n}\n\n[false, true].forEach((cleanUp) => {\n  const hub = makeHub();\n  for (let i = 0; i < 40; i++) visit(hub, cleanUp);\n  out.push((cleanUp ? \"정리함  \" : \"정리안함\") +\n    \"  남은 리스너 \" + String(hub.count()).padStart(3) +\n    \"  붙잡힌 행 \" + hub.heldRows());\n});\n\nout.push(\"\");\nout.push(\"리스너 하나가 그 화면의 데이터 전부를 붙잡는다\");\nout.push(\"40번 오간 것뿐인데 20만 행이 남아 있다\");\nconsole.log(out.join(\"\\n\"));" },
@@ -131,7 +131,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\n/* 되돌리는 함수를 모아 두는 상자 */\nfunction scope() {\n  let undos = [];\n  let closed = false;\n  return {\n    add(undo) {\n      if (closed) { undo(); return; }        // 이미 닫혔으면 곧바로 되돌린다\n      undos.push(undo);\n    },\n    close() {\n      closed = true;\n      const errs = [];\n      /* 하나가 실패해도 나머지는 계속 정리한다 */\n      undos.forEach((u) => { try { u(); } catch (e) { errs.push(String(e.message)); } });\n      undos = [];\n      return errs;\n    },\n    size() { return undos.length; }\n  };\n}\n\nconst log = [];\nconst sc = scope();\nsc.add(() => log.push(\"리스너 해제\"));\nsc.add(() => log.push(\"타이머 정지\"));\nsc.add(() => { throw new Error(\"구독 해제 실패\"); });\nsc.add(() => log.push(\"캐시 비움\"));\n\nout.push(\"등록된 정리 \" + sc.size() + \"개\");\nconst errs = sc.close();\nout.push(\"정리 결과: \" + log.join(\" · \"));\nout.push(\"실패한 정리: \" + (errs.length ? errs.join(\", \") : \"없음\"));\nout.push(\"하나가 실패해도 나머지는 됐는가: \" + (log.length === 3));\n\n/* 두 번 닫아도 안전해야 한다 */\nconst again = sc.close();\nout.push(\"두 번째 close 에서 다시 부른 정리: \" + (log.length === 3 ? 0 : \"있음\") + \"개\");\n\n/* 닫힌 뒤에 등록하면 곧바로 되돌린다 — 늦게 도착한 것이 남지 않게 */\nsc.add(() => log.push(\"늦게 온 것도 정리\"));\nout.push(\"닫힌 뒤 등록: \" + log[log.length - 1]);\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "캐시를 어디까지 둘 것인가", type: "decide",
+  { t: "캐시를 어디까지 둘 것인가요", type: "decide",
     goal: "목록을 다시 그리지 않으려고 화면마다 결과를 캐시에 넣어 두었어요. 캐시가 계속 자라요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -180,7 +180,7 @@ module.exports = {
     goal: "중복이 <b>어느 조건에서</b> 생기는지 적으세요.\n하루 몇 건인지, 시간 간격은 얼마인지, 어떤 경로에서 들어왔는지를 함께 적어요.",
     ph: "예: 주문 중복 하루 12건 · 두 행의 생성 시각 차이가 대개 0.3초 이내 · 결제 버튼 연타와 앱 재시도 두 경로 · 재고는 0인데 주문은 3건 더 들어온 사례 2건" },
 
-  { t: "어디서 막을 것인가", type: "decide",
+  { t: "어디서 막을 것인가요", type: "decide",
     goal: "'저장하기 전에 이미 있는지 조회한다' 로 막고 있었는데 중복이 계속 생겨요.",
     sit: "어디서 막을까요?",
     opts: [
@@ -212,7 +212,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nfunction server() {\n  const seen = new Map();    // 열쇠 → 처음 결과\n  let handled = 0;\n  return {\n    order(key, item) {\n      if (seen.has(key)) return { id: seen.get(key), fresh: false };\n      handled++;\n      const id = \"ORD-\" + (1000 + handled);\n      seen.set(key, id);\n      return { id: id, fresh: true };\n    },\n    handled() { return handled; }\n  };\n}\n\nconst s = server();\nconst ids = [];\nfor (let i = 0; i < 3; i++) {\n  const r = s.order(\"idem-77\", \"책상\");\n  ids.push(r.id + (r.fresh ? \"(새로 처리)\" : \"(다시 보냄)\"));\n}\nout.push(\"같은 열쇠 3번: \" + ids.join(\"  \"));\nout.push(\"실제 처리 횟수: \" + s.handled());\n\nconst other = s.order(\"idem-78\", \"의자\");\nout.push(\"다른 열쇠: \" + other.id + \"  처리 횟수 \" + s.handled());\n\nout.push(\"\");\nout.push(\"응답이 전부 같은가: \" + (new Set(ids.map((x) => x.slice(0, 8))).size === 1));\nout.push(\"열쇠는 클라이언트가 만든다 — 서버가 만들면 재시도마다 달라진다\");\nout.push(\"기억할 기간을 정해야 한다. 무한히 쌓을 수는 없다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "재고는 어떻게 지킬 것인가", type: "decide",
+  { t: "재고는 어떻게 지킬 것인가요", type: "decide",
     goal: "재고 1개인 상품에 동시에 3건의 주문이 들어와 3건 모두 성공했어요.",
     sit: "어떻게 막을까요?",
     opts: [
@@ -261,7 +261,7 @@ module.exports = {
     goal: "'새는 것 같다' 가 아니라 <b>세어 본 숫자</b>를 적으세요.\n시작 직후와 부하 뒤의 고루틴 수, 부하를 멈춘 뒤 돌아오는지를 적어요.",
     ph: "예: 기동 직후 12 · 1시간 부하 뒤 48,300 · 부하를 멈추고 10분 기다려도 47,900 · 메모리도 함께 오름 · 외부 API 응답이 느린 시간대와 겹침" },
 
-  { t: "어디서 끝나지 않는가", type: "decide",
+  { t: "어디서 끝나지 않나요", type: "decide",
     goal: "요청마다 고루틴을 띄워 외부 API 를 호출하는데, 응답이 늦으면 그 고루틴이 돌아오지 않아요.",
     sit: "무엇이 원인일까요?",
     opts: [
@@ -293,7 +293,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nfunction chan(bufSize) {\n  const box = [];\n  return {\n    trySend(v) { if (box.length < bufSize) { box.push(v); return true; } return false; },\n    stuck() { return 0; }        // 버퍼에 넣고 떠나므로 막히지 않는다\n  };\n}\n\nfunction ctx() {\n  let done = false;\n  return { cancel() { done = true; }, done() { return done; } };\n}\n\nfunction runRequests(n, useCtx, buf) {\n  let leaked = 0, cancelled = 0, delivered = 0;\n  for (let i = 0; i < n; i++) {\n    const c = ctx();                      // 요청마다 자기 취소 신호를 갖는다\n    const ch = chan(buf);\n    if (i % 2 === 0) c.cancel();          // 절반은 호출한 쪽이 먼저 떠난다\n    /* 작업 고루틴 */\n    if (useCtx && c.done()) cancelled++;             // 취소를 보고 포기한다\n    else if (ch.trySend(\"결과\" + i)) delivered++;\n    else leaked++;                                    // 보낼 수도 포기할 수도 없다\n  }\n  return { leaked: leaked, cancelled: cancelled, delivered: delivered };\n}\n\nout.push(\"설정                    남음   전달   취소\");\n[[false, 0, \"취소 없음 · 버퍼 0\"],\n [false, 1, \"취소 없음 · 버퍼 1\"],\n [true, 1, \"취소 있음 · 버퍼 1\"]].forEach((c) => {\n  const r = runRequests(1000, c[0], c[1]);\n  out.push(c[2].padEnd(24) + String(r.leaked).padEnd(7) +\n    String(r.delivered).padEnd(7) + r.cancelled);\n});\n\nout.push(\"\");\nout.push(\"버퍼 하나만 두어도 보내고 떠날 수 있어 막히지 않는다\");\nout.push(\"취소 신호까지 있으면 떠난 요청에 헛일조차 하지 않는다\");\nconsole.log(out.join(\"\\n\"));\n" },
 
-  { t: "얼마나 기다릴 것인가", type: "decide",
+  { t: "얼마나 기다릴 것인가요", type: "decide",
     goal: "외부 API 가 가끔 30초씩 걸려요. 지금은 시간 제한이 없어요.",
     sit: "어떻게 정할까요?",
     opts: [
@@ -320,7 +320,7 @@ module.exports = {
 
   { t: "새는지 자동으로 봐요", type: "build",
     goal: "새는 것을 <b>사람이 그래프를 보고 알아채는 일</b>로 두면 늦어요.\n작업 전후의 살아 있는 수를 견주는 검사를 만드세요.",
-    hint: "누수 검사는 절대 수치가 아니라 <b>전후의 차이</b>로 봐요. 다만 작업이 끝난 직후에는 아직 정리 중인 것이 있을 수 있어, 조금 기다렸어요 재는 여유가 필요해요. 한 번만 재면 우연히 맞을 수 있으므로 여러 번 반복해요.",
+    hint: "누수 검사는 절대 수치가 아니라 <b>전후의 차이</b>로 봐요. 다만 작업이 끝난 직후에는 아직 정리 중인 것이 있을 수 있어, 조금 기다린 뒤 재는 여유가 필요해요. 한 번만 재면 우연히 맞을 수 있으므로 여러 번 반복해요.",
     acc: "여러 번 반복한 뒤 전후 차이가 0인 경우와 아닌 경우가 각각 통과·실패로 판정되어 출력되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\nfunction pool() {\n  let live = 0;\n  return {\n    spawn(finishes) { live++; if (finishes) live--; },\n    live() { return live; }\n  };\n}\n\nfunction leakCheck(finishes, rounds) {\n  const p = pool();\n  const before = p.live();\n  for (let i = 0; i < rounds; i++) p.spawn(finishes);\n  const after = p.live();\n  return { before: before, after: after, diff: after - before, ok: after === before };\n}\n\nout.push(\"판정      전   후     차이   결과\");\n[[true, \"끝난다  \"], [false, \"안 끝난다\"]].forEach((c) => {\n  const r = leakCheck(c[0], 500);\n  out.push(c[1] + \"  \" + String(r.before).padEnd(4) +\n    String(r.after).padEnd(7) + String(r.diff).padEnd(7) +\n    (r.ok ? \"통과\" : \"실패 — 요청만큼 쌓인다\"));\n});\n\nout.push(\"\");\nout.push(\"차이가 0이 아니면 요청 하나마다 하나씩 남고 있다는 뜻이다\");\nout.push(\"한 번만 재면 우연히 맞을 수 있어 여러 번 반복한다\");\nout.push(\"작업 직후에는 정리 중인 것이 있으므로 조금 기다렸다 잰다\");\nconsole.log(out.join(\"\\n\"));" },
@@ -342,7 +342,7 @@ module.exports = {
     goal: "확인된 사실만 적으세요. <b>어떤 요청으로 무엇이 열렸는지</b>를 재현 가능한 형태로 적어요.\n추측과 사실을 섞지 않는 것이 중요해요.",
     ph: "예: /orders/8821 을 다른 계정 토큰으로 호출하면 200 과 함께 주문 상세가 나옴 · 목록 API 는 막혀 있음 · 상세·영수증·취소 세 곳에서 재현 · 로그로 확인된 실제 조회 12건" },
 
-  { t: "어디에서 판정할 것인가", type: "decide",
+  { t: "어디에서 판정할 것인가요", type: "decide",
     goal: "권한 검사가 화면마다 흩어져 있고, 새로 만든 화면 세 곳에서 빠져 있었어요.",
     sit: "어떻게 바꿀까요?",
     opts: [
@@ -381,7 +381,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst ORDERS = [{ id: 1, owner: \"u1\" }, { id: 2, owner: \"u2\" }];\nconst audit = [];\n\n/* 자원을 가져오는 유일한 통로. 사용자가 없으면 아예 동작하지 않는다. */\nfunction repoFind(where, user, id) {\n  if (!user || !user.id) {\n    audit.push({ where: where, ok: false, why: \"사용자 없이 호출\" });\n    throw new Error(where + \": 사용자 없이 자원을 가져올 수 없다\");\n  }\n  const o = ORDERS.filter((x) => x.id === id && x.owner === user.id)[0] || null;\n  audit.push({ where: where, ok: true, why: o ? \"소유자 확인됨\" : \"없거나 남의 것\" });\n  return o;\n}\n\nconst u1 = { id: \"u1\" };\n\n/* 제대로 만든 화면 */\nfunction detailScreen() { return repoFind(\"detail\", u1, 1); }\n/* 권한을 잊은 새 화면 — 사용자를 안 넘겼다 */\nfunction receiptScreen() { return repoFind(\"receipt\", null, 2); }\n\nout.push(\"상세 화면: \" + (detailScreen() ? \"주문 1 반환\" : \"없음\"));\ntry { receiptScreen(); out.push(\"영수증 화면: 통과해 버렸다\"); }\ncatch (e) { out.push(\"영수증 화면: \" + e.message); }\n\nout.push(\"\");\nout.push(\"감사 기록\");\naudit.forEach((a) => out.push(\"  \" + a.where.padEnd(9) + (a.ok ? \"통과\" : \"차단\") + \"  \" + a.why));\n\nconst bad = audit.filter((a) => !a.ok);\nout.push(\"\");\nout.push(\"권한 없이 부른 자리: \" + (bad.length ? bad.map((a) => a.where).join(\", \") : \"없음\"));\nout.push(\"통로를 하나로 두면 잊은 자리가 이름으로 드러난다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "이미 열린 것은 어떻게 할 것인가", type: "decide",
+  { t: "이미 열린 것은 어떻게 할 것인가요", type: "decide",
     goal: "로그를 보니 12건이 실제로 조회됐어요. 고치는 것과 별개로 처리가 필요해요.",
     sit: "무엇을 할까요?",
     opts: [

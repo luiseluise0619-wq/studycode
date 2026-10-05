@@ -17,7 +17,7 @@ module.exports = {
     goal: "'느리다' 가 아니라 <b>어떤 조작이 몇 ms 걸리는지</b> 적으세요.\n어느 규모에서 느껴지기 시작하는지도 함께 적어요.",
     ph: "예: 검색어 한 글자 입력에 220ms · 목록 2,000행일 때부터 체감 · 500행에서는 40ms · 스크롤은 멀쩡 · 정렬 버튼도 같은 증상 · 입력값이 상위 상태에 있음" },
 
-  { t: "왜 전부 다시 그려지는가", type: "decide",
+  { t: "왜 전부 다시 그려지나요", type: "decide",
     goal: "검색어를 상위 컴포넌트의 상태로 두었더니, 한 글자마다 그 아래 전부가 다시 그려져요.",
     sit: "무엇이 문제인가요?",
     opts: [
@@ -33,7 +33,7 @@ module.exports = {
         fb: "△ 2,000행이면 결국 필요한 도구예요. 다만 <b>500행에서 40ms</b> 라면 행 수만의 문제가 아니고, 다시 그리는 범위를 줄이는 것이 먼저예요." },
       { label: "입력이 제어 컴포넌트라서",
         fx: { coding: -1 },
-        fb: "⚠️ 제어 컴포넌트 자체는 문제가 아니에요. 문제는 <b>그 값이 어디에 저장되는가</b>이고, 같은 제어 컴포넌트라도 상태 위치에 따라 결과가 완전히 달라져요." }] },
+        fb: "⚠️ 제어 컴포넌트 자체는 문제가 아니에요. 문제는 <b>그 값이 어디에 저장되는지</b>이고, 같은 제어 컴포넌트라도 상태 위치에 따라 결과가 완전히 달라져요." }] },
 
   { t: "다시 그리는 범위를 세요", type: "build",
     goal: "상태 위치에 따라 <b>몇 개가 다시 그려지는지</b> 세어 비교하세요.\n위에 둘 때와 가장 작은 자리에 둘 때를 나란히 둬요.",
@@ -44,12 +44,12 @@ module.exports = {
 
   { t: "한 글자마다 걸러 내지 않아요", type: "build",
     goal: "입력할 때마다 무거운 계산이 도는 것을 <b>늦추거나 건너뛰어</b> 줄이세요.\n미루기와 솎아내기의 차이를 실행 횟수로 보여 줘요.",
-    hint: "'마지막 입력 뒤 조금 기다렸어요 한 번' 과 '일정 간격으로 최대 한 번' 은 다른 도구예요. 검색은 앞쪽이 맞고(중간 글자로 검색할 이유가 없어요), 스크롤 위치 저장은 뒤쪽이 맞아요. 둘 다 <b>마지막 값이 반드시 반영되어야</b> 한다는 조건이 있어요.",
+    hint: "'마지막 입력 뒤 조금 기다린 뒤 한 번' 과 '일정 간격으로 최대 한 번' 은 다른 도구예요. 검색은 앞쪽이 맞고(중간 글자로 검색할 이유가 없어요), 스크롤 위치 저장은 뒤쪽이 맞아요. 둘 다 <b>마지막 값이 반드시 반영되어야</b> 한다는 조건이 있어요.",
     acc: "같은 입력 흐름에 대해 안 거른 경우·미루기·솎아내기의 실행 횟수가 나오고, 마지막 값이 세 경우 모두 반영되는 것이 출력되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\n/* 사람이 타이핑한 시각(ms) 과 그때의 값 */\nconst keys = [];\n\"검색어입니다\".split(\"\").forEach((ch, i) => keys.push({ at: i * 60, v: \"검색어입니다\".slice(0, i + 1) }));\nkeys.push({ at: 400, v: \"검색어입니다!\" });\n\nfunction plain(evts) { return evts.map((e) => e.v); }\n\nfunction debounce(evts, wait) {\n  const fired = [];\n  evts.forEach((e, i) => {\n    const next = evts[i + 1];\n    if (!next || next.at - e.at >= wait) fired.push(e.v);   // 뒤가 조용하면 실행\n  });\n  return fired;\n}\n\nfunction throttle(evts, every) {\n  const fired = [];\n  let last = -Infinity;\n  evts.forEach((e, i) => {\n    if (e.at - last >= every) { fired.push(e.v); last = e.at; }\n    else if (i === evts.length - 1) fired.push(e.v);        // 마지막은 반드시\n  });\n  return fired;\n}\n\nconst a = plain(keys), b = debounce(keys, 150), c = throttle(keys, 150);\nout.push(\"입력 \" + keys.length + \"번\");\nout.push(\"  안 거름     실행 \" + String(a.length).padStart(2) + \"회   마지막 \\\"\" + a[a.length - 1] + \"\\\"\");\nout.push(\"  미루기(150) 실행 \" + String(b.length).padStart(2) + \"회   마지막 \\\"\" + b[b.length - 1] + \"\\\"\");\nout.push(\"  솎아내기(150) 실행 \" + String(c.length).padStart(2) + \"회   마지막 \\\"\" + c[c.length - 1] + \"\\\"\");\n\nconst want = keys[keys.length - 1].v;\nout.push(\"\");\nout.push(\"마지막 값이 셋 다 반영됐는가: \" +\n  ([a, b, c].every((x) => x[x.length - 1] === want)));\nout.push(\"검색은 미루기 — 중간 글자로 검색할 이유가 없다\");\nout.push(\"스크롤 위치 저장은 솎아내기 — 도중에도 주기적으로 남겨야 한다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "2,000행을 어떻게 그릴 것인가", type: "decide",
+  { t: "2,000행을 어떻게 그릴 것인가요", type: "decide",
     goal: "다시 그리는 범위를 줄였는데도 처음 그릴 때 2,000행이 무거워요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -91,7 +91,7 @@ module.exports = {
     goal: "'검색이 별로다' 를 <b>못 찾은 구체적인 사례</b>로 바꾸세요.\n무엇을 쳤을 때 무엇이 나와야 했는데 무엇이 나왔는지 적어요.",
     ph: "예: '아이폰케이스' → 0건 (상품명은 '아이폰 케이스') · '갤럭시s24' → 24건인데 s24 울트라가 8위 · '노트북거치대' → 0건 · 오타 '맥부기' → 0건 · 상위 10개 중 관련 있는 것 평균 3개" },
 
-  { t: "무엇을 먼저 고칠 것인가", type: "decide",
+  { t: "무엇을 먼저 고칠 것인가요", type: "decide",
     goal: "못 찾는 사례가 네 가지 유형으로 나뉘어요: 띄어쓰기, 부분 일치, 오타, 순위.",
     sit: "무엇부터 고칠까요?",
     opts: [
@@ -123,7 +123,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst docs = [\n  { id: \"p1\", name: \"아이폰 15 케이스 투명\" },\n  { id: \"p2\", name: \"아이폰케이스 가죽\" },\n  { id: \"p9\", name: \"갤럭시 S24 울트라\" },\n  { id: \"p11\", name: \"노트북 거치대 알루미늄\" },\n  { id: \"p12\", name: \"무선 이어폰 노이즈캔슬링\" }\n];\n\n/* 질의와 문서에 똑같이 적용한다 — 한쪽만 하면 여전히 안 맞는다 */\nconst norm = (s) => String(s).toLowerCase().replace(/[\\s\\-_/()]/g, \"\");\ndocs.forEach((d) => { d.key = norm(d.name); });\n\nfunction exact(q) { return docs.filter((d) => d.name.indexOf(q) >= 0).map((d) => d.id); }\nfunction normed(q) { const k = norm(q); return docs.filter((d) => d.key.indexOf(k) >= 0).map((d) => d.id); }\n\nconst qs = [\"아이폰케이스\", \"아이폰 케이스\", \"갤럭시s24\", \"노트북거치대\", \"S24\"];\nout.push(\"질의            그대로 비교        정규화 비교\");\nqs.forEach((q) => {\n  const a = exact(q), b = normed(q);\n  out.push(q.padEnd(16) + (a.length ? a.join(\",\") : \"0건\").padEnd(18) +\n    (b.length ? b.join(\",\") : \"0건\"));\n});\n\nout.push(\"\");\nout.push(\"질의와 문서에 같은 정규화를 걸어야 한다 — 한쪽만 하면 그대로다\");\nout.push(\"정규화한 형태를 미리 저장해 두면 검색할 때 다시 계산하지 않는다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "순위를 어떻게 매길 것인가", type: "decide",
+  { t: "순위를 어떻게 매길 것인가요", type: "decide",
     goal: "이제 결과는 나오는데, 원하는 것이 8위에 있어요.",
     sit: "순위를 어떻게 정할까요?",
     opts: [
@@ -163,9 +163,9 @@ module.exports = {
 
   { t: "무엇을 모르는지 적어요", type: "note",
     goal: "코드를 읽기 전에 <b>모르는 것의 목록</b>을 만드세요.\n답을 적는 것이 아니라 질문을 적는 단계예요.",
-    ph: "예: 이 서비스가 무엇을 하는가 / 누가 호출하는가 / 하루에 몇 번 도는가 / 실패하면 무슨 일이 나는가 / 테스트가 있는가 / 마지막 커밋이 언제인가 / 왜 이렇게 짰는지 아는 사람이 있는가" },
+    ph: "예: 이 서비스가 무엇을 하나요 / 누가 호출하나요 / 하루에 몇 번 도나요 / 실패하면 무슨 일이 나나요 / 테스트가 있나요 / 마지막 커밋이 언제인가요 / 왜 이렇게 짰는지 아는 사람이 있나요" },
 
-  { t: "어디부터 읽을 것인가", type: "decide",
+  { t: "어디부터 읽을 것인가요", type: "decide",
     goal: "4만 줄짜리 서비스를 물려받았고 문서는 없어요.",
     sit: "어디부터 볼까요?",
     opts: [
@@ -197,7 +197,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\n/* 물려받은 함수 — 이상해 보이는 자리가 있다 */\nfunction discountV1(total, grade) {\n  if (grade === \"vip\") return Math.floor(total * 0.8);\n  if (grade === \"gold\") return Math.floor(total * 0.9);\n  if (total > 100000) return total - 5000;\n  return total;\n}\n\n/* 현재 동작을 그대로 적는다 — 옳은지 그른지는 지금 판단하지 않는다 */\nconst inputs = [\n  [10000, \"vip\"], [10000, \"gold\"], [10000, \"basic\"],\n  [200000, \"basic\"], [200000, \"vip\"], [0, \"basic\"], [-100, \"vip\"]\n];\nconst golden = inputs.map((i) => [i[0], i[1], discountV1(i[0], i[1])]);\n\nout.push(\"현재 동작 기록\");\ngolden.forEach((g) => out.push(\"  \" + String(g[0]).padStart(7) + \" \" + g[1].padEnd(7) + \"→ \" + g[2]));\n\n/* 리팩터링 — VIP 에게도 고액 할인을 함께 주도록 '고쳤다' */\nfunction discountV2(total, grade) {\n  let v = total;\n  if (grade === \"vip\") v = Math.floor(v * 0.8);\n  else if (grade === \"gold\") v = Math.floor(v * 0.9);\n  if (total > 100000) v -= 5000;\n  return v;\n}\n\nconst diffs = golden.filter((g) => discountV2(g[0], g[1]) !== g[2]);\nout.push(\"\");\nout.push(\"바꾼 뒤 달라진 항목 \" + diffs.length + \"건\");\ndiffs.forEach((g) => out.push(\"  \" + g[0] + \" \" + g[1] + \": \" + g[2] + \" → \" + discountV2(g[0], g[1])));\nout.push(\"\");\nout.push(diffs.length\n  ? \"달라진 것이 의도한 변경인지 확인해야 한다 — 모르고 바꾼 것이면 되돌린다\"\n  : \"동작이 그대로다 — 안전한 리팩터링\");\nout.push(\"이 테스트는 '옳은 값' 이 아니라 '현재 값' 을 적은 것이다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "어디부터 손댈 것인가", type: "decide",
+  { t: "어디부터 손댈 것인가요", type: "decide",
     goal: "코드를 파악했고 고칠 곳이 많아 보여요. 동시에 이번 달 안에 새 기능도 넣어야 해요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -232,7 +232,7 @@ module.exports = {
     goal: "마우스를 치우고 <b>키보드만으로</b> 주요 흐름을 끝까지 해 보세요.\n막힌 자리와 그때 무슨 일이 났는지 적어요.",
     ph: "예: 탭으로 모달을 열 수 있는데 닫을 수 없음 · 모달 뒤 배경 목록으로 초점이 빠져나감 · 드롭다운이 탭으로 안 열림 · 삭제 버튼이 아이콘만 있어 무엇인지 모름 · 오류 메시지가 읽히지 않음" },
 
-  { t: "무엇부터 고칠 것인가", type: "decide",
+  { t: "무엇부터 고칠 것인가요", type: "decide",
     goal: "접근성 검사 도구가 경고 140개를 냈어요.",
     sit: "무엇부터 할까요?",
     opts: [
@@ -333,14 +333,14 @@ module.exports = {
         fb: "⚠️ <b>KILL 은 잡을 수 없어요.</b> TERM 에는 유용하지만 지금 상황(137)에는 아무 소용이 없어요. 시그널을 잡을 수 있는지 없는지가 이 판단의 전부예요." },
       { label: "메모리 한도를 넉넉히 올려요",
         fx: { system_design: -1 },
-        fb: "⚠️ 죽는 시각이 늦춰질 뿐이에요. 새는 것이 멈추지 않는 한 <b>더 오래 살아요 더 크게 죽어요.</b> 다만 원인을 고칠 때까지의 임시 조치로는 쓸 수 있어요." },
+        fb: "⚠️ 죽는 시각이 늦춰질 뿐이에요. 새는 것이 멈추지 않는 한 <b>더 오래 살아요. 더 크게 죽어요.</b> 다만 원인을 고칠 때까지의 임시 조치로는 쓸 수 있어요." },
       { label: "주기적으로 재시작하게 해요",
         fx: { system_design: -1, debugging: -1 },
         fb: "⚠️ 실제로 쓰이는 임시 조치지만 원인은 그대로예요. <b>임시 조치라고 적어 두지 않으면</b> 영구 조치가 되어 몇 년 뒤에도 아무도 이유를 모른 채 재시작하고 있어요." }] },
 
   { t: "회고 — 무엇이 단서였나", type: "note",
     goal: "원인을 좁히는 데 <b>결정적이었던 단서</b>와, 없어서 오래 걸린 정보를 적으세요.\n지금은 그것이 남는지도 적어요.",
-    ph: "결정적 단서(예: 종료 코드 137) / 없어서 오래 걸린 정보 / 지금은 어디에 남는가 / 경보 기준과 그때까지 남는 시간 / 임시 조치와 그 만료일 / 근본 원인 수정 여부" }]
+    ph: "결정적 단서(예: 종료 코드 137) / 없어서 오래 걸린 정보 / 지금은 어디에 남나요 / 경보 기준과 그때까지 남는 시간 / 임시 조치와 그 만료일 / 근본 원인 수정 여부" }]
 }
 
 ]};

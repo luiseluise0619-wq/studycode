@@ -16,7 +16,7 @@ module.exports = {
     goal: "오프라인 성적과 <b>실제로 관측한 결과</b>를 나란히 적으세요.\n같은 것을 재고 있는지부터 확인해야 해요.",
     ph: "예: 오프라인 AUC 0.79 → 0.86 (신모델 우세) · 온라인 클릭률 3.1% → 2.9% (신모델 열세) · 실험 기간 10일 · 트래픽 50:50 · 오프라인은 지난달 로그로 평가 · 온라인 지표는 클릭률" },
 
-  { t: "왜 어긋날 수 있는가", type: "decide",
+  { t: "왜 어긋날 수 있나요", type: "decide",
     goal: "오프라인에서 확실히 이겼는데 온라인에서 졌어요.",
     sit: "무엇을 먼저 의심할까요?",
     opts: [
@@ -26,7 +26,7 @@ module.exports = {
         best: true },
       { label: "온라인 지표가 오프라인 지표와 다른 것을 재고 있어요",
         fx: { algorithms: 2, communication: 2 },
-        fb: "△ 아주 중요한 확인이고 실제로 자주 그래요. AUC 는 순위를 재고 클릭률은 <b>맨 위에 무엇이 있는가</b>를 재므로, 하위 순위가 좋아져도 클릭률은 그대로일 수 있어요." },
+        fb: "△ 아주 중요한 확인이고 실제로 자주 그래요. AUC 는 순위를 재고 클릭률은 <b>맨 위에 무엇이 있는지</b>를 재므로, 하위 순위가 좋아져도 클릭률은 그대로일 수 있어요." },
       { label: "실험 표본이 모자라서",
         fx: { algorithms: 1 },
         fb: "△ 확인해야 해요. 다만 <b>확인이 가장 쉬운 것</b>이므로 몇 분이면 배제할 수 있고, 그 뒤에 진짜 원인을 찾아요." },
@@ -55,7 +55,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nfunction judge(nA, cA, nB, cB, days) {\n  const pA = cA / nA, pB = cB / nB;\n  const diff = pB - pA;\n  const se = Math.sqrt(pA * (1 - pA) / nA + pB * (1 - pB) / nB);\n  const lo = diff - 1.96 * se, hi = diff + 1.96 * se;\n  const notes = [];\n  if (days < 7) notes.push(\"기간 \" + days + \"일 — 요일 효과가 섞인다\");\n  if (Math.min(nA, nB) < 20000) notes.push(\"표본이 적다\");\n  const verdict = lo > 0 ? \"신모델 우세\" : hi < 0 ? \"신모델 열세\" : \"차이를 확인하지 못함\";\n  return { pA: pA, pB: pB, diff: diff, lo: lo, hi: hi, verdict: verdict, notes: notes };\n}\n\nconst runs = [\n  { n: \"3일차\", nA: 9000, cA: 279, nB: 9000, cB: 297, days: 3 },\n  { n: \"10일차\", nA: 62000, cA: 1922, nB: 62000, cB: 1798, days: 10 },\n  { n: \"10일차(신기효과 제외)\", nA: 43000, cA: 1333, nB: 43000, cB: 1200, days: 7 }\n];\n\nout.push(\"구간                    옛 모델  신모델   차이      95% 구간          판정\");\nruns.forEach((r) => {\n  const j = judge(r.nA, r.cA, r.nB, r.cB, r.days);\n  out.push(r.n.padEnd(24) +\n    (j.pA * 100).toFixed(2) + \"%  \" +\n    (j.pB * 100).toFixed(2) + \"%  \" +\n    ((j.diff >= 0 ? \"+\" : \"\") + (j.diff * 100).toFixed(2) + \"%p\").padEnd(10) +\n    (\"[\" + (j.lo * 100).toFixed(2) + \", \" + (j.hi * 100).toFixed(2) + \"]\").padEnd(18) +\n    j.verdict);\n  j.notes.forEach((x) => out.push(\"    ⚠ \" + x));\n});\n\nout.push(\"\");\nout.push(\"신뢰구간이 0을 넘나들면 '차이가 없다' 가 아니라 '확인하지 못했다' 다\");\nout.push(\"초반 며칠은 새 것에 반응하는 효과가 섞여 부풀거나 꺼진다\");\nout.push(\"요일마다 사용자가 다르므로 최소 한 주는 돌려야 한다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "다음에는 무엇을 바꿀 것인가", type: "decide",
+  { t: "다음에는 무엇을 바꿀 것인가요", type: "decide",
     goal: "원인은 되먹임 편향이었어요. 다음 모델도 같은 로그로 평가하게 돼요.",
     sit: "무엇을 할까요?",
     opts: [
@@ -75,7 +75,7 @@ module.exports = {
 
   { t: "회고 — 무엇을 믿을 수 있게 됐나", type: "note",
     goal: "이번 일로 <b>어떤 숫자를 얼마나 믿을 수 있는지</b> 다시 적으세요.\n다음 모델을 판정하는 절차도 순서대로 적어요.",
-    ph: "오프라인 지표를 얼마나 믿는가 / 누출로 부풀었던 폭 / 무작위 기록을 몇 % 로 정했나 / 온라인 실험의 최소 기간·표본 / 판정 순서(오프라인 거르기 → 온라인 확인) / 되먹임을 다시 재는 주기" }]
+    ph: "오프라인 지표를 얼마나 믿나요 / 누출로 부풀었던 폭 / 무작위 기록을 몇 % 로 정했나 / 온라인 실험의 최소 기간·표본 / 판정 순서(오프라인 거르기 → 온라인 확인) / 되먹임을 다시 재는 주기" }]
 }
 
 ]};

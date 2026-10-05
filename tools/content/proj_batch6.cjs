@@ -17,7 +17,7 @@ module.exports = {
     goal: "결과가 <b>어떻게</b> 이상한지 적으세요.\n'틀리다' 가 아니라 어느 값이 얼마나 어긋났는지, 어느 단계 뒤부터인지 적어요.",
     ph: "예: 정규화 뒤 평균이 0이 아니라 0.34 · 배열 형태가 (100,3) 이어야 하는데 (100,100) · 정수 나눗셈에서 소수가 사라짐 · 원본을 안 건드렸는데 원본이 바뀜 · 표본 20개에서는 맞고 10만 개에서 틀림" },
 
-  { t: "형태가 왜 부풀었는가", type: "decide",
+  { t: "형태가 왜 부풀었나요", type: "decide",
     goal: "(100,3) 배열에서 열 평균을 빼려 했는데 결과가 (100,100) 이 됐어요.",
     sit: "무엇이 문제인가요?",
     opts: [
@@ -49,7 +49,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\n/* 자료형을 흉내 낸다 */\nfunction cast(v, dtype) {\n  if (dtype === \"int32\") return Math.trunc(v);\n  if (dtype === \"uint8\") { const m = Math.trunc(v) % 256; return m < 0 ? m + 256 : m; }\n  return v;   // float64\n}\n\nout.push(\"정수 나눗셈\");\nconst vals = [7, 10, 3];\n[\"int32\", \"float64\"].forEach((dt) => {\n  const got = vals.map((v) => cast(v / 2, dt));\n  out.push(\"  \" + dt.padEnd(10) + \"[\" + vals.join(\",\") + \"] / 2 = [\" + got.join(\",\") + \"]\");\n});\nout.push(\"  → 정수 배열은 소수를 버린다. 평균·비율이 조용히 틀린다\");\n\nout.push(\"\");\nout.push(\"오버플로\");\nconst sums = [200, 100];\n[\"uint8\", \"int32\"].forEach((dt) => {\n  const got = cast(sums[0] + sums[1], dt);\n  out.push(\"  \" + dt.padEnd(10) + sums[0] + \" + \" + sums[1] + \" = \" + got +\n    (got !== 300 ? \"   ← 돌아 나왔다 (기대 300)\" : \"\"));\n});\nout.push(\"  → 오류가 안 난다. 256으로 나눈 나머지가 조용히 들어간다\");\n\nout.push(\"\");\nout.push(\"누적에서 특히 위험하다\");\nlet acc8 = 0, acc32 = 0;\nfor (let i = 0; i < 1000; i++) { acc8 = cast(acc8 + 1, \"uint8\"); acc32 = cast(acc32 + 1, \"int32\"); }\nout.push(\"  1을 1000번 더하면  uint8 \" + acc8 + \"   int32 \" + acc32);\nout.push(\"\");\nout.push(\"메모리를 아끼려 자료형을 줄이면 이 위험이 함께 들어온다\");\nout.push(\"누적하는 값은 원소보다 큰 자료형으로 받아야 한다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "원본이 왜 바뀌는가", type: "build",
+  { t: "원본이 왜 바뀌나요", type: "build",
     goal: "슬라이스가 <b>복사가 아니라 뷰</b>라서 원본이 함께 바뀌는 상황을 보이세요.\n복사한 경우와 나란히 둬요.",
     hint: "배열의 슬라이스는 <b>같은 메모리를 가리키는 창</b>예요. 그래서 슬라이스를 고치면 원본도 바뀌어요. 이것은 성능을 위한 선택이고(큰 배열을 복사하지 않아요), 알고 쓰면 아주 유용하지만 모르면 조용한 버그가 돼요. 명시적으로 복사하면 끊어져요.",
     acc: "뷰를 고쳤을 때와 복사본을 고쳤을 때의 원본이 나란히 출력되고, 차이가 확인되면 완료예요.",
@@ -115,7 +115,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\n/* 여러 상황에서 '표본 8개 과적합' 시험을 돌린 결과 */\nconst runs = [\n  { n: \"정상 파이프라인\", finalLoss: 0.002, steps: 120 },\n  { n: \"라벨이 섞임\", finalLoss: 2.28, steps: 400 },\n  { n: \"입력이 전부 0\", finalLoss: 2.30, steps: 400 },\n  { n: \"그래디언트 끊김\", finalLoss: 2.30, steps: 400 },\n  { n: \"학습률 너무 큼\", finalLoss: 87.4, steps: 30 }\n];\n\nfunction verdict(r) {\n  if (!isFinite(r.finalLoss) || r.finalLoss > 10)\n    return [\"발산\", \"학습률부터 낮춘다 — 파이프라인 확인은 그 다음\"];\n  if (r.finalLoss < 0.05)\n    return [\"통과\", \"모델·손실·최적화기는 정상. 데이터와 정규화를 본다\"];\n  return [\"실패\", \"8개도 못 외운다 — 라벨·입력·연결 중 하나가 끊겼다\"];\n}\n\nout.push(\"표본 8개를 외우게 해 본다 (몇 초면 끝난다)\");\nout.push(\"\");\nout.push(\"상황                최종 손실   판정   다음에 볼 곳\");\nruns.forEach((r) => {\n  const [v, next] = verdict(r);\n  out.push(r.n.padEnd(20) + r.finalLoss.toFixed(3).padStart(9) + \"   \" +\n    v.padEnd(7) + next);\n});\n\nout.push(\"\");\nout.push(\"이 시험이 통과하면 신호는 흐른다 — 문제는 데이터나 정규화 쪽이다\");\nout.push(\"실패하면 큰 데이터로 며칠 돌릴 이유가 없다. 그 앞이 끊겨 있다\");\nout.push(\"파이프라인을 바꿀 때마다 가장 먼저 돌리는 시험으로 둔다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "과적합을 무엇으로 줄일 것인가", type: "decide",
+  { t: "과적합을 무엇으로 줄일 것인가요", type: "decide",
     goal: "학습 정확도 99%, 검증 62% 예요. 데이터는 8,000장이에요.",
     sit: "무엇부터 할까요?",
     opts: [
@@ -182,13 +182,13 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst program = [\n  \"x = 1;\",\n  \"y 2;\",          // = 빠짐\n  \"z = ;\",         // 값 빠짐\n  \"w\",             // = · 값 · ; 셋 다 빠짐 — 한 줄에서 여러 개가 난다\n  \"v = 5;\"\n];\n\nfunction checkLine(line, lineNo) {\n  const errs = [];\n  const m = line.match(/^\\s*([A-Za-z_]\\w*)\\s*(=?)\\s*([0-9A-Za-z_]*)\\s*(;?)\\s*$/);\n  if (!m) { errs.push({ line: lineNo, col: 0, msg: \"문장을 알아볼 수 없습니다\" }); return errs; }\n  if (!m[2]) errs.push({ line: lineNo, col: line.indexOf(m[1]) + m[1].length, msg: \"'=' 가 필요합니다\" });\n  if (!m[3]) errs.push({ line: lineNo, col: line.length - (m[4] ? 1 : 0), msg: \"값이 필요합니다\" });\n  if (!m[4]) errs.push({ line: lineNo, col: line.length, msg: \"';' 로 끝나야 합니다\" });\n  return errs;\n}\n\n/* 오류가 날 때마다 멈추지 않고 다음 줄(동기화 지점)에서 다시 시작한다 */\nlet all = [];\nprogram.forEach((line, i) => { all = all.concat(checkLine(line, i + 1)); });\n\nout.push(\"첫 오류에서 멈출 때\");\nout.push(\"  \" + all[0].line + \"행 \" + all[0].col + \"열: \" + all[0].msg);\nout.push(\"  → 고치고 다시 돌려야 다음 오류를 본다. \" + all.length + \"개면 \" + all.length + \"번 돌린다\");\n\nout.push(\"\");\nout.push(\"회복해서 계속할 때 (\" + all.length + \"개)\");\nall.forEach((e) => out.push(\"  \" + e.line + \"행 \" + e.col + \"열: \" + e.msg));\n\n/* 같은 줄에서 여러 개가 나면 뒤엣것은 앞엣것 때문일 수 있다 */\nconst merged = [];\nall.forEach((e) => {\n  const prev = merged[merged.length - 1];\n  if (prev && prev.line === e.line) { prev.also = (prev.also || 0) + 1; return; }\n  merged.push(Object.assign({}, e));\n});\nout.push(\"\");\nout.push(\"같은 줄의 뒤따르는 오류를 묶으면 (\" + merged.length + \"개)\");\nmerged.forEach((e) => out.push(\"  \" + e.line + \"행 \" + e.col + \"열: \" + e.msg +\n  (e.also ? \"  (같은 줄에 \" + e.also + \"개 더 — 이것부터 고치면 사라질 수 있다)\" : \"\")));\n\nout.push(\"\");\nout.push(\"오류 \" + all.length + \"개 → 보고 \" + merged.length + \"개\");\nout.push(\"한 줄에서 여러 개가 나면 뒤엣것은 대개 앞엣것의 그림자다\");\nout.push(\"회복이 잘못되면 거짓 오류가 줄줄이 나온다 — 가까운 것은 묶는다\");\nconsole.log(out.join(\"\\n\"));\n" },
 
-  { t: "무엇까지 제안할 것인가", type: "decide",
+  { t: "무엇까지 제안할 것인가요", type: "decide",
     goal: "'렝스' 라는 이름을 못 찾았어요. 비슷한 이름 '길이' 가 범위 안에 있어요.",
     sit: "어떻게 할까요?",
     opts: [
       { label: "충분히 가까울 때만 '혹시 이것입니까' 로 제안하고, 아니면 제안하지 않아요",
         fx: { communication: 3, algorithms: 2 },
-        fb: "✅ <b>틀린 제안은 없는 것보다 나빠요.</b> 편집 거리 같은 기준으로 충분히 가까운 것만 고르고, 확신을 담지 않은 말투로 붙이에요. 후보가 여럿이면 몇 개만 보여 주고, 하나도 가깝지 않으면 조용히 넘어가는 것이 맞아요.",
+        fb: "✅ <b>틀린 제안은 없는 것보다 나빠요.</b> 편집 거리 같은 기준으로 충분히 가까운 것만 고르고, 확신을 담지 않은 말투로 붙여요. 후보가 여럿이면 몇 개만 보여 주고, 하나도 가깝지 않으면 조용히 넘어가는 것이 맞아요.",
         best: true },
       { label: "가장 가까운 이름을 항상 제안해요",
         fx: { communication: -1 },

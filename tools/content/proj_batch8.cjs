@@ -16,7 +16,7 @@ module.exports = {
     goal: "브랜치의 <b>나이와 크기</b>를 세어 적으세요.\n'많다' 가 아니라 몇 개가 며칠 됐고 몇 줄 차이인지 적어요.",
     ph: "예: 원격 브랜치 34개 · 30일 넘은 것 19개 · 가장 오래된 것 214일 · 평균 변경 620줄 · 최대 4,100줄 · 지난달 머지 충돌 27건 · 충돌 해결에 평균 40분" },
 
-  { t: "왜 합치기가 어려워졌는가", type: "decide",
+  { t: "왜 합치기가 어려워졌나요", type: "decide",
     goal: "브랜치를 합칠 때마다 충돌이 나고 해결에 오래 걸려요.",
     sit: "무엇이 원인인가요?",
     opts: [
@@ -48,7 +48,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst TOTAL_DAYS = 60;        // 이만큼의 작업을 한다\nconst DRIFT_PER_DAY = 6;      // 하루에 주 브랜치가 이만큼 바뀐다\nconst FIXED_MIN = 12;         // 합칠 때마다 드는 고정 비용(분)\n\n/* 겹친 양이 많을수록 한 건당 비용이 더 든다 — 얽혀서 하나를 풀면 다른 것이 어긋난다 */\nfunction conflictCost(overlap) { return Math.pow(overlap, 1.4) * 0.35; }\n\nfunction plan(times) {\n  const gap = TOTAL_DAYS / times;\n  const overlapEach = gap * DRIFT_PER_DAY;\n  const each = FIXED_MIN + conflictCost(overlapEach);\n  return { times: times, gapDays: gap, overlap: Math.round(overlapEach),\n    total: Math.round(each * times) };\n}\n\nout.push(TOTAL_DAYS + \"일치 작업 · 주 브랜치는 하루 \" + DRIFT_PER_DAY + \"곳씩 바뀐다\");\nout.push(\"\");\nout.push(\"합치는 횟수   간격     한 번 겹침   총 비용\");\nconst rows = [];\n[1, 2, 4, 8, 15, 30, 60].forEach((t) => {\n  const p = plan(t);\n  rows.push(p);\n  out.push(String(t).padEnd(14) + (p.gapDays.toFixed(1) + \"일\").padEnd(9) +\n    String(p.overlap).padEnd(13) + p.total + \"분\");\n});\n\nconst best = rows.slice().sort((a, b) => a.total - b.total)[0];\nconst once = rows[0];\nout.push(\"\");\nout.push(\"가장 싼 주기: \" + best.gapDays.toFixed(1) + \"일마다 (\" + best.times + \"번) — \" +\n  best.total + \"분\");\nout.push(\"한 번에 합치면 \" + once.total + \"분 — \" +\n  (once.total / best.total).toFixed(1) + \"배\");\nout.push(\"\");\nout.push(\"충돌 비용은 겹친 양에 비례 이상으로 는다 — 그래서 잘게 나누면 합계가 준다\");\nout.push(\"다만 합치는 일 자체에 고정 비용이 있어 무한히 잘게 나누는 것이 답은 아니다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "오래된 브랜치를 어떻게 할 것인가", type: "decide",
+  { t: "오래된 브랜치를 어떻게 할 것인가요", type: "decide",
     goal: "30일 넘은 브랜치가 19개 있고, 주인이 회사를 떠난 것도 있어요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -68,7 +68,7 @@ module.exports = {
 
   { t: "회고 — 무엇이 브랜치를 길게 만들었나", type: "note",
     goal: "브랜치가 오래 살게 된 <b>진짜 이유</b>를 적으세요.\n대개 게을러서가 아니라 구조에 이유가 있어요.",
-    ph: "가장 오래 산 브랜치와 그 이유 / 리뷰를 기다린 시간 / 배포 주기가 길어서인가 / 기능이 커서인가 / 정한 규칙 / 자동 정리 조건 / 한 달 뒤 브랜치 수" }]
+    ph: "가장 오래 산 브랜치와 그 이유 / 리뷰를 기다린 시간 / 배포 주기가 길어서인가요 / 기능이 커서인가요 / 정한 규칙 / 자동 정리 조건 / 한 달 뒤 브랜치 수" }]
 },
 
 /* ─────────────────────────────────────────────── linux */
@@ -83,7 +83,7 @@ module.exports = {
     goal: "디스크가 찼을 때 <b>무엇이 어떻게 실패했는지</b> 적으세요.\n쓰기가 막히면 예상 못 한 곳까지 함께 멈춰요.",
     ph: "예: / 가 100% · 애플리케이션은 살아 있는데 요청마다 500 · DB 가 쓰기 거부 · 로그가 안 남아 원인을 못 봄 · ssh 로그인은 되는데 명령이 느림 · 03:40 부터" },
 
-  { t: "가장 먼저 무엇을 하는가", type: "decide",
+  { t: "가장 먼저 무엇을 하나요", type: "decide",
     goal: "디스크가 100% 이고 서비스가 실패하고 있어요.",
     sit: "무엇을 먼저 할까요?",
     opts: [
@@ -132,7 +132,7 @@ module.exports = {
     goal: "스위트를 <b>유형별로 나눠</b> 시간을 적으세요.\n총 시간만 보면 어디를 고칠지 알 수 없어요.",
     ph: "예: 전체 21분 · 단위 1,840개 2분 · 통합 310개 9분 · 브라우저 46개 8분 · 준비(DB 띄우기) 2분 · 가장 느린 테스트 하나가 40초 · 하루 빌드 30회" },
 
-  { t: "무엇부터 줄일 것인가", type: "decide",
+  { t: "무엇부터 줄일 것인가요", type: "decide",
     goal: "21분 중 통합 9분, 브라우저 8분이에요.",
     sit: "무엇부터 할까요?",
     opts: [
@@ -164,7 +164,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\nconst BEFORE_MIN = 21;\n\n/* 처방을 적용한 뒤의 시간 — 느린 것들이 크게 줄었다 */\nconst after = [\n  { n: \"결제 전체 흐름\", sec: 21 },\n  { n: \"주문 목록 렌더\", sec: 34 },\n  { n: \"회원가입 흐름\", sec: 6 },\n  { n: \"재고 동시성\", sec: 14 },\n  { n: \"검색 색인\", sec: 16 },\n  { n: \"권한 매트릭스\", sec: 11 }\n];\nfor (let i = 0; i < 60; i++) after.push({ n: \"기타\" + i, sec: 5.5 });\n\nconst total = after.reduce((s, t) => s + t.sec, 0);\nout.push(\"고치기 전 \" + BEFORE_MIN + \".0분 → 고친 뒤 \" + (total / 60).toFixed(1) +\n  \"분 (한 대에서)\");\n\nfunction split(n, byCount) {\n  const lanes = new Array(n).fill(0);\n  const list = byCount ? after.slice() : after.slice().sort((a, b) => b.sec - a.sec);\n  list.forEach((t, i) => {\n    /* 개수로 나누면 순서대로, 시간으로 나누면 가장 한가한 대에 준다 */\n    const at = byCount ? i % n : lanes.indexOf(Math.min.apply(null, lanes));\n    lanes[at] += t.sec;\n  });\n  return { max: Math.max.apply(null, lanes), min: Math.min.apply(null, lanes) };\n}\n\nconst slowest = Math.max.apply(null, after.map((t) => t.sec));\nout.push(\"\");\nout.push(\"대수   개수로 나눔   시간으로 나눔   가장 느린 테스트\");\n[1, 2, 4, 8, 16, 32].forEach((n) => {\n  const a = split(n, true), b = split(n, false);\n  out.push(String(n).padEnd(7) + (a.max.toFixed(0) + \"초\").padEnd(14) +\n    (b.max.toFixed(0) + \"초\").padEnd(16) + slowest + \"초\");\n});\n\nout.push(\"\");\nout.push(\"개수로 나누면 느린 것이 한 대에 몰려 그 대가 전체 시간을 정한다\");\nout.push(\"시간이 긴 것부터 가장 한가한 대에 주면 훨씬 고르게 나뉜다\");\nout.push(\"아무리 나눠도 가장 느린 테스트 하나(\" + slowest + \"초)보다 짧아지지 않는다\");\nout.push(\"→ 더 줄이려면 그 테스트를 쪼개거나 더 싼 층으로 옮겨야 한다\");\nconsole.log(out.join(\"\\n\"));\n" },
 
-  { t: "무엇을 언제 돌릴 것인가", type: "decide",
+  { t: "무엇을 언제 돌릴 것인가요", type: "decide",
     goal: "고쳐서 4분이 됐어요. 더 줄이고 싶지만 남은 것은 정말 필요한 테스트예요.",
     sit: "어떻게 할까요?",
     opts: [
@@ -231,7 +231,7 @@ module.exports = {
     lang: "javascript",
     sol: "const out = [];\n\n/* 아주 단순한 해시 — 진짜는 sha256 을 쓴다 */\nfunction hash(s) {\n  let h = 2166136261;\n  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }\n  return ((h >>> 0).toString(16)).padStart(8, \"0\");\n}\n\nconst lock = [\n  { n: \"pandas\", ver: \"2.1.4\", sha: hash(\"pandas-2.1.4-real\") },\n  { n: \"requests\", ver: \"2.31.0\", sha: hash(\"requests-2.31.0-real\") },\n  { n: \"fastapi\", ver: \"0.104.1\", sha: hash(\"fastapi-0.104.1-real\") }\n];\n\n/* 저장소에서 실제로 받은 파일들 — requests 만 내용이 다르다 */\nconst got = [\n  { n: \"pandas\", ver: \"2.1.4\", body: \"pandas-2.1.4-real\" },\n  { n: \"requests\", ver: \"2.31.0\", body: \"requests-2.31.0-TAMPERED\" },\n  { n: \"fastapi\", ver: \"0.104.1\", body: \"fastapi-0.104.1-real\" }\n];\n\nout.push(\"패키지       버전만 확인   해시까지 확인\");\nlet stopped = null;\ngot.forEach((g) => {\n  const want = lock.filter((l) => l.n === g.n)[0];\n  const verOk = want && want.ver === g.ver;\n  const shaOk = want && want.sha === hash(g.body);\n  if (!shaOk && !stopped) stopped = g.n;\n  out.push(g.n.padEnd(13) + (verOk ? \"통과      \" : \"실패      \").padEnd(14) +\n    (shaOk ? \"통과\" : \"실패 — 다른 파일이다\"));\n});\n\nout.push(\"\");\nout.push(\"버전만 보면 셋 다 통과한다\");\nout.push(\"해시까지 보면 \" + stopped + \" 에서 멈춘다 — 같은 버전 번호의 다른 파일\");\nout.push(\"\");\nout.push(\"같은 버전 번호의 파일이 바뀌는 일은 실제로 있다\");\nout.push(\"  · 실수로 다시 올림  · 저장소가 공격당함  · 미러가 다름\");\nout.push(\"버전 고정이 '무엇을' 을 정한다면 해시는 '정확히 그것인가' 를 확인한다\");\nconsole.log(out.join(\"\\n\"));" },
 
-  { t: "어디까지 똑같이 만들 것인가", type: "decide",
+  { t: "어디까지 똑같이 만들 것인가요", type: "decide",
     goal: "의존성을 고정했는데도 운영에서만 실패하는 것이 남았어요.",
     sit: "어떻게 할까요?",
     opts: [
