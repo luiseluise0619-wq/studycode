@@ -167,7 +167,7 @@
         if (stop) break;
         if (produced === 0 && (kind === "SELECT" || kind === "WITH")) {
           if (!open(line, "행 없음", 1)) break;
-          add({ e: "out", text: "조건에 맞는 행이 없습니다.\n" });
+          add({ e: "out", text: "조건에 맞는 행이 없어요.\n" });
         }
         out += produced ? (produced + "행\n") : "";
 

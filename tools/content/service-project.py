@@ -405,5 +405,14 @@ for i, lesson in enumerate(lessons, 1):
     solutions.append(files(i))
 
 data={'projects':[project],'sol':{project['id']:solutions}}
+# Editorial copy is stored separately so regenerating checks never restores old wording.
+for edit in json.loads((repo/'tools/content/service-reader-copy.json').read_text(encoding='utf-8')):
+    target = data
+    for key in edit['path'][:-1]:
+        target = target[key]
+    key = edit['path'][-1]
+    if target[key] not in (edit['before'], edit['after']):
+        raise ValueError(f"Copy source changed; review the wording at {edit['path']}")
+    target[key] = edit['after']
 (repo/'data/service-project.js').write_text("/* One reservation service grows through implementation, failure handling and operations. */\n__CR('servicebuild',"+json.dumps(data,ensure_ascii=False,separators=(',',':'))+");\n",encoding='utf-8')
 print(json.dumps({'stages':len(lessons),'uniqueChecks':sum(map(len,groups)),'cumulativeChecks':sum(len(d['tests']) for d in project['days'])}))

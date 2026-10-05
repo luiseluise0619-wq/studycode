@@ -1,0 +1,37 @@
+[
+  {
+    "track": "python",
+    "q": {
+      "t": "choice",
+      "k": "출력 결과",
+      "q": "다음 코드의 출력은?",
+      "code": "print(\"Hello\".upper())",
+      "o": [
+        "HELLO",
+        "hello",
+        "HELLo",
+        "Hello"
+      ],
+      "a": 0,
+      "ex": "upper() 는 문자열의 모든 글자를 대문자로 바꾼 새 문자열을 돌려준다. 그래서 HELLO 가 나온다. 첫 글자만 대문자로 하려면 capitalize(), 소문자로 바꾸려면 lower() 다. 원본 문자열은 바뀌지 않으므로 결과를 변수에 받아야 한다."
+    },
+    "qid": "1lbwfip"
+  },
+  {
+    "track": "sql",
+    "q": {
+      "t": "choice",
+      "k": "개념",
+      "q": "LEFT JOIN과 RIGHT JOIN의 관계로 옳은 것은?",
+      "o": [
+        "테이블 순서를 바꾸면 서로 같은 결과를 낼 수 있다",
+        "RIGHT JOIN이 더 많은 행을 반환하게 된다",
+        "완전히 다른 연산이라 대체 불가",
+        "둘 다 교집합만 반환"
+      ],
+      "a": 0,
+      "ex": "A LEFT JOIN B 는 B RIGHT JOIN A 와 동일한 결과를 낸다."
+    },
+    "qid": "1trstul"
+  }
+]

@@ -1323,7 +1323,7 @@
 
   /* ============================================================
      iOS 레이아웃 — 색만 바꾸면 애플처럼 보이지 않는다.
-     애플의 화면을 애플처럼 만드는 것은 <b>세 가지 배치 습관</b>이다.
+     애플의 화면을 애플처럼 만드는 것은 <b>세 가지 배치 습관</b>이에요.
        1) 큰 제목이 있고, 스크롤하면 작은 제목으로 접힌다
        2) 목록은 흰 카드 하나에 담기고 줄 사이는 머리카락 한 올로 나뉜다
        3) 고르는 것은 칩이 아니라 분절 컨트롤(segmented control)이다
@@ -1386,7 +1386,7 @@
 <link rel="stylesheet" href="data/study-design.css">
 <link rel="stylesheet" href="data/study-ui.css">
 <link rel="stylesheet" href="data/vibe-lab.css">
-<link rel="stylesheet" href="data/coderun-design.css">
+<link rel="stylesheet" href="data/coderun-design.css?v=13">
 
 <!-- ================= HOME ================= -->
 <div class="app" id="home">
@@ -1617,12 +1617,12 @@ function openAiSetup(){ const o=$("aiov"), body=$("aiov-body"); const c=aiCfg();
   const p=AI_PROVIDERS[c.provider];
   const modelOpts=p.models.map(m=>`<option${c.model===m?" selected":""}>${m}</option>`).join("");
   body.innerHTML=`<div class="ovh">AI 멘토 · V5</div><h2>막히면 물어보세요</h2>
-    <p class="sub"><b>모든 문제</b>에서 <b>모르겠어요</b> 버튼으로 물어볼 수 있습니다. 풀기 전에는 정답을 알려주지 않고 힌트·개념·접근법만 주며, 답을 낸 뒤에는 왜 그 답인지 전체 설명을 해 줍니다. 코딩·SQL 문제는 제출한 코드에 대한 시니어 리뷰(정확성·엣지·성능·가독성)도 받을 수 있어요.</p>
+    <p class="sub"><b>모든 문제</b>에서 <b>모르겠어요</b> 버튼으로 물어볼 수 있어요. 풀기 전에는 정답을 알려주지 않고 힌트·개념·접근법만 주며, 답을 낸 뒤에는 왜 그 답인지 전체 설명을 해 줘요. 코딩·SQL 문제는 제출한 코드에 대한 시니어 리뷰(정확성·엣지·성능·가독성)도 받을 수 있어요.</p>
     <div class="ai-field"><label>제공자</label><select id="ai-prov">${provOpts}</select></div>
     <div class="ai-field"><label>모델</label><select id="ai-model">${modelOpts}</select></div>
     <div class="ai-field" id="ai-keyfield"${p.noKey?' style="display:none"':''}><label>API 키 (BYOK)</label><input id="ai-key" type="password" placeholder="${p.keyHint}" value="${escHtml(c.key||"")}"></div>
-    <p class="ai-note" id="ai-note-key"${p.noKey?' style="display:none"':''}>키는 <b>이 브라우저에만</b> 저장되며 서버로 전송되지 않습니다. 리뷰 요청 시에만 선택한 제공자로 직접 전송됩니다. 키 발급: <a id="ai-keylink" href="${p.url}" target="_blank" rel="noopener" style="color:var(--brand)">${p.url}</a></p>
-    <p class="ai-note" id="ai-note-proxy"${p.noKey?'':' style="display:none"'}>서버(<code>/api/review</code>)가 <code>GEMINI_API_KEY</code>로 대신 호출합니다 — <b>키 입력 불필요</b>. Vercel에 함수가 배포돼 있어야 동작해요. (이 공개 엔드포인트는 방문자가 사용량을 소비할 수 있으니 무료 한도 프로젝트를 권장)</p>
+    <p class="ai-note" id="ai-note-key"${p.noKey?' style="display:none"':''}>키는 <b>이 브라우저에만</b> 저장되며 서버로 전송되지 않아요. 리뷰 요청 시에만 선택한 제공자로 직접 전송돼요. 키 발급: <a id="ai-keylink" href="${p.url}" target="_blank" rel="noopener" style="color:var(--brand)">${p.url}</a></p>
+    <p class="ai-note" id="ai-note-proxy"${p.noKey?'':' style="display:none"'}>서버(<code>/api/review</code>)가 <code>GEMINI_API_KEY</code>로 대신 호출해요 — <b>키 입력 불필요</b>. Vercel에 함수가 배포돼 있어야 동작해요. (이 공개 엔드포인트는 방문자가 사용량을 소비할 수 있으니 무료 한도 프로젝트를 권장)</p>
     <button class="ovclose" id="ai-save" style="margin-top:12px">저장</button>
     <button class="ovclose alt" id="ai-close">닫기</button>`;
   const provSel=$("ai-prov"), modelSel=$("ai-model");
@@ -1636,13 +1636,14 @@ function openAiSetup(){ const o=$("aiov"), body=$("aiov-body"); const c=aiCfg();
   o.onclick=e=>{ if(e.target===o){ o.classList.remove("on"); document.body.style.overflow=""; } };
   o.classList.add("on"); document.body.style.overflow="hidden";
 }
+const AI_READER_TONE='\n설명 문장은 자연스러운 ~해요 말투로 맞추세요. 낯선 용어는 쉬운 뜻부터 말하고, 이해에 도움이 될 때만 짧은 일상 비유를 하나 쓰세요. 비유와 실제 동작의 차이도 알려 주세요. 같은 말을 되풀이하거나 막연한 칭찬으로 채우지 마세요.';
 function aiReviewInto(host, q, code, lang){
   if(!aiReady()){ openAiSetup(); return; }
   host.innerHTML='<div class="ai-review"><div class="ai-head"><span class="ai-spin"></span>시니어 멘토가 코드를 검토 중…</div></div>';
   const prob=(q.title||q.q||q.goal||"코딩 문제");
-  const sys="당신은 시니어 소프트웨어 엔지니어입니다. 주니어 개발자의 코드를 리뷰합니다. 한국어로, 간결하고 구체적으로 답하세요. 다음 5개 소제목을 '## 제목' 형식으로 사용하세요: 정확성, 엣지 케이스, 성능, 가독성, 시니어의 한마디. 각 항목은 1~3개의 불릿(- )으로. 칭찬만 하지 말고 실제로 개선점을 짚으세요. 코드를 다시 작성해 주지는 말고 방향만 제시하세요.";
+  const sys="당신은 시니어 소프트웨어 엔지니어예요. 주니어 개발자의 코드를 리뷰해요. 한국어로, 간결하고 구체적으로 답하세요. 다음 5개 소제목을 '## 제목' 형식으로 사용하세요: 정확성, 엣지 케이스, 성능, 가독성, 시니어의 한마디. 각 항목은 1~3개의 불릿(- )으로. 칭찬만 하지 말고 실제로 개선점을 짚으세요. 코드를 다시 작성해 주지는 말고 방향만 제시하세요.";
   const user="문제:\n"+prob+"\n\n언어: "+(lang||"JavaScript")+"\n\n제출한 코드:\n```\n"+code+"\n```";
-  aiCall(sys,user,1400).then(txt=>{
+  aiCall(sys+AI_READER_TONE,user,1400).then(txt=>{
     if(!txt){ host.innerHTML='<div class="ai-review"><div class="ai-head">AI 리뷰</div><p>빈 응답을 받았어요. 모델·키를 확인해 주세요.</p></div>'; return; }
     host.innerHTML='<div class="ai-review"><div class="ai-head">AI 코드 리뷰 · '+escHtml(aiCfg().model)+'</div>'+aiMd(txt)+'</div>';
   }).catch(e=>{
@@ -1670,12 +1671,12 @@ function qAsText(q){
   if(Array.isArray(q.items)){
     const isLog=q.t==="log";
     s+="\n\n["+(isLog?"로그":"검토 항목")+"]\n"+q.items.map((it,i)=>(i+1)+". "+qPlain(it.txt)).join("\n");
-    s+="\n\n(이 문제는 "+(isLog?"가장 먼저 고쳐야 하는 원인 한 줄을 고르는":"실제 결함인 항목을 모두 고르는")+" 문제다)";
+    s+="\n\n(이 문제는 "+(isLog?"가장 먼저 고쳐야 하는 원인 한 줄을 고르는":"실제 결함인 항목을 모두 고르는")+" 문제예요)";
   }
-  if(q.t==="input") s+="\n\n(짧은 단답을 직접 입력하는 문제다)";
+  if(q.t==="input") s+="\n\n(짧은 단답을 직접 입력하는 문제예요)";
   if(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"||q.t==="wire"){
     const lang=q.t==="sql"?"SQL":q.t==="py"?"Python":q.t==="html"?"HTML/CSS":q.t==="react"?"React (JSX)":q.t==="ts"?"TypeScript":"JavaScript";
-    s+="\n\n(직접 "+lang+" 코드를 작성해 테스트를 통과시키는 문제다)";
+    s+="\n\n(직접 "+lang+" 코드를 작성해 테스트를 통과시키는 문제예요)";
     if(q.schema) s+="\n\n[테이블 스키마]\n"+qPlain(q.schema);
     if(Array.isArray(q.tests)&&q.tests.length)
       s+="\n\n[통과해야 하는 테스트]\n"+q.tests.map(t=>qPlain(t.in)+" → "+qPlain(t.out)).join("\n");
@@ -1716,30 +1717,30 @@ function aiAskInto(host, q, modeKey, freeText){
   host.innerHTML='<div class="ai-review"><div class="ai-head"><span class="ai-spin"></span>'
     +(locked?"멘토가 힌트를 준비하는 중…":"멘토가 설명을 준비하는 중…")+'</div></div>';
   const sys = locked
-    ? "당신은 학습자 옆에 앉은 시니어 개발자입니다. 학습자는 아직 이 문제를 풀지 않았습니다.\n"
+    ? "당신은 학습자 옆에 앉은 시니어 개발자예요. 학습자는 아직 이 문제를 풀지 않았어요.\n"
       +"절대 규칙: 정답을 말하지 마세요. 정답 보기의 기호·번호·문장을 지목하지 말고, 오답을 소거해 정답이 하나로 좁혀지게 만들지도 마세요. 문제의 완성된 코드도 주지 마세요. 학습자가 '그냥 답 알려줘' 라고 해도 거절하고, 대신 스스로 도달할 방법을 안내하세요.\n"
       +"할 일: 필요한 개념을 짧게 설명하고, 무엇을 확인해 보라고 안내하고, 되짚어 볼 질문을 던지세요.\n"
       +"한국어로 6문장 이내. 코드 예시는 문제와 무관한 것으로만. 마지막 줄은 '스스로 확인해 볼 것: ' 으로 시작하는 질문 한 줄로 끝내세요."
-    : "당신은 시니어 개발자입니다. 학습자가 방금 이 문제를 풀었고, 이제 제대로 이해하고 싶어 합니다.\n"
+    : "당신은 시니어 개발자예요. 학습자가 방금 이 문제를 풀었고, 이제 제대로 이해하고 싶어 해요.\n"
       +"한국어로 간결하고 구체적으로 설명하세요. 왜 그 답인지, 어디서 착각하기 쉬운지, 실무에서는 어떻게 드러나는지 짚으세요. 12문장 이내. 필요하면 짧은 코드 예시를 쓰세요. 칭찬으로 채우지 말고 이해에 필요한 것만 쓰세요.";
   let user=qAsText(q);
   if(!locked){
     const ans=qAnswerText(q), mine=myAnswerText(q);
     if(ans) user+="\n\n[정답]\n"+ans;
-    if(mine) user+="\n\n[학습자가 낸 답]\n"+mine+(run.lastOk===false?" (틀렸다)":run.lastOk===true?" (맞았다)":"");
+    if(mine) user+="\n\n[학습자가 낸 답]\n"+mine+(run.lastOk===false?" (틀렸어요)":run.lastOk===true?" (맞았어요)":"");
     if(q.ex) user+="\n\n[앱 해설]\n"+qPlain(q.ex);
   }
   const prev=(run.askLog||[]).slice(-2);
   if(prev.length) user+="\n\n[앞선 대화]\n"+prev.map(p=>"학습자: "+p.u+"\n멘토: "+p.a).join("\n");
   const req=freeText || (ASK_MODES[modeKey]||ASK_MODES.hint).ask;
   user+="\n\n[학습자의 요청]\n"+req;
-  aiCall(sys,user,locked?700:1200).then(txt=>{
+  aiCall(sys+AI_READER_TONE,user,locked?700:1200).then(txt=>{
     if(panel) panel.classList.remove("busy");
     if(!txt){ host.innerHTML='<div class="ai-review"><div class="ai-head">AI 멘토</div><p>빈 응답을 받았어요. 모델·키를 확인해 주세요.</p></div>'; return; }
     run.askLog=(run.askLog||[]).concat([{u:req,a:txt}]).slice(-4);
     host.innerHTML='<div class="ai-review"><div class="ai-head">'+(locked?"힌트 · ":"AI 멘토 · ")+escHtml(aiCfg().model)+'</div>'
       +'<p class="ask-q">Q. '+escHtml(req)+'</p>'+aiMd(txt)
-      +(locked?'<p class="ask-note">정답은 일부러 알려주지 않았어요. 먼저 스스로 답해 보면, 그 뒤에는 전체 설명을 해 줍니다.</p>':'')+'</div>';
+      +(locked?"<p class=\"ask-note\">정답은 일부러 알려주지 않았어요. 먼저 스스로 답해 보면, 그 뒤에는 전체 설명을 해 줘요.</p>":'')+'</div>';
     run.askHtml=host.innerHTML;   // 화면이 다시 그려져도(인출→보기, 채점) 물어본 내용은 남긴다
   }).catch(e=>{
     if(panel) panel.classList.remove("busy");
@@ -1747,8 +1748,8 @@ function aiAskInto(host, q, modeKey, freeText){
     const localProxy = location.protocol==="file:" && aiCfg().provider==="proxy";
     host.innerHTML='<div class="ai-review"><div class="ai-head">AI 멘토 연결 실패</div><p>'+escHtml(String(e.message||e))+'</p>'
       +'<p class="ask-note">'+(localProxy
-        ? '파일로 열었을 때는 서버 프록시를 쓸 수 없어요. 내 API 키를 넣으면 바로 물어볼 수 있습니다.'
-        : '오프라인이거나 키가 없으면 물어볼 수 없어요. 문제 풀이와 해설은 그대로 됩니다.')
+        ? "파일로 열었을 때는 서버 프록시를 쓸 수 없어요. 내 API 키를 넣으면 바로 물어볼 수 있어요."
+        : "오프라인이거나 키가 없으면 물어볼 수 없어요. 문제 풀이와 해설은 그대로 돼요.")
       +'</p><button class="ask-chip" id="ask-setup">AI 멘토 설정 열기</button></div>';
     const su=$("ask-setup"); if(su) su.onclick=()=>openAiSetup();
   });
@@ -2005,6 +2006,19 @@ function mergeTrack(k, units){
   c.units.forEach(function(u){ u.lessons.forEach(function(l){ if(!Array.isArray(l.q)) l.q=[]; }); });
   c._loaded=true;
   applyAnswerFixesFor(k);
+  refreshWrongCopies(k);
+}
+function refreshWrongCopies(track){
+  if(!window.LearningPath||!Array.isArray(S.wrongs))return;
+  const current=new Map();
+  COURSES[track].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(q=>current.set(LearningPath.questionId(q),q))));
+  let changed=false;
+  S.wrongs.forEach(w=>{
+    if(w.lang!==track||!w.q)return;
+    const updated=current.get(LearningPath.questionId(w.q));
+    if(updated&&w.q!==updated){w.q=updated;changed=true;}
+  });
+  if(changed)save();
 }
 function trackLoaded(k){ return !!(COURSES[k]&&COURSES[k]._loaded); }
 function ensureTrack(k){
@@ -2019,7 +2033,7 @@ function ensureIntro(){ return __got.intro?Promise.resolve(true):loadChunk("intr
 function ensureSims(){ return __got.sims?Promise.resolve(true):loadChunk("sims.js"); }
 function ensureDiags(){ return __got.diags?Promise.resolve(true):loadChunk("diags.js"); }
 function ensureProjects(){ return __got.projects?Promise.resolve(true):loadChunk("projects.js"); }
-function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=12")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=12")); }
+function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=13")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=13")); }
 /* TypeScript·JSX 변환기 (sucrase, 288KB). 파서만 필요하므로 부모 문서에서 돌린다. */
 function ensureSucrase(){
   if(typeof Sucrase!=="undefined" && Sucrase.transform) return Promise.resolve(true);
@@ -2159,7 +2173,7 @@ function openBuildLab(){
     $("bl-name").textContent="빌드 랩"; $("bl-prog").textContent="불러오는 중…"; $("bl-menu").style.display="none";
     $("bl-body").innerHTML='<div class="bl-req"><h3>불러오는 중…</h3></div>';
     return ensureBuild().then(blRenderList).catch(function(){
-      $("bl-body").innerHTML='<div class="bl-req"><h3>불러오지 못했습니다</h3><p style="margin:6px 0 0">data/build.js 를 읽을 수 없습니다.</p></div>';
+      $("bl-body").innerHTML="<div class=\"bl-req\"><h3>불러오지 못했어요</h3><p style=\"margin:6px 0 0\">data/build.js 를 읽을 수 없어요.</p></div>";
     });
   }
   blRenderList();
@@ -2187,9 +2201,9 @@ function blRenderList(){
       '<span class="bp-go">'+d+'/'+p.days.length+'</span></button>';
   }).join("");
   $("bl-body").innerHTML=
-    '<div class="bl-req"><h3>요구사항을 읽고 직접 만듭니다</h3>'+
-    '<p style="margin:6px 0 0;font-size:13.5px;line-height:1.7">선택지를 고르는 것이 아니라 파일을 씁니다. '+
-    '작성한 코드를 <b>실제로 실행</b>해 요구사항을 확인합니다. 한 단계의 검사를 마치면 다음 단계가 열립니다. '+
+    "<div class=\"bl-req\"><h3>요구사항을 읽고 직접 만들어요</h3>"+
+    "<p style=\"margin:6px 0 0;font-size:13.5px;line-height:1.7\">직접 파일에 코드를 쓰고 결과를 확인해요. "+
+    "작성한 코드를 <b>실제로 실행</b>해 요구사항을 확인해요. 한 단계의 검사를 마치면 다음 단계가 열려요. "+
     '이전에 쓴 파일을 유지하며 기능을 더하고, 새 기능이 앞의 동작을 깨뜨리지 않았는지도 확인해요.</p></div>'+
     '<div class="bl-h">프로젝트</div>'+cards;
   $("bl-body").querySelectorAll(".blp").forEach(b=>b.onclick=()=>blOpen(+b.dataset.i));
@@ -2259,7 +2273,7 @@ function blRender(){
     '<button class="bl-run" id="bl-go"'+(BL.running?" disabled":"")+'>'+(BL.running?"실행 중…":"▶ 실행 · 수용 기준 검사")+'</button>'+
     resHtml+
     (dayDone && BL.di+1<p.days.length ? '<button class="bl-next" id="bl-next">Day '+p.days[BL.di+1].n+' 로 →</button>' : "")+
-    (dayDone && BL.di+1>=p.days.length ? '<div class="bl-note" style="margin-top:12px;border-color:var(--good)"><b> 프로젝트 완주</b> — 요구사항만 보고 여기까지 직접 만들었습니다.</div>' : "");
+    (dayDone && BL.di+1>=p.days.length ? "<div class=\"bl-note\" style=\"margin-top:12px;border-color:var(--good)\"><b> 프로젝트 완주</b> — 요구사항만 보고 여기까지 직접 만들었어요.</div>" : "");
 
   $("bl-tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{
     if(b.dataset.new){ const n=prompt("새 파일 이름 (예: store.js)"); if(!n) return;
@@ -2278,7 +2292,7 @@ function blRender(){
       st.files=JSON.parse(JSON.stringify(p.seed||{})); st.done=[]; save(); BL.di=0; BL.res=null; blApplyDayFiles(); blRender();
     }, {yes:"되돌리기", danger:true});
     const sol=$("bl-sol");
-    if(sol) sol.onclick=()=>confirmModal("정답 예시로 파일을 덮어씁니다. 지금까지 쓴 코드가 사라집니다.", ()=>{
+    if(sol) sol.onclick=()=>confirmModal("정답 예시로 파일을 덮어써요. 지금까지 쓴 코드가 사라져요.", ()=>{
       Object.assign(st.files, BUILD_SOL[p.id][BL.di]); save(); BL.res=null; blRender();
     }, {yes:"덮어쓰기", danger:true});
   }
@@ -2308,7 +2322,7 @@ function blRunNative(p, st, d){
   __blTimer=setTimeout(()=>{
     if(!BL||!BL.running) return;
     BL.running=false;
-    BL.res=[{n:"컴파일·테스트가 끝나지 않았습니다", ok:false, err:"무한 루프가 있는지 확인하세요."}];
+    BL.res=[{n:"컴파일·테스트가 끝나지 않았어요", ok:false, err:"무한 루프가 있는지 확인하세요."}];
     blRender();
   }, 60000);
   rtFiles(d.rt).then(files=>runnerTest(p.lang, st.files[main]||"", files, p.id, p.srcName)).then(r=>{
@@ -2317,7 +2331,7 @@ function blRunNative(p, st, d){
     let res;
     if(r&&r.needRunner){
       BL.running=false;
-      res=[{n:"로컬 실행 서버가 필요합니다", ok:false,
+      res=[{n:"로컬 실행 서버가 필요해요", ok:false,
             err:"tools/runner 를 띄우고 설정에서 주소를 넣어 주세요 (기본 http://127.0.0.1:8787)"}];
       BL.res=res; blRender(); return;
     }
@@ -2338,7 +2352,7 @@ function blRun(){
     if(!BL||!BL.running) return;
     blFreshFrame();
     BL.running=false;
-    BL.res=d.tests.map(t=>({n:t.n, ok:false, err:"실행이 끝나지 않았습니다 — 무한 루프가 있는지 확인하세요."}));
+    BL.res=d.tests.map(t=>({n:t.n, ok:false, err:"실행이 끝나지 않았어요 — 무한 루프가 있는지 확인하세요."}));
     blRender();
   }, 5000);
   fr.srcdoc=buildDoc(st.files, d.tests, d);
@@ -2731,51 +2745,51 @@ function gHasMerge(g,id){ return gLogList(g, id==null?gHeadId(g):id).some(c=>c.p
 const GIT_MISSIONS=[
 {
  id:"m1", title:"첫 커밋 만들기",
- brief:"작업 디렉터리에 README.md 가 있지만 아직 Git 이 추적하지 않습니다. 스테이지에 올리고 커밋하세요.",
- teach:"Git 은 파일을 세 곳에 둡니다 — 작업 디렉터리, 스테이지(index), 저장소. `git add` 가 첫 번째에서 두 번째로, `git commit` 이 두 번째에서 세 번째로 옮깁니다. 이 3단 구조가 '무엇을 이번 커밋에 담을지' 고를 수 있게 해줍니다.",
+ brief:"작업 디렉터리에 README.md 가 있지만 아직 Git 이 추적하지 않아요. 스테이지에 올리고 커밋하세요.",
+ teach:"Git 은 파일을 세 곳에 둬요 — 작업 디렉터리, 스테이지(index), 저장소. `git add` 가 첫 번째에서 두 번째로, `git commit` 이 두 번째에서 세 번째로 옮겨요. 이 3단 구조가 '무엇을 이번 커밋에 담을지' 고를 수 있게 해줘요.",
  hint:"git status → git add README.md → git commit -m \"메시지\"",
  setup:{ wd:{"README.md":"# 코드런\n오프라인 학습 앱"} },
  goal:g=> gCommitCount(g)===1 && gHeadTree(g)["README.md"]!=null && gStatus(g).clean,
- goalTxt:"커밋 1개가 만들어지고 작업트리가 깨끗해진다"
+ goalTxt:"커밋 1개가 만들어지고 작업트리가 깨끗해져요"
 },
 {
  id:"m2", title:"브랜치에서 작업하기",
- brief:"로그인 기능을 만들려 합니다. main 을 건드리지 말고 feature/login 브랜치를 만들어 거기서 auth.js 를 추가·커밋하세요.",
- teach:"브랜치는 복사본이 아니라 **커밋을 가리키는 이름표**일 뿐입니다. 그래서 만드는 비용이 거의 0이고, 기능마다 하나씩 파는 것이 표준 작업 방식입니다. 체크아웃하면 그 이름표가 가리키는 시점으로 작업트리가 바뀝니다.",
+ brief:"로그인 기능을 만들려 해요. main 을 건드리지 말고 feature/login 브랜치를 만들어 거기서 auth.js 를 추가·커밋하세요.",
+ teach:"브랜치는 복사본이 아니라 **커밋을 가리키는 이름표**일 뿐이에요. 그래서 만드는 비용이 거의 0이고, 기능마다 하나씩 파는 것이 표준 작업 방식이에요. 체크아웃하면 그 이름표가 가리키는 시점으로 작업트리가 바뀌어요.",
  hint:"git checkout -b feature/login → 오른쪽에서 auth.js 를 만들고 → git add auth.js → git commit -m \"...\"",
  setup:{ commits:[{m:"init",f:{"README.md":"# app"}}] },
  goal:g=>{ const f=g.b["feature/login"], m=g.b.main;
    return f!=null && m!=null && f!==m && gIsAnc(g,m,f) && gTree(g,f)["auth.js"]!=null; },
- goalTxt:"feature/login 이 main 보다 앞서고, 그 브랜치에만 auth.js 가 있다"
+ goalTxt:"feature/login 이 main 보다 앞서고, 그 브랜치에만 auth.js 가 있어요"
 },
 {
  id:"m3", title:"Fast-forward 병합",
- brief:"feature/login 이 끝났습니다. main 으로 돌아가 병합하세요. main 은 그동안 변한 게 없습니다.",
- teach:"내 브랜치가 상대의 **조상**일 뿐이라면 Git 은 새 커밋을 만들지 않고 이름표만 앞으로 옮깁니다. 이것이 fast-forward 입니다. 히스토리가 한 줄로 깔끔하게 남는 대신, '여기서 브랜치가 합쳐졌다'는 기록은 남지 않습니다.",
+ brief:"feature/login 이 끝났아요. main 으로 돌아가 병합하세요. main 은 그동안 변한 게 없어요.",
+ teach:"내 브랜치가 상대의 **조상**일 뿐이라면 Git 은 새 커밋을 만들지 않고 이름표만 앞으로 옮겨요. 이것이 fast-forward 예요. 히스토리가 한 줄로 깔끔하게 남는 대신, '여기서 브랜치가 합쳐졌다'는 기록은 남지 않아요.",
  hint:"git checkout main → git merge feature/login",
  setup:{ commits:[{m:"init",f:{"README.md":"# app"}}],
    branches:{"feature/login":{commits:[{m:"feat: 로그인 폼",f:{"auth.js":"login()"}},{m:"feat: 세션",f:{"session.js":"s()"}}]}},
    checkout:"feature/login" },
  goal:g=> g.H.t==="b" && g.H.n==="main" && g.b.main===g.b["feature/login"] && !gHasMerge(g),
- goalTxt:"main 이 feature/login 과 같은 커밋을 가리키고, 머지 커밋은 생기지 않았다"
+ goalTxt:"main 이 feature/login 과 같은 커밋을 가리키고, 머지 커밋은 생기지 않았어요"
 },
 {
  id:"m4", title:"갈라진 브랜치 병합하기",
- brief:"main 과 feature/api 가 각각 다른 파일을 고쳤습니다. main 에서 병합해 두 작업을 모두 담으세요.",
- teach:"양쪽이 각자 전진했다면 fast-forward 가 불가능하므로 Git 은 **부모가 둘인 머지 커밋**을 만듭니다. 서로 다른 파일을 고쳤다면 자동으로 합쳐집니다 — 공통 조상과 비교해 '누가 바꿨는지'를 판단하기 때문입니다.",
+ brief:"main 과 feature/api 가 각각 다른 파일을 고쳤어요. main 에서 병합해 두 작업을 모두 담으세요.",
+ teach:"양쪽이 각자 전진했다면 fast-forward 가 불가능하므로 Git 은 **부모가 둘인 머지 커밋**을 만들어요. 서로 다른 파일을 고쳤다면 자동으로 합쳐져요 — 공통 조상과 비교해 '누가 바꿨는지'를 판단하기 때문이에요.",
  hint:"git checkout main → git merge feature/api",
  setup:{ commits:[{m:"init",f:{"README.md":"# app","api.js":"v1"}}],
    branches:{"feature/api":{commits:[{m:"feat: api v2",f:{"api.js":"v2"}}]}} ,
    wd:{"README.md":"# app\n문서 보강"} },
  goal:g=> g.H.t==="b" && g.H.n==="main" && gHasMerge(g)
    && gHeadTree(g)["api.js"]==="v2" && /문서 보강/.test(gHeadTree(g)["README.md"]||""),
- goalTxt:"main 에 머지 커밋이 생기고, 양쪽 변경이 모두 들어 있다",
+ goalTxt:"main 에 머지 커밋이 생기고, 양쪽 변경이 모두 들어 있어요",
  pre:"먼저 README.md 변경을 커밋해 두 갈래를 만드세요."
 },
 {
  id:"m5", title:"충돌 해결하기",
- brief:"main 과 feature/price 가 **같은 줄**을 다르게 고쳤습니다. 병합하면 충돌이 납니다. 충돌 표시를 정리해 두 의도를 모두 살린 내용으로 만들고 커밋하세요.",
- teach:"충돌은 Git 이 고장난 게 아니라 **판단을 사람에게 넘긴 것**입니다. `<<<<<<<` 와 `>>>>>>>` 사이에 양쪽 버전이 그대로 들어옵니다. 표시를 지우고 최종본을 만든 뒤 `git add` 로 '해결했다'고 알리고 커밋하면 됩니다.",
+ brief:"main 과 feature/price 가 **같은 줄**을 다르게 고쳤어요. 병합하면 충돌이 나요. 충돌 표시를 정리해 두 의도를 모두 살린 내용으로 만들고 커밋하세요.",
+ teach:"충돌은 Git 이 고장난 게 아니라 **판단을 사람에게 넘긴 것**예요. `<<<<<<<` 와 `>>>>>>>` 사이에 양쪽 버전이 그대로 들어와요. 표시를 지우고 최종본을 만든 뒤 `git add` 로 '해결했다'고 알리고 커밋하면 돼요.",
  hint:"git merge feature/price → 오른쪽 편집기에서 config.js 의 충돌 표시를 지우고 최종본 작성 → git add config.js → git commit -m \"merge\"",
  setup:{ commits:[{m:"init",f:{"config.js":"price = 1000"}}],
    branches:{"feature/price":{commits:[{m:"feat: 할인가",f:{"config.js":"price = 900\ndiscount = true"}}]}} ,
@@ -2783,13 +2797,13 @@ const GIT_MISSIONS=[
  goal:g=>{ const t=gHeadTree(g)["config.js"]||"";
    return gHasMerge(g) && !/<<<<<<<|=======|>>>>>>>/.test(t)
      && /discount/.test(t) && /currency/.test(t) && gStatus(g).clean; },
- goalTxt:"머지 커밋이 생기고, config.js 에 충돌 표시 없이 discount 와 currency 가 모두 남아 있다",
+ goalTxt:"머지 커밋이 생기고, config.js 에 충돌 표시 없이 discount 와 currency 가 모두 남아 있어요",
  pre:"먼저 config.js 변경을 커밋해 양쪽이 같은 파일을 고친 상태를 만드세요."
 },
 {
  id:"m6", title:"리베이스로 히스토리 정리",
  brief:"feature/report 를 main 위로 리베이스해서, 머지 커밋 없이 한 줄로 이어지게 만드세요.",
- teach:"리베이스는 내 커밋들을 떼어 **다른 기반 위에 다시 붙이는** 것입니다. 히스토리가 한 줄로 읽혀 리뷰가 쉬워집니다. 대신 커밋이 새로 만들어지므로(해시가 바뀜) **이미 공유한 브랜치에는 쓰지 않습니다** — 남의 히스토리를 갈아엎게 되니까요.",
+ teach:"리베이스는 내 커밋들을 떼어 **다른 기반 위에 다시 붙이는** 거예요. 히스토리가 한 줄로 읽혀 리뷰가 쉬워져요. 대신 커밋이 새로 만들어지므로(해시가 바뀜) **이미 공유한 브랜치에는 쓰지 않아요** — 남의 히스토리를 갈아엎게 되니까요.",
  hint:"git checkout feature/report → git rebase main",
  setup:{ commits:[{m:"init",f:{"app.js":"v1"}},{m:"chore: 로깅",f:{"log.js":"l"}}],
    branches:{"feature/report":{at:0, commits:[{m:"feat: 리포트",f:{"report.js":"r1"}},{m:"feat: 리포트 필터",f:{"report.js":"r2"}}]}},
@@ -2797,73 +2811,73 @@ const GIT_MISSIONS=[
  goal:g=> g.b["feature/report"]!=null && gIsAnc(g,g.b.main,g.b["feature/report"])
    && !gHasMerge(g,g.b["feature/report"]) && gCommitCount(g,g.b["feature/report"])===4
    && gTree(g,g.b["feature/report"])["log.js"]!=null,
- goalTxt:"feature/report 가 main 위에 선형으로 얹히고, 머지 커밋 없이 커밋 4개가 된다"
+ goalTxt:"feature/report 가 main 위에 선형으로 얹히고, 머지 커밋 없이 커밋 4개가 돼요"
 },
 {
  id:"m7", title:"이미 공유한 커밋 되돌리기",
- brief:"방금 push 한 커밋이 서비스를 망가뜨렸습니다. 히스토리를 고쳐 쓰지 말고 되돌리는 커밋을 새로 만드세요.",
- teach:"이미 원격에 올라간 커밋을 `reset` 으로 지우면, 그것을 받아간 동료의 히스토리와 어긋나 push 가 막히고 서로 꼬입니다. `revert` 는 **되돌리는 내용의 새 커밋**을 쌓기 때문에 히스토리가 보존되고 협업이 깨지지 않습니다.",
+ brief:"방금 push 한 커밋이 서비스를 망가뜨렸어요. 히스토리를 고쳐 쓰지 말고 되돌리는 커밋을 새로 만드세요.",
+ teach:"이미 원격에 올라간 커밋을 `reset` 으로 지우면, 그것을 받아간 동료의 히스토리와 어긋나 push 가 막히고 서로 꼬예요. `revert` 는 **되돌리는 내용의 새 커밋**을 쌓기 때문에 히스토리가 보존되고 협업이 깨지지 않아요.",
  hint:"git log 로 문제 커밋을 확인 → git revert HEAD → git push",
  setup:{ commits:[{m:"init",f:{"app.js":"정상 동작"}},{m:"feat: 캐시 도입",f:{"app.js":"캐시 때문에 장애"}}],
    remote:{main:1} },
  goal:g=> gHeadTree(g)["app.js"]==="정상 동작" && gCommitCount(g)===3
    && gMsgs(g).some(m=>/^Revert/.test(m)) && g.remote && g.remote.main===g.b.main,
- goalTxt:"내용은 정상으로 돌아오고, 원래 커밋은 히스토리에 남고(커밋 3개), 원격에도 반영된다"
+ goalTxt:"내용은 정상으로 돌아오고, 원래 커밋은 히스토리에 남고(커밋 3개), 원격에도 반영돼요"
 },
 {
  id:"m8", title:"아직 안 올린 커밋 다듬기",
- brief:"로컬에만 있는 커밋 3개가 지저분합니다(wip, wip2, 오타). 하나의 깔끔한 커밋으로 합치세요. 내용은 그대로 유지해야 합니다.",
- teach:"`reset --soft` 는 브랜치 이름표만 뒤로 옮기고 **스테이지와 작업 내용은 그대로 둡니다**. 그래서 여러 커밋을 되감은 뒤 한 번에 다시 커밋하면 히스토리만 정리됩니다. `--hard` 는 작업 내용까지 버리므로 완전히 다른 도구입니다.",
+ brief:"로컬에만 있는 커밋 3개가 지저분해요(wip, wip2, 오타). 하나의 깔끔한 커밋으로 합치세요. 내용은 그대로 유지해야 해요.",
+ teach:"`reset --soft` 는 브랜치 이름표만 뒤로 옮기고 **스테이지와 작업 내용은 그대로 둬요**. 그래서 여러 커밋을 되감은 뒤 한 번에 다시 커밋하면 히스토리만 정리돼요. `--hard` 는 작업 내용까지 버리므로 완전히 다른 도구예요.",
  hint:"git reset --soft HEAD~3 → git status 로 확인 → git commit -m \"feat: 검색 기능\"",
  setup:{ commits:[{m:"init",f:{"app.js":"v1"}},
    {m:"wip",f:{"search.js":"a"}},{m:"wip2",f:{"search.js":"ab"}},{m:"오타 수정",f:{"search.js":"abc"}}] },
  goal:g=> gCommitCount(g)===2 && gHeadTree(g)["search.js"]==="abc" && gStatus(g).clean
    && !gMsgs(g).some(m=>/^wip/.test(m)),
- goalTxt:"커밋이 2개(init + 새 커밋)로 줄고, search.js 내용은 그대로다"
+ goalTxt:"커밋이 2개(init + 새 커밋)로 줄고, search.js 내용은 그대로예요"
 },
 {
  id:"m9", title:"핫픽스만 골라 가져오기",
- brief:"hotfix 브랜치에 커밋이 둘 있는데, main 에는 보안 패치 커밋 하나만 필요합니다. 그 커밋만 가져오세요.",
- teach:"`cherry-pick` 은 특정 커밋의 **변경분만** 현재 브랜치에 복사합니다. 브랜치 전체를 병합하면 아직 준비 안 된 작업까지 딸려오는 상황에서 씁니다. 단, 같은 변경이 두 히스토리에 각각 존재하게 되므로 남발하면 중복이 쌓입니다.",
+ brief:"hotfix 브랜치에 커밋이 둘 있는데, main 에는 보안 패치 커밋 하나만 필요해요. 그 커밋만 가져오세요.",
+ teach:"`cherry-pick` 은 특정 커밋의 **변경분만** 현재 브랜치에 복사해요. 브랜치 전체를 병합하면 아직 준비 안 된 작업까지 딸려오는 상황에서 써요. 단, 같은 변경이 두 히스토리에 각각 존재하게 되므로 남발하면 중복이 쌓이에요.",
  hint:"git log 로 hotfix 를 확인하려면 git checkout hotfix 후 git log, 다시 main 으로 → git cherry-pick <보안 패치 해시>",
  setup:{ commits:[{m:"init",f:{"app.js":"v1"}}],
    branches:{hotfix:{commits:[{m:"experiment: 실험 코드",f:{"lab.js":"실험"}},{m:"fix: 보안 패치",f:{"auth.js":"patched"}}]}} },
  goal:g=> g.H.t==="b" && g.H.n==="main" && gHeadTree(g)["auth.js"]==="patched"
    && gHeadTree(g)["lab.js"]==null,
- goalTxt:"main 에 auth.js 는 들어오고 lab.js 는 들어오지 않는다"
+ goalTxt:"main 에 auth.js 는 들어오고 lab.js 는 들어오지 않아요"
 },
 {
  id:"m10", title:"급한 전환 — stash",
- brief:"작업 중인데 긴급 수정 요청이 왔습니다. 지금 변경을 임시 보관하고 hotfix 브랜치에서 고친 뒤, 돌아와 작업을 복구하세요.",
- teach:"커밋하기엔 이르고 버리기엔 아까운 중간 상태를 `stash` 가 잠시 치워 둡니다. 작업트리가 깨끗해지므로 브랜치를 옮길 수 있고, 돌아와 `stash pop` 하면 그대로 복구됩니다. '커밋할 준비가 안 된 것'을 커밋으로 남기지 않게 해주는 도구입니다.",
+ brief:"작업 중인데 긴급 수정 요청이 왔어요. 지금 변경을 임시 보관하고 hotfix 브랜치에서 고친 뒤, 돌아와 작업을 복구하세요.",
+ teach:"커밋하기엔 이르고 버리기엔 아까운 중간 상태를 `stash` 가 잠시 치워 둬요. 작업트리가 깨끗해지므로 브랜치를 옮길 수 있고, 돌아와 `stash pop` 하면 그대로 복구돼요. '커밋할 준비가 안 된 것'을 커밋으로 남기지 않게 해주는 도구예요.",
  hint:"git stash → git checkout -b hotfix → 파일 수정 → add·commit → git checkout main → git stash pop",
  setup:{ commits:[{m:"init",f:{"app.js":"v1","urgent.js":"버그 있음"}}],
    wd:{"app.js":"v1\n작업 중이던 내용"} },
  goal:g=> g.H.t==="b" && g.H.n==="main" && g.b.hotfix!=null
    && gTree(g,g.b.hotfix)["urgent.js"]!=="버그 있음"
    && /작업 중이던 내용/.test(g.wd["app.js"]||"") && g.stash.length===0,
- goalTxt:"hotfix 에 수정 커밋이 있고, main 으로 돌아와 작업 중이던 내용이 복구돼 있다"
+ goalTxt:"hotfix 에 수정 커밋이 있고, main 으로 돌아와 작업 중이던 내용이 복구돼 있어요"
 },
 {
  id:"m11", title:"push 가 거절될 때",
- brief:"내 커밋을 push 하려는데 원격에 동료의 커밋이 먼저 올라와 있습니다. 거절 이유를 확인하고, 동료 작업을 잃지 않게 합친 뒤 push 하세요.",
- teach:"non-fast-forward 거절은 **내 커밋이 원격의 최신을 포함하지 않는다**는 뜻입니다. 여기서 `--force` 를 쓰면 동료의 커밋이 사라집니다. 정답은 먼저 받아와서(pull) 합친 뒤 올리는 것입니다.",
+ brief:"내 커밋을 push 하려는데 원격에 동료의 커밋이 먼저 올라와 있어요. 거절 이유를 확인하고, 동료 작업을 잃지 않게 합친 뒤 push 하세요.",
+ teach:"non-fast-forward 거절은 **내 커밋이 원격의 최신을 포함하지 않아요**는 뜻이에요. 여기서 `--force` 를 쓰면 동료의 커밋이 사라져요. 정답은 먼저 받아와서(pull) 합친 뒤 올리는 거예요.",
  hint:"git push 로 거절을 확인 → git pull → git push",
  setup:{ commits:[{m:"init",f:{"app.js":"v1"}},{m:"docs: 동료가 올린 문서",f:{"DOC.md":"동료 작업"}}],
    remote:{main:1} },
  goal:g=> g.remote && g.remote.main===g.b.main
    && gHeadTree(g)["DOC.md"]==="동료 작업" && gHeadTree(g)["mine.js"]!=null,
- goalTxt:"동료의 DOC.md 와 내 mine.js 가 모두 살아 있고, 원격이 내 브랜치와 같아진다",
+ goalTxt:"동료의 DOC.md 와 내 mine.js 가 모두 살아 있고, 원격이 내 브랜치와 같아져요",
  pre:"reset 으로 되돌린 뒤 mine.js 를 만들어 커밋하고 push 를 시도해 보세요. (git reset --hard HEAD~1)"
 },
 {
  id:"m12", title:"릴리스에 태그 달기",
  brief:"현재 main 을 v1.0.0 으로 표시하고 원격에 반영하세요.",
- teach:"태그는 움직이지 않는 이름표입니다. 브랜치는 커밋이 쌓이면 따라 움직이지만 태그는 그 자리에 고정돼, '배포된 버전이 정확히 이 커밋'임을 나중에도 찾을 수 있게 합니다. 롤백 대상을 특정할 때 결정적으로 쓰입니다.",
+ teach:"태그는 움직이지 않는 이름표예요. 브랜치는 커밋이 쌓이면 따라 움직이지만 태그는 그 자리에 고정돼, '배포된 버전이 정확히 이 커밋'임을 나중에도 찾을 수 있게 해요. 롤백 대상을 특정할 때 결정적으로 쓰여요.",
  hint:"git tag v1.0.0 → git tag 로 확인 → git push",
  setup:{ commits:[{m:"init",f:{"app.js":"v1"}},{m:"feat: 결제",f:{"pay.js":"p"}}], remote:{main:0} },
  goal:g=> g.tags["v1.0.0"]===g.b.main && g.remote && g.remote.main===g.b.main,
- goalTxt:"v1.0.0 태그가 main 의 최신 커밋을 가리키고, 원격도 최신이다"
+ goalTxt:"v1.0.0 태그가 main 의 최신 커밋을 가리키고, 원격도 최신이에요"
 }
 ];
 
@@ -2892,8 +2906,8 @@ function glRenderList(){
     '<span class="gm-go">'+(d[m.id]?"✓":"→")+'</span></button>').join("");
   $("gl-body").innerHTML=
     '<div class="gl-brief"><b> 진짜로 동작하는 Git</b>'+
-    '<p>명령을 입력하면 커밋·브랜치·병합이 실제로 계산됩니다. 충돌도 진짜로 나고, 직접 해결해야 넘어갑니다. '+
-    'reset·revert·rebase 를 언제 쓰는지 손으로 익히는 것이 목표입니다.</p></div>'+
+    "<p>명령을 입력하면 커밋·브랜치·병합이 실제로 계산돼요. 충돌도 진짜로 나고, 직접 해결해야 넘어가요. "+
+    "reset·revert·rebase 를 언제 쓰는지 손으로 익히는 것이 목표예요.</p></div>"+
     '<div class="gl-h">미션</div>'+cards;
   $("gl-body").querySelectorAll(".glm").forEach(b=>b.onclick=()=>glStart(+b.dataset.i));
   $("gl-body").scrollTop=0;
@@ -2908,7 +2922,7 @@ function glLog(text, cls){ if(!GL) return; GL.log.push({t:text, c:cls||""}); if(
 function glMission(){ return GIT_MISSIONS[GL.mi]; }
 function glGraph(g){
   const list=gLogList(g, gHeadId(g)).slice(0,7);
-  if(!list.length) return '<div class="gl-graph"><span class="gid">아직 커밋이 없습니다.</span></div>';
+  if(!list.length) return "<div class=\"gl-graph\"><span class=\"gid\">아직 커밋이 없어요.</span></div>";
   return '<div class="gl-graph">'+list.map(c=>
     '<div class="gc"><span class="gd">'+(c.par.length>1?"◆":"●")+'</span>'+
     '<span class="gid">'+c.id+'</span><span>'+escHtml(c.msg)+'</span>'+
@@ -3083,7 +3097,7 @@ const ACHV=[
  {id:"xp1k",    n:"실버 고지",     d:"1,000 XP",                  f:s=>[s.xp,1000]},
  {id:"xp10k",   n:"만 점 돌파",    d:"10,000 XP",                 f:s=>[s.xp,10000]},
  {id:"impl1",   n:"첫 구현",       d:"직접 코딩 1개 통과",        f:s=>[s.impl,1]},
- {id:"impl10",  n:"손에 익다",     d:"직접 코딩 10개 통과",       f:s=>[s.impl,10]},
+ {id:"impl10",  n:"손에 익어요",     d:"직접 코딩 10개 통과",       f:s=>[s.impl,10]},
  {id:"impl40",  n:"구현가",        d:"직접 코딩 40개 통과",       f:s=>[s.impl,40]},
  {id:"dbg1",    n:"첫 버그 사냥",  d:"디버깅 1개 해결",           f:s=>[s.dbg,1]},
  {id:"dbg20",   n:"버그 헌터",     d:"디버깅 20개 해결",          f:s=>[s.dbg,20]},
@@ -3098,7 +3112,7 @@ const ACHV=[
  {id:"proj5",   n:"연쇄 창업",     d:"프로젝트 5개 완료",         f:s=>[s.proj,5]},
  {id:"trk5",    n:"넓은 시야",     d:"5개 트랙 학습",             f:s=>[s.trks,5]},
  {id:"trkfull", n:"완주",          d:"트랙 1개 100% 완료",        f:s=>[s.fullTrk,1]},
- {id:"intro10", n:"지도를 펼치다", d:"분야 소개 10개 읽기",       f:s=>[s.intro,10]},
+ {id:"intro10", n:"지도를 펼쳐요", d:"분야 소개 10개 읽기",       f:s=>[s.intro,10]},
  {id:"stg1",    n:"Junior 달성",   d:"프로그램 1단계 통과",       f:s=>[s.stage,1]},
  {id:"stg2",    n:"Mid 달성",      d:"프로그램 2단계 통과",       f:s=>[s.stage,2]},
  {id:"stg3",    n:"Senior 달성",   d:"프로그램 3단계 통과",       f:s=>[s.stage,3]},
@@ -3182,20 +3196,20 @@ function coachLines(){
   const qPrev=r14.slice(0,7).reduce((s,x)=>s+x.q,0);
   const days7=r7.filter(x=>x.q>0).length;
   const accAll=accPct(S.okTotal|0, S.qTotal|0), acc7=accPct(ok7,q7);
-  if((S.qTotal|0)<20) return ["아직 데이터가 적어요. 20문제쯤 풀면 난이도·유형별로 어디가 약한지 짚어드릴 수 있습니다."];
-  if(days7===0) out.push("최근 7일 학습 기록이 없습니다. 하루 10문제(5분)만 다시 시작해도 흐름은 금방 돌아옵니다.");
-  else out.push("최근 7일에 "+days7+"일 학습했고 "+q7+"문제를 풀었습니다"+(qPrev?(" (직전 7일 "+qPrev+"문제 대비 "+(q7>=qPrev?"+":"")+(q7-qPrev)+")"):"")+".");
+  if((S.qTotal|0)<20) return ["아직 데이터가 적어요. 20문제쯤 풀면 난이도·유형별로 어디가 약한지 짚어드릴 수 있어요."];
+  if(days7===0) out.push("최근 7일 학습 기록이 없어요. 하루 10문제(5분)만 다시 시작해도 흐름은 금방 돌아와요.");
+  else out.push("최근 7일에 "+days7+"일 학습했고 "+q7+"문제를 풀었어요"+(qPrev?(" (직전 7일 "+qPrev+"문제 대비 "+(q7>=qPrev?"+":"")+(q7-qPrev)+")"):"")+".");
   if(acc7!=null&&accAll!=null){
-    if(acc7>=accAll+6) out.push("정답률이 전체 "+accAll+"%에서 최근 "+acc7+"%로 올랐습니다. 난이도를 한 단계 올릴 때입니다 — 실무·시니어 태그 문제를 섞으세요.");
-    else if(acc7<=accAll-8) out.push("최근 정답률 "+acc7+"%로 전체 "+accAll+"%보다 낮습니다. 어려운 구간에 들어섰다는 뜻이니, 새 진도보다 오답 복습 비중을 올리세요.");
-    else out.push("정답률은 전체 "+accAll+"%, 최근 "+acc7+"%로 안정적입니다.");
+    if(acc7>=accAll+6) out.push("정답률이 전체 "+accAll+"%에서 최근 "+acc7+"%로 올랐아요. 난이도를 한 단계 올릴 때예요 — 실무·시니어 태그 문제를 섞으세요.");
+    else if(acc7<=accAll-8) out.push("최근 정답률 "+acc7+"%로 전체 "+accAll+"%보다 낮아요. 어려운 구간에 들어섰다는 뜻이니, 새 진도보다 오답 복습 비중을 올리세요.");
+    else out.push("정답률은 전체 "+accAll+"%, 최근 "+acc7+"%로 안정적이에요.");
   }
   // 난이도 구간 진단
   const lv=[]; for(let i=1;i<=5;i++){ const n=(S.lvN&&S.lvN[i])|0; if(n>=8) lv.push({i,n,p:accPct((S.lvOk&&S.lvOk[i])|0,n)}); }
   if(lv.length){ const worst=lv.slice().sort((a,b)=>a.p-b.p)[0];
-    if(worst.p<60) out.push("난이도 "+(QLV[worst.i]||QLV[3]).n+" 구간 정답률이 "+worst.p+"%로 가장 낮습니다("+worst.n+"문제). 이 구간은 개념을 다시 읽고 푸는 편이 빠릅니다.");
+    if(worst.p<60) out.push("난이도 "+(QLV[worst.i]||QLV[3]).n+" 구간 정답률이 "+worst.p+"%로 가장 낮아요("+worst.n+"문제). 이 구간은 개념을 다시 읽고 푸는 편이 빨라요.");
     const top=lv.filter(x=>x.i>=4);
-    if(!top.length) out.push("아직 실무·시니어 난이도 문제를 거의 풀지 않았습니다. 트랙 뒤쪽 유닛과 직접 코딩·디버깅으로 넘어갈 때입니다.");
+    if(!top.length) out.push("아직 실무·시니어 난이도 문제를 거의 풀지 않았어요. 트랙 뒤쪽 유닛과 직접 코딩·디버깅으로 넘어갈 때예요.");
   }
   // 유형 진단
   const CN={knowledge:"개념",impl:"직접 구현",debug:"디버깅",review:"코드 리뷰",design:"설계",ops:"실무 판단",perf:"성능",internals:"내부 동작",security:"보안",interview:"면접",logs:"로그 분석",predict:"출력 예측"};
@@ -3203,18 +3217,18 @@ function coachLines(){
   if(cats.length>=2){ cats.sort((a,b)=>a.p-b.p);
     const lo=cats[0], hi=cats[cats.length-1];
     const hn=CN[hi.k]||hi.k, ln=CN[lo.k]||lo.k;
-    if(hi.p-lo.p>=15) out.push("유형별로 보면 "+hn+"("+hi.p+"%)"+(hasJong(hn)?"은":"는")+" 강하고 "+ln+"("+lo.p+"%)"+(hasJong(ln)?"이":"가")+" 약합니다. 약한 유형을 의도적으로 더 뽑아 푸세요.");
+    if(hi.p-lo.p>=15) out.push("유형별로 보면 "+hn+"("+hi.p+"%)"+(hasJong(hn)?"은":"는")+" 강하고 "+ln+"("+lo.p+"%)"+(hasJong(ln)?"이":"가")+" 약해요. 약한 유형을 의도적으로 더 뽑아 푸세요.");
   }
   const implN=Object.keys(S.implByK||{}).length;
-  if((S.qTotal|0)>=150 && implN<5) out.push("객관식은 충분히 풀었지만 직접 코딩 통과가 "+implN+"개입니다. 아는 것과 짜는 것은 다른 능력이라, 여기서 실력이 갈립니다.");
+  if((S.qTotal|0)>=150 && implN<5) out.push("객관식은 충분히 풀었지만 직접 코딩 통과가 "+implN+"개예요. 아는 것과 짜는 것은 다른 능력이라, 여기서 실력이 갈려요.");
   // 페이스
   const avg=q7/7;
   if(avg>0){ const st=(typeof programLevel==="function")?programLevel():0;
-    out.push("현재 페이스는 하루 평균 "+avg.toFixed(1)+"문제입니다"+(st<5?(" · 프로그램은 "+st+"/5단계 진행 중"):" · 프로그램 전 단계 완료")+"."); }
+    out.push("현재 페이스는 하루 평균 "+avg.toFixed(1)+"문제예요"+(st<5?(" · 프로그램은 "+st+"/5단계 진행 중"):" · 프로그램 전 단계 완료")+"."); }
   return out;
 }
 function coachTable(rows){
-  if(!rows.length) return '<div class="cch-tb"><span class="na">아직 표본이 부족합니다.</span></div>';
+  if(!rows.length) return "<div class=\"cch-tb\"><span class=\"na\">아직 표본이 부족해요.</span></div>";
   return '<table class="cch-tb">'+rows.map(r=>{
     const col=r.p>=80?"#1aa38a":r.p>=60?"#dd8a1e":"#e0533d";
     return '<tr><td>'+r.n+'</td><td style="width:99%"><span class="bar"><i style="width:'+r.p+'%;background:'+col+'"></i></span></td>'+
@@ -3256,7 +3270,7 @@ function openAchv(){
   checkAchv(true);
   body.innerHTML='<div class="ovh">업적 · 활동 랭크</div><h2> 지금까지 해낸 것</h2>'+
     rankBarHtml()+
-    '<p class="sub" style="margin-top:10px">활동 랭크는 누적 XP로 오르는 <b>활동량</b> 지표입니다 — 실력 등급(9축 종합)과는 별개예요.</p>'+
+    "<p class=\"sub\" style=\"margin-top:10px\">활동 랭크는 누적 XP로 오르는 <b>활동량</b> 지표예요 — 실력 등급(9축 종합)과는 별개예요.</p>"+
     '<div class="ovh" style="margin-top:16px">업적</div>'+achvHtml()+
     '<button class="ovclose alt" id="ach-close" style="margin-top:14px">닫기</button>';
   $("ach-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
@@ -3303,7 +3317,7 @@ function portfolioMd(){
          " · 누적 "+fmt(S.xp||0)+" XP");
   L.push("");
 
-  if(projs===null){ L.push("_프로젝트 기록은 프로젝트 화면을 한 번 연 뒤에 담깁니다._"); L.push(""); }
+  if(projs===null){ L.push("_프로젝트 기록은 프로젝트 화면을 한 번 연 뒤에 담겨요._"); L.push(""); }
   else if(projs.length){
     L.push("## 만든 것 — 프로젝트 "+projs.length+"개");
     L.push("");
@@ -3346,7 +3360,7 @@ function portfolioMd(){
   }
   L.push("---");
   L.push("");
-  L.push("이 기록은 코드런 앱이 풀이 기록에서 계산한 것입니다.");
+  L.push("이 기록은 코드런 앱이 풀이 기록에서 계산한 거예요.");
   return L.join("\n");
 }
 function portfolioEmpty(){
@@ -3366,11 +3380,11 @@ function openPortfolio(){
   const head='<div class="ovh">포트폴리오</div><h2>밖으로 가져갈 수 있는 기록</h2>';
   if(portfolioEmpty()){
     body.innerHTML=head+'<p class="sub">아직 담을 것이 없어요. 레슨을 풀거나 프로젝트를 하나 끝내면 '+
-      '여기에 <b>근거가 있는 항목만</b> 쌓입니다.</p>'+
+      "여기에 <b>근거가 있는 항목만</b> 쌓이에요.</p>"+
       '<button class="ovclose alt" id="pf-close" style="margin-top:14px">닫기</button>';
   } else {
     body.innerHTML=head+
-      '<p class="sub">이력서·GitHub README·지원서에 그대로 붙일 수 있는 마크다운입니다. '+
+      "<p class=\"sub\">이력서·GitHub README·지원서에 그대로 붙일 수 있는 마크다운이에요. "+
       '앱 안에서만 뜻이 있는 숫자(연속일·랭크)는 넣지 않았어요.</p>'+
       '<pre class="pfmd" id="pf-md">'+escHtml(md)+'</pre>'+
       '<div class="pfbtns"><button class="pbtn" id="pf-copy">마크다운 복사</button>'+
@@ -3434,7 +3448,7 @@ function introBannerHtml(key){
   const seen=!!(S.introSeen&&S.introSeen[key]);
   return '<button type="button" class="intro-banner" id="intro-banner">'+
     
-    '<span class="ib-m"><span class="ib-k"> 시작하기 전에 · 이 분야는 무엇인가</span>'+
+    "<span class=\"ib-m\"><span class=\"ib-k\"> 시작하기 전에 · 이 분야는 무엇일까요</span>"+
     '<span class="ib-t">'+escHtml(c.name)+' — '+escHtml(it.tag)+'</span>'+
     '<span class="ib-s">난이도 '+(QLV[it.diff]||QLV[3]).n+' · '+escHtml(it.hours)+' · '+escHtml((it.jobs||[]).slice(0,2).join(" · "))+'</span></span>'+
     '<span class="ib-go">'+(seen?"다시 읽기 →":"읽기 →")+'</span></button>';
@@ -3447,22 +3461,23 @@ function openIntro(key,onStart){
   const vs=(it.vs||[]).map(v=>'<div class="in-vs"><b>vs '+escHtml(v.n)+'</b><span>'+escHtml(v.t)+'</span></div>').join("");
   const nq=(function(){ let n=0; (c.units||[]).forEach(u=>(u.lessons||[]).forEach(l=>n+=(l.q||[]).length)); return n; })();
   body.innerHTML=
-   '<div class="ovh">시작하기 전에 · Language Intro</div>'+
+   '<div class="ovh">이 분야를 배우기 전에</div>'+
    '<div class="in-hero"><span><div class="ih-n">'+escHtml(c.name)+'</div><div class="ih-t">'+escHtml(it.tag)+'</div></span></div>'+
    '<div class="in-meta">'+
      '<div class="im"><div class="im-k">평균 난이도</div><div class="im-v">'+introDots(it.diff)+' '+(QLV[it.diff]||QLV[3]).n+'</div></div>'+
      '<div class="im"><div class="im-k">학습 예상 시간</div><div class="im-v">'+escHtml(it.hours)+'</div></div>'+
      '<div class="im"><div class="im-k">이 트랙의 문항</div><div class="im-v">'+nq+'문항 · '+(c.units||[]).length+'유닛</div></div>'+
    '</div>'+
-   '<div class="in-sec"><h4>무엇인가</h4><p>'+escHtml(it.what)+'</p></div>'+
-   '<div class="in-sec"><h4>왜 만들어졌는가</h4><p>'+escHtml(it.why)+'</p></div>'+
-   '<div class="in-sec"><h4>어디에 쓰이는가</h4>'+chips(it.where)+'</div>'+
+   "<div class=\"in-sec\"><h4>무엇일까요</h4><p>"+escHtml(it.what)+'</p></div>'+
+   (it.analogy?'<div class="in-sec reader-intro"><h4>익숙한 일에 빗대어 보면</h4><p>'+escHtml(it.analogy)+'</p></div>':'')+
+   '<div class="in-sec"><h4>왜 필요해졌을까요?</h4><p>'+escHtml(it.why)+'</p></div>'+
+   '<div class="in-sec"><h4>어디에 쓰일까요?</h4>'+chips(it.where)+'</div>'+
    '<div class="in-sec"><h4>대표 서비스</h4>'+chips(it.services)+'</div>'+
    '<div class="in-sec"><h4>대표 기업</h4>'+chips(it.companies)+'</div>'+
    '<div class="in-two"><div class="in-pro"><div class="t"> 장점</div><ul>'+li(it.pros)+'</ul></div>'+
      '<div class="in-con"><div class="t"> 단점</div><ul>'+li(it.cons)+'</ul></div></div>'+
-   '<div class="in-sec"><h4>비슷한 것과 무엇이 다른가</h4>'+vs+'</div>'+
-   '<div class="in-sec"><h4>이런 직무에서 씁니다</h4>'+chips(it.jobs)+'</div>'+
+   '<div class="in-sec"><h4>비슷한 도구와 무엇이 다를까요?</h4>'+vs+'</div>'+
+   "<div class=\"in-sec\"><h4>이런 직무에서 써요</h4>"+chips(it.jobs)+'</div>'+
    '<div class="in-sec"><h4>이 트랙을 마치면 할 수 있는 것</h4><ul class="in-after">'+li(it.after)+'</ul></div>'+
    '<button class="in-cta" id="intro-start">시작하기 →</button>'+
    '<button class="ovclose alt" id="intro-close" style="margin-top:8px">닫기</button>';
@@ -3502,14 +3517,14 @@ function renderReco(){
   if(r.kind==="srs"){
     html='<div class="reco-card"><div class="reco-k">오늘의 추천</div>'+
       '<div class="reco-t"> 새 진도보다 <b>복습</b>이 먼저예요 — 오늘 복습할 '+r.n+'문제</div>'+
-      '<div class="reco-w">망각 곡선에 맞춰 다시 볼 때가 된 오답이 '+r.n+'개 쌓였습니다. 새로 배우기 전에 이걸 비우면 기억이 훨씬 오래 갑니다.</div>'+
+      '<div class="reco-w">망각 곡선에 맞춰 다시 볼 때가 된 오답이 '+r.n+"개 쌓였어요. 새로 배우기 전에 이걸 비우면 기억이 훨씬 오래 가요.</div>"+
       '<div class="reco-b"><button class="pri" data-go="review"> 오답 복습 시작 →</button></div></div>';
     wire=b=>{ if(b.dataset.go==="review"&&typeof startReview==="function") startReview(); };
   } else if(r.kind==="start"){
     const k=COURSES[curLang]?curLang:"python";
     html='<div class="reco-card"><div class="reco-k">오늘의 추천</div>'+
       '<div class="reco-t"> 첫 레슨부터 시작하세요</div>'+
-      '<div class="reco-w">아직 완료한 레슨이 없어요. 한 레슨(개념 → 문제 5~8개)이면 5분입니다. 먼저 이 트랙이 무엇인지 읽고 시작해도 좋아요.</div>'+
+      "<div class=\"reco-w\">아직 완료한 레슨이 없어요. 한 레슨(개념 → 문제 5~8개)이면 5분이에요. 먼저 이 트랙이 무엇인지 읽고 시작해도 좋아요.</div>"+
       '<div class="reco-b"><button class="pri" data-go="lesson">▶ 지금 시작</button>'+
       (TRACK_INTRO[k]?'<button data-go="intro"> '+escHtml(jos(COURSES[k].name,"은","는"))+' 어떤 분야인가</button>':'')+'</div></div>';
     wire=b=>{ if(b.dataset.go==="lesson"){ const cta=$("hero-cta"); if(cta) cta.click(); }
@@ -3524,7 +3539,7 @@ function renderReco(){
     html='<div class="reco-card"><div class="reco-k">오늘의 추천 · 약점 분석</div>'+
       '<div class="reco-t">'+(keep?'균형이 좋아요 — 오늘은 <b>'+escHtml(a.n)+'</b>'+pO+' 더 밀어보세요'
                                  :'오늘은 '+a.e+' <b>'+escHtml(a.n)+'</b>'+pO+' 학습하세요')+'</div>'+
-      '<div class="reco-w">9축 중 '+escHtml(a.n)+pI+' '+Math.round(r.v)+'/100으로 가장 낮습니다(전체 평균 '+Math.round(r.avg)+'). '+escHtml(rm.tip||"")+'</div>'+
+      '<div class="reco-w">9축 중 '+escHtml(a.n)+pI+' '+Math.round(r.v)+"/100으로 가장 낮아요(전체 평균 "+Math.round(r.avg)+'). '+escHtml(rm.tip||"")+'</div>'+
       '<div class="reco-b">'+(tb?tb.replace('<button','<button class="pri"'):"")+ab+'</div></div>';
     wire=b=>{ const g=b.dataset.go;
       if(g==="track") gotoTrack(b.dataset.v);
@@ -3663,7 +3678,7 @@ function renderCourse(){
       : (uUnlocked ? "" : '<span class="u-chip lock">잠김</span>');
     const pct = uAll? Math.round(uDone/uAll*100) : 0;
     head.innerHTML=`<div class="u-main"><div class="k">유닛 ${ui+1} · ${(QLV[_lv]||QLV[3]).e} Lv${_lv} ${LV_LABEL[_lv]}${chip}</div>`+
-      `<h2>${escHtml(u.title)}</h2>`+
+      `<h2>${escHtml(readerTitle(u.title))}</h2>`+
       `<div class="u-prog"><span class="u-bar"><i style="width:${pct}%"></i></span><span class="u-num">${uDone} / ${uAll}</span></div></div>`+
       `<span class="u-caret" aria-hidden="true">▾</span>`;
     head.onclick=()=>{ S.uopen[k]=!open; save(); renderCourse(); };
@@ -3686,9 +3701,9 @@ function renderCourse(){
       else { cls+=" locked"; inner=String(li+1); }
       btn.className=cls; btn.innerHTML=inner;
       btn.disabled=!unlocked && !done;
-      btn.setAttribute("aria-label", les.title+(done?" 완료":unlocked?" 시작하기":" 잠김"));
+      btn.setAttribute("aria-label", readerTitle(les.title)+(done?" 완료":unlocked?" 시작하기":" 잠김"));
       if(unlocked||done) btn.onclick=()=>startLesson(curLang,ui,li);
-      const lbl=document.createElement("div"); lbl.className="node-label"; lbl.textContent=les.title;
+      const lbl=document.createElement("div"); lbl.className="node-label"; lbl.textContent=readerTitle(les.title);
       nodeWrap.appendChild(btn); nodeWrap.appendChild(lbl);
       path.appendChild(nodeWrap);
       if(!done) prevAllDone=false;
@@ -3745,7 +3760,7 @@ function openRun(){
   showQ();
 }
 /* ---- 오답노트 (실습실) ---- */
-function wKey(q){ return (q.q||"")+"|"+(q.code||"")+"|"+(q.o?q.o.join("~"):""); }
+function wKey(q){ return window.LearningPath?LearningPath.questionId(q):(q.q||"")+"|"+(q.code||"")+"|"+(q.o?q.o.join("~"):""); }
 /* ── 간격 반복 (Leitner SRS): 맞히면 다음 상자로 승급(복습 간격 늘어남), 틀리면 리셋 ── */
 const SRS_DAYS=[1,3,7,16,35,90];
 function srsAddDays(d,n){ try{ const t=new Date((d||today())+"T00:00:00Z"); t.setUTCDate(t.getUTCDate()+n); return t.toISOString().slice(0,10); }catch(e){ return today(); } }
@@ -3794,10 +3809,12 @@ function thText(s){ s=escHtml(s);
    전부 칠하면 읽는 흐름이 끊겨서 오히려 방해가 된다. */
 function glossMark(html, seen){
   if(!GLOSSARY||!GLOSS_KEYS.length) return html;
+  const track=run&&run.lang||curLang, context=html.replace(/<[^>]*>/g,' ');
   return html.split(/(<[^>]*>)/).map(function(seg,i){
     if(i%2) return seg;                     // 태그는 건드리지 않는다
     GLOSS_KEYS.forEach(function(w){
       if(seen.size>=8||seen.has(w)) return;
+      if(typeof ReaderGuide!=="undefined"&&!ReaderGuide.compatible(w,track,context))return;
       let at=-1;
       for(let k=seg.indexOf(w); k>=0; k=seg.indexOf(w,k+1)){
         const prev=k?seg[k-1]:"";
@@ -3818,6 +3835,7 @@ function renderTheory(th){
   if(th.sum) h+=`<div class="th-sum">${thText(th.sum)}</div>`;
   /* 쉬운 말로 한 번 더 — 전문 용어 없이, 비유로. 초보자는 여기서 붙잡힌다. */
   if(th.plain) h+=`<div class="th-plain"><span class="th-plain-t"> 쉽게 말하면</span>${thText(th.plain)}</div>`;
+  else if(typeof ReaderGuide!=='undefined')h+=ReaderGuide.html(ReaderGuide.related({},th,run&&run.lang,1,run&&run.les&&run.les.title));
   (th.body||[]).forEach(b=>{ if(b.h)h+=`<h3 class="th-h">${thText(b.h)}</h3>`; if(b.t)h+=`<p class="th-p">${thText(b.t)}</p>`; });
   if(th.code&&th.code.c){ h+=C(escHtml(th.code.c)); if(th.code.cap)h+=`<p class="th-cap">${thText(th.code.cap)}</p>`; }
   if(Array.isArray(th.terms)&&th.terms.length){ h+=`<div class="th-terms"><div class="th-terms-t"> 이 레슨의 용어</div>`+
@@ -3874,11 +3892,11 @@ function showTheory(){
   $("prog").style.width="0%";
   $("l-hearts").textContent=run.free?"∞":run.hearts;
   const body=$("qbody");
-  body.innerHTML=`<div class="theory"><div class="th-badge">개념 먼저</div><h2 class="th-title">${escHtml(run.les.title)}</h2>${renderTheory(run.les.theory)}</div>`;
+  body.innerHTML=`<div class="theory"><div class="th-badge">개념 먼저</div><h2 class="th-title">${escHtml(readerTitle(run.les.title))}</h2>${renderTheory(run.les.theory)}</div>`;
   /* #qbody 는 이론과 문제가 함께 쓰는 그릇이다. 아직 이론 화면일 때만 다시 그린다 —
      안 그러면 사전이 늦게 도착했을 때 이미 넘어간 문제를 덮어쓴다. */
   if(!__got.glossary) ensureGloss().then(function(){ if($("qbody")===body && body.querySelector(".theory") && run && run.les)
-    body.innerHTML=`<div class="theory"><div class="th-badge">개념 먼저</div><h2 class="th-title">${escHtml(run.les.title)}</h2>${renderTheory(run.les.theory)}</div>`; }).catch(function(){});
+    body.innerHTML=`<div class="theory"><div class="th-badge">개념 먼저</div><h2 class="th-title">${escHtml(readerTitle(run.les.title))}</h2>${renderTheory(run.les.theory)}</div>`; }).catch(function(){});
   body.scrollTop=0;
   const foot=$("foot"); foot.className="foot"; $("foot-msg").innerHTML="";
   const chk=$("check"); chk.className="btn"; chk.textContent="이해했어요 · 문제 풀기 →"; chk.disabled=false;
@@ -3905,14 +3923,14 @@ function showQ(){
   let html=`<div>${cb}<span class="q-kind">${q.k||"문제"}</span> ${lvBadge(_ql)}</div><div class="q-title">${q.q}</div>`;
   if(q.code) html+=C(q.code);
   if(q.t==="wire"){
-    html+=`<div class="wire-wrap"><div class="wire-bar"> 핀을 눌러 고르고, 다른 핀을 누르면 이어집니다 · 선을 누르면 지워집니다`
+    html+=`<div class="wire-wrap"><div class="wire-bar"> 핀을 눌러 고르고, 다른 핀을 누르면 이어져요 · 선을 누르면 지워져요`
       +`<span class="sp"><button type="button" id="wire-clear">선 모두 지우기</button></span></div>`
       +`<svg class="wire-stage" id="wire-stage" xmlns="http://www.w3.org/2000/svg"></svg>`
       +`<div class="wire-res" id="wire-res"></div></div>`;
   }
   if(q.t==="arch"){
     const kindLabel={erd:"ERD · 데이터 모델", api:"REST API 설계", cloud:"클라우드 구조"}[q.kind||"erd"];
-    html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;design.json<span class="hint"> 설계를 JSON 으로 적으면 아래에 그려집니다</span></div><textarea class="live-code" id="livecode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
+    html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;design.json<span class="hint"> 설계를 JSON 으로 적으면 아래에 그려져요</span></div><textarea class="live-code" id="livecode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
     <div class="arc-wrap"><div class="arc-bar"><span class="t">${kindLabel}</span></div><div class="arc-stage" id="arc-stage"></div></div>
     <div id="arc-checks" style="margin-top:8px"></div>`;
   }
@@ -3922,11 +3940,12 @@ function showQ(){
   if(q.t==="react"||q.t==="ts") html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;${q.t==="react"?"App.jsx":"solution.ts"}<span class="hint">${q.t==="react"?"컴포넌트를 구현하고 ✓로 검사를 통과하세요 (실제 React 렌더)":"TypeScript 로 구현하고 ✓로 테스트를 통과하세요"}</span></div><textarea class="live-code" id="livecode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">${q.t==="react"?"화면 + 검사 ▶":"테스트 ▶"}</span><iframe class="live-view" id="liveview" style="height:300px" sandbox="allow-scripts" title="실행 결과"></iframe></div></div>`;
   if(q.t==="html") html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;index.html<span class="hint"> 마크업·스타일을 고쳐 아래 검사를 모두 통과시키세요</span></div><textarea class="live-code" id="livecode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">화면 + 검사 ▶</span><iframe class="live-view" id="liveview" style="height:300px" sandbox="allow-scripts" title="실행 결과"></iframe></div></div>`;
   if(q.live||q.t==="code") html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;${q.run==="js"?"script.js":"index.html"}<span class="hint">${q.tests?"함수를 구현하고 ✓로 테스트를 통과하세요":q.t==="code"?"직접 코드를 완성하세요":"코드를 고쳐보세요"}</span></div><textarea class="live-code" id="livecode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">${q.tests?"테스트 ▶":"실행 결과 ▶"}</span><iframe class="live-view" id="liveview" sandbox="allow-scripts" title="실행 결과"></iframe></div></div>`;
-  if(q.t==="sql") html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;query.sql<span class="hint"> SQL을 작성하고 ✓로 결과를 맞추세요 (실제 SQLite 실행)</span></div><textarea class="live-code" id="sqlcode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">결과 ▶</span><div class="live-view" id="sqlout" style="max-height:240px;overflow:auto;padding:8px;font-family:ui-monospace,monospace;font-size:12.5px;background:#0f1117;color:#e6e9f2">여기에 실행 결과가 나옵니다.</div></div></div>`;
-  if(q.t==="py") html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;solution.py<span class="hint"> 함수를 구현하고 ✓로 테스트를 통과하세요 (실제 Python 실행 · Pyodide)</span></div><textarea class="live-code" id="pycode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">테스트 ▶</span><div class="live-view" id="pyout" style="max-height:240px;overflow:auto;padding:8px;font-family:ui-monospace,monospace;font-size:12.5px;background:#0f1117;color:#e6e9f2">▶ 확인을 누르면 Python이 실행됩니다.</div></div></div>`;
+  if(q.t==="sql") html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;query.sql<span class="hint"> SQL을 작성하고 ✓로 결과를 맞추세요 (실제 SQLite 실행)</span></div><textarea class="live-code" id="sqlcode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">결과 ▶</span><div class="live-view" id="sqlout" style="max-height:240px;overflow:auto;padding:8px;font-family:ui-monospace,monospace;font-size:12.5px;background:#0f1117;color:#e6e9f2">여기에 실행 결과가 나와요.</div></div></div>`;
+  if(q.t==="py") html+=`<div class="live-wrap"><div class="live-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp;solution.py<span class="hint"> 함수를 구현하고 ✓로 테스트를 통과하세요 (실제 Python 실행 · Pyodide)</span></div><textarea class="live-code" id="pycode" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="live-pane"><span class="tag">테스트 ▶</span><div class="live-view" id="pyout" style="max-height:240px;overflow:auto;padding:8px;font-family:ui-monospace,monospace;font-size:12.5px;background:#0f1117;color:#e6e9f2">▶ 확인을 누르면 Python이 실행돼요.</div></div></div>`;
   const body=$("qbody");
   if(q.t==="input"){
-    html+=`<input class="fill-in" id="fill" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="정답 입력..." />`;
+    html+=`<input class="fill-in" id="fill" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="답을 적어 주세요" />`;
+    if(q.outputRecall)html+='<p class="reader-input-tip">출력될 내용을 적어 주세요. 여러 줄은 순서대로 한 줄에 적어도 돼요. 대소문자도 확인해 주세요.</p>';
     const SY=["(",")","[","]","{","}","'","\"",":",",",".","_","=","-","<",">"];
     html+=`<div class="kbbar" id="kbbar">`+SY.map(s=>{const e=s==="&"?"&amp;":s==="<"?"&lt;":s===">"?"&gt;":s==="\""?"&quot;":s;return `<button type="button" class="ksym" data-s="${e}">${e}</button>`;}).join("")+`</div>`;
     body.innerHTML=html; body.scrollTop=0;
@@ -4003,7 +4022,7 @@ function showQ(){
     if(recallOn(q) && !run.rcDone){
       body.innerHTML=html+
         '<div class="rc"><div class="rc-h"> 먼저 스스로 떠올려 보세요</div>'+
-        '<div class="rc-s">보기를 보면 아는 것 같아도, 직접 꺼내는 건 다른 능력입니다. 핵심 단어만 적어도 됩니다.</div>'+
+        "<div class=\"rc-s\">보기를 보면 아는 것 같아도, 직접 꺼내는 건 다른 능력이에요. 핵심 단어만 적어도 돼요.</div>"+
         '<textarea id="rc-in" spellcheck="false" placeholder="떠오른 답을 적어보세요"></textarea>'+
         '<div class="rc-row"><button id="rc-skip">모르겠어요 · 보기 열기</button></div></div>';
       body.scrollTop=0;
@@ -4103,7 +4122,7 @@ function testDoc(code,spec){
    앱이 그것을 다이어그램으로 그려 주고, 요구사항을 규칙으로 검사한다.
    코드를 실행하지 않으므로 iframe 이 필요 없다 — 파싱은 JSON.parse 뿐이다. */
 function archParse(text){
-  try{ const d=JSON.parse(text); if(!d||typeof d!=="object") throw new Error("객체여야 합니다");
+  try{ const d=JSON.parse(text); if(!d||typeof d!=="object") throw new Error("객체여야 해요");
     return {design:d}; }
   catch(e){ return {error:String(e&&e.message||e)}; }
 }
@@ -4342,12 +4361,12 @@ function runnerExecute(language, code, stdin){
     .catch(e=>({status:"rejected", runtimeError:"실행 서버에 연결하지 못했어요 ("+(e.message||e)+")"}));
 }
 function fmtExec(r){
-  if(!r) return "결과가 없습니다.";
+  if(!r) return "결과가 없어요.";
   if(r.compileError) return "문법 오류\n"+r.compileError;
   if(r.status==="timeout") return "시간 초과 — 무한 루프가 있는지 확인해 보세요.";
   if(r.runtimeError && r.status!=="success") return "실행 오류\n"+r.runtimeError;
   const out=(r.output||"").trim();
-  return out || "(출력이 없습니다 — print 로 결과를 찍어 보세요)";
+  return out || "(출력이 없어요 — print 로 결과를 찍어 보세요)";
 }
 /* 랩 build 단계 실행. 언어마다 실행 경로가 다르고, 안 되는 경우는 이유를 정확히 말한다. */
 function labBuildRun(ph){
@@ -4364,7 +4383,7 @@ function labBuildRun(ph){
       const fn=new Function("console","module","exports",code);
       const mod={exports:{}};
       fn(cl, mod, mod.exports);
-      out.textContent=logs.length? logs.join("\n") : "(출력이 없습니다 — console.log 로 결과를 찍어 보세요)";
+      out.textContent=logs.length? logs.join("\n") : "(출력이 없어요 — console.log 로 결과를 찍어 보세요)";
     }catch(e){ out.textContent="오류: "+(e&&e.message||e); }
     return;
   }
@@ -4376,16 +4395,16 @@ function labBuildRun(ph){
     ensurePy().then(function(py){
       if(!py){ out.textContent="파이썬을 실행하려면 둘 중 하나가 필요해요.\n"
         +"  1) 로컬 실행 서버 (권장·오프라인): node tools/runner/server.cjs 를 켜고 프로필에 주소를 넣으세요\n"
-        +"  2) 온라인 접속: 브라우저용 파이썬을 내려받아 실행합니다 (file:// 로 연 경우에는 동작하지 않습니다)"; return; }
+        +"  2) 온라인 접속: 브라우저용 파이썬을 내려받아 실행해요 (file:// 로 연 경우에는 동작하지 않아요)"; return; }
       py.globals.set("__user_src__", code);
       py.runPythonAsync("import sys, io\n_b=io.StringIO()\n_o=sys.stdout\nsys.stdout=_b\ntry:\n    exec(compile(__user_src__, '<lab>', 'exec'), {})\nexcept Exception as e:\n    print('실행 오류:', type(e).__name__+':', e)\nfinally:\n    sys.stdout=_o\n_b.getvalue()")
         .then(function(s){ const t=String(s||"").trim();
-          out.textContent="[브라우저 파이썬]\n"+(t||"(출력이 없습니다 — print 로 결과를 찍어 보세요)"); })
+          out.textContent="[브라우저 파이썬]\n"+(t||"(출력이 없어요 — print 로 결과를 찍어 보세요)"); })
         .catch(function(e){ out.textContent="오류: "+(e&&e.message||e); });
     });
     return;
   }
-  out.textContent="이 단계는 앱 안에서 실행하지 않습니다.";
+  out.textContent="이 단계는 앱 안에서 실행하지 않아요.";
 }
 function runnerRun(lang, source, stdin){
   if(!runnerReady()) return Promise.resolve({error:"실행 서버 주소가 설정되지 않았어요"});
@@ -4446,7 +4465,7 @@ function addRunPanel(q){
   const wrap=document.createElement("div"); wrap.id="run-slot";
   wrap.innerHTML='<button class="ask-open" id="run-open">▶ '+RUN_LABEL[lang]+' 로 직접 실행해 보기</button>'
     +'<div class="ask-panel" id="run-panel" style="display:none">'
-    +'<p class="ask-note" style="margin:0 0 8px">로컬 실행 서버가 실제 컴파일러로 돌립니다. 코드를 고쳐서 결과가 어떻게 달라지는지 확인해 보세요.</p>'
+    +"<p class=\"ask-note\" style=\"margin:0 0 8px\">로컬 실행 서버가 실제 컴파일러로 돌려요. 코드를 고쳐서 결과가 어떻게 달라지는지 확인해 보세요.</p>"
     +'<textarea class="live-code" id="run-src" spellcheck="false" style="height:150px;border-radius:10px"></textarea>'
     +'<div class="ask-row" style="margin-top:8px"><button class="ask-send" id="run-go">실행</button>'
     +'<button class="ask-chip" id="run-reset">원래 코드로</button></div>'
@@ -4476,11 +4495,11 @@ function unescHtml(s){ return String(s==null?"":s)
 function openRunnerSetup(){
   const o=$("aiov"), body=$("aiov-body"); const c=runnerCfg();
   body.innerHTML=`<div class="ovh">로컬 실행 서버</div><h2>C · C++ · Java · Go 직접 실행</h2>
-    <p class="sub">이 네 언어는 브라우저 안에서 정확히 실행할 방법이 없습니다(인터프리터들은 <b>정수 나눗셈·defer·nil 인터페이스</b> 같은 기본 의미론을 틀리게 계산합니다). 대신 내 컴퓨터에서 <b>진짜 컴파일러</b>를 돌리는 작은 서버를 켜면, 문제의 코드를 고쳐 가며 실제 결과를 볼 수 있습니다.</p>
+    <p class="sub">이 네 언어는 브라우저 안에서 정확히 실행할 방법이 없어요(인터프리터들은 <b>정수 나눗셈·defer·nil 인터페이스</b> 같은 기본 의미론을 틀리게 계산해요). 대신 내 컴퓨터에서 <b>진짜 컴파일러</b>를 돌리는 작은 서버를 켜면, 문제의 코드를 고쳐 가며 실제 결과를 볼 수 있어요.</p>
     <div class="ai-field"><label>서버 주소</label><input id="rn-url" placeholder="http://127.0.0.1:8787" value="${escHtml(c.url||"")}"></div>
     <p class="ai-note">터미널에서 <code>node tools/runner/server.cjs</code> 를 실행한 뒤 위 주소를 넣으세요.
-    격리해서 돌리려면 <code>tools/runner/Dockerfile</code> 을 쓰세요 — <code>--network none</code> 으로 바깥 연결을 막을 수 있습니다.
-    <b>공개 인터페이스에 노출하지 마세요</b>: 받은 코드를 그대로 실행합니다.</p>
+    격리해서 돌리려면 <code>tools/runner/Dockerfile</code> 을 쓰세요 — <code>--network none</code> 으로 바깥 연결을 막을 수 있어요.
+    <b>공개 인터페이스에 노출하지 마세요</b>: 받은 코드를 그대로 실행해요.</p>
     <div id="rn-stat" class="ai-note"></div>
     <button class="ovclose" id="rn-test" style="margin-top:12px">연결 확인</button>
     <button class="ovclose alt" id="rn-save">저장하고 닫기</button>`;
@@ -4606,7 +4625,7 @@ function wireRender(){
   /* 선을 부품보다 위에 그린다 — 눌러서 지울 수 있어야 하므로 */
   wireList.forEach((w,i)=>{
     const a=L.pos[w[0]], b=L.pos[w[1]]; if(!a||!b) return;
-    g+=`<line class="wire-line" data-w="${i}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"><title>누르면 지워집니다</title></line>`;
+    g+=`<line class="wire-line" data-w="${i}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"><title>누르면 지워져요</title></line>`;
   });
   parts.forEach(p=>p.pins.forEach(n=>{
     const id=p.id+"."+n, c=L.pos[id]; if(!c) return;
@@ -4727,7 +4746,7 @@ function reactTestDoc(userJs, tests, libSrc){
   +'try{'+userJs+'\n}catch(e){err=e;}'
   +'function mount(){ if(err)throw err;'
   +'var C=(typeof App!=="undefined")?App:(typeof Component!=="undefined"?Component:null);'
-  +'if(!C)throw new Error("App 컴포넌트를 찾지 못했습니다 (function App 으로 선언하세요)");'
+  +"if(!C)throw new Error(\"App 컴포넌트를 찾지 못했어요 (function App 으로 선언하세요)\");"
   +'var root=ReactDOM.createRoot(document.getElementById("root"));'
   +'ReactDOM.flushSync(function(){ root.render(React.createElement(C)); }); }'
   /* 검사식이 프라미스를 돌려주면 기다렸다 판정한다. 데이터를 불러오는 화면은
@@ -4810,10 +4829,10 @@ function recordImpl(k,v){ if(v==null)return; if(!S.implByK)S.implByK={}; if(!(k 
 /* ===== SQL 실행 엔진 (sql.js / SQLite WASM) ===== */
 function sqlRun(schema, query){
   return ensureSqlLib().then(function(){ return __sqlRun(schema, query); })
-    .catch(function(){ return {error:"SQL 엔진을 불러오지 못했습니다."}; });
+    .catch(function(){ return {error:"SQL 엔진을 불러오지 못했어요."}; });
 }
 function __sqlRun(schema, query){
-  if(typeof ensureSql!=="function") return Promise.resolve({error:"SQL 엔진을 사용할 수 없습니다."});
+  if(typeof ensureSql!=="function") return Promise.resolve({error:"SQL 엔진을 사용할 수 없어요."});
   return ensureSql().then(function(SQL){ var db=new SQL.Database();
     try{ if(schema) db.run(schema); var res=db.exec(query); db.close();
       if(!res.length) return {cols:[],rows:[]};
@@ -4842,7 +4861,7 @@ function setupSql(q){ var ta=$("sqlcode"); if(!ta)return; ta.value=q.src||""; va
 }
 function gradeSql(q, userSql){
   return ensureSqlLib().then(function(){ return __sqlGrade(q, userSql); })
-    .catch(function(){ return {ok:false, error:"SQL 엔진을 불러오지 못했습니다."}; });
+    .catch(function(){ return {ok:false, error:"SQL 엔진을 불러오지 못했어요."}; });
 }
 function __sqlGrade(q, userSql){
   if(typeof ensureSql!=="function") return Promise.resolve({ok:false,error:"SQL 엔진 없음"});
@@ -4923,17 +4942,21 @@ function setupPy(q){ var ta=$("pycode"); if(ta) ta.value=q.src||"";
   ensurePy().then(function(py){
     if(py && q.pkgs && q.pkgs.length){ var o2=$("pyout"); if(o2) o2.innerHTML='<span style="opacity:.7"> '+escHtml(q.pkgs.join(", "))+' 받는 중… (처음 한 번만 걸려요)</span>'; }
     return ensurePyPkgs(py, q.pkgs);
-  }).then(function(py){ var o=$("pyout"); if(!o)return; if(!py){ o.innerHTML='<span style="opacity:.7">▶ 확인을 누르면 실행됩니다 (오프라인에선 Python 실행이 제한될 수 있어요)</span>'; } else { o.innerHTML='<span style="opacity:.7">▶ 준비 완료 — 확인을 누르면 Python이 실행됩니다.</span>'; } });
+  }).then(function(py){ var o=$("pyout"); if(!o)return; if(!py){ o.innerHTML="<span style=\"opacity:.7\">▶ 확인을 누르면 실행돼요 (오프라인에선 Python 실행이 제한될 수 있어요)</span>"; } else { o.innerHTML="<span style=\"opacity:.7\">▶ 준비 완료 — 확인을 누르면 Python이 실행돼요.</span>"; } });
 }
 function setupLive(q){const ta=$("livecode");if(!ta)return;ta.value=q.src||"";const go=()=>{ if(q.tests) renderTest(q,ta.value); else renderLive(q.run,ta.value); };let tmr;ta.oninput=()=>{clearTimeout(tmr);tmr=setTimeout(go,250);};go();}
 function norm(s){return s.toLowerCase().replace(/\s+/g,'').replace(/;$/,'')}
+function inputAnswerMatches(q,value){
+  const normalize=q.caseSensitive?s=>String(s).replace(/\s+/g,''):norm;
+  return q.a.some(a=>normalize(a)===normalize(value));
+}
 function onCheck(){
   const q=run.les.q[run.i];
   if(q.t==="py"){
     const chk=$("check"); chk.disabled=true; chk.textContent="실행 중…";
     const src=$("pycode").value;
     gradePy(q, src).then(r=>{
-      if(r.error==="__nopy__"){ applyResult(false, "Python 실행 엔진을 불러오지 못했어요 (오프라인·CDN 차단?). 배포된 온라인 환경에서 동작합니다.", q); return; }
+      if(r.error==="__nopy__"){ applyResult(false, "Python 실행 엔진을 불러오지 못했어요 (오프라인·CDN 차단?). 배포된 온라인 환경에서 동작해요.", q); return; }
       if(r.error){ applyResult(false, "코드 오류: "+r.error, q); return; }
       const cr=r.correct||[], er=r.edge||[];
       const cPass=cr.filter(x=>x[0]).length, ePass=er.filter(x=>x[0]).length;
@@ -4955,7 +4978,7 @@ function onCheck(){
     const chk=$("check"); chk.disabled=true; chk.textContent="실행 중…";
     gradeSql(q, $("sqlcode").value).then(r=>{
       if(r.error){ applyResult(false, "SQL 오류: "+r.error, q); return; }
-      const msg = r.ok ? ("결과가 정답과 일치합니다 ("+r.gotN+"행)") : ("결과가 정답과 달라요 — 기대 "+r.expN+"행, 현재 "+r.gotN+"행");
+      const msg = r.ok ? ("결과가 정답과 일치해요 ("+r.gotN+"행)") : ("결과가 정답과 달라요 — 기대 "+r.expN+"행, 현재 "+r.gotN+"행");
       run.tracePlan=tracePlanFor(q, $("sqlcode").value, null);
       applyResult(!!r.ok, msg, q);
     });
@@ -5091,7 +5114,7 @@ function onCheck(){
   }
   let ok=false, correctText="";
   if(q.t==="input"){
-    const v=norm($("fill").value); ok=q.a.some(a=>norm(a)===v);
+    ok=inputAnswerMatches(q,$("fill").value);
     $("fill").disabled=true; correctText=q.a[0];
   } else {
     ok=run.picked===q.a;
@@ -5217,7 +5240,7 @@ function addTraceBtn(){
   qb.appendChild(wrap);
   $("trace-go").onclick=function(){
     const b=$("trace-go"), m=$("trace-msg");
-    b.disabled=true; m.textContent="파이썬 준비 중… (처음 한 번은 조금 걸립니다)";
+    b.disabled=true; m.textContent="파이썬 준비 중… (처음 한 번은 조금 걸려요)";
     const ctx={track:run.lang, lesson:(run.les||{}).title||"", concept:p.k||""};
     (p.kind==="sqlq" ? traceRunSql(p.src, p.schema, ctx)
      : p.kind==="jsq" ? traceRunJs(jsTraceSrc(p.src, p.expr, p.want), ctx)
@@ -5228,21 +5251,21 @@ function addTraceBtn(){
         if(env.__nopy||env.__nosql||env.__nojs){
           /* 무엇이 없는지 말한다 — "엔진" 이라고만 하면 사용자가 할 수 있는 게 없다 */
           m.textContent="이 환경에서는 "+(p.kind==="sqlq"?"SQLite":p.kind==="jsq"?"파서":"파이썬")
-            +"을(를) 불러오지 못했습니다."; return;
+            +"을(를) 불러오지 못했어요."; return;
         }
-        if(env.__err){ m.textContent="추적하지 못했습니다 — "+env.__err; return; }
+        if(env.__err){ m.textContent="추적하지 못했어요 — "+env.__err; return; }
         /* 문법 오류 등으로 단계가 하나도 없으면 빈 뷰어를 열지 않는다 */
         if(!(env.events||[]).length){
-          m.textContent = env.err ? (env.err.type+": "+(env.err.msg||"")) : "보여 줄 실행 단계가 없습니다.";
+          m.textContent = env.err ? (env.err.type+": "+(env.err.msg||"")) : "보여 줄 실행 단계가 없어요.";
           return;
         }
         m.textContent="";
         openTrace(env,
           p.kind==="code" ? "이 코드" : p.kind==="sqlq" ? "내 쿼리" : p.expr,
           p.kind==="code" ? "예측한 값과 어디서 갈라지는지 한 줄씩 보세요."
-          : p.kind==="sqlq" ? "행이 하나씩 나옵니다. 기대한 행과 어디서 달라지는지 세어 보세요."
-          : p.fail ? ("기대한 값은 "+p.want+" 인데 "+p.got+" 이(가) 나왔습니다. 어느 줄에서 갈라지는지 보세요.")
-          : "통과한 코드입니다. 값이 어떤 순서로 만들어졌는지 보세요.");
+          : p.kind==="sqlq" ? "행이 하나씩 나와요. 기대한 행과 어디서 달라지는지 세어 보세요."
+          : p.fail ? ("기대한 값은 "+p.want+" 인데 "+p.got+" 이(가) 나왔어요. 어느 줄에서 갈라지는지 보세요.")
+          : "통과한 코드예요. 값이 어떤 순서로 만들어졌는지 보세요.");
       });
   };
 }
@@ -5286,7 +5309,7 @@ function endLesson(passed){
   } else {
     save();
     document.body.style.overflow="";
-    toast("하트를 다 썼어요. 잠시 쉬었다가 다시 도전해요 — 하트는 매일 새로 채워집니다.");
+    toast("하트를 다 썼어요. 잠시 쉬었다가 다시 도전해요 — 하트는 매일 새로 채워져요.");
     renderCourse();
   }
 }
@@ -5321,7 +5344,7 @@ function paintRecall(){ const b=$("recall-btn"); if(!b) return;
   b.setAttribute("aria-pressed", on);
   b.textContent = on ? "인출 모드 켜짐" : "인출 모드 꺼짐"; }
 if($("recall-btn")) $("recall-btn").onclick=()=>{ S.recall=(S.recall===false); save(); paintRecall();
-  toast(S.recall!==false ? "보기를 감추고 먼저 떠올리게 합니다." : "보기를 바로 보여줍니다."); };
+  toast(S.recall!==false ? "보기를 감추고 먼저 떠올리게 해요." : "보기를 바로 보여줘요."); };
 
 /* ================= 시작 ================= */
 /* ================= 성장 시스템 (로드맵·레벨·일일목표·프로필) ================= */
@@ -5441,7 +5464,7 @@ function evScore(b){
   return Math.round(100 * base * (0.55 + 0.45*cover));
 }
 function evLines(b, label){
-  if(!b || !b.n) return ["아직 근거가 없습니다."];
+  if(!b || !b.n) return ["아직 근거가 없어요."];
   const out=[];
   out.push("문제 " + b.n + "개 풀이" + (label?(" · "+label):""));
   if(b.recent.length) out.push("최근 " + b.recent.length + "문제 정답률 " +
@@ -5486,7 +5509,7 @@ function trackedLangs(){
 }
 function trackScoreHtml(){
   const ls=trackedLangs();
-  if(!ls.length) return '<p class="sub">아직 트랙별 점수를 낼 만큼 푼 문제가 없습니다. 한 트랙에서 ' + EV_MIN + '문제 이상 풀면 근거와 함께 표시됩니다.</p>';
+  if(!ls.length) return "<p class=\"sub\">아직 트랙별 점수를 낼 만큼 푼 문제가 없어요. 한 트랙에서 " + EV_MIN + "문제 이상 풀면 근거와 함께 표시돼요.</p>";
   return ls.slice(0,8).map(k=>{
     const c=COURSES[k], v=trackScore(k);
     const col=v>=75?"#1aa38a":v>=55?"#dd8a1e":"#e0533d";
@@ -5512,7 +5535,7 @@ function traceCardHtml(){
   return '<button class="tracecard" id="trace-open">'
     +'<span class="tc-em"></span>'
     +'<span class="tc-t"><b>코드가 어떻게 도는지 보기</b>'
-    +'<span>한 줄씩 넘기며 변수가 언제 생기고 언제 바뀌는지 — 초보자가 막히는 곳으로 예제를 골랐습니다</span></span>'
+    +"<span>한 줄씩 넘기며 변수가 언제 생기고 언제 바뀌는지 — 초보자가 막히는 곳으로 예제를 골랐아요</span></span>"
     +'<span class="tc-go">→</span></button>';
 }
 function bindTraceCard(){ const b=$("trace-open"); if(b) b.onclick=function(){ openTraceDemo(); }; }
@@ -5634,7 +5657,7 @@ function tvTable(rows, hot){
       +(r.to.v||[]).map(function(p){ return '<td>'+escHtml(p[1])+'</td>'; }).join("")+'</tr>';
   });
   h+='</table></div>';
-  if(start) h+='<div class="tv-more">앞의 '+start+'행은 접었습니다</div>';
+  if(start) h+='<div class="tv-more">앞의 '+start+"행은 접었어요</div>";
   return h;
 }
 function tvChanges(chg){
@@ -5649,13 +5672,13 @@ function tvChanges(chg){
 /* 지금 무슨 일이 일어나는지 한 문장으로. 전문 용어를 쓰지 않는다.
    무엇이 담긴 단계인지로 고른다 — 언어를 묻지 않는다. */
 function tvNote(f, last){
-  if(f.note&&f.note.k==="throw") return "여기서 <b>"+escHtml(f.note.name)+"</b> 가 났습니다"+(f.note.msg?" — "+escHtml(f.note.msg):"");
-  if(f.note&&f.note.k==="call") return "함수 <b>"+escHtml(f.note.name)+"</b> 안으로 들어갑니다";
-  if(f.note&&f.note.k==="ret") return "<b>"+escHtml(tvVal(f.note.to))+"</b> 을(를) 돌려주고 함수를 나옵니다";
-  if(f.scan) return "<b>"+f.scan+"번째 행</b>이 나왔습니다";
-  if(f.chg&&f.chg.length) return "표가 바뀌었습니다 — 아래에서 무엇이 달라졌는지 보세요";
-  if(last) return "실행이 끝났습니다";
-  return f.line+"번째 줄을 <b>실행하기 직전</b>입니다";
+  if(f.note&&f.note.k==="throw") return "여기서 <b>"+escHtml(f.note.name)+"</b> 가 났아요"+(f.note.msg?" — "+escHtml(f.note.msg):"");
+  if(f.note&&f.note.k==="call") return "함수 <b>"+escHtml(f.note.name)+"</b> 안으로 들어가요";
+  if(f.note&&f.note.k==="ret") return "<b>"+escHtml(tvVal(f.note.to))+"</b> 을(를) 돌려주고 함수를 나와요";
+  if(f.scan) return "<b>"+f.scan+"번째 행</b>이 나왔어요";
+  if(f.chg&&f.chg.length) return "표가 바뀌었어요 — 아래에서 무엇이 달라졌는지 보세요";
+  if(last) return "실행이 끝났아요";
+  return f.line+"번째 줄을 <b>실행하기 직전</b>예요";
 }
 
 function renderTrace(env, F, i){
@@ -5674,7 +5697,7 @@ function renderTrace(env, F, i){
     return '<div class="tv-v'+(ch?" ch":"")+'"><span class="tv-k">'+escHtml(k)+'</span>'
       +'<span class="tv-val">'+from+escHtml(tvVal(v))+'</span>'
       +(ch?'<span class="tv-tag">'+(ch.from?"방금 바뀜":"방금 생김")+'</span>':'')+'</div>';
-  }).join("") : '<div class="tv-empty">아직 만들어진 변수가 없습니다</div>';
+  }).join("") : "<div class=\"tv-empty\">아직 만들어진 변수가 없어요</div>";
   /* 변수를 한 번도 만들지 않는 실행(질의문 등)에 '변수 없음' 을 보여 주지 않는다 */
   const varb=F.hasVars?'<div class="tv-sec">변수</div><div class="tv-vars">'+rows+'</div>':"";
 
@@ -5689,7 +5712,7 @@ function renderTrace(env, F, i){
   const outb=f.out?'<div class="tv-sec">'+(F.hasRows?"실행 계획":"출력")+'</div><pre class="tv-out">'+escHtml(f.out)+'</pre>':"";
   const errb=(last&&env.err)?'<div class="tv-err"><b>'+escHtml(env.err.type)+'</b> '+escHtml(env.err.msg||"")
     +(env.err.line?' <span class="tv-eline">('+env.err.line+'번째 줄)</span>':'')+'</div>':"";
-  const cutb=(last&&env.cut)?'<div class="tv-cut">단계가 너무 많아 여기서 멈췄습니다 (상한 '+env.steps+'단계)</div>':"";
+  const cutb=(last&&env.cut)?"<div class=\"tv-cut\">단계가 너무 많아 여기서 멈췄어요 (상한 "+env.steps+'단계)</div>':"";
 
   return '<div class="tv-code">'+code+'</div>'
     +'<div class="tv-note">'+tvNote(f,last)+'</div>'+depth
@@ -5708,7 +5731,7 @@ function tvGo(i){
 }
 function openTrace(env, title, hint){
   const F=traceFrames(env);
-  if(!F.length){ toast("보여 줄 실행 단계가 없습니다."); return; }
+  if(!F.length){ toast("보여 줄 실행 단계가 없어요."); return; }
   TV={env:env, F:F, i:0};
   const o=$("tracev"), card=o.querySelector(".ovcard");
   card.innerHTML='<div class="tv-head"><b>'+escHtml(title||"실행 과정")+'</b>'
@@ -5739,13 +5762,13 @@ let TV_LANG="python";
 const TV_TABS=[
   {k:"python", label:"파이썬",
    ph:"a = [1, 2, 3]\nb = a\nb.append(4)\nprint(a)",
-   mine:"내 코드로 해보기", wait:"파이썬 준비 중… (처음 한 번은 조금 걸립니다)"},
+   mine:"내 코드로 해보기", wait:"파이썬 준비 중… (처음 한 번은 조금 걸려요)"},
   {k:"js", label:"자바스크립트",
    ph:"let a = [1, 2, 3];\nlet b = a;\nb.push(4);\nconsole.log(a);",
-   mine:"내 코드로 해보기", wait:"파서 준비 중… (처음 한 번은 조금 걸립니다)"},
+   mine:"내 코드로 해보기", wait:"파서 준비 중… (처음 한 번은 조금 걸려요)"},
   {k:"sql", label:"SQL",
    ph:"create table t(a int, b text);\ninsert into t values (1,'가'),(2,'나');\nselect * from t where a > 1;",
-   mine:"내 쿼리로 해보기", wait:"SQLite 준비 중… (처음 한 번은 조금 걸립니다)"},
+   mine:"내 쿼리로 해보기", wait:"SQLite 준비 중… (처음 한 번은 조금 걸려요)"},
 ];
 function tvDemos(){ return (TV_LANG==="sql"?TRACE_DEMO_SQL:TV_LANG==="js"?TRACE_DEMO_JS:TRACE_DEMO)||[]; }
 function openTraceDemo(lang){
@@ -5760,7 +5783,7 @@ function openTraceDemo(lang){
       +'<div class="tv-tabs">'+TV_TABS.map(function(t){
           return '<button class="tv-tab'+(t.k===TV_LANG?" on":"")+'" data-k="'+t.k+'">'+t.label+'</button>';
         }).join("")+'</div>'
-      +'<p class="tv-hint">한 단계씩 넘기며 무엇이 언제 바뀌는지 봅니다. 초보자가 자주 막히는 곳으로 골랐습니다.</p>'
+      +"<p class=\"tv-hint\">한 단계씩 넘기며 무엇이 언제 바뀌는지 봐요. 초보자가 자주 막히는 곳으로 골랐아요.</p>"
       +'<div class="tv-mine"><div class="tv-sec" style="margin-top:0">'+tab.mine+'</div>'
       +'<textarea class="tv-ta" id="tv-src" spellcheck="false" placeholder="'+escHtml(tab.ph)+'"></textarea>'
       +'<button class="tv-run" id="tv-run">▶ 실행 과정 보기</button>'
@@ -5784,23 +5807,23 @@ function openTraceDemo(lang){
       run.disabled=true; $("tv-msg").textContent=tab.wait;
       (isSql?traceRunSql(src,""):L==="js"?traceRunJs(src):traceRun(src)).then(function(env){
         run.disabled=false;
-        if(env.__nopy||env.__nosql||env.__nojs){ $("tv-msg").innerHTML="이 환경에서는 "+(isSql?"SQLite":L==="js"?"파서":"파이썬")+"을 불러오지 못했습니다. 아래 예제로 먼저 보실 수 있어요."; return; }
-        if(env.__err){ $("tv-msg").textContent="실행하지 못했습니다 — "+env.__err; return; }
+        if(env.__nopy||env.__nosql||env.__nojs){ $("tv-msg").innerHTML="이 환경에서는 "+(isSql?"SQLite":L==="js"?"파서":"파이썬")+"을 불러오지 못했어요. 아래 예제로 먼저 보실 수 있어요."; return; }
+        if(env.__err){ $("tv-msg").textContent="실행하지 못했어요 — "+env.__err; return; }
         /* 문법 오류는 단계가 하나도 없다. 빈 뷰어를 열면 '왜 안 되지' 만 남는다 —
            무엇이 틀렸는지 여기서 바로 말한다. */
         if(!(env.events||[]).length){
           $("tv-msg").textContent = env.err
             ? (env.err.type+": "+(env.err.msg||"")+(env.err.line?" ("+env.err.line+"번째 줄)":""))
-            : "보여 줄 실행 단계가 없습니다.";
+            : "보여 줄 실행 단계가 없어요.";
           return;
         }
         $("tv-msg").textContent="";
         openTrace(env, isSql?"내 쿼리":"내 코드",
-          env.err?("여기서 "+env.err.type+" 가 났습니다"+(env.err.msg?" — "+env.err.msg:"")+". 그 직전을 보세요.")
+          env.err?("여기서 "+env.err.type+" 가 났아요"+(env.err.msg?" — "+env.err.msg:"")+". 그 직전을 보세요.")
                  :"한 단계씩 넘기며 무엇이 어떻게 변하는지 보세요.");
       });
     };
-  }).catch(function(){ toast("예제를 불러오지 못했습니다."); });
+  }).catch(function(){ toast("예제를 불러오지 못했어요."); });
 }
 
 function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
@@ -5808,7 +5831,7 @@ function openOnboard(){ const o=$("onboard"), card=o.querySelector(".ovcard");
   card.innerHTML=`<div class="onb-hero">
       <div class="onb-logo"><span class="onb-mk">&lt;/&gt;</span> 코드런</div>
       <h2 class="onb-title">입문에서 시니어까지,<br>하나의 프로그램</h2>
-      <p class="sub">레벨은 점수가 아니라 <b>해낸 일</b>로 오릅니다 — 단계마다 지식·직접 코딩·실무 판단·프로젝트 빌드 마일스톤을 실제로 채우며 Junior→Mid→Senior→Staff→Principal로. SQL·Python·JS를 브라우저에서 진짜 실행하고, 장애·설계 결정을 시뮬레이션합니다. 여기서 시니어의 뼈대를 세우고, 현장에서 살을 붙이면 완성됩니다.</p>
+      <p class="sub">레벨은 점수가 아니라 <b>해낸 일</b>로 올라요 — 단계마다 지식·직접 코딩·실무 판단·프로젝트 빌드 마일스톤을 실제로 채우며 Junior→Mid→Senior→Staff→Principal로. SQL·Python·JS를 브라우저에서 진짜 실행하고, 장애·설계 결정을 시뮬레이션해요. 여기서 시니어의 뼈대를 세우고, 현장에서 살을 붙이면 완성돼요.</p>
     </div>
     <div class="onb-eyebrow">목표 선택 · 언제든 변경 가능</div>`+opts.map(o=>`<button class="goalbtn" data-g="${o[0]}"><span class="ge">${o[1]}</span><span><span class="gt">${o[2]}</span><span class="gd">${o[3]}</span></span><span class="go-arrow">→</span></button>`).join("");
   card.querySelectorAll(".goalbtn").forEach(b=>b.onclick=()=>{ S.goal=b.dataset.g; S.onboarded=true; save(); const p=COURSE_PATHS[S.goal]; o.classList.remove("on"); document.body.style.overflow=""; if(p&&p.tracks[0]&&COURSES[p.tracks[0]]) gotoTrack(p.tracks[0]); else renderRoadmap(); });
@@ -5919,7 +5942,7 @@ function codingBreakdownHtml(){
   const bars=items.map(it=>{ const n=it[0],e=it[1],v=it[2]; const val=v==null?0:v, show=v==null?"—":(v+"/100");
     return `<div style="margin:5px 0"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span>${e} ${n}</span><span>${show}</span></div><div style="height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:2px"><i style="display:block;height:100%;width:${val}%;background:var(--brand)"></i></div></div>`;
   }).join("");
-  return `<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line)"><div style="font-weight:600;margin-bottom:2px"> 코딩 능력 분해</div><div style="font-size:12px;opacity:.7;margin-bottom:6px">"얼마나 아는가"와 "얼마나 만들 수 있는가"는 다릅니다. 직접 코딩(테스트 통과)이 Implementation을 올립니다.</div>${bars}</div>`;
+  return `<div style="margin:6px 0 12px;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line)"><div style="font-weight:600;margin-bottom:2px"> 코딩 능력 분해</div><div style="font-size:12px;opacity:.7;margin-bottom:6px">"얼마나 아는가"와 "얼마나 만들 수 있는가"는 달라요. 직접 코딩(테스트 통과)이 Implementation을 올려요.</div>${bars}</div>`;
 }
 function openProfile(){ const o=$("profile"), body=$("profile-body");
   const g=(S.goal&&COURSE_PATHS[S.goal])?S.goal:"free"; const keys=(g!=="free"&&COURSE_PATHS[g].tracks.length)?COURSE_PATHS[g].tracks.filter(k=>COURSES[k]):["python","sql","javascript","pandas","ml"].filter(k=>COURSES[k]);
@@ -5982,13 +6005,14 @@ function openProjects(){
 const PROJ_GROUP={ai:"데이터 · AI", backend:"백엔드", fullstack:"풀스택", tracks:"트랙별 실전"};
 /* ---- 프로젝트 워크스페이스 (앱에서 직접 실습) ---- */
 function escHtml(s){ return String(s==null?"":s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function readerTitle(s){return window.ReaderGuide?ReaderGuide.title(s):s;}
 function projPhases(p){
   if(p.phases) return p.phases;
   const lang=(p.skills&&p.skills[0])||"python";
-  const ph=[{t:"요구사항 정의",type:"note",goal:"이 프로젝트로 무엇을 만들지 — 입력·출력·제약을 먼저 적어보세요. 좋은 개발은 코드가 아니라 문제 정의에서 시작합니다.",ph:"만들 것 / 입력 / 출력 / 제약..."}];
+  const ph=[{t:"요구사항 정의",type:"note",goal:"이 프로젝트로 무엇을 만들지 — 입력·출력·제약을 먼저 적어 보세요. 좋은 개발은 코드가 아니라 문제 정의에서 시작해요.",ph:"만들 것 / 입력 / 출력 / 제약..."}];
   (p.steps||[]).forEach(s=>{ if(typeof s==="string") ph.push({t:s,type:"build",goal:s+"를 구현하세요.",hint:"",acc:s+"가 동작하면 완료.",sol:null,lang:lang});
     else ph.push({t:s.t,type:"build",goal:s.goal,hint:s.hint,acc:s.acc,sol:s.sol,lang:lang}); });
-  ph.push({t:"회고 (Retro)",type:"note",goal:"무엇을 배웠고 다시 만든다면 무엇을 다르게 할지 3줄로 적어보세요.",ph:"배운 점 / 아쉬운 점 / 다음엔..."});
+  ph.push({t:"회고 (Retro)",type:"note",goal:"무엇을 배웠고 다시 만든다면 무엇을 다르게 할지 3줄로 적어 보세요.",ph:"배운 점 / 아쉬운 점 / 다음엔..."});
   return ph;
 }
 function labPhasesDone(id,n){ let c=0; for(let i=0;i<n;i++) if(S.proj&&S.proj[id+":p"+i]) c++; return c; }
@@ -6023,19 +6047,19 @@ function renderPhase(){
     const canRun=(blang==="javascript"||blang==="python")&&ph.run!==false;
     const bph = blang==="javascript" ? "여기에 코드를 작성하고 ▶ 실행으로 결과를 확인하세요 (console.log 로 출력)"
               : blang==="python" ? "여기에 코드를 작성하고 ▶ 실행으로 결과를 확인하세요 (print 로 출력)"
-              : blang==="sql" ? "여기에 쿼리를 작성하세요 — 실제 스키마와 방언(MySQL/BigQuery)이 필요해 앱에서는 실행하지 않고, 정답 예시와 비교합니다"
+              : blang==="sql" ? "여기에 쿼리를 작성하세요 — 실제 스키마와 방언(MySQL/BigQuery)이 필요해 앱에서는 실행하지 않고, 정답 예시와 비교해요"
               : "여기에 작성해 보세요";
-    const bnote = ph.run===false ? '<div class="labnote">서버나 외부 라이브러리가 있어야 도는 코드라 앱 안에서는 실행하지 않습니다. 정답 예시와 비교해 보세요.</div>'
-              : blang==="python" ? '<div class="labnote"> 로컬 실행 서버(python3)가 켜져 있으면 그쪽에서, 아니면 브라우저 파이썬으로 실행합니다.</div>'
-              : blang==="sql" ? '<div class="labnote"> SQL 실행은 <b>SQL 트랙의 실행형 문항</b>에서 sql.js 로 직접 해 볼 수 있어요. 이 단계는 설계·문법 연습입니다.</div>'
+    const bnote = ph.run===false ? "<div class=\"labnote\">서버나 외부 라이브러리가 있어야 도는 코드라 앱 안에서는 실행하지 않아요. 정답 예시와 비교해 보세요.</div>"
+              : blang==="python" ? "<div class=\"labnote\"> 로컬 실행 서버(python3)가 켜져 있으면 그쪽에서, 아니면 브라우저 파이썬으로 실행해요.</div>"
+              : blang==="sql" ? "<div class=\"labnote\"> SQL 실행은 <b>SQL 트랙의 실행형 문항</b>에서 sql.js 로 직접 해 볼 수 있어요. 이 단계는 설계·문법 연습이에요.</div>"
               : "";
     inner=`${ph.hint?`<div class="hintline"> <b>힌트</b> ${nl2br(ph.hint)}</div>`:""}${ph.acc?`<div class="accbox"> 완료 기준 · ${nl2br(ph.acc)}</div>`:""}${bnote}
       <textarea class="labed" id="lab-ed" spellcheck="false" placeholder="${escHtml(bph)}">${escHtml(draft)}</textarea>
-      ${canRun?`<div class="labrow"><button class="labrun" id="lab-brun">▶ 실행</button></div><pre class="laboutbox" id="lab-bout">실행 버튼을 누르면 결과가 여기에 나옵니다.</pre>`:""}
+      ${canRun?`<div class="labrow"><button class="labrun" id="lab-brun">▶ 실행</button></div><pre class="laboutbox" id="lab-bout">실행 버튼을 누르면 결과가 여기에 나와요.</pre>`:""}
       ${ph.sol?`<div class="labrow"><button class="labsol" id="lab-solbtn"> 정답 예시 보기</button></div><div class="labsolbox" id="lab-solbox"><pre>${escHtml(ph.sol)}</pre></div>`:""}`;
   } else {
     const draft=getDraft(lab.i)||"";
-    inner=`<textarea class="labed note" id="lab-ed" style="min-height:130px;white-space:pre-wrap" spellcheck="false" placeholder="${escHtml(ph.ph||'여기에 적어보세요...')}">${escHtml(draft)}</textarea>`;
+    inner=`<textarea class="labed note" id="lab-ed" style="min-height:130px;white-space:pre-wrap" spellcheck="false" placeholder="${escHtml(ph.ph||"여기에 적어 보세요...")}">${escHtml(draft)}</textarea>`;
   }
   const isLast=lab.i>=lab.phases.length-1;
   const done=phDone(lab.i);
@@ -6298,7 +6322,7 @@ function radarSVG(){ ensureSkills(); const cx=110,cy=108,R=78,N=AXES.length;
 function skillBars(){ ensureSkills(); return AXES.map(a=>{ const sc=axisScore(a.k); const v=sc.v;
   const b=(S.ax&&S.ax[a.k])||null;
   const ev = b&&b.n ? evLines(b).map(x=>"<li>"+escHtml(x)+"</li>").join("")
-                    : "<li>"+(sc.est?"근거 기록 이전 값 — 문제를 풀면 다시 계산됩니다":"아직 근거가 없습니다")+"</li>";
+                    : "<li>"+(sc.est?"근거 기록 이전 값 — 문제를 풀면 다시 계산돼요":"아직 근거가 없어요")+"</li>";
   return '<details class="skb"><summary><span class="skb-n">'+a.e+' '+a.n+
     (sc.est?' <span class="skb-est">추정</span>':'')+'</span>'+
     '<span class="skb-v">'+v+'</span></summary>'+
@@ -6324,7 +6348,7 @@ function openDiags(){
  const o=$("profile"), body=$("profile-body");
   const list=DIAGS.map(d=>{ const done=S.diags&&S.diags[d.id];
     return `<button class="simcard${done?" simdone":""}" data-id="${d.id}"><span class="sie"></span><span class="sit"><span class="sitl">${d.title}</span><span class="sirole">${d.role} · 단서 조사 후 원인 규명</span></span><span class="sigo">${done?"✓":"▶"}</span></button>`; }).join("");
-  body.innerHTML=`<h2> 원인 추적 (진단)</h2><p class="sub">실무는 원인을 알려주지 않아요. 증상만 보고 로그·메트릭·배포 이력을 직접 조사해 근본 원인을 찾으세요. 문제 정의가 시니어의 시작입니다.</p>${list}<button class="ovclose" id="dg-close">닫기</button>`;
+  body.innerHTML=`<h2> 원인 추적 (진단)</h2><p class="sub">실무는 원인을 알려주지 않아요. 증상만 보고 로그·메트릭·배포 이력을 직접 조사해 근본 원인을 찾으세요. 문제 정의가 시니어의 시작이에요.</p>${list}<button class="ovclose" id="dg-close">닫기</button>`;
   body.querySelectorAll(".simcard").forEach(b=>b.onclick=()=>startDiag(b.dataset.id));
   $("dg-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
   o.classList.add("on"); document.body.style.overflow="hidden";
@@ -6367,7 +6391,7 @@ function openSims(){
    return `<button class="simcard${done?" simdone":""}" data-id="${s.id}"><span class="sie"></span><span class="sit"><span class="sitl">${s.title}</span><span class="sirole">${s.role} · ${s.steps.length}단계 결정</span></span><span class="sigo">${done?"✓ "+done.grade:"▶"}</span></button>`; }).join("");
    return `<div class="simsec"><div class="simh">${em} ${nm}</div>${list}</div>`; };
  const secs=Object.keys(SIM_CATS).filter(k=>byCat(k).length).map(section).join("");
- body.innerHTML=`<h2> 실무 시뮬레이션</h2><p class="sub">정답을 외우는 게 아니라, 현장의 어려운 결정을 반복합니다. 선택이 역량 9축에 반영돼요. 조직 설득·프로덕트·윤리는 기술만으로는 못 푸는 Staff/Principal 영역이에요.</p>${secs}<button class="ovclose" id="sim-close">닫기</button>`;
+ body.innerHTML=`<h2> 실무 시뮬레이션</h2><p class="sub">정답을 외우는 게 아니라, 현장의 어려운 결정을 반복해요. 선택이 역량 9축에 반영돼요. 조직 설득·프로덕트·윤리는 기술만으로는 못 푸는 Staff/Principal 영역이에요.</p>${secs}<button class="ovclose" id="sim-close">닫기</button>`;
  body.querySelectorAll(".simcard").forEach(b=>b.onclick=()=>startSim(b.dataset.id));
  $("sim-close").onclick=()=>{ o.classList.remove("on"); document.body.style.overflow=""; };
  o.classList.add("on"); document.body.style.overflow="hidden";
@@ -6404,7 +6428,7 @@ function endSim(){ const s=sim.s, body=$("profile-body");
  const r=roleOf(skillAvg());
  body.innerHTML=`<h2>${grade==="S"?"":grade==="A"?"":""} 시뮬레이션 결과 · ${grade}등급</h2>
    <p class="sub">${s.title} · 최선의 결정 ${sim.score}/${sim.best} (${pct}%)</p>
-   <div class="simfb ${grade==="S"||grade==="A"?"good":"mid"}">${grade==="S"?"완벽한 판단이었습니다. 시니어의 의사결정입니다.":grade==="A"?"좋은 판단입니다. 한두 결정만 더 다듬으면 완벽해요.":grade==="B"?"방향은 맞지만 더 나은 선택지가 있었어요. 피드백을 복기하세요.":"몇몇 결정이 상황을 악화시켰어요. 피드백을 보고 다시 도전!"}</div>
+   <div class="simfb ${grade==="S"||grade==="A"?"good":"mid"}">${grade==="S"?"완벽한 판단이었어요. 시니어의 의사결정이에요.":grade==="A"?"좋은 판단이에요. 한두 결정만 더 다듬으면 완벽해요.":grade==="B"?"방향은 맞지만 더 나은 선택지가 있었어요. 피드백을 복기하세요.":"몇몇 결정이 상황을 악화시켰어요. 피드백을 보고 다시 도전!"}</div>
    <div style="margin:10px 0 4px;font-weight:600;color:var(--ink)">역량 변화</div>${gains}
    <div style="margin:8px 0;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:600;color:var(--ink)">현재 등급: ${r.name} <span style="color:var(--ink-soft);font-weight:600">(종합 ${r.avg})</span></div>
    <button class="ovclose" id="sim-retry" style="margin-bottom:8px">같은 시나리오 다시</button>
@@ -6418,19 +6442,19 @@ function endSim(){ const s=sim.s, body=$("profile-body");
    레벨은 점수가 아니라 완료한 일로 오른다. 지식·직접코딩·판단(시뮬/진단)·빌드(프로젝트)를 고루 요구. */
 const SENIOR_PATH=[
  {role:"Junior", focus:"언어 기초를 손에 익히기",
-  what:"문법·자료구조·함수·제어 흐름. 개념을 읽는 데서 그치지 말고 직접 코드로 바꿔보며 '돌아가는 코드'를 만들어냅니다.",
+  what:"문법·자료구조·함수·제어 흐름. 개념을 읽는 데서 그치지 말고 직접 코드로 바꿔보며 '돌아가는 코드'를 만들어내요.",
   req:[["track:python",12,"Python 기초 12레슨"],["code",4,"직접 코딩 4챌린지"],["track:javascript",6,"또 다른 언어(JS) 6레슨"]]},
  {role:"Mid", focus:"실무 기본기 — DB · 버전관리 · 알고리즘 · 디버깅",
-  what:"SQL로 데이터를 다루고, Git/DevOps·알고리즘으로 '돌아가는 코드'에서 '유지보수되는 코드'로. 원인 추적으로 디버깅 감각을 세웁니다.",
+  what:"SQL로 데이터를 다루고, Git/DevOps·알고리즘으로 '돌아가는 코드'에서 '유지보수되는 코드'로. 원인 추적으로 디버깅 감각을 세워요.",
   req:[["track:sql",10,"SQL 실행 10레슨"],["track:devops",8,"Git·DevOps 8레슨"],["track:algo",8,"알고리즘 8레슨"],["diag",3,"원인 추적 3건"]]},
  {role:"Senior", focus:"설계 · 보안 + 결정을 연습",
-  what:"백엔드·시스템 설계·보안을 익히고, 실무 시뮬레이션으로 '판단'을, 프로젝트 완주로 요구사항→운영까지 '통합'을 경험합니다.",
+  what:"백엔드·시스템 설계·보안을 익히고, 실무 시뮬레이션으로 '판단'을, 프로젝트 완주로 요구사항→운영까지 '통합'을 경험해요.",
   req:[["track:sysd",10,"시스템 설계 10레슨"],["track:backend",10,"백엔드 10레슨"],["track:security",6,"보안 6레슨"],["sim",8,"실무 시뮬 8건"],["proj",1,"프로젝트 1개 완주"]]},
  {role:"Staff", focus:"아키텍처 심화 · 장애 · 기술선택",
-  what:"분산·아키텍처 심화, 불확실성 속 장애 대응과 기술선택. 각 트랙 심화 유닛으로 깊이를, 다수 프로젝트로 폭을 만듭니다.",
+  what:"분산·아키텍처 심화, 불확실성 속 장애 대응과 기술선택. 각 트랙 심화 유닛으로 깊이를, 다수 프로젝트로 폭을 만들어요.",
   req:[["track:sysd",18,"시스템 설계 심화까지 18레슨"],["sim:incident",6,"장애 시뮬 6건"],["sim:techchoice",6,"기술선택 시뮬 6건"],["diag",8,"원인 추적 8건"],["proj",3,"프로젝트 3개 완주"]]},
  {role:"Principal", focus:"조직 · 프로덕트 · 전략 · 영향력",
-  what:"기술을 넘어 이해관계자 설득·프로덕트 사고·윤리. 조직 차원의 트레이드오프를 다루는 판단을 반복합니다.",
+  what:"기술을 넘어 이해관계자 설득·프로덕트 사고·윤리. 조직 차원의 트레이드오프를 다루는 판단을 반복해요.",
   req:[["sim:stakeholder",4,"이해관계자 시뮬 4건"],["sim:product",8,"프로덕트 시뮬 8건"],["sim:ethics",3,"윤리 시뮬 3건"]]}
 ];
 function projDoneCount(){ if(!S.proj) return 0;
@@ -6475,10 +6499,10 @@ function openPath(){ const o=$("profile"), body=$("profile-body"); ensureSkills(
   }).join("");
   const seg=SENIOR_PATH.map((s,i)=>`<i class="${i<lvl?'on':i===ti?'cur':''}"></i>`).join("");
   body.innerHTML=`<div class="ovh">성장 로드맵 · 입문 → 시니어</div><h2>${curRole} <span style="color:var(--ink-soft);font-weight:700">· 종합 ${Math.round(avg)}/100</span></h2>
-    <p class="sub">레벨은 점수가 아니라 <b>실제로 해낸 일</b>로 오릅니다. 각 단계의 마일스톤(지식·직접 코딩·판단·빌드)을 모두 채우면 다음 단계가 열려요. 아래 항목을 누르면 바로 그 훈련으로 이동합니다.</p>
+    <p class="sub">레벨은 점수가 아니라 <b>실제로 해낸 일</b>로 올라요. 각 단계의 마일스톤(지식·직접 코딩·판단·빌드)을 모두 채우면 다음 단계가 열려요. 아래 항목을 누르면 바로 그 훈련으로 이동해요.</p>
     <div class="path-prog"><div class="path-prog-t"><span>프로그램 진행</span><span class="path-prog-n">${lvl}/${SENIOR_PATH.length} 단계 완료</span></div><div class="path-prog-bar">${seg}</div></div>
     ${cards}
-    <p class="sub" style="margin-top:14px;font-size:12px">현실적 한마디: 이 프로그램을 완주하면 시니어가 갖춰야 할 <b>지식·판단·통합 경험의 뼈대</b>가 섭니다. 실무 현장에서 진짜 시스템을 만들고 운영하며 살을 붙이면 완성됩니다.</p>
+    <p class="sub" style="margin-top:14px;font-size:12px">현실적 한마디: 이 프로그램을 완주하면 시니어가 갖춰야 할 <b>지식·판단·통합 경험의 뼈대</b>가 서요. 실무 현장에서 진짜 시스템을 만들고 운영하며 살을 붙이면 완성돼요.</p>
     <button class="ovclose alt" id="path-close" style="margin-top:10px">닫기</button>`;
   body.querySelectorAll(".preq").forEach(bt=>bt.onclick=()=>{ const fn=bt.dataset.fn; if(!fn)return; o.classList.remove("on"); document.body.style.overflow="";
     if(fn.indexOf("track:")===0){ gotoTrack(fn.slice(6)); }
@@ -6492,9 +6516,9 @@ function openPath(){ const o=$("profile"), body=$("profile-body"); ensureSkills(
 function nextSteps(){
  const due=(typeof dueCount==="function")?dueCount():0, done=Object.keys(S.done||{}).length, bd=blDoneTotal();
  return [
-  !S.diag ? ["실력 진단으로 시작","5분이면 지금 위치가 나옵니다","diag"]
-  : due>0 ? ["오답 복습 "+due+"문제","새로 배우기 전에 이걸 먼저 비웁니다","review"]
-  : ["레슨 풀기", done?("지금까지 "+done+"개 완료 · 이어서"):"개념을 읽고 문제를 풉니다","close"],
+  !S.diag ? ["실력 진단으로 시작","5분이면 지금 위치가 나와요","diag"]
+  : due>0 ? ["오답 복습 "+due+"문제","새로 배우기 전에 이걸 먼저 비워요","review"]
+  : ["레슨 풀기", done?("지금까지 "+done+"개 완료 · 이어서"):"개념을 읽고 문제를 풔요","close"],
   bd<BUILD_DAYS ? ["빌드 랩 Day "+(bd+1),"배운 것으로 직접 만들어 통과시키기","build"]
   : ["프로젝트 미션","요구사항부터 운영·장애까지","proj"],
   ["학습 코치로 점검","무엇이 약한지 기록으로 확인","coach"]
@@ -6508,7 +6532,7 @@ function openProfile2(){ const o=$("profile"), body=$("profile-body");
  const anal=done?`${radarSVG()}
   <div class="ovh" style="margin-top:14px">트랙별 역량 <span style="font-weight:700;color:var(--ink-soft)">· 근거와 함께</span></div>${trackScoreHtml()}
   <div class="ovh" style="margin-top:16px">9축 역량 <span style="font-weight:700;color:var(--ink-soft)">· 눌러서 근거 보기</span></div>${skillBars()}`
-  :`<p class="sub">레슨을 풀면 여기에 9축 역량과 트랙별 근거가 나타납니다.</p>`;
+  :`<p class="sub">레슨을 풀면 여기에 9축 역량과 트랙별 근거가 나타나요.</p>`;
  const hub=[["① 먼저",[["","실력 진단","짧은 진단으로 현재 위치 확인","diag"],["","학습 코치","내 기록으로 다음 할 일 찾기","coach"]]],
   ["② 매일",[["","빌드 랩",`요구사항만 보고 만들어 통과 · ${blDoneTotal()}/${BUILD_DAYS} Day`,"build"],
    ["","Git 시뮬레이터",`${glDoneCount()}/${GIT_MISSIONS.length} 미션 · 브랜치·병합·충돌`,"git"],
@@ -6613,19 +6637,20 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEvent
 })();
 </script>
 
-<script src="data/learning-path.js"></script>
-<script src="data/study-ui.js"></script>
+<script src="data/learning-path.js?v=13"></script>
+<script src="data/reader-guide.js?v=13"></script>
+<script src="data/study-ui.js?v=13"></script>
 <script src="data/build-worker.js"></script>
 <script src="data/practice-worker.js"></script>
 <script src="data/sql-practice.js"></script>
-<script src="data/study-quality.js"></script>
+<script src="data/study-quality.js?v=13"></script>
 <script src="vendor/acorn.js"></script>
 <script src="data/dom-practice.js"></script>
-<script src="data/code-literacy.js"></script>
-<script src="data/vibe-scenarios.js?v=12"></script>
-<script src="data/vibe-challenges.js?v=12"></script>
-<script src="data/vibe-projects.js?v=12"></script>
-<script src="data/vibe-journey.js?v=12"></script>
-<script src="data/vibe-lab.js?v=12"></script>
-<script src="data/service-export.js?v=12"></script>
-<script src="data/service-path.js?v=12"></script>
+<script src="data/code-literacy.js?v=13"></script>
+<script src="data/vibe-scenarios.js?v=13"></script>
+<script src="data/vibe-challenges.js?v=13"></script>
+<script src="data/vibe-projects.js?v=13"></script>
+<script src="data/vibe-journey.js?v=13"></script>
+<script src="data/vibe-lab.js?v=13"></script>
+<script src="data/service-export.js?v=13"></script>
+<script src="data/service-path.js?v=13"></script>

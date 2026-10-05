@@ -97,6 +97,7 @@
   }
   function questionId(q) {
     q = q || {};
+    if (typeof q.qid === 'string' && /^[a-z0-9]+$/.test(q.qid)) return q.qid;
     return hash([q.t || 'choice', q.k || '', q.q || '', q.code || '', q.src || '', JSON.stringify(q.o || [])].join('\u0001'));
   }
   function lessonId(track, unit, lesson) {

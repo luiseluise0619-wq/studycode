@@ -2,14 +2,17 @@
    - 앱 셸(index.html 등): network-first — 배포하면 바로 갱신된다
    - /data/*.js 청크: 캐시 우선·백그라운드 갱신 — 처음 오프라인에서도 미리 받은 앱 코드를 읽는다
    - /api/* 와 교차 출처(Monaco/Pyodide CDN)는 건드리지 않는다 */
-const VERSION = "v12-service-path";
+const VERSION = "v13-reader-copy";
 const SHELL_CACHE = "coderun-shell-" + VERSION;
 const DATA_CACHE  = "coderun-data-" + VERSION;
 const KEEP = [SHELL_CACHE, DATA_CACHE];
 
 const SHELL = [
-  "/data/vibe-scenarios.js?v=12", "/data/vibe-challenges.js?v=12", "/data/vibe-projects.js?v=12", "/data/vibe-journey.js?v=12", "/data/vibe-lab.js?v=12",
-  "/data/build.js?v=12", "/data/service-project.js?v=12", "/data/service-path.js?v=12", "/data/service-export.js?v=12",
+  "/data/reader-guide.js?v=13", "/data/reader-guide.js", "/data/glossary.js", "/data/intro.js",
+  "/data/study-quality.js?v=13",
+  "/data/study-ui.js?v=13", "/data/code-literacy.js?v=13", "/data/learning-path.js?v=13", "/data/coderun-design.css?v=13",
+  "/data/vibe-scenarios.js?v=13", "/data/vibe-challenges.js?v=13", "/data/vibe-projects.js?v=13", "/data/vibe-journey.js?v=13", "/data/vibe-lab.js?v=13",
+  "/data/build.js?v=13", "/data/service-project.js?v=13", "/data/service-path.js?v=13", "/data/service-export.js?v=13",
   "/data/build.js", "/data/service-project.js", "/data/service-path.js", "/data/service-export.js",
   "/", "/index.html", "/manifest.webmanifest",
   "/data/study-design.css", "/data/study-ui.css",

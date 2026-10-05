@@ -122,7 +122,7 @@
       } finally {
         if (running) await running.close();
         const resolved = path.resolve(dir);
-        if (path.dirname(resolved) !== tempRoot || !path.basename(resolved).startsWith('coderun-reservation-')) throw new Error('검사 폴더 경로가 예상과 다릅니다.');
+        if (path.dirname(resolved) !== tempRoot || !path.basename(resolved).startsWith('coderun-reservation-')) throw new Error("검사 폴더 경로가 예상과 달라요.");
         fs.rmSync(resolved, { recursive: true, force: true });
       }
     }
@@ -132,8 +132,8 @@
         console.log('내 예약 서버: ' + running.url);
         console.log('저장 파일: ' + running.file);
         for (const [token, user] of Object.entries(running.tokens)) console.log(user + ' 사용자 토큰: ' + token);
-        console.log('토큰을 화면에 붙여 넣으세요. Ctrl+C로 종료하고 다시 실행하면 예약을 복원합니다.');
-        console.log('단일 프로세스·로컬 실습용입니다. /health/ready가 503이면 저장 폴더를 점검하세요.');
+        console.log("토큰을 화면에 붙여 넣으세요. Ctrl+C로 종료하고 다시 실행하면 예약을 복원해요.");
+        console.log("단일 프로세스·로컬 실습용이에요. /health/ready가 503이면 저장 폴더를 점검하세요.");
         let closing = false;
         const shutdown = () => { if (closing) return; closing = true; running.close().then(() => { process.exitCode = 0; }).catch(error => { console.error(error.message); process.exitCode = 1; }); };
         process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);

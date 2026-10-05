@@ -1546,7 +1546,7 @@ function runBrowserLoopFixture(executablePath){
    check("Day 6 성능 게이트가 제한 시간 안에 끝난다",
      r.days.find(d=>d.n===6).ms < 5000, r.days.find(d=>d.n===6).ms+"ms");
    check("색인 없는 구현은 성능 게이트에서 떨어진다",
-     r.naive.length===1 && /빠르다/.test(r.naive[0]), r.naive);
+     r.naive.length===1 && /목록 조회가 빨라요/.test(r.naive[0]), r.naive);
   }
   await p.close();
  }

@@ -26,7 +26,7 @@
   p.missions=[{id:'transfer',title:p.title,goal:goals[original.id],hint:transform(original.missions.map(m=>m.hint).join(' ')),quiz:JSON.parse(JSON.stringify(original.missions[1].quiz)),reference:transform(original.missions[1].reference),tests:tests.map(t=>({d:transform(t.d),js:transform(t.js)}))}];
   p.missions[0].quiz.q=transform(p.missions[0].quiz.q);p.missions[0].quiz.options=p.missions[0].quiz.options.map(transform);p.missions[0].quiz.why=transform(p.missions[0].quiz.why);
   if(original.id==='cart')p.missions[0].quiz.q='3명분 금액부터 예약 수수료를 없애려면 어떤 비교가 맞나요?';
-  if(original.id==='todo')p.missions[0].quiz={q:'messages.filter(message => !message.done).length는 무엇을 세나요?',options:['읽은 알림의 개수','모든 알림의 개수','읽지 않은 알림의 개수'],answer:2,why:'done이 false인 알림만 남긴 뒤 개수를 세어요. 화면 필터가 달라져도 읽지 않은 전체 알림의 개수를 표시합니다.'};
+  if(original.id==='todo')p.missions[0].quiz={q:'messages.filter(message => !message.done).length는 무엇을 세나요?',options:['읽은 알림의 개수','모든 알림의 개수','읽지 않은 알림의 개수'],answer:2,why:"done이 false인 알림만 남긴 뒤 개수를 세어요. 화면 필터가 달라져도 읽지 않은 전체 알림의 개수를 표시해요."};
   result.push(p);
  }
  const html='<div class="demo-kicker">내가 만드는 앱</div><h1>읽을 책 모아두기</h1><form id="book-form" novalidate><label class="field">책 이름<input id="book-title" maxlength="80"></label><button id="book-add" class="primary">목록에 넣기</button></form><p id="book-error" class="error" role="status"></p><label class="field">제목으로 찾기<input id="book-query"></label><div class="filters"><button data-book-filter="all">모두</button><button data-book-filter="unread">읽을 책</button></div><div id="book-list" class="tasks"></div><p id="book-empty" class="empty" hidden>찾는 책이 없어요.</p><p>아직 읽을 책 <b id="book-count"></b>권</p>';

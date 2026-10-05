@@ -49,7 +49,15 @@
     }
     return coreQLevel(q,ui,utotal);
   };
-  startReview=function(){
+  startReview=function beginReview(prepared){
+    const tracks=[...new Set((S.wrongs||[]).map(w=>w.lang))].filter(t=>COURSES[t]);
+    if(prepared!==true&&tracks.some(t=>!trackLoaded(t))){
+      return Promise.allSettled(tracks.map(ensureTrack)).then(results=>{
+        if(results.some(r=>r.status==='rejected'))toast('저장된 문제로 복습해요. 새 설명은 연결되면 가져올게요.');
+        return beginReview(true);
+      });
+    }
+    tracks.filter(trackLoaded).forEach(refreshWrongCopies);
     const wrongs=S.wrongs||[], due=wrongs.filter(w=>srsDue(w,today())), pool=due.length?due:wrongs;
     if(!pool.length){
       const rec=recommendation();const learned=rec.review&&rec.review.lesson;
@@ -75,7 +83,7 @@
       '<fieldset class="study-choice-field"><legend>하루에 공부할 시간</legend><div class="study-time">'+[10,20,30].map(n=>'<button type="button" data-minutes="'+n+'" class="'+(n===minutes?'is-selected':'')+'" aria-pressed="'+(n===minutes)+'">'+n+'분</button>').join('')+'</div><p class="study-muted">한 번에 많이 풀기보다, 이해하고 다시 풀 시간을 포함해요.</p></fieldset>'+
       '<label class="study-goal-label" for="study-goal">관심 분야</label><select id="study-goal"><option value="free">아직 고민 중이에요 · Python부터</option><option value="fullstack">웹 개발 · 화면 만들기부터</option><option value="backend">백엔드 · 서버와 데이터</option><option value="ds">데이터 분석 · Python과 SQL</option><option value="ai">AI 개발 · 데이터와 모델</option></select>'+
       '<button class="study-action" id="study-setup-start">'+(S.onboarded?'학습 계획 저장':'내 공부 시작하기')+icon('arrow')+'</button>'+
-      (S.onboarded?'<button class="study-text-link" id="study-setup-close">변경 없이 닫기</button>':'<p class="study-muted study-center">회원가입 없이 시작해요. 진도는 이 브라우저에 저장됩니다.</p>');
+      (S.onboarded?'<button class="study-text-link" id="study-setup-close">변경 없이 닫기</button>':"<p class=\"study-muted study-center\">회원가입 없이 시작해요. 진도는 이 브라우저에 저장돼요.</p>");
     $('study-goal').value=goal;
     card.querySelectorAll('[data-experience]').forEach(b=>b.onclick=()=>{selected=b.dataset.experience;card.querySelectorAll('[data-experience]').forEach(x=>{x.classList.toggle('is-selected',x===b);x.setAttribute('aria-pressed',String(x===b));});});
     card.querySelectorAll('[data-minutes]').forEach(b=>b.onclick=()=>{minutes=+b.dataset.minutes;card.querySelectorAll('[data-minutes]').forEach(x=>{x.classList.toggle('is-selected',x===b);x.setAttribute('aria-pressed',String(x===b));});});
@@ -98,7 +106,7 @@
     const rec=recommendation(), l=rec.lesson, due=dueCount();
     const completed=Object.keys(S.done || {}).length, p=profile();
     const c=COURSES[(l&&l.track) || curLang];
-    const target=due?'기억을 다지는 짧은 복습':l?l.title:'다음 분야에 도전하기';
+    const target=due?'기억을 다지는 짧은 복습':l?readerTitle(l.title):'다음 분야에 도전하기';
     $('hero').innerHTML='<div class="study-hero-grid"><div class="study-welcome">'+
       '<div class="home-kicker"><span class="study-dot"></span> 차근차근, 내 속도로</div>'+
       '<h2>AI와 함께 만들고,<br>코드의 뜻도 익혀요.</h2><p>코드가 하는 일을 설명하고, 한 줄씩 바꿔 보세요.<br>결과를 검사하고 오류를 고치는 힘을 길러요.</p>'+
@@ -118,7 +126,7 @@
   renderReco = function () {
     const p=profile(),rec=recommendation();
     $('reco').innerHTML='<details class="study-steps"><summary class="study-section-title"><h2>오늘 공부 순서</h2><span>'+p.minutes+'분 계획 · 자세히 ▾</span></summary><div class="study-step-grid">'+
-      rec.steps.map((step,i)=>'<div class="study-step"><span>'+String(i+1).padStart(2,'0')+'</span><b>'+escHtml(step.title)+' · '+step.minutes+'분</b><p>'+escHtml(step.description)+'</p></div>').join('')+'<p class="study-muted">시간은 예상이에요. 계획한 시간이 지나면 쉬어 갈 수 있게 알려 드려요.</p></div></details>';
+      rec.steps.map((step,i)=>'<div class="study-step"><span>'+String(i+1).padStart(2,'0')+'</span><b>'+escHtml(readerTitle(step.title))+' · '+step.minutes+'분</b><p>'+escHtml(step.description)+'</p></div>').join('')+'<p class="study-muted">시간은 예상이에요. 계획한 시간이 지나면 쉬어 갈 수 있게 알려 드려요.</p></div></details>';
   };
   const coreDaily=renderDaily;
   renderDaily=function(){coreDaily();const el=$('daily');const t=el.querySelector('.dtop>span');if(t)t.textContent='오늘의 작은 목표';const done=el.querySelector('.dtop .done');if(done&&todayCount()>=(S.dailyTarget||10))done.textContent='오늘 목표 완료 · 여기서 쉬어도 좋아요';};
@@ -201,6 +209,7 @@
     panel.innerHTML='<b>'+(ok?'맞았어요. 이유도 확인해 보세요.':'아직 맞지 않는 부분이 있어요.')+'</b>'+
       (!ok?'<div class="study-answer">'+(['choice','input'].includes(q.t)?'정답: ':'검사 결과: ')+escHtml(String(correctText).replace(/<[^>]*>/g,''))+'</div>':'')+
       (q.ex?'<div class="study-answer-ex">'+q.ex+'</div>':'<p>개념과 예제를 다시 읽으며 답이 나온 과정을 확인해 보세요.</p>')+
+      (typeof ReaderGuide!=='undefined'?ReaderGuide.html(ReaderGuide.related(q,null,run.lang,1)): '')+
       (!ok?'<p class="study-muted">이 문제는 복습 목록에 담았어요. 나중에 다시 풀어 봐요.</p>':'');
     $('qbody').appendChild(panel);
     if(!ok&&liveTest&&Array.isArray(liveTest.rows)&&['code','py','ts'].includes(q.t)){
@@ -209,9 +218,9 @@
     if(!run.studyAnswers)run.studyAnswers=[];
     const previous=run.studyAnswers[run.i];
     run.studyAnswers[run.i]={correct:!!ok,hinted:!!run.studyHinted,firstCorrect:previous?previous.firstCorrect:!!ok};
-    if(!ok&&['code','py','sql','html','react','ts','sim','arch','wire'].includes(q.t)){
-      const retry=document.createElement('button');retry.type='button';retry.className='study-retry';retry.id='study-retry';retry.textContent='코드 고쳐서 다시 검사하기';
-      retry.onclick=()=>{run.answered=false;run.studyHinted=true;run.studyRetried=true;if(run.id){S.studyResume={id:run.id,track:run.lang,next:run.i,correct:run.correct,answers:run.studyAnswers,resumeCurrent:true,hinted:true};save();}panel.remove();const chk=$('check');chk.disabled=false;chk.className='btn';chk.textContent='코드 검사하기';chk.onclick=onCheck;$('foot').className='foot';$('foot-msg').textContent='실패한 입력을 보고 코드를 고쳐 보세요.';const editor=$('pycode')||$('sqlcode')||$('livecode');if(editor)editor.focus();};panel.appendChild(retry);
+    if(!ok&&(q.outputRecall||['code','py','sql','html','react','ts','sim','arch','wire'].includes(q.t))){
+      const retry=document.createElement('button');retry.type='button';retry.className='study-retry';retry.id='study-retry';retry.textContent=q.outputRecall?'출력 다시 적어 보기':'코드 고쳐서 다시 검사하기';
+      retry.onclick=()=>{run.answered=false;run.studyHinted=true;run.studyRetried=true;if(run.id){S.studyResume={id:run.id,track:run.lang,next:run.i,correct:run.correct,answers:run.studyAnswers,resumeCurrent:true,hinted:true};save();}panel.remove();const chk=$('check');chk.disabled=false;chk.className='btn';chk.textContent=q.outputRecall?'답 확인하기':'코드 검사하기';chk.onclick=onCheck;$('foot').className='foot';$('foot-msg').textContent=q.outputRecall?'코드를 다시 읽고 출력을 적어 보세요.':'실패한 입력을 보고 코드를 고쳐 보세요.';const editor=q.outputRecall?$('fill'):$('pycode')||$('sqlcode')||$('livecode');if(editor){if(q.outputRecall)editor.disabled=false;editor.focus();}};panel.appendChild(retry);
     }
     if(ok&&run.studyRetried){const wrong=(S.wrongs||[]).find(w=>w.lang===run.lang&&wKey(w.q)===wKey(q));if(wrong){wrong.box=Math.max(1,wrong.box||0);wrong.due=srsAddDays(today(),1);save();paintReview();}}
     $('foot-msg').textContent=ok?'이유를 확인했다면 다음 문제로 가요.':'틀린 이유를 확인하고 다음 문제로 가요.';
@@ -232,10 +241,10 @@
     $('done-sub').textContent=mistakes?'맞힌 문제 '+run.correct+'개, 다시 볼 문제 '+mistakes+'개. 틀린 부분을 알아낸 것도 공부예요.':independent<run.total?'모든 문제를 마쳤어요. 이 중 '+independent+'개는 도움 없이 처음에 해결했어요. 다음에는 해설 없이 다시 풀어 보세요.':'모든 문제를 혼자 해결했어요. 다음에는 배운 내용을 다른 상황에도 써 보세요.';
     let plan=$('study-finish-plan');if(plan)plan.remove();plan=document.createElement('div');plan.id='study-finish-plan';plan.className='study-finish-plan';
     const rec=recommendation();
-    plan.innerHTML='<span class="home-kicker">다음 한 걸음</span><b>'+escHtml(mistakes?'틀린 문제를 다시 풀어 보기':rec.lesson?rec.lesson.title:'배운 내용으로 직접 만들기')+'</b><p>여기서 쉬어도 좋아요. 다음에 오면 이어서 시작할 수 있어요.</p>'+
+    plan.innerHTML='<span class="home-kicker">다음 한 걸음</span><b>'+escHtml(mistakes?'틀린 문제를 다시 풀어 보기':rec.lesson?readerTitle(rec.lesson.title):'배운 내용으로 직접 만들기')+'</b><p>여기서 쉬어도 좋아요. 다음에 오면 이어서 시작할 수 있어요.</p>'+
       '<button class="study-text-link" id="study-finish-home">오늘 공부는 여기까지</button>';
     const noteKey=run.id||run.lang+':'+today(),reflection=document.createElement('details');reflection.className='study-reflection';
-    reflection.innerHTML='<summary>한 문장으로 정리해 보기 · 선택</summary><label for="study-note">'+escHtml(run.les.title)+'에서 배운 내용은 무엇인가요?</label><textarea id="study-note" rows="3" maxlength="500" placeholder="왜 이 답이 맞는지, 다음에는 어디에 쓸지 적어 보세요."></textarea><span>학습 기록에 저장해요. 글의 길이로 실력을 평가하지 않아요.</span>';
+    reflection.innerHTML='<summary>한 문장으로 정리해 보기 · 선택</summary><label for="study-note">'+escHtml(readerTitle(run.les.title))+'에서 배운 내용은 무엇인가요?</label><textarea id="study-note" rows="3" maxlength="500" placeholder="왜 이 답이 맞는지, 다음에는 어디에 쓸지 적어 보세요."></textarea><span>학습 기록에 저장해요. 글의 길이로 실력을 평가하지 않아요.</span>';
     plan.appendChild(reflection);const note=reflection.querySelector('textarea'),title=run.les.title,track=run.lang;if(S.studyNotes&&S.studyNotes[noteKey])note.value=S.studyNotes[noteKey].text;
     let noteTimer;note.oninput=()=>{if(!S.studyNotes)S.studyNotes={};S.studyNotes[noteKey]={title,track,text:note.value,day:today()};const keys=Object.keys(S.studyNotes);if(keys.length>200)delete S.studyNotes[keys[0]];clearTimeout(noteTimer);noteTimer=setTimeout(save,350);};
     $('done-next').before(plan);$('done-next').textContent=mistakes?'틀린 문제 복습하기':'다음 레슨 시작하기';
@@ -266,9 +275,9 @@
   openPath=function(){
     const o=$('profile'),body=$('profile-body'),p=profile(),stages=LP.stages(S,COURSES),active=LP.currentLevel(S,curLang);
     const practice=[['코드 한 줄의 뜻 설명하기','도움을 받아 만든 코드도 읽어 보세요. 입력과 출력이 무엇인지 확인해요.'],['한 가지 바꾸고 결과 확인하기','변수·함수·조건의 뜻을 이해하고, 바꿨을 때 무엇이 달라지는지 예상해요.'],['작은 기능 완성하고 검사하기','AI의 초안이나 빈 코드에서 시작해 기능을 만들어요. 정상 입력과 잘못된 입력을 모두 검사해요.'],['버그·장애 해결','로그와 실패한 테스트로 원인을 좁혀요. 수정한 이유와 다시 생기지 않게 할 방법을 설명해요.'],['설계 선택 설명','성능, 비용, 안정성을 비교해요. 선택의 이유와 실제로 확인한 근거를 함께 설명해요.']];
-    body.innerHTML='<div class="home-kicker">만들면서 이해하기</div><h2>도움받아 시작하고, 스스로 고칠 수 있게</h2><p class="sub">AI와 함께 만들어도 좋아요. 무엇이 동작하고, 왜 동작하는지 설명하며 배워요. 익숙해질수록 더 큰 기능과 설계 판단을 연습합니다.</p>'+
+    body.innerHTML="<div class=\"home-kicker\">만들면서 이해하기</div><h2>도움받아 시작하고, 스스로 고칠 수 있게</h2><p class=\"sub\">AI와 함께 만들어도 좋아요. 무엇이 동작하고, 왜 동작하는지 설명하며 배워요. 익숙해질수록 더 큰 기능과 설계 판단을 연습해요.</p>"+
       stages.map((s,i)=>'<section class="study-growth-stage'+(active===s.level?' active':'')+'"><div class="study-growth-head"><span>'+String(i+1).padStart(2,'0')+'</span><h3>'+s.name+'</h3>'+(active===s.level?'<b>현재 추천 단계</b>':'')+'</div><h4>'+practice[i][0]+'</h4><p>'+practice[i][1]+'</p><div class="study-growth-tracks">'+s.tracks.map(t=>'<button data-growth-track="'+t+'">'+escHtml(COURSES[t].name)+' →</button>').join('')+'</div>'+(i===2?'<button class="study-text-link" data-growth-go="build">직접 만드는 프로젝트 열기 →</button>':i===3?'<button class="study-text-link" data-growth-go="diag">장애 원인 추적해 보기 →</button>':i===4?'<button class="study-text-link" data-growth-go="sim">실무 설계 판단해 보기 →</button>':'')+'</section>').join('')+
-      '<p class="sub">학습 결과를 실제 프로젝트에 써 보세요. 직접 만들고 운영하며 얻은 경험이 다음 단계의 판단을 더 정확하게 해 줍니다.</p><button class="ovclose alt" id="path-close">닫기</button>';
+      "<p class=\"sub\">학습 결과를 실제 프로젝트에 써 보세요. 직접 만들고 운영하며 얻은 경험이 다음 단계의 판단을 더 정확하게 해 줘요.</p><button class=\"ovclose alt\" id=\"path-close\">닫기</button>";
     body.querySelectorAll('[data-growth-track]').forEach(b=>b.onclick=()=>{closeOverlay('profile');gotoTrack(b.dataset.growthTrack);});
     body.querySelectorAll('[data-growth-go]').forEach(b=>b.onclick=()=>{closeOverlay('profile');({build:openBuildLab,diag:openDiags,sim:openSims})[b.dataset.growthGo]();});
     $('path-close').onclick=()=>closeOverlay('profile');body.scrollTop=0;o.classList.add('on');document.body.style.overflow='hidden';
@@ -280,7 +289,7 @@
   aside.innerHTML='<a class="study-brand" href="#home"><span>&lt;/&gt;</span><b>코드런<small>조금씩, 확실하게</small></b></a><div class="study-nav-label">나의 공부</div><nav class="study-nav">'+
     [['home','book','오늘의 공부'],['review','review','복습 노트'],['path','route','성장 과정'],['progress','chart','나의 기록']].map(x=>'<button class="study-nav-link'+(x[0]==='home'?' is-active':'')+'" data-nav="'+x[0]+'">'+icon(x[1])+x[2]+'</button>').join('')+
     '<div class="study-nav-label">배운 것을 써 보기</div>'+[['build','build','직접 만들기'],['git','route','Git 연습'],['sim','review','실무 판단']].map(x=>'<button class="study-nav-link" data-nav="'+x[0]+'">'+icon(x[1])+x[2]+'</button>').join('')+'</nav>'+
-    '<div class="study-sidebar-foot"><div class="study-sidebar-note"><b>작게 시작해도 괜찮아요.</b><p>한 번 더 떠올리고,<br>한 번 더 직접 만들어 봐요.</p></div><button class="study-nav-link" data-nav="settings">'+icon('settings')+'공부 설정</button><span>내 기록은 자동 저장됩니다</span></div>';
+    '<div class="study-sidebar-foot"><div class="study-sidebar-note"><b>작게 시작해도 괜찮아요.</b><p>한 번 더 떠올리고,<br>한 번 더 직접 만들어 봐요.</p></div><button class="study-nav-link" data-nav="settings">'+icon('settings')+"공부 설정</button><span>내 기록은 자동 저장돼요</span></div>";
   shell.append(aside,home);
   const GO={home:()=>{window.scrollTo({top:0,behavior:'smooth'});},review:startReview,path:openPath,progress:openCoach,build:openBuildLab,git:openGitLab,sim:openSims,settings:openOnboard};
   aside.querySelectorAll('[data-nav]').forEach(b=>b.onclick=GO[b.dataset.nav]);

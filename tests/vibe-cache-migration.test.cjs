@@ -10,24 +10,32 @@ const server = http.createServer((req, res) => {
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) { res.writeHead(404); res.end(); return; }
   let body = fs.readFileSync(file);
   if (legacy && url.pathname === '/sw.js') body = body.toString()
-    .replaceAll('v12-service-path', 'v11-projects')
+    .replaceAll('v13-reader-copy', 'v11-projects')
     .replace(/"\/data\/(?:service-[^"]+|build\.js)[^"]*",?\s*/g, '')
-    .replaceAll('?v=12', '?v=11');
+    .replaceAll('?v=13', '?v=11');
   if (legacy && (url.pathname === '/' || url.pathname === '/index.html')) body = body.toString()
-    .replace(/<script src="data\/service-(?:path|export)\.js\?v=12"><\/script>\s*/g, '')
-    .replaceAll('.js?v=12', '.js?v=11');
+    .replace(/<script src="data\/(?:service-(?:path|export)|reader-guide)\.js\?v=13"><\/script>\s*/g, '')
+    .replaceAll('.js?v=13', '.js?v=11');
   const types = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.png': 'image/png' };
   res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' }); res.end(body);
 });
+async function waitUntil(page, predicate, argument, description) {
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    if (await page.evaluate(predicate, argument)) return;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  throw new Error('Timed out waiting for ' + description);
+}
 async function waitVersion(page, expected) {
-  await page.waitForFunction(expected => new Promise(async resolve => {
+  await waitUntil(page, expected => new Promise(async resolve => {
     const registration = await navigator.serviceWorker.getRegistration(), worker = navigator.serviceWorker.controller;
     if (!worker || registration?.active?.state !== 'activated' || registration.installing || registration.waiting) { resolve(false); return; }
     const channel = new MessageChannel();
     const timer = setTimeout(() => { channel.port1.close(); resolve(false); }, 500);
     channel.port1.onmessage = e => { clearTimeout(timer); channel.port1.close(); resolve(e.data?.version === expected); };
     worker.postMessage({ type: 'version' }, [channel.port2]);
-  }), expected);
+  }), expected, 'activated worker ' + expected);
 }
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -52,18 +60,19 @@ async function waitVersion(page, expected) {
     assert.equal(await page.evaluate(() => S.vibeLab.cart.missions.quantity.passed), true); assert.deepEqual(errors, []);
     console.log('PASS old cached modules are bypassed and progress survives the update');
     await page.evaluate(async () => { const registration = await navigator.serviceWorker.getRegistration(); await registration.update(); });
-    await waitVersion(page, 'v12-service-path');
-    await page.waitForFunction(async () => {
-      const cache = await caches.open('coderun-shell-v12-service-path');
-      const names = ['vibe-lab', 'vibe-scenarios', 'vibe-challenges', 'vibe-projects', 'vibe-journey', 'service-path', 'service-export', 'service-project', 'build'];
-      const found = await Promise.all(names.map(name => cache.match('/data/' + name + '.js?v=12')));
+    await waitVersion(page, 'v13-reader-copy');
+    await waitUntil(page, async () => {
+      const cache = await caches.open('coderun-shell-v13-reader-copy');
+      const names = ['vibe-lab', 'vibe-scenarios', 'vibe-challenges', 'vibe-projects', 'vibe-journey', 'service-path', 'service-export', 'service-project', 'build', 'reader-guide', 'study-ui', 'study-quality', 'code-literacy', 'learning-path'];
+      const found = await Promise.all(names.map(name => cache.match('/data/' + name + '.js?v=13')));
       return found.every(Boolean) && !!(await cache.match('/index.html'));
-    });
+    }, null, 'all current modules in the offline cache');
     await context.setOffline(true); await page.reload();
-    await page.waitForFunction(() => typeof ServicePath !== 'undefined');
+    await page.waitForFunction(() => typeof ServicePath !== 'undefined' && typeof ReaderGuide !== 'undefined');
     assert.equal(await page.evaluate(() => S.vibeLab.cart.missions.quantity.passed), true);
-    await page.evaluate(() => ServicePath.open()); await page.waitForSelector('[data-service-day]');
-    assert.equal(await page.locator('[data-service-day]').count(), 18); assert.deepEqual(errors, []);
+    await page.evaluate(() => ServicePath.open());
+    await page.waitForSelector('[data-service-day]');
+    assert.equal(await page.locator('[data-service-day]').count(), 18); assert.equal(await page.evaluate(() => Object.keys(ReaderGuide.definitions).length), 175); assert.deepEqual(errors, []);
     console.log('PASS activated upgrade reopens offline with saved progress and all service stages');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => server.close());

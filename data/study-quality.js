@@ -25,11 +25,16 @@
 
   // Give copied questions their original concept and difficulty in mixed reviews.
   const coreReview=startReview;
-  startReview=function(){coreReview();if(!run||!run.review)return;
+  function prepareReview(){if(!run||!run.review)return;
     for(const q of run.les.q){const track=q._studyTrack||run.lang,c=COURSES[track];if(!c)continue;
       let found=false;for(const u of c.units){for(const lesson of u.lessons){if((lesson.q||[]).some(item=>wKey(item)===wKey(q))){q._studyTheory=lesson.theory;q._studyLevel=LearningPath.questionLevel(q,u,lesson,track);found=true;break;}}if(found)break;}
     }
     if(!$('qbody').querySelector('.theory')){run.theoryShown=true;showQ();}
+  };
+  startReview=function(prepared){
+    const result=coreReview(prepared);
+    if(result&&typeof result.then==='function')return result.then(prepareReview);
+    prepareReview();return result;
   };
   const oldQLevel=qLevel;qLevel=function(q,ui,total){return q&&q._studyLevel||oldQLevel(q,ui,total);};
   const oldShow=showQ;
