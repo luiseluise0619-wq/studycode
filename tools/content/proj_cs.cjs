@@ -18,7 +18,7 @@ module.exports = {
     opts: [
       { label: "가장 작은 단위(원)의 정수로 저장하고 계산도 정수로 해요",
         fx: { coding: 3, debugging: 2 },
-        fb: "✅ <b>문제 자체를 없애는 방법</b>예요. 2진 부동소수점이 0.1 을 정확히 담지 못하는 것이 원인이므로, 소수를 쓰지 않으면 오차도 없어요. 화폐 단위가 더 잘게 나뉘는 통화라면 그 최소 단위(센트)로 잡아요. 표시할 때만 나눠서 보여 줘요.",
+        fb: "✅ <b>문제 자체를 없애는 방법</b>이에요. 2진 부동소수점이 0.1 을 정확히 담지 못하는 것이 원인이므로, 소수를 쓰지 않으면 오차도 없어요. 화폐 단위가 더 잘게 나뉘는 통화라면 그 최소 단위(센트)로 잡아요. 표시할 때만 나눠서 보여 줘요.",
         best: true },
       { label: "계산할 때마다 소수점 둘째 자리에서 반올림해요",
         fx: { coding: -1, debugging: -1 },
@@ -64,7 +64,7 @@ module.exports = {
 
   { t: "비트로 상태를 담아 봐요", type: "build",
     goal: "여러 개의 참·거짓 설정을 <b>정수 하나에</b> 담고 꺼내는 코드를 쓰세요.\n권한 플래그나 기능 스위치를 다루는 흔한 방식이에요.",
-    hint: "각 설정에 겹치지 않는 비트를 하나씩 줘요. 켜기는 `|`, 끄기는 `& ~`, 확인은 `&` 예요. 자바스크립트의 비트 연산은 32비트라 그 이상은 담기지 않는다는 점을 기억하세요.",
+    hint: "각 설정에 겹치지 않는 비트를 하나씩 줘요. 켜기는 `|`, 끄기는 `& ~`, 확인은 `&`예요. 자바스크립트의 비트 연산은 32비트라 그 이상은 담기지 않는다는 점을 기억하세요.",
     acc: "설정을 켜고 끄고 확인하는 세 동작이 모두 동작하고, 저장된 정수 값이 함께 출력되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\n/* 겹치지 않는 비트를 하나씩 준다 */\nconst READ = 1;     // 0001\nconst WRITE = 2;    // 0010\nconst DELETE = 4;   // 0100\nconst ADMIN = 8;    // 1000\n\nconst on = (v, f) => (v | f) >>> 0;\nconst off = (v, f) => (v & ~f) >>> 0;\nconst has = (v, f) => (v & f) !== 0;\nconst show = (v) => v.toString(2).padStart(4, \"0\") + \" (\" + v + \")\";\n\nlet perm = 0;\nout.push(\"시작        \" + show(perm));\n\nperm = on(perm, READ);\nperm = on(perm, WRITE);\nout.push(\"읽기+쓰기   \" + show(perm));\n\nout.push(\"  삭제 가능? \" + has(perm, DELETE));\n\nperm = on(perm, DELETE);\nout.push(\"삭제 추가   \" + show(perm) + \"  삭제 가능? \" + has(perm, DELETE));\n\nperm = off(perm, WRITE);\nout.push(\"쓰기 제거   \" + show(perm) + \"  쓰기 가능? \" + has(perm, WRITE));\n\n/* 여러 개를 한 번에 확인한다 */\nconst NEED = READ | DELETE;\nout.push(\"\");\nout.push(\"읽기와 삭제를 모두 갖췄나? \" + ((perm & NEED) === NEED));\n\n/* 32비트가 한계다 — 설정이 더 늘면 다른 방법을 써야 한다 */\nout.push(\"32번째 비트: \" + ((1 << 31) >>> 0) + \"  그다음은 담기지 않는다\");\n\nconsole.log(out.join(\"\\n\"));" },

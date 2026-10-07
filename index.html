@@ -1386,7 +1386,7 @@
 <link rel="stylesheet" href="data/study-design.css">
 <link rel="stylesheet" href="data/study-ui.css">
 <link rel="stylesheet" href="data/vibe-lab.css">
-<link rel="stylesheet" href="data/coderun-design.css?v=14">
+<link rel="stylesheet" href="data/coderun-design.css?v=15">
 
 <!-- ================= HOME ================= -->
 <div class="app" id="home">
@@ -2033,7 +2033,7 @@ function ensureIntro(){ return __got.intro?Promise.resolve(true):loadChunk("intr
 function ensureSims(){ return __got.sims?Promise.resolve(true):loadChunk("sims.js"); }
 function ensureDiags(){ return __got.diags?Promise.resolve(true):loadChunk("diags.js"); }
 function ensureProjects(){ return __got.projects?Promise.resolve(true):loadChunk("projects.js"); }
-function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=14")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=14")); }
+function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=15")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=15")); }
 /* TypeScript·JSX 변환기 (sucrase, 288KB). 파서만 필요하므로 부모 문서에서 돌린다. */
 function ensureSucrase(){
   if(typeof Sucrase!=="undefined" && Sucrase.transform) return Promise.resolve(true);
@@ -2789,7 +2789,7 @@ const GIT_MISSIONS=[
 {
  id:"m5", title:"충돌 해결하기",
  brief:"main 과 feature/price 가 **같은 줄**을 다르게 고쳤어요. 병합하면 충돌이 나요. 충돌 표시를 정리해 두 의도를 모두 살린 내용으로 만들고 커밋하세요.",
- teach:"충돌은 Git 이 고장난 게 아니라 **판단을 사람에게 넘긴 것**예요. `<<<<<<<` 와 `>>>>>>>` 사이에 양쪽 버전이 그대로 들어와요. 표시를 지우고 최종본을 만든 뒤 `git add` 로 '해결했다'고 알리고 커밋하면 돼요.",
+ teach:"충돌은 Git 이 고장난 게 아니라 **판단을 사람에게 넘긴 것**이에요. `<<<<<<<` 와 `>>>>>>>` 사이에 양쪽 버전이 그대로 들어와요. 표시를 지우고 최종본을 만든 뒤 `git add` 로 '해결했다'고 알리고 커밋하면 돼요.",
  hint:"git merge feature/price → 오른쪽 편집기에서 config.js 의 충돌 표시를 지우고 최종본 작성 → git add config.js → git commit -m \"merge\"",
  setup:{ commits:[{m:"init",f:{"config.js":"price = 1000"}}],
    branches:{"feature/price":{commits:[{m:"feat: 할인가",f:{"config.js":"price = 900\ndiscount = true"}}]}} ,
@@ -2861,7 +2861,7 @@ const GIT_MISSIONS=[
 {
  id:"m11", title:"push 가 거절될 때",
  brief:"내 커밋을 push 하려는데 원격에 동료의 커밋이 먼저 올라와 있어요. 거절 이유를 확인하고, 동료 작업을 잃지 않게 합친 뒤 push 하세요.",
- teach:"non-fast-forward 거절은 **내 커밋이 원격의 최신을 포함하지 않아요**는 뜻이에요. 여기서 `--force` 를 쓰면 동료의 커밋이 사라져요. 정답은 먼저 받아와서(pull) 합친 뒤 올리는 거예요.",
+ teach:"non-fast-forward 거절은 **내 커밋이 원격의 최신을 포함하지 않는다**는 뜻이에요. 여기서 `--force` 를 쓰면 동료의 커밋이 사라져요. 정답은 먼저 받아와서(pull) 합친 뒤 올리는 거예요.",
  hint:"git push 로 거절을 확인 → git pull → git push",
  setup:{ commits:[{m:"init",f:{"app.js":"v1"}},{m:"docs: 동료가 올린 문서",f:{"DOC.md":"동료 작업"}}],
    remote:{main:1} },
@@ -5678,7 +5678,7 @@ function tvNote(f, last){
   if(f.scan) return "<b>"+f.scan+"번째 행</b>이 나왔어요";
   if(f.chg&&f.chg.length) return "표가 바뀌었어요 — 아래에서 무엇이 달라졌는지 보세요";
   if(last) return "실행이 끝났아요";
-  return f.line+"번째 줄을 <b>실행하기 직전</b>예요";
+  return f.line+"번째 줄을 <b>실행하기 직전</b>이에요";
 }
 
 function renderTrace(env, F, i){
@@ -6637,20 +6637,20 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEvent
 })();
 </script>
 
-<script src="data/learning-path.js?v=14"></script>
-<script src="data/reader-guide.js?v=14"></script>
-<script src="data/study-ui.js?v=14"></script>
+<script src="data/learning-path.js?v=15"></script>
+<script src="data/reader-guide.js?v=15"></script>
+<script src="data/study-ui.js?v=15"></script>
 <script src="data/build-worker.js"></script>
 <script src="data/practice-worker.js"></script>
 <script src="data/sql-practice.js"></script>
-<script src="data/study-quality.js?v=14"></script>
+<script src="data/study-quality.js?v=15"></script>
 <script src="vendor/acorn.js"></script>
 <script src="data/dom-practice.js"></script>
-<script src="data/code-literacy.js?v=14"></script>
-<script src="data/vibe-scenarios.js?v=14"></script>
-<script src="data/vibe-challenges.js?v=14"></script>
-<script src="data/vibe-projects.js?v=14"></script>
-<script src="data/vibe-journey.js?v=14"></script>
-<script src="data/vibe-lab.js?v=14"></script>
-<script src="data/service-export.js?v=14"></script>
-<script src="data/service-path.js?v=14"></script>
+<script src="data/code-literacy.js?v=15"></script>
+<script src="data/vibe-scenarios.js?v=15"></script>
+<script src="data/vibe-challenges.js?v=15"></script>
+<script src="data/vibe-projects.js?v=15"></script>
+<script src="data/vibe-journey.js?v=15"></script>
+<script src="data/vibe-lab.js?v=15"></script>
+<script src="data/service-export.js?v=15"></script>
+<script src="data/service-path.js?v=15"></script>

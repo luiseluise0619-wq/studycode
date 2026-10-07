@@ -22,7 +22,7 @@ module.exports = {
     opts: [
       { label: "브랜치가 오래 살아서 — 갈라져 있는 시간이 길수록 겹칠 확률과 양이 함께 늘어요",
         fx: { leadership: 3, system_design: 2 },
-        fb: "✅ <b>충돌의 양은 갈라져 있던 시간에 거의 비례해요.</b> 하루짜리 브랜치는 겹칠 것이 적고, 두 달짜리는 그동안 남들이 바꾼 것 전부와 겹쳐요. 그래서 해결책은 '충돌을 잘 푸는 법' 이 아니라 <b>브랜치를 짧게 사는 것</b>예요 — 자주 합치면 한 번의 충돌이 작아져요.",
+        fb: "✅ <b>충돌의 양은 갈라져 있던 시간에 거의 비례해요.</b> 하루짜리 브랜치는 겹칠 것이 적고, 두 달짜리는 그동안 남들이 바꾼 것 전부와 겹쳐요. 그래서 해결책은 '충돌을 잘 푸는 법' 이 아니라 <b>브랜치를 짧게 사는 것</b>이에요 — 자주 합치면 한 번의 충돌이 작아져요.",
         best: true },
       { label: "머지 도구가 부족해서",
         fx: { coding: -1 },
@@ -159,7 +159,7 @@ module.exports = {
 
   { t: "고친 뒤와 나눠 돌린 뒤를 견줘요", type: "build",
     goal: "처방을 적용한 시간과, 그것을 <b>여러 대로 나눠 돌린</b> 시간을 계산하세요.\n나눌 때 한쪽에 몰리지 않게 배분해요.",
-    hint: "나눠 돌릴 때 가장 흔한 실수는 <b>개수로 나누는 것</b>예요. 시간이 크게 다르면 느린 것들이 한 대에 몰려 그 대가 전체 시간을 정해요. 시간이 긴 것부터 <b>지금 가장 한가한 대</b>에 주면 훨씬 고르게 나뉘어요. 그리고 아무리 나눠도 <b>가장 느린 테스트 하나</b>보다 짧아질 수 없어요.",
+    hint: "나눠 돌릴 때 가장 흔한 실수는 <b>개수로 나누는 것</b>이에요. 시간이 크게 다르면 느린 것들이 한 대에 몰려 그 대가 전체 시간을 정해요. 시간이 긴 것부터 <b>지금 가장 한가한 대</b>에 주면 훨씬 고르게 나뉘어요. 그리고 아무리 나눠도 <b>가장 느린 테스트 하나</b>보다 짧아질 수 없어요.",
     acc: "고친 뒤 총 시간과 대수별 배분 결과가 나오고, 가장 느린 테스트가 하한이 되는 것이 보이면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\nconst BEFORE_MIN = 21;\n\n/* 처방을 적용한 뒤의 시간 — 느린 것들이 크게 줄었다 */\nconst after = [\n  { n: \"결제 전체 흐름\", sec: 21 },\n  { n: \"주문 목록 렌더\", sec: 34 },\n  { n: \"회원가입 흐름\", sec: 6 },\n  { n: \"재고 동시성\", sec: 14 },\n  { n: \"검색 색인\", sec: 16 },\n  { n: \"권한 매트릭스\", sec: 11 }\n];\nfor (let i = 0; i < 60; i++) after.push({ n: \"기타\" + i, sec: 5.5 });\n\nconst total = after.reduce((s, t) => s + t.sec, 0);\nout.push(\"고치기 전 \" + BEFORE_MIN + \".0분 → 고친 뒤 \" + (total / 60).toFixed(1) +\n  \"분 (한 대에서)\");\n\nfunction split(n, byCount) {\n  const lanes = new Array(n).fill(0);\n  const list = byCount ? after.slice() : after.slice().sort((a, b) => b.sec - a.sec);\n  list.forEach((t, i) => {\n    /* 개수로 나누면 순서대로, 시간으로 나누면 가장 한가한 대에 준다 */\n    const at = byCount ? i % n : lanes.indexOf(Math.min.apply(null, lanes));\n    lanes[at] += t.sec;\n  });\n  return { max: Math.max.apply(null, lanes), min: Math.min.apply(null, lanes) };\n}\n\nconst slowest = Math.max.apply(null, after.map((t) => t.sec));\nout.push(\"\");\nout.push(\"대수   개수로 나눔   시간으로 나눔   가장 느린 테스트\");\n[1, 2, 4, 8, 16, 32].forEach((n) => {\n  const a = split(n, true), b = split(n, false);\n  out.push(String(n).padEnd(7) + (a.max.toFixed(0) + \"초\").padEnd(14) +\n    (b.max.toFixed(0) + \"초\").padEnd(16) + slowest + \"초\");\n});\n\nout.push(\"\");\nout.push(\"개수로 나누면 느린 것이 한 대에 몰려 그 대가 전체 시간을 정한다\");\nout.push(\"시간이 긴 것부터 가장 한가한 대에 주면 훨씬 고르게 나뉜다\");\nout.push(\"아무리 나눠도 가장 느린 테스트 하나(\" + slowest + \"초)보다 짧아지지 않는다\");\nout.push(\"→ 더 줄이려면 그 테스트를 쪼개거나 더 싼 층으로 옮겨야 한다\");\nconsole.log(out.join(\"\\n\"));\n" },

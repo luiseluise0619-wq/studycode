@@ -1,6 +1,15 @@
 /* Contextual copy repairs. These run only on prose selected by reader-copy.cjs. */
 'use strict';
 const REPAIRS=[
+ ['테스트의 순서를 보라','테스트의 순서를 확인해 보세요'],
+ ['테스트를 보라','테스트를 확인해 보세요'],
+ ['확인하지 않는 것이 무엇인지 보라','테스트가 무엇을 확인하지 않는지도 살펴보세요'],
+ ['실제로 사용할 때는 실제로는','실제로 사용할 때는'],
+ ['실제로 사용할 때는 이 형태는','이 형태는'],
+ ['같아요는','같다는'],['있어요는','있다는'],['없어요는','없다는'],
+ ['않아요는','않는다는'],['남아요는','남는다는'],['바뀌어요는','바뀐다는'],
+ ['만들어져요는','만들어진다는'],['못해요는','못한다는'],['바꿔요는','바꾼다는'],
+ ['달라요는','다르다는'],['따라가요는','따라간다는'],['돼요는','된다는'],
  ['일대예요','일대다'],['다대예요','다대다'],
  ['가져요는','가진다는'],['뜻이에요 라고 해석해요','뜻으로 해석해요'],
  ['<b>이미 메모리에 있어요</b>고 보고','<b>이미 메모리에 있는 것으로</b> 보고'],
@@ -92,6 +101,8 @@ const COMMANDS={반환하라:'반환하세요',고려하라:'함께 고려해 �
 Object.assign(COMMANDS,{추가하라:'추가하세요',확인하라:'확인해 보세요',캘리브레이션하라:'보정해 보세요'});
 function beforeChunk(text){
   for(const [a,b] of REPAIRS)text=text.split(a).join(b);
+  const clauses={같아요:'같다',있어요:'있다',없어요:'없다',않아요:'않는다',남아요:'남는다',바뀌어요:'바뀐다',만들어져요:'만들어진다',못해요:'못한다',바꿔요:'바꾼다',달라요:'다르다',따라가요:'따라간다',돼요:'된다',동작해요:'동작한다',적응해요:'적응한다',줄어들어요:'줄어든다',묶여요:'묶인다',끊어요:'끊는다',줘요:'준다',승인해요:'승인한다',보내요:'보낸다',막혀요:'막힌다',오르내려요:'오르내린다',비싸요:'비싸다',뜻해요:'뜻한다',틀렸어요:'틀렸다',멈춰요:'멈춘다',어려워요:'어렵다',기억해요:'기억한다',유한해요:'유한하다',해요:'한다',돌려요:'돌린다'};
+  text=text.replace(/([가-힣]+요)((?:<\/(?:b|strong|em)>|\*\*)?\s*)는(?=\s|[,.])/g,(all,word,tag)=>clauses[word]?clauses[word]+tag+'는':all);
   text=text.replace(/ — 정답을 제가 판단하지 않아요\./g,'.').replace(/ — 즉 정답을 제가 지어내지 않았어요\./g,'.');
   text=text.replace(/브라우저 안에서 (Java|C\+\+|C|Rust|Go) 를 컴파일하는 방법은 없어요\. 프로필에서 로컬 러너 주소를 넣으면 실제 컴파일러가 채점해요\. 러너가 없으면 이 유닛은 잠겨요\./g,'이 앱에서 $1 실습을 실행하려면 별도 실행기를 연결해야 해요. 프로필에서 실행기 주소를 설정하면 코드를 실행하고 테스트 결과를 확인할 수 있어요.');
   text=text.replace(/무조건 출시합시다\./g,'일단 출시해요.').replace(/무엇이 맞고 왜인가요\?/g,'어떤 것이 알맞고, 그 이유는 무엇일까요?');
@@ -100,7 +111,7 @@ function beforeChunk(text){
   return text;
 }
 function before(text){
-  return text.split(/(<(?:pre|script|style)\b[^>]*>[\s\S]*?<\/(?:pre|script|style)\s*>)/gi).map((chunk,i)=>i%2?chunk:beforeChunk(chunk)).join('');
+  return text.split(/(<(?:pre|code|script|style)\b[^>]*>[\s\S]*?<\/(?:pre|code|script|style)\s*>|`[^`]*`)/gi).map((chunk,i)=>i%2?chunk:beforeChunk(chunk)).join('');
 }
 function after(text){
   // Keep noun endings grammatical, including nouns that were mistaken for verbs.
@@ -135,7 +146,11 @@ function question(text){
 function finish(text,copula){
   const blocks=[];
   let masked=text.replace(/<(pre|script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,x=>{blocks.push(x);return '\uE002'+(blocks.length-1)+'\uE003';});
-  masked=masked.replace(/((?:<(b|strong|em|code)\b[^>]*>[^<]*<\/\2>|\*\*[^*]+\*\*|`[^`]*`))\s+다(?=$|[.!?…,:;—])/gi,(_,markup)=>{const word=markup.replace(/<[^>]*>|\*\*|`/g,'');return markup+copula(word).slice(word.length);});
+  masked=masked.replace(/((?:<(b|strong|em|code)\b[^>]*>[\s\S]*?<\/\2>|\*\*[^*]+\*\*|`[^`]*`))\s*(이다|다|이에요|예요)(?=$|[\s.!?…,:;—])/gi,(_,markup,tag,end)=>{
+    const word=markup.replace(/<[^>]*>|\*\*|`/g,'').trim();
+    if(!/[가-힣]$/.test(word)&&/^(?:이에요|예요)$/.test(end))return markup+end;
+    return markup+copula(word).slice(word.length);
+  });
   masked=masked.replace(/<code\b[^>]*>[\s\S]*?<\/code\s*>|`[^`]*`/gi,x=>{blocks.push(x);return '\uE002'+(blocks.length-1)+'\uE003';});
   masked=masked.replace(/(는가|인가)(<\/(?:b|strong|em)>|\*\*)\s*(?=이고|가\s|를\s|는\s|로\s|다[.!—])/g,(_,end,tag)=>(end==='인가'?'인지':'는지')+tag);
   // A quoted question embedded in a sentence needs an indirect-question ending.

@@ -51,7 +51,7 @@ module.exports = {
 
   { t: "원본이 왜 바뀌나요", type: "build",
     goal: "슬라이스가 <b>복사가 아니라 뷰</b>라서 원본이 함께 바뀌는 상황을 보이세요.\n복사한 경우와 나란히 둬요.",
-    hint: "배열의 슬라이스는 <b>같은 메모리를 가리키는 창</b>예요. 그래서 슬라이스를 고치면 원본도 바뀌어요. 이것은 성능을 위한 선택이고(큰 배열을 복사하지 않아요), 알고 쓰면 아주 유용하지만 모르면 조용한 버그가 돼요. 명시적으로 복사하면 끊어져요.",
+    hint: "배열의 슬라이스는 <b>같은 메모리를 가리키는 창</b>이에요. 그래서 슬라이스를 고치면 원본도 바뀌어요. 이것은 성능을 위한 선택이고(큰 배열을 복사하지 않아요), 알고 쓰면 아주 유용하지만 모르면 조용한 버그가 돼요. 명시적으로 복사하면 끊어져요.",
     acc: "뷰를 고쳤을 때와 복사본을 고쳤을 때의 원본이 나란히 출력되고, 차이가 확인되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\n/* 뷰 — 원본의 일부를 가리키는 창 */\nfunction view(arr, from, to) {\n  return {\n    set(i, v) { arr[from + i] = v; },\n    get(i) { return arr[from + i]; },\n    len: to - from\n  };\n}\nfunction copy(arr, from, to) {\n  const c = arr.slice(from, to);\n  return { set(i, v) { c[i] = v; }, get(i) { return c[i]; }, len: c.length, own: c };\n}\n\nconst orig1 = [1, 2, 3, 4, 5];\nconst v = view(orig1, 1, 4);\nv.set(0, 99);\nout.push(\"뷰를 고침    원본 [\" + orig1.join(\",\") + \"]   ← 함께 바뀌었다\");\n\nconst orig2 = [1, 2, 3, 4, 5];\nconst c = copy(orig2, 1, 4);\nc.set(0, 99);\nout.push(\"복사본을 고침 원본 [\" + orig2.join(\",\") + \"]   복사본 [\" + c.own.join(\",\") + \"]\");\n\nout.push(\"\");\nout.push(\"뷰는 성능을 위한 선택이다 — 큰 배열을 복사하지 않는다\");\nout.push(\"알고 쓰면 유용하지만 모르면 조용한 버그가 된다\");\nout.push(\"\");\nout.push(\"함수가 배열을 받아 고칠 때는 규약을 정해야 한다\");\nout.push(\"  · 원본을 고치는 함수인가 (제자리 연산)\");\nout.push(\"  · 새 배열을 돌려주는 함수인가\");\nout.push(\"이름으로 드러내지 않으면 부르는 쪽이 매번 문서를 봐야 한다\");\nconsole.log(out.join(\"\\n\"));" },
@@ -89,7 +89,7 @@ module.exports = {
     opts: [
       { label: "2.30 은 무작위 추측값이에요 — 모델이 아무것도 못 배우고 있으니 데이터·라벨·연결을 먼저 확인해요",
         fx: { algorithms: 3, debugging: 3 },
-        fb: "✅ <b>ln(10) = 2.303 은 10개 중 하나를 무작위로 고르는 것과 같아요.</b> 정확히 그 값에 머물러 있다면 학습이 느린 것이 아니라 <b>아예 신호가 안 흐르는 것</b>예요. 라벨이 섞였는지, 입력이 전부 같은 값인지, 그래디언트가 끊겼는지를 먼저 봐요. 학습률을 만지는 것은 그 다음이에요.",
+        fb: "✅ <b>ln(10) = 2.303 은 10개 중 하나를 무작위로 고르는 것과 같아요.</b> 정확히 그 값에 머물러 있다면 학습이 느린 것이 아니라 <b>아예 신호가 안 흐르는 것</b>이에요. 라벨이 섞였는지, 입력이 전부 같은 값인지, 그래디언트가 끊겼는지를 먼저 봐요. 학습률을 만지는 것은 그 다음이에요.",
         best: true },
       { label: "학습률이 너무 작아서",
         fx: { algorithms: 1 },
@@ -121,7 +121,7 @@ module.exports = {
     opts: [
       { label: "데이터를 늘리거나 증강해요 — 8,000장은 이 문제에 적을 가능성이 커요",
         fx: { algorithms: 3, performance: 1 },
-        fb: "✅ <b>과적합의 가장 근본적인 원인은 데이터가 적은 것</b>예요. 모델을 줄이거나 정규화를 거는 것은 외울 능력을 깎는 것이라 상한도 함께 내려가지만, 데이터를 늘리면 상한이 올라가요. 새로 모으기 어렵다면 증강이 값싼 대안이고, 대개 가장 큰 효과를 내요.",
+        fb: "✅ <b>과적합의 가장 근본적인 원인은 데이터가 적은 것</b>이에요. 모델을 줄이거나 정규화를 거는 것은 외울 능력을 깎는 것이라 상한도 함께 내려가지만, 데이터를 늘리면 상한이 올라가요. 새로 모으기 어렵다면 증강이 값싼 대안이고, 대개 가장 큰 효과를 내요.",
         best: true },
       { label: "드롭아웃과 가중치 감쇠를 걸어요",
         fx: { algorithms: 2 },
@@ -166,7 +166,7 @@ module.exports = {
         fb: "△ 큰 언어에서는 쓸모 있어요. 다만 <b>문서를 찾아가야 한다면</b> 그만큼 느려지므로, 메시지 자체로 해결되는 것이 나아요." },
       { label: "내부 파서 상태를 자세히 보여 줘요",
         fx: { communication: -2 },
-        fb: "⚠️ 컴파일러를 만드는 사람에게는 유용하지만 <b>쓰는 사람에게는 소음</b>예요. 'expected one of: IDENT, NUMBER' 는 도움이 되고 '상태 47에서 축약 실패' 는 아니에요." }] },
+        fb: "⚠️ 컴파일러를 만드는 사람에게는 유용하지만 <b>쓰는 사람에게는 소음</b>이에요. 'expected one of: IDENT, NUMBER' 는 도움이 되고 '상태 47에서 축약 실패' 는 아니에요." }] },
 
   { t: "위치와 기대를 담아요", type: "build",
     goal: "토큰 목록을 파싱하며 <b>어디서 무엇을 기대했는지</b> 담은 오류를 만드세요.\n원본 줄과 그 아래 화살표까지 함께 내요.",
@@ -177,7 +177,7 @@ module.exports = {
 
   { t: "한 번에 여러 오류를 내요", type: "build",
     goal: "첫 오류에서 멈추지 말고 <b>회복해서 계속</b> 파싱하도록 만드세요.\n한 번 돌려 여러 오류를 함께 보고해요.",
-    hint: "널리 쓰이는 회복 방법은 <b>동기화 지점까지 건너뛰기</b> 예요. 오류가 나면 다음 세미콜론이나 닫는 괄호까지 토큰을 버리고 거기서 다시 시작하면, 뒤쪽 문장들의 오류도 볼 수 있어요. 다만 회복이 잘못되면 <b>거짓 오류가 줄줄이</b> 나오므로, 너무 가까이 있는 오류는 묶어 하나로 보고해요.",
+    hint: "널리 쓰이는 회복 방법은 <b>동기화 지점까지 건너뛰기</b>예요. 오류가 나면 다음 세미콜론이나 닫는 괄호까지 토큰을 버리고 거기서 다시 시작하면, 뒤쪽 문장들의 오류도 볼 수 있어요. 다만 회복이 잘못되면 <b>거짓 오류가 줄줄이</b> 나오므로, 너무 가까이 있는 오류는 묶어 하나로 보고해요.",
     acc: "여러 오류가 있는 입력에서 오류가 여러 개 보고되고, 서로 가까운 거짓 오류가 묶여 줄어드는 것이 확인되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\nconst program = [\n  \"x = 1;\",\n  \"y 2;\",          // = 빠짐\n  \"z = ;\",         // 값 빠짐\n  \"w\",             // = · 값 · ; 셋 다 빠짐 — 한 줄에서 여러 개가 난다\n  \"v = 5;\"\n];\n\nfunction checkLine(line, lineNo) {\n  const errs = [];\n  const m = line.match(/^\\s*([A-Za-z_]\\w*)\\s*(=?)\\s*([0-9A-Za-z_]*)\\s*(;?)\\s*$/);\n  if (!m) { errs.push({ line: lineNo, col: 0, msg: \"문장을 알아볼 수 없습니다\" }); return errs; }\n  if (!m[2]) errs.push({ line: lineNo, col: line.indexOf(m[1]) + m[1].length, msg: \"'=' 가 필요합니다\" });\n  if (!m[3]) errs.push({ line: lineNo, col: line.length - (m[4] ? 1 : 0), msg: \"값이 필요합니다\" });\n  if (!m[4]) errs.push({ line: lineNo, col: line.length, msg: \"';' 로 끝나야 합니다\" });\n  return errs;\n}\n\n/* 오류가 날 때마다 멈추지 않고 다음 줄(동기화 지점)에서 다시 시작한다 */\nlet all = [];\nprogram.forEach((line, i) => { all = all.concat(checkLine(line, i + 1)); });\n\nout.push(\"첫 오류에서 멈출 때\");\nout.push(\"  \" + all[0].line + \"행 \" + all[0].col + \"열: \" + all[0].msg);\nout.push(\"  → 고치고 다시 돌려야 다음 오류를 본다. \" + all.length + \"개면 \" + all.length + \"번 돌린다\");\n\nout.push(\"\");\nout.push(\"회복해서 계속할 때 (\" + all.length + \"개)\");\nall.forEach((e) => out.push(\"  \" + e.line + \"행 \" + e.col + \"열: \" + e.msg));\n\n/* 같은 줄에서 여러 개가 나면 뒤엣것은 앞엣것 때문일 수 있다 */\nconst merged = [];\nall.forEach((e) => {\n  const prev = merged[merged.length - 1];\n  if (prev && prev.line === e.line) { prev.also = (prev.also || 0) + 1; return; }\n  merged.push(Object.assign({}, e));\n});\nout.push(\"\");\nout.push(\"같은 줄의 뒤따르는 오류를 묶으면 (\" + merged.length + \"개)\");\nmerged.forEach((e) => out.push(\"  \" + e.line + \"행 \" + e.col + \"열: \" + e.msg +\n  (e.also ? \"  (같은 줄에 \" + e.also + \"개 더 — 이것부터 고치면 사라질 수 있다)\" : \"\")));\n\nout.push(\"\");\nout.push(\"오류 \" + all.length + \"개 → 보고 \" + merged.length + \"개\");\nout.push(\"한 줄에서 여러 개가 나면 뒤엣것은 대개 앞엣것의 그림자다\");\nout.push(\"회복이 잘못되면 거짓 오류가 줄줄이 나온다 — 가까운 것은 묶는다\");\nconsole.log(out.join(\"\\n\"));\n" },

@@ -18,6 +18,13 @@ const cases=[
  ['문제는 <b>어디에 저장되나요</b>이고, 결과는 같다.','문제는 <b>어디에 저장되는지</b>이고, 결과는 같아요.'],
  ['좋아요 수를 센다. 싫어요가 세 개다.','좋아요 수를 세요. 싫어요가 세 개예요.'],
  ['<code>None</code> 다.','<code>None</code>예요.'],
+ ['<b>항등식</b>예요.','<b>항등식</b>이에요.'],
+ ['문제는 **값**예요.','문제는 **값**이에요.'],
+ ['학습 재료는 **데이터**다.','학습 재료는 **데이터**예요.'],
+ ['결과도 **같아요**는 약속이에요.','결과도 **같다**는 약속이에요.'],
+ ['결과도 같아요는 약속이에요.','결과도 같다는 약속이에요.'],
+ ['세 번째 테스트를 보라.','세 번째 테스트를 확인해 보세요.'],
+ ['실제로 사용할 때는 실제로는 간격을 늘려요.','실제로 사용할 때는 간격을 늘려요.'],
 ];
 check('reviewed endings and connected clauses are grammatical',()=>{for(const [a,b] of cases)assert.equal(prose(a),b,a);});
 check('copy changes are stable on a second pass',()=>{for(const [,s] of cases)assert.equal(prose(s),s,s);});
@@ -30,6 +37,16 @@ const broken=/일대예요|다대예요|쓰예요 만|가져요는|디스커요|
 const found=[];let strings=0;
 for(const file of files)for(const item of file.nodes){strings++;const text=item.text.replace(/<(pre|code|script|style)\b[^>]*>[\s\S]*?<\/\1\s*>|`[^`]*`/gi,'');if(broken.test(text))found.push(file.name+': '+text.slice(0,160));}
 check('every learner-facing field is scanned for known copy regressions',()=>{assert.ok(strings>110000);assert.ok(files.length>=87);assert.deepEqual(found,[]);});
+check('emphasis markup cannot hide copula and connected-clause errors',()=>{const {audit,issues}=require('../tools/content/reader-audit.cjs');assert.equal(issues('필요는 없어요. 좋아요는 버튼 이름이에요.').length,0);assert.equal(issues('<b>값</b>예요. **같아요**는 약속이에요.').length,2);assert.deepEqual(audit().found,[]);});
+check('all Korean theory fields including const, return and module.exports are extracted',()=>{
+ const selected=new Map(files.map(f=>[f.name,new Set(f.nodes.map(n=>n.text))]));let fields=0;
+ for(const filename of fs.readdirSync(path.join(__dirname,'../data')).filter(n=>/^t-.*\.js$/.test(n))){let units;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../data',filename),'utf8'),{__CR:(k,v)=>units=v});
+ function walk(value,p=[]){if(typeof value==='string'){if(p.at(-1)!=='c'&&/[가-힣]/.test(value)){fields++;assert.ok(selected.get('data/'+filename).has(value),filename+' '+p.join('.')+' '+value.slice(0,90));}return;}if(value&&typeof value==='object')for(const[k,v]of Object.entries(value))walk(v,[...p,k]);}
+ for(const u of units)for(const l of u.l)walk(l.th);}
+ assert.ok(fields>=33600);
+});
+check('reviewed conceptual corrections survive another prose pass',()=>{const edits=require('../tools/content/reader-reviewed-text.json');assert.ok(edits.length>=20);for(const row of edits){const after=prose(row.before);assert.equal(after,prose(row.after),row.reason);assert.equal(prose(after),after,row.reason+' stable');}});
+check('clause repairs never edit code literals',()=>{for(const s of ['<code>"같아요는"</code>','`const msg = "있어요는";`','<pre>console.log("값예요. 없어요는");</pre>'])assert.equal(prose(s),s);});
 let questions=0,lessons=0,units=0;
 const ids=new Map();
 for(const filename of fs.readdirSync(path.join(__dirname,'../data')).filter(n=>/^t-.*\.js$/.test(n))){let data;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../data',filename),'utf8'),{__CR:(k,v)=>data=v});units+=data.length;for(const u of data)for(const l of u.l){lessons++;for(const q of l.q){questions++;assert.match(q.qid,/^[a-z0-9]+$/);ids.set(filename+':'+q.qid,true);}}}

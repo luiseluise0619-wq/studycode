@@ -54,6 +54,19 @@ AI 도움은 선택 사항이에요. 질문을 만들고 복사하는 기능은 
 
 추가한 고급 용어 설명은 [Lamport의 불변식 설명](https://lamport.azurewebsites.net/tla/tutorial/session6.html), [Herlihy와 Wing의 선형화 논문](https://www.cs.cmu.edu/~wing/publications/HerlihyWing90.pdf), [OpenTelemetry의 관측가능성 설명](https://opentelemetry.io/docs/concepts/observability-primer/), [Google Cloud의 워크플로 설명](https://docs.cloud.google.com/workflows/docs/overview)을 참고했어요.
 
+## 2026-10-07 문구 추출과 재검토
+
+화면 안내·수업 이름·이론·문제·보기·해설·프로젝트 설명을 파일 위치와 함께 따로 추출해요. 같은 문장은 묶어 볼 수 있고, 수정 전후 목록을 비교할 수 있어요. 실행 코드와 채점 데이터는 원본으로 유지해요.
+
+이전 검사는 강조 표시 뒤의 잘못된 어미를 놓쳤고, `const`·`return`으로 시작하거나 `module.exports`를 설명하는 이론 일부를 코드로 잘못 분류했어요. 이제 모든 수업의 이론 문구를 직접 대조해 추출 누락을 검사하고, 강조 표시를 풀어 어미와 연결 표현을 검사해요. 확인한 개념 수정은 `tools/content/reader-reviewed-text.json`에 원문·수정문·이유·참고 문서를 함께 기록해요.
+
+`reduce`의 초기값, 언어별 스택·힙 할당, 힙 자료구조, Git 브랜치, LEFT JOIN과 WHERE, 쿼럼의 교집합과 일관성, 과반수 합의의 홀수 노드 설명을 다듬었어요. 비유는 개념을 이해하는 데 쓰고, 조건과 예외를 생략한 단정은 줄여요. 이번 앱과 오프라인 캐시는 v15예요. 자동 문구 검사와 확인한 개념 수정이 모든 문제의 사실관계를 하나씩 검수했다는 뜻은 아니에요.
+
+```sh
+node tools/content/reader-extract.cjs --out ./copy-review
+node tools/content/reader-audit.cjs
+```
+
 ## 검증과 수정 도구
 
 Node.js로 검사를 실행해요. 브라우저 검사는 Playwright와 Chromium이 필요하며 Windows에서는 기본으로 Edge를 사용해요. 일부 검사는 `PLAYWRIGHT_CHROMIUM`으로 실행 파일을 지정해요.
@@ -63,6 +76,7 @@ node tests/app.test.cjs
 node tests/engine.test.cjs
 node tests/reader-copy.test.cjs
 node tests/reader-polish.test.cjs
+node tests/reader-theory.test.cjs
 node tests/vibe-cache-migration.test.cjs
 node tests/service-path.test.cjs
 node tests/vibe-projects.test.cjs

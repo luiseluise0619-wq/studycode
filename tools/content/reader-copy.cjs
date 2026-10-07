@@ -6,6 +6,8 @@
 const fs=require('node:fs'),path=require('node:path');
 const acorn=require('../../vendor/acorn.js');
 const polish=require('./reader-polish.cjs');
+const reviewed=require('./reader-reviewed-text.json');
+const reviewedText=new Map(reviewed.map(row=>[row.before,row.after]));
 const ROOT=path.resolve(__dirname,'../..');
 function save(file,content){
   const temporary=file+'.reader-'+process.pid+'.tmp';
@@ -207,6 +209,7 @@ function replaceWords(text){
 }
 // Leave examples, inline code, tag attributes and machine output untouched.
 function prose(text){
+  text=reviewedText.get(text)??text;
   text=polish.before(text);
   text=text.replace(/(<(b|strong|em)\b[^>]*>([^<]+)<\/\2>)(?:이)?다(?=$|[\s.!?…,:;）)\]”’])/gi,(_,markup,tag,word)=>markup+copula(word).slice(word.length));
   text=text.replace(/\)다(?=$|[\s.!?…,:;）)\]”’])/g,')예요');
@@ -216,7 +219,7 @@ function prose(text){
   return polish.finish(result,copula);
 }
 function keyOf(p){return p&&p.type==='Property'&&!p.computed?(p.key.name??p.key.value):null;}
-function eligible(n,ancestors){
+function eligible(n,ancestors,options={}){
   if(ancestors.at(-1)?.type==='Property'&&ancestors.at(-1).key===n)return false;
   const s=n.type==='TemplateElement'?n.value.cooked:n.value;
   if(!/[가-힣]/.test(s||''))return false;
@@ -225,14 +228,18 @@ function eligible(n,ancestors){
     if(a.type==='FunctionDeclaration'&&SKIP_FUNCTION.test(a.id?.name||''))return false;
     if(a.type==='TaggedTemplateExpression'&&a.tag.type==='MemberExpression'&&a.tag.object.name==='String'&&a.tag.property.name==='raw')return false;
   }
+  // Theory headings and bullet points are prose even when they begin with
+  // const/return or discuss module.exports. Executable c fields were excluded above.
+  if(ancestors.some(a=>a.type==='Property'&&keyOf(a)==='th'))return true;
   const p=[...ancestors].reverse().find(a=>a.type==='Property');
+  if(options.titles&&keyOf(p)==='title')return true;
   if(KEEP_NAMES.has(keyOf(p)))return false;
   if(keyOf(p)==='t'){
     const object=[...ancestors].reverse().find(a=>a.type==='ObjectExpression');
-    if(object?.properties.some(x=>['l','q','th'].includes(keyOf(x))||(keyOf(x)==='n'&&typeof x.value?.value==='number')))return false; // Stable unit/lesson progress keys, including compact shell entries.
+    if(object?.properties.some(x=>['l','q','th'].includes(keyOf(x))||(keyOf(x)==='n'&&typeof x.value?.value==='number')))return !!options.titles; // Stable unit/lesson progress keys, including compact shell entries.
   }
   if(typeof s!=='string'||(!PROSE_KEYS.has(keyOf(p))&&/^(?:\s*(?:const|let|var|function|module\.exports|return\b|throw\b)|\s*(?:<!doctype|<html|<script))/i.test(s)))return false;
-  if(/module\.exports|new Function\(|__src\[|__mods\[|^Q\(|^CLICK\(|^EQ\(/.test(s))return false;
+  if(!PROSE_KEYS.has(keyOf(p))&&/module\.exports|new Function\(|__src\[|__mods\[|^Q\(|^CLICK\(|^EQ\(/.test(s))return false;
   return true;
 }
 function walk(n,parents,visit){
@@ -245,9 +252,9 @@ function walk(n,parents,visit){
     else if(value?.type)walk(value,[...parents,n],visit);
   }
 }
-function stringNodes(code,offset=0){
+function stringNodes(code,offset=0,options={}){
   const result=[];
-  walk(acorn.parse(code,{ecmaVersion:'latest',sourceType:'script'}),[],(n,a)=>{if(eligible(n,a)){
+  walk(acorn.parse(code,{ecmaVersion:'latest',sourceType:'script'}),[],(n,a)=>{if(eligible(n,a,options)){
     // Keep only the metadata needed for editing. Retaining every ancestor kept
     // the complete AST of all 38 tracks alive during a whole-corpus review.
     const property=[...a].reverse().find(x=>x.type==='Property');
@@ -255,19 +262,22 @@ function stringNodes(code,offset=0){
   }});
   return result;
 }
-function sources(){
+function sources(options={}){
   const out=[];
   const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
   const indexNodes=[];
-  for(const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi))if(m[1].trim())indexNodes.push(...stringNodes(m[1],m.index+m[0].indexOf('>')+1));
+  for(const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi))if(m[1].trim())indexNodes.push(...stringNodes(m[1],m.index+m[0].indexOf('>')+1,options));
+  for(const m of html.matchAll(/<!--[\s\S]*?-->|<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>|<[^>]*>|([^<]+)/gi)){
+    if(m[2]&&/[가-힣]/.test(m[2]))indexNodes.push({n:{type:'HTMLText'},a:[],start:m.index,end:m.index+m[0].length,text:m[2]});
+  }
   out.push({name:'index.html',raw:html,nodes:indexNodes});
   for(const name of fs.readdirSync(path.join(ROOT,'data')).filter(x=>x.endsWith('.js')&&!SKIP_FILES.test(x)).sort()){
     const raw=fs.readFileSync(path.join(ROOT,'data',name),'utf8');
-    out.push({name:'data/'+name,raw,nodes:stringNodes(raw)});
+    out.push({name:'data/'+name,raw,nodes:stringNodes(raw,0,options)});
   }
   for(const name of fs.readdirSync(__dirname).filter(x=>/^proj.*\.cjs$/.test(x)).sort()){
     const raw=fs.readFileSync(path.join(__dirname,name),'utf8');
-    out.push({name:'tools/content/'+name,raw,nodes:stringNodes(raw)});
+    out.push({name:'tools/content/'+name,raw,nodes:stringNodes(raw,0,options)});
   }
   return out;
 }
@@ -281,18 +291,18 @@ function inventory(){
   }
   return {strings,fields,endings:Object.entries(ends).sort((a,b)=>b[1]-a[1]),examples};
 }
-function apply(){
+function apply(onlyTexts=null){
   const changed=[];let count=0;
   for(const file of sources()){
     const edits=[];
-    for(const item of file.nodes){let updated=prose(item.text);const property=[...item.a].reverse().find(n=>n.type==='Property');if(['q','question','sit'].includes(keyOf(property)))updated=polish.question(updated);if(updated===item.text)continue;
+    for(const item of file.nodes){if(onlyTexts&&!onlyTexts.has(item.text))continue;let updated=prose(item.text);const property=[...item.a].reverse().find(n=>n.type==='Property');if(['q','question','sit'].includes(keyOf(property)))updated=polish.question(updated);if(updated===item.text)continue;
       if(item.n.type==='TemplateElement'){
         // Quasi ranges omit delimiters. Preserve interpolation and escape literal syntax.
         edits.push({start:item.start,end:item.end,text:updated.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$\{/g,'\\${')});
-      }else edits.push({start:item.start,end:item.end,text:JSON.stringify(updated)});
+      }else edits.push({start:item.start,end:item.end,text:item.n.type==='HTMLText'?updated:JSON.stringify(updated)});
     }
     let next=file.raw;for(const e of edits.sort((a,b)=>b.start-a.start))next=next.slice(0,e.start)+e.text+next.slice(e.end);
-    if(file.name==='index.html')next=prose(next);
+    if(file.name==='index.html'&&!onlyTexts)next=prose(next);
     if(next===file.raw)continue;
     save(path.join(ROOT,file.name),next);count+=edits.length;changed.push({file:file.name,strings:edits.length});
   }
@@ -361,4 +371,4 @@ if(require.main===module){
   else if(process.argv.includes('--write')){const result=apply();result.options=writeOptions();result.concepts=writeConcepts();console.log(JSON.stringify(result));}
   else console.log('Use --inventory [report.json] or --write');
 }
-module.exports={prose,sources,inventory};
+module.exports={prose,sources,inventory,apply};
