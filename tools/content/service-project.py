@@ -127,7 +127,7 @@ module.exports = { createService };
         const b = entry.response.body;
         if (scope[1] !== 'POST' || scope[2] !== '/bookings' || !validate(b) || !Number.isSafeInteger(b.id) || b.id < 1 || b.owner !== scope[0] || entry.signature !== JSON.stringify({ name: b.name, slot: b.slot, seats: b.seats })) throw new Error('invalid retry response');
         highestId = Math.max(highestId, b.id);
-      } else if (scope[1] !== 'DELETE' || !/^\\/bookings\\/\\d+$/.test(scope[2]) || entry.response.body !== null) throw new Error('invalid cancel response');
+      } else if (scope[1] !== 'DELETE' || !/^\\/bookings\\/\\d+$/.test(scope[2]) || entry.signature !== JSON.stringify(null) || entry.response.body !== null) throw new Error('invalid cancel response');
     }
 @@MIGRATE@@
     data.nextId = Math.max(data.nextId, highestId + 1);
@@ -194,14 +194,14 @@ module.exports = { createService };
       const scoped = JSON.stringify([owner, 'DELETE', path, key]);
       if (key !== undefined && state.keys[scoped]) return clone(state.keys[scoped].response);"""
             cancelled = """      draft.events.push({ id: 'cancelled-' + id, type: 'booking.cancelled', bookingId: id, status: 'pending', attempts: 0, nextAt: now() });
-      if (key !== undefined) draft.keys[scoped] = { signature: 'cancel', response: reply(204, null) };"""
+      if (key !== undefined) draft.keys[scoped] = { signature: JSON.stringify(null), response: reply(204, null) };"""
         parts['CANCEL'] = cancel.replace('@@CANCELRETRY@@', retry).replace('@@CANCELLED@@', cancelled)
     parts['HANDLE'] = '  const handle = process;'
     if stage >= 13:
         parts['OPS'] = """  const logs = [];
   let requestId = 0;
   function metrics() {
-    const recent = logs.filter(log => now() - log.at <= 300000);
+    const recent = logs.filter(log => now() - log.at < 300000);
     const durations = recent.map(log => log.ms).sort((a, b) => a - b);
     return { requests: recent.length, errors: recent.filter(log => log.status >= 500).length,
       successRate: recent.length ? recent.filter(log => log.status < 500).length / recent.length : 1,
@@ -364,7 +364,6 @@ for title, before, after in mutations:
     test(17, '내 회귀 검사가 잡아야 하는 결함: '+title, 'throws(()=>require(\'./test\').verify(MUT('+json.dumps(before)+','+json.dumps(after)+').createService),'+json.dumps(title)+');')
 test(18,'취소 요청을 다시 보내도 같은 204와 알림 하나를 유지한다', "const s=A.createService(),h={Authorization:'Bearer alice-token'},b={name:'x',slot:'10:00',seats:2};const id=s.handle('POST','/bookings',b,h).body.id;const retry={...h,'Idempotency-Key':'cancel'};eq(s.handle('DELETE','/bookings/'+id,null,retry).status,204);eq(s.handle('DELETE','/bookings/'+id,null,retry).status,204);eq(s.events().filter(e=>e.type==='booking.cancelled').length,1);eq(s.handle('GET','/slots').body[0].remaining,4);")
 test(18,'취소 키도 사용자·경로별로 나누고 저장 실패를 복구한다', "let fail=false;const s=A.createService({save(){if(fail)throw new Error('disk');}}),a={Authorization:'Bearer alice-token'},b={name:'x',slot:'10:00',seats:1};const id=s.handle('POST','/bookings',b,a).body.id,h={...a,'Idempotency-Key':'one'};fail=true;eq(s.handle('DELETE','/bookings/'+id,null,h).status,503);eq(s.events().filter(e=>e.type==='booking.cancelled').length,0);fail=false;eq(s.handle('DELETE','/bookings/'+id,null,h).status,204);eq(s.handle('DELETE','/bookings/'+id,null,{...h,Authorization:'Bearer bob-token'}).status,404);const restored=A.createService({snapshot:s.snapshot()});eq(restored.handle('DELETE','/bookings/'+id,null,h).status,204);eq(restored.events().filter(e=>e.type==='booking.cancelled').length,1);")
-
 # Human explanations accompany behavior, not a claim that a job title was earned.
 lessons = [
 ('예약 입력 검사','입문','검증은 잘못된 입력을 저장하기 전에 걸러내는 일이에요. 0명이나 빈 이름이 들어오면 예약을 만들지 않아요.','이름은 공백을 빼고 1~40자, 시간은 10:00·14:00, 인원은 정수 1~4명이어야 해요. validate(body)는 참 또는 거짓을 반환해요.','입력값이 숫자처럼 보여도 문자열일 수 있어요. Number.isInteger로 실제 정수를 확인해 보세요.','"2"와 2를 구분해야 하는 이유는?',['입력의 타입과 범위를 함께 확인하려고','문자열은 화면에 표시할 수 없어서','모든 입력을 배열로 바꾸려고'],0,'app.js'),
@@ -414,5 +413,13 @@ for edit in json.loads((repo/'tools/content/service-reader-copy.json').read_text
     if target[key] not in (edit['before'], edit['after']):
         raise ValueError(f"Copy source changed; review the wording at {edit['path']}")
     target[key] = edit['after']
+extra_checks = [
+    (13,'정확히 5분 전 요청은 지표에서 제외해요', "let at=0;const s=A.createService({now:()=>at});s.handle('GET','/slots');at=299999;eq(s.metrics().requests,1);at=300000;eq(s.metrics().requests,0);eq(s.metrics().successRate,1);eq(s.metrics().p95,0);"),
+    (18,'취소 기록의 서명과 응답을 계약대로 저장하고 복원해요', "const s=A.createService(),h={Authorization:'Bearer alice-token','Idempotency-Key':'same'},body={name:'x',slot:'10:00',seats:1};const id=s.handle('POST','/bookings',body,h).body.id;const path='/bookings/'+id;eq(s.handle('DELETE',path,null,h).status,204);const data=JSON.parse(s.snapshot()),key=JSON.stringify(['alice','DELETE',path,'same']);eq(data.keys[key].signature,JSON.stringify(null));eq(data.keys[key].response,{status:204,body:null});eq(A.createService({snapshot:JSON.stringify(data)}).handle('DELETE',path,null,h).status,204);data.keys[key].signature='cancel';throws(()=>A.createService({snapshot:JSON.stringify(data)}));")
+]
+for first, title, code in extra_checks:
+    for day in project['days']:
+        if day['n'] >= first:
+            day['tests'].append({'n': title, 'c': code})
 (repo/'data/service-project.js').write_text("/* One reservation service grows through implementation, failure handling and operations. */\n__CR('servicebuild',"+json.dumps(data,ensure_ascii=False,separators=(',',':'))+");\n",encoding='utf-8')
-print(json.dumps({'stages':len(lessons),'uniqueChecks':sum(map(len,groups)),'cumulativeChecks':sum(len(d['tests']) for d in project['days'])}))
+print(json.dumps({'stages':len(lessons),'uniqueChecks':sum(map(len,groups))+len(extra_checks),'cumulativeChecks':sum(len(d['tests']) for d in project['days'])}))

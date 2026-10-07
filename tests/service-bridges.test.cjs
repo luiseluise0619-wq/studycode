@@ -4,7 +4,8 @@ const {chromium}=require('playwright');
 const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../data/service-bridges.js'),'utf8'),context);
 const {lessons,accepts}=context.window.ServiceBridges;
 let checks=0;const check=(name,value)=>{assert.ok(value,name);checks++;console.log('PASS '+name);};
-check('연결 연습은 17구간 44개이며 독립 확장에 풀이를 덧붙이지 않는다',Object.keys(lessons).length===17&&Object.values(lessons).flat().length===44&&!lessons[18]);
+check('연결 연습은 17구간 45개이며 마지막 확장의 기초 문제 풀이는 따로 제공하지 않는다',Object.keys(lessons).length===17&&Object.values(lessons).flat().length===45&&!lessons[18]);
+check('재요청을 만들기 전에 변수 키로 기록을 저장하는 법을 연습한다',lessons[6].some(q=>q.title==='변수 이름으로 영수증 저장하기'&&accepts(q,'201')));
 const code=lessons[1][2];
 check('한 줄 쓰기는 공백과 마지막 세미콜론을 허용하고 다른 계산·잘못 붙인 단어는 거절한다',accepts(code,' return price*count ')&&!accepts(code,'return price + count;')&&!accepts(code,'returnprice*count;'));
 const assertion=lessons[17][0];
@@ -46,7 +47,7 @@ check('문자열 내부 공백이나 잘못된 상태를 무시하지 않는다'
         assert.ok(await page.evaluate(({stage,i})=>window.__bridgeRecords[stage].bridge.items[i].passed,{stage,i}),'mini stage '+stage+'/'+i);
       }
     }
-    check('44개 연습의 실제 폼 제출과 피드백이 동작한다',true);
+    check('45개 연습의 실제 폼 제출과 피드백이 동작한다',true);
     await page.setViewportSize({width:360,height:800});
     await page.evaluate(()=>document.getElementById('bridge-test-host').remove());
     await page.locator('#service-home').click();await page.waitForSelector('[data-service-day]');await page.locator('[data-service-day="0"]').click();await page.waitForSelector('.service-bridge');

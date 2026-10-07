@@ -1367,8 +1367,8 @@
 </style>
 <link rel="stylesheet" href="data/study-design.css">
 <link rel="stylesheet" href="data/study-ui.css">
-<link rel="stylesheet" href="data/vibe-lab.css?v=19">
-<link rel="stylesheet" href="data/coderun-design.css?v=19">
+<link rel="stylesheet" href="data/vibe-lab.css?v=20">
+<link rel="stylesheet" href="data/coderun-design.css?v=20">
 
 <!-- ================= HOME ================= -->
 <div class="app" id="home">
@@ -2014,7 +2014,7 @@ function ensureIntro(){ return __got.intro?Promise.resolve(true):loadChunk("intr
 function ensureSims(){ return __got.sims?Promise.resolve(true):loadChunk("sims.js"); }
 function ensureDiags(){ return __got.diags?Promise.resolve(true):loadChunk("diags.js"); }
 function ensureProjects(){ return __got.projects?Promise.resolve(true):loadChunk("projects.js"); }
-function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=19")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=19")); }
+function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=20")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=20")); }
 /* TypeScript·JSX 변환기 (sucrase, 288KB). 파서만 필요하므로 부모 문서에서 돌린다. */
 function ensureSucrase(){
   if(typeof Sucrase!=="undefined" && Sucrase.transform) return Promise.resolve(true);
@@ -6558,22 +6558,22 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEvent
 })();
 </script>
 
-<script src="data/learning-path.js?v=19"></script>
-<script src="data/reader-guide.js?v=19"></script>
-<script src="data/study-ui.js?v=19"></script>
+<script src="data/learning-path.js?v=20"></script>
+<script src="data/reader-guide.js?v=20"></script>
+<script src="data/study-ui.js?v=20"></script>
 <script src="data/build-worker.js"></script>
 <script src="data/practice-worker.js"></script>
 <script src="data/sql-practice.js"></script>
-<script src="data/study-quality.js?v=19"></script>
+<script src="data/study-quality.js?v=20"></script>
 <script src="vendor/acorn.js"></script>
 <script src="data/dom-practice.js"></script>
-<script src="data/code-literacy.js?v=19"></script>
-<script src="data/vibe-scenarios.js?v=19"></script>
-<script src="data/vibe-challenges.js?v=19"></script>
-<script src="data/vibe-projects.js?v=19"></script>
-<script src="data/vibe-journey.js?v=19"></script>
-<script src="data/vibe-lab.js?v=19"></script>
-<script src="data/service-export.js?v=19"></script>
-<script src="data/service-bridges.js?v=19"></script>
-<script src="data/service-practice.js?v=19"></script>
-<script src="data/service-path.js?v=19"></script>
+<script src="data/code-literacy.js?v=20"></script>
+<script src="data/vibe-scenarios.js?v=20"></script>
+<script src="data/vibe-challenges.js?v=20"></script>
+<script src="data/vibe-projects.js?v=20"></script>
+<script src="data/vibe-journey.js?v=20"></script>
+<script src="data/vibe-lab.js?v=20"></script>
+<script src="data/service-export.js?v=20"></script>
+<script src="data/service-bridges.js?v=20"></script>
+<script src="data/service-practice.js?v=20"></script>
+<script src="data/service-path.js?v=20"></script>

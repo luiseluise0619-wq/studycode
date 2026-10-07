@@ -142,3 +142,12 @@
 .service-practice-results li b,.service-practice-results li span{display:block;overflow-wrap:anywhere;white-space:pre-wrap}.service-practice-results .passed b{color:var(--good)}
 .service-practice-results .failed span{font-size:12px;color:var(--ink-soft);margin-top:4px}
 .service-practice-body textarea:focus-visible,.service-practice-actions button:focus-visible,.service-practice>summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.service-comparison{margin:12px 0;overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:9px}
+.service-comparison table{border-collapse:collapse;width:100%;font-size:12px;line-height:1.7;table-layout:fixed}
+.service-comparison caption{padding:9px;text-align:left;font-weight:650}.service-comparison th,.service-comparison td{padding:8px;border-top:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.service-comparison th{font-weight:650;background:var(--bg)}.service-comparison th:first-child{width:24%}
+.service-adapter{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:13px;line-height:1.8;background:var(--card);color:var(--ink)}
+.service-adapter summary{cursor:pointer;font-weight:650}.service-adapter p{margin:10px 0}
+.service-request-flow{list-style:none!important;padding:0!important;display:grid;gap:8px}
+.service-request-flow li{padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);overflow-wrap:anywhere}
+.service-request-flow li b,.service-request-flow li span{display:block}.service-request-flow li+li:before{content:'↓';display:block;color:var(--ink-soft)}

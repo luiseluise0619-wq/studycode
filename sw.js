@@ -2,21 +2,21 @@
    - 앱 셸(index.html 등): network-first — 배포하면 바로 갱신된다
    - /data/*.js 청크: 캐시 우선·백그라운드 갱신 — 처음 오프라인에서도 미리 받은 앱 코드를 읽는다
    - /api/* 와 교차 출처(Monaco/Pyodide CDN)는 건드리지 않는다 */
-const VERSION = "v19-composition-practice";
+const VERSION = "v20-service-completion";
 const SHELL_CACHE = "coderun-shell-" + VERSION;
 const DATA_CACHE  = "coderun-data-" + VERSION;
 const KEEP = [SHELL_CACHE, DATA_CACHE];
 
 const SHELL = [
-  "/data/reader-guide.js?v=19", "/data/reader-guide.js", "/data/glossary.js", "/data/intro.js",
-  "/data/study-quality.js?v=19",
-  "/data/study-ui.js?v=19", "/data/code-literacy.js?v=19", "/data/learning-path.js?v=19", "/data/coderun-design.css?v=19",
-  "/data/vibe-scenarios.js?v=19", "/data/vibe-challenges.js?v=19", "/data/vibe-projects.js?v=19", "/data/vibe-journey.js?v=19", "/data/vibe-lab.js?v=19",
-  "/data/build.js?v=19", "/data/service-project.js?v=19", "/data/service-path.js?v=19", "/data/service-bridges.js?v=19", "/data/service-practice.js?v=19", "/data/service-export.js?v=19",
+  "/data/reader-guide.js?v=20", "/data/reader-guide.js", "/data/glossary.js", "/data/intro.js",
+  "/data/study-quality.js?v=20",
+  "/data/study-ui.js?v=20", "/data/code-literacy.js?v=20", "/data/learning-path.js?v=20", "/data/coderun-design.css?v=20",
+  "/data/vibe-scenarios.js?v=20", "/data/vibe-challenges.js?v=20", "/data/vibe-projects.js?v=20", "/data/vibe-journey.js?v=20", "/data/vibe-lab.js?v=20",
+  "/data/build.js?v=20", "/data/service-project.js?v=20", "/data/service-path.js?v=20", "/data/service-bridges.js?v=20", "/data/service-practice.js?v=20", "/data/service-export.js?v=20",
   "/data/build.js", "/data/service-project.js", "/data/service-path.js", "/data/service-bridges.js", "/data/service-practice.js", "/data/service-export.js",
   "/", "/index.html", "/manifest.webmanifest",
   "/data/study-design.css", "/data/study-ui.css",
-  "/data/coderun-design.css", "/data/vibe-challenges.js", "/data/vibe-projects.js", "/data/vibe-journey.js", "/data/vibe-lab.css?v=19", "/data/vibe-lab.css", "/data/vibe-scenarios.js", "/data/vibe-lab.js",
+  "/data/coderun-design.css", "/data/vibe-challenges.js", "/data/vibe-projects.js", "/data/vibe-journey.js", "/data/vibe-lab.css?v=20", "/data/vibe-lab.css", "/data/vibe-scenarios.js", "/data/vibe-lab.js",
   "/data/learning-path.js", "/data/study-ui.js", "/data/build-worker.js", "/data/practice-worker.js", "/data/sql-practice.js", "/data/study-quality.js", "/data/dom-practice.js", "/data/code-literacy.js", "/vendor/acorn.js",
   "/icons/icon-192.png", "/icons/icon-512.png"
 ];

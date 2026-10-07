@@ -10,12 +10,12 @@ const server = http.createServer((req, res) => {
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) { res.writeHead(404); res.end(); return; }
   let body = fs.readFileSync(file);
   if (legacy && url.pathname === '/sw.js') body = body.toString()
-    .replaceAll('v19-composition-practice', 'v11-projects')
+    .replaceAll('v20-service-completion', 'v11-projects')
     .replace(/"\/data\/(?:service-[^"]+|build\.js)[^"]*",?\s*/g, '')
-    .replaceAll('?v=19', '?v=11');
+    .replaceAll('?v=20', '?v=11');
   if (legacy && (url.pathname === '/' || url.pathname === '/index.html')) body = body.toString()
-    .replace(/<script src="data\/(?:service-(?:path|export|bridges|practice)|reader-guide)\.js\?v=19"><\/script>\s*/g, '')
-    .replaceAll('.js?v=19', '.js?v=11');
+    .replace(/<script src="data\/(?:service-(?:path|export|bridges|practice)|reader-guide)\.js\?v=20"><\/script>\s*/g, '')
+    .replaceAll('.js?v=20', '.js?v=11');
   const types = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.png': 'image/png' };
   res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' }); res.end(body);
 });
@@ -60,11 +60,11 @@ async function waitVersion(page, expected) {
     assert.equal(await page.evaluate(() => S.vibeLab.cart.missions.quantity.passed), true); assert.deepEqual(errors, []);
     console.log('PASS old cached modules are bypassed and progress survives the update');
     await page.evaluate(async () => { const registration = await navigator.serviceWorker.getRegistration(); await registration.update(); });
-    await waitVersion(page, 'v19-composition-practice');
+    await waitVersion(page, 'v20-service-completion');
     await waitUntil(page, async () => {
-      const cache = await caches.open('coderun-shell-v19-composition-practice');
+      const cache = await caches.open('coderun-shell-v20-service-completion');
       const names = ['vibe-lab', 'vibe-scenarios', 'vibe-challenges', 'vibe-projects', 'vibe-journey', 'service-path', 'service-bridges', 'service-practice', 'service-export', 'service-project', 'build', 'reader-guide', 'study-ui', 'study-quality', 'code-literacy', 'learning-path'];
-      const found = await Promise.all(names.map(name => cache.match('/data/' + name + '.js?v=19')));
+      const found = await Promise.all(names.map(name => cache.match('/data/' + name + '.js?v=20')));
       return found.every(Boolean) && !!(await cache.match('/index.html'));
     }, null, 'all current modules in the offline cache');
     await context.setOffline(true); await page.reload();

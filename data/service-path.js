@@ -20,6 +20,15 @@
     return st.serviceRecords[n] || (st.serviceRecords[n] = {});
   }
   function signature() { return JSON.stringify(blState(ID).files); }
+  function matchesChecks(day, rows) {
+    return Array.isArray(rows) && rows.length === day.tests.length && rows.every((row, i) => row && row.n === day.tests[i].n && typeof row.ok === 'boolean');
+  }
+  function refreshChecks() {
+    const p = project(); if (!p) return;
+    const st = blState(ID), outdated = p.days.find(day => st.done.includes(day.n) && !matchesChecks(day, st.serviceRecords?.[day.n]?.rows));
+    if (!outdated) return;
+    st.serviceRecheck = outdated.n; invalidate(outdated.n); save();
+  }
   function contiguous() {
     const st = blState(ID), done = st.done;
     if (!Number.isInteger(st.serviceStart) || st.serviceStart < 0 || st.serviceStart > 17) st.serviceStart = 0;
@@ -28,6 +37,7 @@
     return n;
   }
   function summary() {
+    refreshChecks();
     const st = blState(ID), r = record(18);
     return { done: st.done.filter(n=>Number.isInteger(n)&&n>=1&&n<=18).length, frontier: contiguous(), foundation: st.serviceStart || 0, helped: Object.values(st.serviceRecords || {}).filter(r => r.helpUsed).length,
       independent: st.done.includes(18) && !r.helpUsed && r.signature === signature() && (r.note || '').trim().length >= 20 };
@@ -45,6 +55,11 @@
         if (index <= contiguous()) { BL.di = index; BL.res = null; blApplyDayFiles(); blRender(); }
       };
       $('service-continue').onclick = () => go(next);
+      if (state.serviceRecheck) {
+        const notice = document.createElement('p'); notice.className = 'service-check-update'; notice.setAttribute('role', 'status');
+        notice.textContent = state.serviceRecheck + '단계의 검사를 보강했어요. 작성한 코드와 메모는 보관했고, 이 단계부터 다시 실행해 확인하면 돼요.';
+        $('service-path-body').querySelector('.service-map-status').after(notice);
+      }
       $('service-path-body').querySelector('.service-map-status').after($('service-continue'));
       $('service-path-body').querySelectorAll('[data-service-day]').forEach(b => b.onclick = () => go(Number(b.dataset.serviceDay)));
       $('service-path-body').querySelectorAll('[data-service-entry]').forEach(b => b.onclick = () => {
@@ -69,12 +84,13 @@
   function finish() {
     if (!BL || blProject().id !== ID) return;
     const d = blProject().days[BL.di], r = record(d.n), st = blState(ID);
-    const ready = r.signature === signature() && Array.isArray(r.rows) && r.rows.length === d.tests.length && r.rows.every(t => t.ok) && r.answer === d.quiz.answer && (!d.independent || (r.note || '').trim().length >= 20);
+    const ready = r.signature === signature() && matchesChecks(d, r.rows) && r.rows.every(t => t.ok) && r.answer === d.quiz.answer && (!d.independent || (r.note || '').trim().length >= 20);
     if (!ready && st.done.includes(d.n)) {
       st.done = st.done.filter(n => n < d.n);
       for (const [n, later] of Object.entries(st.serviceRecords || {})) if (Number(n) > d.n) { delete later.signature; delete later.rows; }
     }
     if (ready && !st.done.includes(d.n)) {
+      if (st.serviceRecheck === d.n) delete st.serviceRecheck;
       st.done.push(d.n); st.done.sort((a, b) => a - b);
       if (!r.awarded) {
         r.awarded = true; S.xp = (S.xp || 0) + 60;
@@ -119,6 +135,7 @@
   }, true);
   const oldRender = blRender;
   blRender = function () {
+    refreshChecks();
     if (BL && blProject().id === ID) {
       const d = blProject().days[BL.di], r = record(d.n);
       if (blState(ID).done.includes(d.n) && r.signature !== signature()) invalidate(d.n);
@@ -127,7 +144,7 @@
     if (!BL || blProject().id !== ID) return;
     const p = blProject(), st = blState(ID), d = p.days[BL.di], r = record(d.n);
     st.serviceDay = BL.di;
-    const completed = st.done.includes(d.n), checked = r.signature === signature() && Array.isArray(r.rows) && r.rows.length === d.tests.length && r.rows.every(row => row.ok);
+    const completed = st.done.includes(d.n), checked = r.signature === signature() && matchesChecks(d, r.rows) && r.rows.every(row => row.ok);
     if (!BL.res && checked) BL.res = r.rows;
     $('bl-prog').textContent = d.band + ' · ' + d.n + '/18 단계 · ' + summary().done + '단계 직접 확인';
     const chips = $('bl-body').querySelector('.bl-days');
@@ -149,7 +166,18 @@
     concept.innerHTML = '<b>먼저 뜻을 이해해요</b><p>' + escHtml(d.concept) + '</p>';
     req.querySelector('h3').after(concept);
     if (window.ServiceBridges) ServiceBridges.mount(concept, d.n, r, save);
-    if (window.ServicePractice) ServicePractice.mount(concept, d.n, r, save);
+    if (window.ServicePractice) ServicePractice.mount(concept, d.n, r, save, () => {
+      if (!d.independent) return;
+      r.helpUsed = true; save();
+      if ($('service-note-status')) $('service-note-status').textContent = '앱 도움을 사용한 확장';
+      const result = $('bl-body').querySelector('.service-complete > b');
+      if (result) result.textContent = '도움받아 마지막 확장을 마쳤어요';
+    });
+    if (d.n === 3 || d.n === 18) {
+      const adapter = document.createElement('details'); adapter.className = 'service-adapter';
+      adapter.innerHTML = '<summary>내 코드와 제공된 서버 연결은 어디서 만날까요?</summary><p>내가 고치는 부분은 handle과 예약 규칙이에요. HTTP 요청을 읽고 handle을 부른 뒤 응답을 보내는 연결 코드는 앱이 제공해요. 브라우저 실습은 handle을 직접 부르고, 마지막에 받은 Node.js 서버는 실제 HTTP 요청을 이 순서로 연결해요.</p><ol class="service-request-flow"><li><b>브라우저가 요청해요</b><span>POST /bookings · 이름·시간·인원</span></li><li><b>제공 코드가 읽어요</b><span>JSON 본문과 인증 헤더를 꺼내요</span></li><li><b>내 handle이 처리해요</b><span>handle("POST", "/bookings", body, headers)</span></li><li><b>제공 코드가 답해요</b><span>status를 HTTP 상태로, body를 JSON으로 보내요</span></li></ol><p>검사에서 쓰는 assert와 same도 제공 함수예요. assert는 조건이 거짓이면 예외를 던지고, same은 두 배열이나 객체를 JSON으로 비교해요. save·now·probe·sink는 실제 장비를 연결하는 자리이며 여기서는 실패나 시간을 재현하는 함수를 넣어요.</p>';
+      concept.append(adapter);
+    }
     const help = req.querySelector('.bl-hint');
     help.addEventListener('toggle', () => { if (help.open) { r.helpUsed = true; save(); } });
     const quiz = document.createElement('section'); quiz.className = 'service-quiz';
