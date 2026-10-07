@@ -8,7 +8,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── devops */
 {
   lv: 4, em: "🚨",
-  title: "새벽 3시에 알림이 울렸다",
+  title: "새벽 3시에 알림이 울렸어요",
   desc: "장애를 받은 순간부터 복구·회고까지의 순서를 몸에 익히고, 다시 울릴 때 더 빨리 끝나도록 경보·대시보드·기록을 손봐요",
   skills: ["devops", "system_design", "communication"],
   phases: [
@@ -82,13 +82,13 @@ module.exports = {
 /* ─────────────────────────────────────────────── backend */
 {
   lv: 4, em: "🔀",
-  title: "안 멈추고 스키마를 바꾼다",
+  title: "안 멈추고 스키마를 바꿔요",
   desc: "쓰고 있는 테이블의 컬럼을 무중단으로 바꾸는 절차를 단계로 나누고, 각 단계가 되돌릴 수 있는지 확인하며 옮겨요",
   skills: ["backend", "database", "devops"],
   phases: [
 
   { t: "무엇을 어디로 옮기나요", type: "note",
-    goal: "바꿀 대상과 <b>지금 그것을 쓰는 곳</b>을 전부 적으세요.\n옮기는 중에 어긋나는 것은 대개 '이것도 그 컬럼을 쓰고 있었다' 예요.",
+    goal: "바꿀 대상과 <b>지금 그것을 쓰는 곳</b>을 전부 적으세요.\n옮기는 중에 어긋나는 것은 대개 '이것도 그 컬럼을 쓰고 있었다'예요.",
     ph: "예: users.phone (문자열) → users.phone_e164 (정규화) · 쓰는 곳: 가입 API · 알림 발송 배치 · 관리자 검색 · CS 툴 · 리포트 뷰 3개 · 행 4,200만 · 초당 쓰기 90건" },
 
   { t: "한 번에 바꿀 수 없는 이유", type: "decide",
@@ -111,7 +111,7 @@ module.exports = {
 
   { t: "단계를 나눠요", type: "build",
     goal: "이전을 <b>각각 되돌릴 수 있는 단계</b>로 쪼개고, 단계마다 옛 코드와 새 코드가 모두 도는지 확인하는 표를 만드세요.",
-    hint: "널리 쓰이는 순서는 '새 칸 추가 → 양쪽에 쓰기 → 옛 데이터 채우기 → 새 칸으로 읽기 → 옛 칸 쓰기 중단 → 옛 칸 삭제' 예요. 각 단계에서 <b>옛 코드와 새 코드가 모두 살 수 있는지</b>를 확인하는 것이 핵심이고, 하나라도 아니면 그 단계를 더 쪼개야 해요.",
+    hint: "널리 쓰이는 순서는 '새 칸 추가 → 양쪽에 쓰기 → 옛 데이터 채우기 → 새 칸으로 읽기 → 옛 칸 쓰기 중단 → 옛 칸 삭제'예요. 각 단계에서 <b>옛 코드와 새 코드가 모두 살 수 있는지</b>를 확인하는 것이 핵심이고, 하나라도 아니면 그 단계를 더 쪼개야 해요.",
     acc: "단계별로 옛 코드·새 코드가 도는지, 되돌릴 수 있는지가 표로 나오고, 안전하지 않은 단계가 있으면 지적되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\nconst steps = [\n  { n: \"새 칸 추가(널 허용)\", old: true, neu: true, back: true },\n  { n: \"양쪽에 쓰기\", old: true, neu: true, back: true },\n  { n: \"옛 데이터 채우기(나눠서)\", old: true, neu: true, back: true },\n  { n: \"새 칸으로 읽기\", old: true, neu: true, back: true },\n  { n: \"옛 칸 쓰기 중단\", old: false, neu: true, back: true },\n  { n: \"옛 칸 삭제\", old: false, neu: true, back: false }\n];\n\nout.push(\"단계                      옛코드 새코드 되돌리기 판정\");\nlet firstUnsafe = null;\nsteps.forEach((s, i) => {\n  const safe = s.old && s.neu;\n  if (!safe && firstUnsafe === null) firstUnsafe = i;\n  out.push(s.n.padEnd(26) +\n    (s.old ? \"산다  \" : \"죽는다\").padEnd(7) +\n    (s.neu ? \"산다  \" : \"죽는다\").padEnd(7) +\n    (s.back ? \"가능    \" : \"불가    \") +\n    (safe ? \"안전\" : \"배포가 겹치면 위험\"));\n});\n\nout.push(\"\");\nout.push(\"처음 위험해지는 단계: \" + steps[firstUnsafe].n);\nout.push(\"→ 이 단계는 옛 코드가 완전히 사라진 뒤에만 한다\");\nout.push(\"→ '완전히 사라졌다' 는 배포 완료가 아니라 옛 인스턴스가 0인 것을 확인하는 것이다\");\nout.push(\"\");\nconst noBack = steps.filter((s) => !s.back);\nout.push(\"되돌릴 수 없는 단계: \" + noBack.map((s) => s.n).join(\", \"));\nout.push(\"→ 앞 단계들이 충분히 오래 안정된 뒤에 한다. 서두를 이유가 없다\");\nconsole.log(out.join(\"\\n\"));" },
@@ -156,7 +156,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── pandas */
 {
   lv: 3, em: "🧹",
-  title: "리포트 숫자가 매번 다르다",
+  title: "리포트 숫자가 매번 달라요",
   desc: "같은 원본으로 돌렸는데 결과가 달라지는 데이터 파이프라인을 결정적으로 만들고, 품질 검사를 붙여 조용한 오염을 막아요",
   skills: ["pandas", "python", "database"],
   phases: [
@@ -230,7 +230,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── net */
 {
   lv: 4, em: "🌐",
-  title: "가끔 느린 이유를 끝까지 쫓는다",
+  title: "가끔 느린 이유를 끝까지 쫓아요",
   desc: "평균은 멀쩡한데 꼬리가 긴 응답 시간을 연결·재시도·큐 세 층에서 나눠 재고, 꼬리를 줄이는 조치를 골라 넣어요",
   skills: ["net", "performance", "system_design"],
   phases: [
@@ -304,7 +304,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── cloud */
 {
   lv: 3, em: "💸",
-  title: "이번 달 청구서가 세 배가 됐다",
+  title: "이번 달 청구서가 세 배가 됐어요",
   desc: "요금이 왜 늘었는지 데이터로 쪼개고, 아끼는 조치를 위험도와 절감액으로 줄 세워 되돌릴 수 있는 것부터 실행해요",
   skills: ["cloud", "devops", "performance"],
   phases: [

@@ -3,7 +3,7 @@
    한 바퀴를 돌면 '고쳐도 안 무섭다' 는 말의 내용이 손에 남는다. */
 module.exports = {
   lv: 3, em: "🧪",
-  title: "테스트가 하나도 없는 코드를 물려받았다",
+  title: "테스트가 하나도 없는 코드를 물려받았어요",
   desc: "손댈 때마다 무언가 깨지는 주문 계산 모듈에 특성화 테스트를 씌우고, 의존을 끊고, 경우를 설계하고, CI 에서 매번 돌게 만들어요",
   skills: ["test", "code", "devops"],
   phases: [
@@ -32,7 +32,7 @@ module.exports = {
 
   { t: "현재 동작을 그대로 고정해요", type: "build",
     goal: "지금 코드의 동작을 <b>옳은지 따지지 않고</b> 있는 그대로 테스트로 적으세요.\n실제 입력 몇 개를 넣어 나온 값을 그대로 기대값으로 써요. 이상해 보이는 결과가 있으면 주석으로 표시만 해 둬요.",
-    hint: "값을 손으로 계산하려 하지 마세요. 함수를 돌려 <b>나온 값을 그대로 적는 것</b>이 특성화 테스트예요. 목적은 '옳은가' 가 아니라 '지금과 같은가' 예요. 나중에 진짜 버그로 확인되면 그때 기대값을 바꾸고 그 변경을 커밋 메시지에 남겨요.",
+    hint: "값을 손으로 계산하려 하지 마세요. 함수를 돌려 <b>나온 값을 그대로 적는 것</b>이 특성화 테스트예요. 목적은 '옳은가' 가 아니라 '지금과 같은가'예요. 나중에 진짜 버그로 확인되면 그때 기대값을 바꾸고 그 변경을 커밋 메시지에 남겨요.",
     acc: "대표 입력 5개 이상에 대해 현재 값이 고정되고, 코드를 한 줄도 바꾸지 않은 상태에서 전부 통과하면 완료예요.",
     lang: "javascript",
     sol: "/* 아주 작은 러너 — 프레임워크가 해 주는 일은 결국 이것이다 */\nconst out = [];\nfunction test(name, fn) {\n  try { fn(); out.push(\"PASS \" + name); }\n  catch (e) { out.push(\"FAIL \" + name + \" — \" + e.message); }\n}\nfunction expect(got) {\n  return { toBe(want) {\n    if (!Object.is(got, want))\n      throw new Error(\"기대 \" + JSON.stringify(want) + \", 실제 \" + JSON.stringify(got));\n  } };\n}\n\n/* 물려받은 코드 — 여기서는 한 줄도 바꾸지 않는다 */\nfunction calcOrder(o) {\n  let sum = o.amount;\n  if (o.coupon) sum -= o.coupon;\n  if (o.grade === \"gold\") sum = Math.round(sum * 0.9);\n  return sum;\n}\n\n/* 특성화 테스트 — '옳은 값' 이 아니라 '지금 값' 을 적는다.\n   기대값은 손으로 계산하지 않고 실행 결과를 그대로 옮겼다. */\ntest(\"일반 등급 · 쿠폰 없음\", () => {\n  expect(calcOrder({ grade: \"basic\", amount: 10000, coupon: null })).toBe(10000);\n});\ntest(\"골드 등급 · 10% 할인\", () => {\n  expect(calcOrder({ grade: \"gold\", amount: 10000, coupon: null })).toBe(9000);\n});\ntest(\"쿠폰이 등급 할인보다 먼저 적용된다\", () => {\n  expect(calcOrder({ grade: \"gold\", amount: 10000, coupon: 2000 })).toBe(7200);\n});\ntest(\"금액이 0이면 그대로 0\", () => {\n  expect(calcOrder({ grade: \"gold\", amount: 0, coupon: null })).toBe(0);\n});\n// 음수가 나온다. 버그로 보이지만 지금은 고정만 해 둔다.\ntest(\"쿠폰이 금액보다 크면 음수가 된다(현재 동작)\", () => {\n  expect(calcOrder({ grade: \"basic\", amount: 1000, coupon: 3000 })).toBe(-2000);\n});\n\nconsole.log(out.join(\"\\n\"));" },

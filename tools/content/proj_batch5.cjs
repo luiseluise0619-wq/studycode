@@ -8,7 +8,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── c */
 {
   lv: 4, em: "🧱",
-  title: "메모리를 손으로 관리한다",
+  title: "메모리를 손으로 관리해요",
   desc: "누수·이중 해제·경계 넘기가 어디서 나는지 규칙으로 좁히고, 소유권을 문서가 아니라 코드로 드러내 사고를 구조적으로 막아요",
   skills: ["c", "debugging", "performance"],
   phases: [
@@ -64,7 +64,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── rust */
 {
   lv: 4, em: "🦀",
-  title: "컴파일러와 싸우지 않고 이긴다",
+  title: "컴파일러와 싸우지 않고 이겨요",
   desc: "빌림 검사기에 막힐 때마다 우회하는 대신 그것이 가리키는 설계 문제를 읽고, 소유권 구조를 바꿔 코드를 단순하게 만들어요",
   skills: ["rust", "code", "system_design"],
   phases: [
@@ -131,7 +131,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── cpp */
 {
   lv: 4, em: "⚙️",
-  title: "빌드가 20분 걸린다",
+  title: "빌드가 20분 걸려요",
   desc: "한 줄만 고쳐도 전부 다시 빌드되는 프로젝트의 의존 그래프를 재고, 헤더와 경계를 정리해 다시 빌드하는 범위를 줄여요",
   skills: ["cpp", "performance", "code"],
   phases: [
@@ -198,7 +198,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── go 두 번째는 이미 있으므로 java */
 {
   lv: 4, em: "🔒",
-  title: "가끔 두 번 처리된다",
+  title: "가끔 두 번 처리돼요",
   desc: "재현되지 않는 동시성 버그를 경합 구간으로 좁히고, 잠금·원자 연산·불변 객체 중 무엇으로 막을지 비용과 함께 정해요",
   skills: ["java", "debugging", "system_design"],
   phases: [
@@ -254,7 +254,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── arduino */
 {
   lv: 3, em: "🔋",
-  title: "배터리가 사흘 만에 닳는다",
+  title: "배터리가 사흘 만에 닳아요",
   desc: "몇 달을 버텨야 할 센서 장치의 전력을 항목별로 재고, 잠자기·전송 주기·측정 빈도를 조정해 수명을 예측 가능하게 만들어요",
   skills: ["arduino", "c", "performance"],
   phases: [
@@ -267,7 +267,7 @@ module.exports = {
     goal: "사흘밖에 못 버텨요. 줄일 수 있는 것이 여럿 보여요.",
     sit: "무엇부터 볼까요?",
     opts: [
-      { label: "항목별 mAh 를 계산해 가장 큰 것부터 — 대개 '항상 켜져 있는 것' 예요",
+      { label: "항목별 mAh 를 계산해 가장 큰 것부터 — 대개 '항상 켜져 있는 것'이에요",
         fx: { performance: 3, debugging: 2 },
         fb: "✅ <b>전류가 작아도 항상 흐르면 가장 커요.</b> 120mA 로 0.3초 쓰는 전송보다 8mA 로 24시간 깨어 있는 MCU 가 훨씬 커요. 계산해 보면 대개 '잠들지 않는 것' 이 전체의 대부분이고, 그것을 재우는 것 하나로 수명이 열 배가 되기도 해요.",
         best: true },
@@ -283,7 +283,7 @@ module.exports = {
 
   { t: "항목별 전력을 계산해요", type: "build",
     goal: "동작마다 <b>하루 mAh</b> 를 구하고 순위를 매기세요.\n배터리 수명도 함께 계산해요.",
-    hint: "한 항목의 하루 소모는 '전류 × 켜져 있는 시간' 예요. 초당 몇 번, 한 번에 몇 밀리초를 하루로 환산해야 해요. <b>항상 켜져 있는 것</b>은 24시간을 그대로 곱하므로, 전류가 작아도 결과가 커요. 계산 결과가 실측과 크게 다르면 빠뜨린 항목이 있다는 뜻이에요.",
+    hint: "한 항목의 하루 소모는 '전류 × 켜져 있는 시간'이에요. 초당 몇 번, 한 번에 몇 밀리초를 하루로 환산해야 해요. <b>항상 켜져 있는 것</b>은 24시간을 그대로 곱하므로, 전류가 작아도 결과가 커요. 계산 결과가 실측과 크게 다르면 빠뜨린 항목이 있다는 뜻이에요.",
     acc: "항목별 하루 mAh 와 비율이 순위로 나오고, 예상 수명이 계산되어 출력되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\nconst BATTERY = 2000;      // mAh\nconst MEASURED_DAYS = 3;   // 실제로 버틴 날\n\nconst items = [\n  { n: \"MCU 항상 깨어 있음\", mA: 8, perDay: 1, msEach: 86400000 },\n  { n: \"온도 측정\", mA: 12, perDay: 86400, msEach: 80 },\n  { n: \"무선 전송\", mA: 120, perDay: 1440, msEach: 300 },\n  { n: \"LED 상시 점등\", mA: 2, perDay: 1, msEach: 86400000 }\n];\n\nconst rows = items.map((x) => ({ n: x.n, mah: x.mA * (x.perDay * x.msEach) / 3600000 }))\n  .sort((a, b) => b.mah - a.mah);\nconst total = rows.reduce((s, r) => s + r.mah, 0);\n\nout.push(\"항목                    하루 mAh   비율\");\nrows.forEach((r) => out.push(r.n.padEnd(24) +\n  r.mah.toFixed(1).padStart(8) + \"   \" + (r.mah / total * 100).toFixed(0) + \"%\"));\nout.push(\"합계\".padEnd(24) + total.toFixed(1).padStart(8));\n\nconst days = BATTERY / total;\nout.push(\"\");\nout.push(\"계산한 수명 \" + days.toFixed(1) + \"일 · 실측 \" + MEASURED_DAYS + \"일\");\nconst gap = total * (days / MEASURED_DAYS - 1);\nout.push(\"계산이 \" + (days / MEASURED_DAYS).toFixed(1) + \"배 낙관적이다 — 하루 \" +\n  gap.toFixed(0) + \"mAh 를 못 세고 있다\");\nout.push(\"빠뜨렸을 만한 것: 부팅 전류 · 무선 재접속 실패 재시도 · 추운 곳에서의 용량 감소\");\nout.push(\"→ 계산이 실측과 맞을 때까지는 어떤 조치의 효과도 예측할 수 없다\");\n\nout.push(\"\");\nout.push(\"목표 180일을 채우려면 하루 \" + (BATTERY / 180).toFixed(2) + \"mAh 이하여야 한다\");\nout.push(\"→ 계산값 기준으로도 \" + (total / (BATTERY / 180)).toFixed(0) + \"분의 1로 줄여야 한다\");\nout.push(\"\");\nout.push(\"가장 큰 것: \" + rows[0].n + \" (\" + (rows[0].mah / total * 100).toFixed(0) + \"%)\");\nout.push(\"전류가 작아도 항상 흐르면 가장 크다 — 24시간을 그대로 곱하기 때문이다\");\nconsole.log(out.join(\"\\n\"));\n" },

@@ -8,7 +8,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── react */
 {
   lv: 3, em: "🖼️",
-  title: "타이핑할 때마다 화면이 버벅인다",
+  title: "타이핑할 때마다 화면이 버벅여요",
   desc: "입력 한 글자에 목록 전체가 다시 그려지는 화면을 프로파일로 짚어 내고, 다시 그리는 범위를 줄여 큰 목록에서도 매끄럽게 만들어요",
   skills: ["react", "performance", "javascript"],
   phases: [
@@ -69,7 +69,7 @@ module.exports = {
 
   { t: "보이는 것만 그려요", type: "build",
     goal: "스크롤 위치와 화면 높이로 <b>그릴 범위</b>를 계산하세요.\n위아래로 여유분을 두어 빠르게 스크롤해도 빈칸이 안 보이게 해요.",
-    hint: "시작 첨자는 '스크롤 위치 ÷ 행 높이', 개수는 '화면 높이 ÷ 행 높이' 예요. 여기에 <b>위아래 여유분</b>을 두어야 스크롤 도중 빈칸이 안 보여요. 목록 끝에서 범위를 넘지 않도록 자르는 것도 잊으면 안 돼요.",
+    hint: "시작 첨자는 '스크롤 위치 ÷ 행 높이', 개수는 '화면 높이 ÷ 행 높이'예요. 여기에 <b>위아래 여유분</b>을 두어야 스크롤 도중 빈칸이 안 보여요. 목록 끝에서 범위를 넘지 않도록 자르는 것도 잊으면 안 돼요.",
     acc: "스크롤 위치별 그릴 범위와 개수가 출력되고, 목록 끝에서도 범위를 벗어나지 않는 것이 확인되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\nconst TOTAL = 2000, ROW = 40, VIEW = 600, OVER = 3;\n\nfunction slice(scrollTop) {\n  const first = Math.floor(scrollTop / ROW);\n  const visible = Math.ceil(VIEW / ROW);\n  const start = Math.max(0, first - OVER);\n  const end = Math.min(TOTAL, first + visible + OVER);\n  return { start: start, end: end, count: end - start,\n    padTop: start * ROW, padBottom: (TOTAL - end) * ROW };\n}\n\nout.push(\"스크롤     범위          그리는 수  위 여백   아래 여백\");\n[0, 400, 20000, 79600, 80000].forEach((s) => {\n  const r = slice(s);\n  out.push(String(s).padEnd(11) +\n    (r.start + \"~\" + r.end).padEnd(14) +\n    String(r.count).padEnd(11) +\n    String(r.padTop).padEnd(10) + r.padBottom);\n});\n\nout.push(\"\");\nconst worst = [0, 400, 20000, 79600, 80000].map(slice)\n  .reduce((a, b) => (b.count > a.count ? b : a));\nout.push(\"가장 많이 그릴 때: \" + worst.count + \"행 (전체 \" + TOTAL + \"행)\");\nout.push(\"행이 20,000개가 되어도 그리는 수는 그대로다\");\n\nconst last = slice(80000);\nout.push(\"\");\nout.push(\"끝에서 범위를 넘지 않았는가: \" + (last.end <= TOTAL && last.padBottom >= 0));\nout.push(\"여백 합계가 전체 높이와 맞는가: \" +\n  (last.padTop + last.count * ROW + last.padBottom === TOTAL * ROW));\nconsole.log(out.join(\"\\n\"));" },
@@ -82,7 +82,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── algo */
 {
   lv: 4, em: "🔎",
-  title: "검색이 원하는 것을 못 찾는다",
+  title: "검색이 원하는 것을 못 찾아요",
   desc: "오타·부분 일치·순위 문제로 검색이 헛도는 상황을 정확도로 재고, 자료구조와 점수 규칙을 바꿔 가며 개선해요",
   skills: ["algo", "javascript", "performance"],
   phases: [
@@ -156,7 +156,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── code */
 {
   lv: 3, em: "🧭",
-  title: "아무도 모르는 코드를 물려받았다",
+  title: "아무도 모르는 코드를 물려받았어요",
   desc: "만든 사람이 떠난 코드를 겁내지 않고 파악하는 순서를 익히고, 테스트로 현재 동작을 붙잡은 뒤 안전하게 손대요",
   skills: ["code", "test", "debugging"],
   phases: [
@@ -223,7 +223,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── web */
 {
   lv: 3, em: "♿",
-  title: "키보드만으로 쓸 수 없다",
+  title: "키보드만으로 쓸 수 없어요",
   desc: "마우스 없이는 못 쓰는 화면을 실제로 짚어 내고, 초점 순서·이름·상태 세 가지를 고쳐 보조 기술에서도 통하게 만들어요",
   skills: ["web", "javascript", "code"],
   phases: [
@@ -245,7 +245,7 @@ module.exports = {
         fb: "⚠️ 같은 규칙이 반복되는 것은 대개 한 컴포넌트가 여러 번 쓰여서예요. 숫자는 크지만 <b>고치는 것은 한 자리</b>이고, 그것이 가장 중요한 문제라는 뜻은 아니에요." },
       { label: "ARIA 속성을 빠짐없이 붙여요",
         fx: { coding: -2 },
-        fb: "⚠️ ARIA 는 <b>잘못 쓰면 없느니만 못해요.</b> 기본 HTML 요소가 이미 갖고 있는 것을 덮어써서 오히려 망가뜨리는 경우가 흔해요. 첫 번째 규칙은 'ARIA 를 안 쓰는 것' 예요." },
+        fb: "⚠️ ARIA 는 <b>잘못 쓰면 없느니만 못해요.</b> 기본 HTML 요소가 이미 갖고 있는 것을 덮어써서 오히려 망가뜨리는 경우가 흔해요. 첫 번째 규칙은 'ARIA 를 안 쓰는 것'이에요." },
       { label: "화면 낭독기로 전부 들어 봐요",
         fx: { coding: 2 },
         fb: "△ 아주 값진 일이고 반드시 해야 해요. 다만 익숙하지 않으면 시간이 오래 걸리므로, <b>키보드로 먼저</b> 훑어 큰 것을 걷어 낸 뒤에 하면 효율적이에요." }] },
@@ -279,7 +279,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── os */
 {
   lv: 4, em: "🧮",
-  title: "서버가 조용히 죽었다",
+  title: "서버가 조용히 죽었어요",
   desc: "로그 한 줄 없이 프로세스가 사라지는 상황을 메모리·파일 서술자·시그널 세 방향에서 좁히고, 다음에는 흔적이 남게 만들어요",
   skills: ["os", "linux", "debugging"],
   phases: [

@@ -16,8 +16,8 @@ function save(file,content){
   finally{if(fs.existsSync(temporary))fs.unlinkSync(temporary);}
 }
 const PROTECTED=new Set(['a','answer','code','src','source','html','css','js','c','in','out','expect','expected','seed','sol','solution','solutions','reference','ref','files','addFiles','fixture','validate','setup','test','check','assert','run','stepsCode','starter','sample','data','rows','logs','log','cmd','commands','accept','replace','from','to','schema']);
-const KEEP_NAMES=new Set(['title','id','k','lang','type','t0','ord','color','em','icon','selector','storageKey']);
-const PROSE_KEYS=new Set(['q','ex','t','sum','hint','brief','goal','desc','description','text','txt','why','teach','cap']);
+const KEEP_NAMES=new Set(['id','k','lang','type','t0','ord','color','em','icon','selector','storageKey']);
+const PROSE_KEYS=new Set(['q','ex','t','title','o','d','acc','sum','hint','brief','goal','desc','description','text','txt','why','teach','cap']);
 const SKIP_FUNCTION=/^(?:gitRun|gRebaseStep|buildDoc|simDoc|pyDoc|sqlDoc|htmlDoc|reactDoc)$/;
 const SKIP_FILES=/^(?:acorn|sucrase|sql-lib|sql-wasm|react-src|rt-shared)\.js$/;
 const FIXES=[
@@ -224,13 +224,16 @@ function eligible(n,ancestors,options={}){
   const s=n.type==='TemplateElement'?n.value.cooked:n.value;
   if(!/[가-힣]/.test(s||''))return false;
   for(const a of ancestors){
-    if(a.type==='Property'&&PROTECTED.has(keyOf(a))&&!(keyOf(a)==='code'&&a.value.type==='ObjectExpression')&&!(keyOf(a)==='test'&&a.value.type==='ObjectExpression'&&a.value.properties.some(p=>keyOf(p)==='what')))return false;
+    if(a.type==='Property'&&PROTECTED.has(keyOf(a))&&!(keyOf(a)==='code'&&a.value.type==='ObjectExpression')&&!(['c','test'].includes(keyOf(a))&&a.value.type==='ObjectExpression'&&a.value.properties.some(p=>keyOf(p)==='what')))return false;
     if(a.type==='FunctionDeclaration'&&SKIP_FUNCTION.test(a.id?.name||''))return false;
     if(a.type==='TaggedTemplateExpression'&&a.tag.type==='MemberExpression'&&a.tag.object.name==='String'&&a.tag.property.name==='raw')return false;
   }
   // Theory headings and bullet points are prose even when they begin with
   // const/return or discuss module.exports. Executable c fields were excluded above.
   if(ancestors.some(a=>a.type==='Property'&&keyOf(a)==='th'))return true;
+  // The keyword cards are arrays of labels and explanations, not source snippets.
+  if(ancestors.some(a=>a.type==='VariableDeclarator'&&['terms','basics'].includes(a.id?.name)))return true;
+  if(/^\s*<!doctype|^\s*<html\b/i.test(s)&&ancestors.some(a=>(a.type==='VariableDeclarator'&&a.id?.name==='UI')||(a.type==='AssignmentExpression'&&a.left.type==='MemberExpression'&&a.left.property.name==='srcdoc')))return true;
   const p=[...ancestors].reverse().find(a=>a.type==='Property');
   if(options.titles&&keyOf(p)==='title')return true;
   if(KEEP_NAMES.has(keyOf(p)))return false;
@@ -264,19 +267,25 @@ function stringNodes(code,offset=0,options={}){
 }
 function sources(options={}){
   const out=[];
-  const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+  const read=name=>options.read?options.read(name):fs.readFileSync(path.join(ROOT,name),'utf8');
+  const html=read('index.html');
   const indexNodes=[];
   for(const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi))if(m[1].trim())indexNodes.push(...stringNodes(m[1],m.index+m[0].indexOf('>')+1,options));
   for(const m of html.matchAll(/<!--[\s\S]*?-->|<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>|<[^>]*>|([^<]+)/gi)){
     if(m[2]&&/[가-힣]/.test(m[2]))indexNodes.push({n:{type:'HTMLText'},a:[],start:m.index,end:m.index+m[0].length,text:m[2]});
+    if(!m[1]&&!m[2]&&!m[0].startsWith('<!--'))for(const attr of m[0].matchAll(/\b(?:aria-label|placeholder|title|alt)\s*=\s*(["'])([\s\S]*?)\1/gi)){
+      if(!/[가-힣]/.test(attr[2]))continue;
+      const start=m.index+attr.index+attr[0].indexOf(attr[1])+1;
+      indexNodes.push({n:{type:'HTMLAttribute',quote:attr[1]},a:[],start,end:start+attr[2].length,text:attr[2]});
+    }
   }
   out.push({name:'index.html',raw:html,nodes:indexNodes});
   for(const name of fs.readdirSync(path.join(ROOT,'data')).filter(x=>x.endsWith('.js')&&!SKIP_FILES.test(x)).sort()){
-    const raw=fs.readFileSync(path.join(ROOT,'data',name),'utf8');
+    const raw=read('data/'+name);
     out.push({name:'data/'+name,raw,nodes:stringNodes(raw,0,options)});
   }
   for(const name of fs.readdirSync(__dirname).filter(x=>/^proj.*\.cjs$/.test(x)).sort()){
-    const raw=fs.readFileSync(path.join(__dirname,name),'utf8');
+    const raw=read('tools/content/'+name);
     out.push({name:'tools/content/'+name,raw,nodes:stringNodes(raw,0,options)});
   }
   return out;
@@ -299,7 +308,7 @@ function apply(onlyTexts=null){
       if(item.n.type==='TemplateElement'){
         // Quasi ranges omit delimiters. Preserve interpolation and escape literal syntax.
         edits.push({start:item.start,end:item.end,text:updated.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$\{/g,'\\${')});
-      }else edits.push({start:item.start,end:item.end,text:item.n.type==='HTMLText'?updated:JSON.stringify(updated)});
+      }else edits.push({start:item.start,end:item.end,text:item.n.type==='HTMLText'?updated:item.n.type==='HTMLAttribute'?updated.replaceAll(item.n.quote,item.n.quote==='"'?'&quot;':'&#39;'):JSON.stringify(updated)});
     }
     let next=file.raw;for(const e of edits.sort((a,b)=>b.start-a.start))next=next.slice(0,e.start)+e.text+next.slice(e.end);
     if(file.name==='index.html'&&!onlyTexts)next=prose(next);

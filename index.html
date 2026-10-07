@@ -990,7 +990,7 @@
 
   /* ---------- Monaco editor host (VS Code) — falls back to textarea if CDN blocked ---------- */
   .mon-host{height:200px; border:1px solid var(--line); border-radius:0 0 12px 12px; overflow:hidden; background:#1e1e1e}
-  .mon-host .monaco-editor, .mon-host .monaco-editor .margin, .mon-host .monaco-editor-background{background-color:transparent}
+  /* Monaco paints the matching background for its light or dark token theme. */
   @media (max-width:430px){ .mon-host{height:168px} }
 
   /* ===== Language Intro (PRD §4·5) ===== */
@@ -1386,7 +1386,7 @@
 <link rel="stylesheet" href="data/study-design.css">
 <link rel="stylesheet" href="data/study-ui.css">
 <link rel="stylesheet" href="data/vibe-lab.css">
-<link rel="stylesheet" href="data/coderun-design.css?v=15">
+<link rel="stylesheet" href="data/coderun-design.css?v=17">
 
 <!-- ================= HOME ================= -->
 <div class="app" id="home">
@@ -2033,7 +2033,7 @@ function ensureIntro(){ return __got.intro?Promise.resolve(true):loadChunk("intr
 function ensureSims(){ return __got.sims?Promise.resolve(true):loadChunk("sims.js"); }
 function ensureDiags(){ return __got.diags?Promise.resolve(true):loadChunk("diags.js"); }
 function ensureProjects(){ return __got.projects?Promise.resolve(true):loadChunk("projects.js"); }
-function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=15")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=15")); }
+function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=17")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=17")); }
 /* TypeScript·JSX 변환기 (sucrase, 288KB). 파서만 필요하므로 부모 문서에서 돌린다. */
 function ensureSucrase(){
   if(typeof Sucrase!=="undefined" && Sucrase.transform) return Promise.resolve(true);
@@ -2114,41 +2114,65 @@ const BL_HELP =
   "function eq(a,b){ if(JSON.stringify(a)!==JSON.stringify(b)) throw new Error('기대 '+JSON.stringify(b)+' / 실제 '+JSON.stringify(a)); }" +
   "function ok(c,m){ if(!c) throw new Error(m||'조건 불만족'); }" +
   "function login(id){ var r=A.handle('POST','/auth/login',{id:id,pw:id.replace('u','pw')});" +
-  " if(!r||!r.body||!r.body.token) throw new Error('로그인 실패 — Day 2 가 필요합니다'); return r.body.token; }" +
-  "function has(o,k){ if(!o||o[k]===undefined||o[k]===null) throw new Error('필드가 없습니다: '+k); return o[k]; }" +
-  "function arr(o,k){ var v=has(o,k); if(!Array.isArray(v)) throw new Error(k+' 는 배열이어야 합니다'); return v; }" +
+  " if(!r||!r.body||!r.body.token) throw new Error('로그인에 실패했어요. 먼저 2단계를 완료하세요.'); return r.body.token; }" +
+  "function has(o,k){ if(!o||o[k]===undefined||o[k]===null) throw new Error('필드가 없어요: '+k); return o[k]; }" +
+  "function arr(o,k){ var v=has(o,k); if(!Array.isArray(v)) throw new Error(k+'는 배열이어야 해요.'); return v; }" +
   "function S(v){ return typeof v==='string'?v:''; }" +
-  "function throws(f,m){ var t=false; try{ f(); }catch(e){ t=true; } if(!t) throw new Error(m||'예외가 발생해야 합니다'); }";
+  "function throws(f,m){ var t=false; try{ f(); }catch(e){ t=true; } if(!t) throw new Error(m||'예외가 나와야 해요.'); }";
 
+const BL_TRACE = String.raw`
+var __lastCall = '';
+function __brief(args) {
+  try { return JSON.stringify(args, function(k,v) {
+    if(typeof v === 'function') return '[function]';
+    if(Array.isArray(v) && v.length > 12) return {length:v.length,preview:v.slice(0,8)};
+    return v;
+  }).slice(0,600); }
+  catch (_) { return '[unserializable input]'; }
+}
+function __trace(obj, label) {
+  return new Proxy(obj, {get:function(target,key) {
+    var value = target[key];
+    if(typeof value !== 'function') return value;
+    return function() {
+      var args = Array.prototype.slice.call(arguments);
+      __lastCall = {label:label + '.' + String(key),args:args};
+      var result = value.apply(target,args);
+      return key === 'createService' && result && typeof result === 'object' ? __trace(result,'service') : result;
+    };
+  }});
+}
+`;
 
 function buildDoc(files, tests, day){
   day=day||{};
   return '<!doctype html><meta charset=utf-8><body><scr'+'ipt>'
    +'var __src='+JSON.stringify(files)+', __mods={};'
+   +BL_TRACE+'var __traceEnabled='+JSON.stringify(!!day.band&&files['service.js']!==undefined)+';'
    +'function require(n){ var k=String(n).replace(/^\\.\\//,""); if(!/\\.js$/.test(k)) k+=".js";'
    +' if(__mods[k]) return __mods[k].exports;'
-   +' if(__src[k]===undefined) throw new Error("파일을 찾을 수 없습니다: "+k);'
+   +' if(__src[k]===undefined) throw new Error("파일을 찾을 수 없어요: "+k);'
    +' var m={exports:{}}; __mods[k]=m;'
    +' (new Function("module","exports","require",__src[k]))(m,m.exports,require); return m.exports; }'
    +'function __reset(){ __mods={}; }'
    +'var DOCF='+JSON.stringify(day.doc||"")+', REFSRC='+JSON.stringify(day.ref||"")+';'
    /* 설계 Day: JSON 파일을 D 로 넘긴다. 코드가 아니라 문서를 검사하므로 실행하지 않고 파싱만 한다. */
-   +'function __json(f){ var t=__src[f]; if(t===undefined) throw new Error("파일이 없습니다: "+f);'
-   +' try{ return JSON.parse(t); }catch(e){ throw new Error(f+" 의 JSON 형식이 올바르지 않습니다 — "+e.message); } }'
+   +'function __json(f){ var t=__src[f]; if(t===undefined) throw new Error("파일이 없어요: "+f);'
+   +' try{ return JSON.parse(t); }catch(e){ throw new Error(f+"의 JSON 형식이 맞지 않아요 — "+e.message); } }'
    /* app.js 가 깨져도 문서 검사는 계속돼야 한다. 실제로 A 를 만질 때만 터지게 미룬다. */
    +'function __softA(){ try{ return require("./app"); }catch(e){ var m=String(e&&e.message||e);'
-   +'  return new Proxy({}, {get:function(){ throw new Error("app.js 를 불러오지 못했습니다 — "+m); }}); } }'
+   +'  return new Proxy({}, {get:function(){ throw new Error("app.js를 불러오지 못했어요 — "+m); }}); } }'
    /* 변이 테스트: 기준 구현의 한 부분만 바꾼 앱을 만든다. 사용자 테스트가 이걸 잡아야 한다. */
    +'function __build(src){ var keep=__src["app.js"]; __src["app.js"]=src; __mods={};'
    +'  try{ return require("./app"); } finally { __src["app.js"]=keep; __mods={}; } }'
    +'function REF(){ return __build(REFSRC); }'
-   +'function MUT(from,to){ if(REFSRC.indexOf(from)<0) throw new Error("내부 오류: 변이 지점을 찾지 못했습니다");'
+   +'function MUT(from,to){ if(REFSRC.indexOf(from)<0) throw new Error("내부 오류: 변이 지점을 찾지 못했어요.");'
    +'  return __build(REFSRC.split(from).join(to)); }'
    +'var TS='+JSON.stringify(tests)+', HELP='+JSON.stringify(BL_HELP)+', out=[];'
-   +'for(var i=0;i<TS.length;i++){ try{ __reset();'
-   +'  (new Function((DOCF||REFSRC?"var A=__softA(), D=DOCF?__json(DOCF):null;":"var A=require(\'./app\');")+HELP+"\\n"+TS[i].c))();'
+   +'for(var i=0;i<TS.length;i++){ try{ __reset();__lastCall="";'
+   +'  (new Function((DOCF||REFSRC?"var A=__softA(), D=DOCF?__json(DOCF):null;":"var A=require(\'./app\');")+"if(__traceEnabled) A=__trace(A,\'app\');"+HELP+"\\n"+TS[i].c))();'
    +'  out.push({n:TS[i].n, ok:true});'
-   +'}catch(e){ out.push({n:TS[i].n, ok:false, err:String(e&&e.message||e)}); } }'
+   +'}catch(e){ out.push({n:TS[i].n, ok:false, err:String(e&&e.message||e)+(__traceEnabled&&__lastCall?"\\n실패한 호출: "+__lastCall.label+" "+__brief(__lastCall.args):"")}); } }'
    +'parent.postMessage({__cr:"build", res:out}, "*");'
    +'</scr'+'ipt></body>';
 }
@@ -6637,20 +6661,20 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEvent
 })();
 </script>
 
-<script src="data/learning-path.js?v=15"></script>
-<script src="data/reader-guide.js?v=15"></script>
-<script src="data/study-ui.js?v=15"></script>
+<script src="data/learning-path.js?v=17"></script>
+<script src="data/reader-guide.js?v=17"></script>
+<script src="data/study-ui.js?v=17"></script>
 <script src="data/build-worker.js"></script>
 <script src="data/practice-worker.js"></script>
 <script src="data/sql-practice.js"></script>
-<script src="data/study-quality.js?v=15"></script>
+<script src="data/study-quality.js?v=17"></script>
 <script src="vendor/acorn.js"></script>
 <script src="data/dom-practice.js"></script>
-<script src="data/code-literacy.js?v=15"></script>
-<script src="data/vibe-scenarios.js?v=15"></script>
-<script src="data/vibe-challenges.js?v=15"></script>
-<script src="data/vibe-projects.js?v=15"></script>
-<script src="data/vibe-journey.js?v=15"></script>
-<script src="data/vibe-lab.js?v=15"></script>
-<script src="data/service-export.js?v=15"></script>
-<script src="data/service-path.js?v=15"></script>
+<script src="data/code-literacy.js?v=17"></script>
+<script src="data/vibe-scenarios.js?v=17"></script>
+<script src="data/vibe-challenges.js?v=17"></script>
+<script src="data/vibe-projects.js?v=17"></script>
+<script src="data/vibe-journey.js?v=17"></script>
+<script src="data/vibe-lab.js?v=17"></script>
+<script src="data/service-export.js?v=17"></script>
+<script src="data/service-path.js?v=17"></script>

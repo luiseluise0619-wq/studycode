@@ -56,7 +56,7 @@
  function plain(value){return String(value||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();}
  function matches(text,alias){if(/^[a-z_$][a-z0-9_$]*$/i.test(alias))return new RegExp('(^|[^a-z0-9_$])'+alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[^a-z0-9_$])','i').test(text);return text.toLowerCase().includes(alias.toLowerCase());}
  function related(q,theory,track){
-  const question=plain(q.q),code=q.src||q.code||'',background=plain(JSON.stringify(theory||{})),text=question+' '+code+' '+background;
+  const question=plain(q.q),code=q.src||plain(q.code)||'',background=plain(JSON.stringify(theory||{})),text=question+' '+code+' '+background;
   const sql=track==='sql'||q.t==='sql'||/\b(SELECT|CREATE INDEX|EXPLAIN)\b|쿼리|데이터베이스|DB 인덱스/i.test(text);
   const selected=terms.map((term,index)=>({term,index,score:term[1].some(a=>matches(question,a))?0:term[1].some(a=>matches(code,a))?1:2})).filter(({term})=>{if(term[0]==='인덱스 · 값의 위치'&&sql)return false;if(term[0]==='DB 인덱스'&&sql)return /인덱스|index/i.test(text);return term[1].some(alias=>matches(text,alias));}).sort((a,b)=>a.score-b.score||a.index-b.index).slice(0,4).map(item=>item.term.slice());
   if(typeof ReaderGuide!=='undefined'){
@@ -64,6 +64,12 @@
    selected.forEach(term=>{const key=names[term[0]]||term[0];if(ReaderGuide.compatible(key,track,text)&&ReaderGuide.definitions[key])term[4]=ReaderGuide.definitions[key];});
    const seen=new Set(selected.map(t=>names[t[0]]||t[0]));
    for(const item of ReaderGuide.related(q,theory,track,4))if(selected.length<4&&!seen.has(item.name)){selected.push([item.name,[item.name],item.text,'']);seen.add(item.name);}
+  }
+  if(track==='python'){
+   for(const term of selected){
+    if(term[0]==='출력'){term[2]='값을 화면에 보여 주는 일이에요. Python에서는 print의 괄호 안에 보여 줄 값을 넣어요.';term[3]='print("안녕")을 실행하면 화면에 안녕이 나와요.';term[4]='';}
+    if(term[0]==='배열과 리스트'||term[0]==='리스트'){term[2]='여러 값을 순서대로 모아 둔 목록이에요. 첫 번째 값은 0번 위치에 있어요.';term[3]='["사과", "배"]에서 0번은 "사과", 1번은 "배"예요.';term[4]='';}
+   }
   }
   return selected;
  }

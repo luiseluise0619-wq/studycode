@@ -2,17 +2,17 @@
    - 앱 셸(index.html 등): network-first — 배포하면 바로 갱신된다
    - /data/*.js 청크: 캐시 우선·백그라운드 갱신 — 처음 오프라인에서도 미리 받은 앱 코드를 읽는다
    - /api/* 와 교차 출처(Monaco/Pyodide CDN)는 건드리지 않는다 */
-const VERSION = "v15-copy-sweep";
+const VERSION = "v17-learning-reviewed";
 const SHELL_CACHE = "coderun-shell-" + VERSION;
 const DATA_CACHE  = "coderun-data-" + VERSION;
 const KEEP = [SHELL_CACHE, DATA_CACHE];
 
 const SHELL = [
-  "/data/reader-guide.js?v=15", "/data/reader-guide.js", "/data/glossary.js", "/data/intro.js",
-  "/data/study-quality.js?v=15",
-  "/data/study-ui.js?v=15", "/data/code-literacy.js?v=15", "/data/learning-path.js?v=15", "/data/coderun-design.css?v=15",
-  "/data/vibe-scenarios.js?v=15", "/data/vibe-challenges.js?v=15", "/data/vibe-projects.js?v=15", "/data/vibe-journey.js?v=15", "/data/vibe-lab.js?v=15",
-  "/data/build.js?v=15", "/data/service-project.js?v=15", "/data/service-path.js?v=15", "/data/service-export.js?v=15",
+  "/data/reader-guide.js?v=17", "/data/reader-guide.js", "/data/glossary.js", "/data/intro.js",
+  "/data/study-quality.js?v=17",
+  "/data/study-ui.js?v=17", "/data/code-literacy.js?v=17", "/data/learning-path.js?v=17", "/data/coderun-design.css?v=17",
+  "/data/vibe-scenarios.js?v=17", "/data/vibe-challenges.js?v=17", "/data/vibe-projects.js?v=17", "/data/vibe-journey.js?v=17", "/data/vibe-lab.js?v=17",
+  "/data/build.js?v=17", "/data/service-project.js?v=17", "/data/service-path.js?v=17", "/data/service-export.js?v=17",
   "/data/build.js", "/data/service-project.js", "/data/service-path.js", "/data/service-export.js",
   "/", "/index.html", "/manifest.webmanifest",
   "/data/study-design.css", "/data/study-ui.css",

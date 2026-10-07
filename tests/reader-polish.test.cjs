@@ -25,6 +25,19 @@ const cases=[
  ['결과도 같아요는 약속이에요.','결과도 같다는 약속이에요.'],
  ['세 번째 테스트를 보라.','세 번째 테스트를 확인해 보세요.'],
  ['실제로 사용할 때는 실제로는 간격을 늘려요.','실제로 사용할 때는 간격을 늘려요.'],
+ ['실제로 사용할 때는 실제로 쓰이는지 확인해요.','실제로 사용할 때는 쓰이는지 확인해요.'],
+ ["답은 '<b>최대 개수</b>' 다.","답은 '<b>최대 개수</b>'예요."],
+ ["핵심은 '처음 상태로 돌아간다' 다.","핵심은 '처음 상태로 돌아간다'예요."],
+ ['결과는 “같은 값” 다.','결과는 “같은 값”이에요.'],
+ ["목표는 '변경 계획'예요.","목표는 '변경 계획'이에요."],
+ ["목표는 <b>'변경 계획'</b>예요.","목표는 <b>'변경 계획'</b>이에요."],
+ ['결과는 “같은 값”이에요.','결과는 “같은 값”이에요.'],
+ ["핵심은 '선언'다.","핵심은 '선언'이에요."],
+ ['값은 <code>"N일 전"</code>예요.','값은 <code>"N일 전"</code>이에요.'],
+ ['구현이 열 줄여요.','구현이 열 줄이에요.'],
+ ['<b>어떤 조합에서 틀려요</b> 가 정확한 표현이에요.','<b>어떤 조합에서는 오차가 생긴다는 것</b>이 정확한 표현이에요.'],
+ ['상대 지표는 <b>기준선이 무엇일까요</b>가 전부예요.','상대 지표는 <b>무엇을 기준으로 비교하는지</b>가 중요해요.'],
+ ['**측정하지 않은 것을 고치지 않아요** 가 첫 규칙이에요.','**무작정 고치기 전에 먼저 측정하는 것**이 첫 규칙이에요.'],
 ];
 check('reviewed endings and connected clauses are grammatical',()=>{for(const [a,b] of cases)assert.equal(prose(a),b,a);});
 check('copy changes are stable on a second pass',()=>{for(const [,s] of cases)assert.equal(prose(s),s,s);});
@@ -37,7 +50,7 @@ const broken=/일대예요|다대예요|쓰예요 만|가져요는|디스커요|
 const found=[];let strings=0;
 for(const file of files)for(const item of file.nodes){strings++;const text=item.text.replace(/<(pre|code|script|style)\b[^>]*>[\s\S]*?<\/\1\s*>|`[^`]*`/gi,'');if(broken.test(text))found.push(file.name+': '+text.slice(0,160));}
 check('every learner-facing field is scanned for known copy regressions',()=>{assert.ok(strings>110000);assert.ok(files.length>=87);assert.deepEqual(found,[]);});
-check('emphasis markup cannot hide copula and connected-clause errors',()=>{const {audit,issues}=require('../tools/content/reader-audit.cjs');assert.equal(issues('필요는 없어요. 좋아요는 버튼 이름이에요.').length,0);assert.equal(issues('<b>값</b>예요. **같아요**는 약속이에요.').length,2);assert.deepEqual(audit().found,[]);});
+check('emphasis markup cannot hide copula and connected-clause errors',()=>{const {audit,issues}=require('../tools/content/reader-audit.cjs');assert.equal(issues('필요는 없어요. 좋아요는 버튼 이름이에요.').length,0);assert.equal(issues('<b>값</b>예요. **같아요**는 약속이에요.').length,2);assert.equal(issues('<b>무엇일까요</b>가 전부예요.').length,1);assert.equal(issues("답은 '같은 값' 다.").length,1);assert.equal(issues("'검색 품질'이고, '다 직접 만들고 싶다'는 의욕이에요.").length,0);assert.deepEqual(audit().found,[]);});
 check('all Korean theory fields including const, return and module.exports are extracted',()=>{
  const selected=new Map(files.map(f=>[f.name,new Set(f.nodes.map(n=>n.text))]));let fields=0;
  for(const filename of fs.readdirSync(path.join(__dirname,'../data')).filter(n=>/^t-.*\.js$/.test(n))){let units;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../data',filename),'utf8'),{__CR:(k,v)=>units=v});
@@ -45,8 +58,24 @@ check('all Korean theory fields including const, return and module.exports are e
  for(const u of units)for(const l of u.l)walk(l.th);}
  assert.ok(fields>=33600);
 });
+check('keyword-looking choices, test descriptions and the C intro are extracted',()=>{
+ const selected=new Map(files.map(f=>[f.name,new Set(f.nodes.map(n=>n.text))]));let options=0,descriptions=0;
+ for(const filename of fs.readdirSync(path.join(__dirname,'../data')).filter(n=>/^t-.*\.js$/.test(n))){let units;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../data',filename),'utf8'),{__CR:(k,v)=>units=v});
+  for(const u of units)for(const l of u.l)for(const q of l.q){
+   for(const s of q.o||[])if(/[가-힣]/.test(s)){options++;assert.ok(selected.get('data/'+filename).has(s),filename+' choice '+s);}
+   for(const test of q.tests||[])if(/[가-힣]/.test(test.d||'')){descriptions++;assert.ok(selected.get('data/'+filename).has(test.d),filename+' test description '+test.d);}
+  }
+ }
+ let intro;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../data/intro.js'),'utf8'),{__CR:(k,v)=>intro=v});
+ function walk(value){if(typeof value==='string'&&/[가-힣]/.test(value))assert.ok(selected.get('data/intro.js').has(value),'C intro '+value);else if(value&&typeof value==='object')Object.values(value).forEach(walk);}
+ walk(intro.c);assert.equal(options,24065);assert.equal(descriptions,4277);
+});
+check('static accessibility labels and exported app instructions are extracted',()=>{
+ const index=files.find(f=>f.name==='index.html');assert.ok(index.nodes.some(n=>n.n.type==='HTMLAttribute'));
+ const exported=files.find(f=>f.name==='data/service-export.js');assert.ok(exported.nodes.some(n=>n.text.includes('저장 파일에서 예약을 다시 불러와요.')));
+});
 check('reviewed conceptual corrections survive another prose pass',()=>{const edits=require('../tools/content/reader-reviewed-text.json');assert.ok(edits.length>=20);for(const row of edits){const after=prose(row.before);assert.equal(after,prose(row.after),row.reason);assert.equal(prose(after),after,row.reason+' stable');}});
-check('clause repairs never edit code literals',()=>{for(const s of ['<code>"같아요는"</code>','`const msg = "있어요는";`','<pre>console.log("값예요. 없어요는");</pre>'])assert.equal(prose(s),s);});
+check('clause repairs never edit code literals',()=>{for(const s of ['<code>"같아요는"</code>','`const msg = "있어요는";`','<pre>console.log("값예요. 없어요는");</pre>',"<code>'같은 값' 다.</code>","`'같은 값' 다.`"])assert.equal(prose(s),s);});
 let questions=0,lessons=0,units=0;
 const ids=new Map();
 for(const filename of fs.readdirSync(path.join(__dirname,'../data')).filter(n=>/^t-.*\.js$/.test(n))){let data;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../data',filename),'utf8'),{__CR:(k,v)=>data=v});units+=data.length;for(const u of data)for(const l of u.l){lessons++;for(const q of l.q){questions++;assert.match(q.qid,/^[a-z0-9]+$/);ids.set(filename+':'+q.qid,true);}}}

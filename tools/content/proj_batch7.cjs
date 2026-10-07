@@ -7,7 +7,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── cs */
 {
   lv: 3, em: "🧊",
-  title: "왜 캐시가 있으면 빨라지는가",
+  title: "왜 캐시가 있으면 빨라지나요",
   desc: "같은 계산인데 배열을 어떤 순서로 훑느냐에 따라 몇 배가 갈리는 이유를 지역성과 캐시 줄로 설명하고 직접 재어 확인해요",
   skills: ["cs", "performance", "algorithms"],
   phases: [
@@ -74,7 +74,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── ai */
 {
   lv: 4, em: "🤖",
-  title: "LLM 이 그럴듯한 거짓말을 한다",
+  title: "LLM 이 그럴듯한 거짓말을 해요",
   desc: "언어 모델이 틀린 답을 자신 있게 내놓는 상황을 근거 붙이기·검증 단계·거절 경로로 다루고, 어디까지 믿을지 선을 그어 둬요",
   skills: ["ai", "backend", "security"],
   phases: [
@@ -190,7 +190,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── mobile */
 {
   lv: 3, em: "📶",
-  title: "지하철에서 앱이 멈춘다",
+  title: "지하철에서 앱이 멈춰요",
   desc: "끊기고 느린 네트워크에서 앱이 얼어붙는 문제를 시간 제한·재시도·낙관적 갱신·나가는 편지함으로 다루어 끊겨도 쓸 수 있게 만들어요",
   skills: ["mobile", "javascript", "system_design"],
   phases: [
@@ -226,7 +226,7 @@ module.exports = {
 
   { t: "먼저 반영하고 나중에 보내요", type: "build",
     goal: "글쓰기 같은 동작을 <b>화면에 먼저 반영</b>하고 뒤에서 보내되, 실패하면 되돌리는 흐름을 만드세요.",
-    hint: "낙관적 갱신은 '성공할 것이라 보고 먼저 보여 주는 것' 예요. 대부분 성공하므로 앱이 즉시 반응하는 것처럼 느껴져요. 중요한 것은 <b>실패했을 때 되돌리고 알리는 것</b>이고, 되돌릴 수 없는 동작(결제 같은)에는 쓰면 안 돼요.",
+    hint: "낙관적 갱신은 '성공할 것이라 보고 먼저 보여 주는 것'이에요. 대부분 성공하므로 앱이 즉시 반응하는 것처럼 느껴져요. 중요한 것은 <b>실패했을 때 되돌리고 알리는 것</b>이고, 되돌릴 수 없는 동작(결제 같은)에는 쓰면 안 돼요.",
     acc: "성공·실패 두 흐름의 화면 상태 변화가 단계별로 출력되고, 실패 시 원래대로 돌아오는 것이 확인되면 완료예요.",
     lang: "javascript",
     sol: "const out = [];\n\nfunction screen() {\n  const items = [{ id: 1, text: \"기존 글\", state: \"저장됨\" }];\n  let nextTmp = -1;\n  return {\n    optimisticAdd(text) {\n      const tmp = { id: nextTmp--, text: text, state: \"보내는 중\" };\n      items.push(tmp);\n      return tmp;\n    },\n    confirm(tmp, realId) { tmp.id = realId; tmp.state = \"저장됨\"; },\n    rollback(tmp, why) {\n      const i = items.indexOf(tmp);\n      if (i >= 0) items.splice(i, 1);\n      return \"되돌림 — \" + why;\n    },\n    show() { return items.map((x) => x.id + \":\" + x.text + \"(\" + x.state + \")\").join(\"  \"); }\n  };\n}\n\nout.push(\"성공하는 경우\");\nlet s = screen();\nout.push(\"  누르기 전   \" + s.show());\nlet t = s.optimisticAdd(\"새 글\");\nout.push(\"  누른 직후   \" + s.show() + \"   ← 기다리지 않고 곧바로 보인다\");\ns.confirm(t, 42);\nout.push(\"  응답 뒤     \" + s.show());\n\nout.push(\"\");\nout.push(\"실패하는 경우\");\ns = screen();\nt = s.optimisticAdd(\"새 글\");\nout.push(\"  누른 직후   \" + s.show());\nconst why = s.rollback(t, \"서버가 400 을 돌려줌\");\nout.push(\"  실패 뒤     \" + s.show() + \"   ← \" + why);\n\nout.push(\"\");\nout.push(\"대부분 성공하므로 앱이 즉시 반응하는 것처럼 느껴진다\");\nout.push(\"중요한 것은 실패했을 때 되돌리고 알리는 것이다\");\nout.push(\"되돌릴 수 없는 동작(결제 같은)에는 쓰면 안 된다\");\nconsole.log(out.join(\"\\n\"));" },
@@ -246,7 +246,7 @@ module.exports = {
 /* ─────────────────────────────────────────────── php */
 {
   lv: 3, em: "🧰",
-  title: "10년 된 PHP 를 물려받았다",
+  title: "10년 된 PHP 를 물려받았어요",
   desc: "전역 변수와 뒤섞인 HTML 로 된 옛 코드를 한 번에 다시 쓰지 않고, 경계를 만들어 조금씩 안전하게 밀어 내요",
   skills: ["php", "code", "security"],
   phases: [

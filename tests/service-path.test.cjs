@@ -27,6 +27,11 @@ for (const [i, day] of project.days.entries()) {
 }
 check('18개 누적 예시와 미완성 초안을 실제 채점 계약으로 확인', behavior > 300 && rejected === 18);
 check('입문·중급·시니어 단계에 설명과 개념 확인이 있다', ['입문', '중급', '시니어'].every(b => project.days.some(d => d.band === b)) && project.days.every(d => d.concept && d.quiz && d.tests.length));
+check('입문부터 저장·알림·지표까지 입력과 응답 필드를 안내한다', project.days[0].req[0].includes('seats') && project.days[2].req[0].includes('remaining') && project.days[6].req[0].includes('signature') && project.days[8].req[0].includes('bookingId') && project.days[12].req[0].includes('successRate'));
+const inputFailure=grade(project.seed,project.days[0]).find(row=>!row.ok);
+check('서비스 검사 실패는 기대 결과와 함께 실제 호출 입력을 보여 준다', inputFailure && inputFailure.err.includes('실패한 호출: app.validate') && inputFailure.err.includes('seats'));
+const largeFailure=grade(refs[10],{band:'중급',tests:[{n:'진단용 대용량 입력',c:'const ids=Array.from({length:50000},(_,i)=>i+1); eq(A.page(ids,100,20,id=>id), null);'}]})[0];
+check('큰 실패 입력은 일부 항목과 개수만 표시한다', !largeFailure.ok && largeFailure.err.includes('"length":50000') && largeFailure.err.includes('"preview"') && largeFailure.err.length<1200);
 const tempRoot = path.resolve(os.tmpdir()), temp = fs.mkdtempSync(path.join(tempRoot, 'coderun-service-test-'));
 const exported = path.join(temp, 'my-reservation-server.cjs');
 fs.writeFileSync(exported, require('../data/service-export.js').bundle(refs.at(-1)));
@@ -40,7 +45,7 @@ if (self.status !== 0) console.log(self.stdout, self.stderr);
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true }), errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.addInitScript(() => { if (top === window && !localStorage.getItem('coderun')) localStorage.setItem('coderun', JSON.stringify({ onboarded: true, goal: 'free', freeMode: true, recall: false, theme: 'light' })); });
-    await page.goto(process.env.CR_URL || 'file:///' + path.resolve(__dirname, '../index.html').replace(/\\/g, '/'));
+    await page.goto(process.env.CR_URL || 'file:///' + path.resolve(__dirname, '../index.html').replace(/\\/g, '/'),{waitUntil:'domcontentloaded'});
     await page.waitForFunction(() => typeof ServicePath !== 'undefined');
     await page.locator('#service-home').click();
     await page.waitForSelector('[data-service-day]');
