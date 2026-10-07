@@ -92,8 +92,8 @@
       const wasOnboarded=S.onboarded;
       if(LP) S=LP.configure(S,{experience:selected,minutes});
       S.goal=goal; S.onboarded=true; S.freeMode=true;
-      S.recall=selected!=='new'; S.dailyTarget={10:8,20:16,30:24}[minutes] || 8;
-      save();closeOverlay('onboard');paintFree();paintRecall();
+      S.recall=false; S.dailyTarget={10:8,20:16,30:24}[minutes] || 8;
+      save();closeOverlay('onboard');paintFree();
       if(!wasOnboarded || goal!=='free') { const p=COURSE_PATHS[goal];curLang=(p&&p.tracks[0]) || 'python';curCat=catOf(curLang); }
       renderCats();renderLangs();renderCourse();
       toast('학습 계획을 저장했어요. 오늘 할 공부부터 시작해 보세요.');
@@ -191,13 +191,13 @@
       panel=document.createElement('details');panel.id='study-concept-panel';panel.className='study-concept-panel';panel.open=true;
       panel.innerHTML='<summary>이번 레슨의 개념</summary>'+renderTheory(run.les.theory);tools.after(panel);afterRender();
     };
-    if($('check'))$('check').textContent=$('rc-in')?'떠올린 답 확인하기':'답 확인하기';
+    if($('check'))$('check').textContent='답 확인하기';
     const hint=document.querySelector('#qbody .hint-btn');if(hint)hint.addEventListener('click',()=>{run.studyHinted=true;});
   };
   const coreLogAnswer=logAnswer;
   logAnswer=function(ok,q){if(q._studyTrack&&run)run.lang=q._studyTrack;coreLogAnswer(ok,q);if(LP&&run&&!run.diag){
     const track=q._studyTrack||run.lang, c=COURSES[track], u=c&&c.units[run.ui];
-    S=LP.recordAnswer(S,{track,lessonId:run.id,level:LP.questionLevel(q,u,run.les,track),correct:ok,hinted:!!run.studyHinted||!!(run.rcDone&&!run.rcHit),review:!!run.review,type:q.t,questionId:LP.questionId(q),day:today()});save();
+    S=LP.recordAnswer(S,{track,lessonId:run.id,level:LP.questionLevel(q,u,run.les,track),correct:ok,hinted:!!run.studyHinted,review:!!run.review,type:q.t,questionId:LP.questionId(q),day:today()});save();
   }};
   const coreApplyResult=applyResult;
   applyResult=function(ok,correctText,q){
@@ -252,7 +252,6 @@
     $('study-finish-home').onclick=returnHome;
     $('done-next').onclick=()=>{returnHome();if(mistakes)startReview();else launch(rec,true);};
   };
-  paintRecall=function(){const b=$('recall-btn');if(!b)return;const on=S.recall!==false;b.setAttribute('aria-pressed',String(on));b.textContent=on?'보기 없이 먼저 답하기 · 켜짐':'보기 없이 먼저 답하기 · 꺼짐';};
   const coreIntro=openIntro;
   openIntro=function(key,onStart){coreIntro(key,onStart);const b=$('profile-body');const h=b.querySelector('.ovh');if(h)h.textContent='시작 전에 알아두면 좋은 것';};
   introBannerHtml=function(key){const it=TRACK_INTRO[key],c=COURSES[key];if(!it||!c)return '';return '<button type="button" class="intro-banner" id="intro-banner"><span class="ib-m"><span class="ib-k">이 분야가 처음이라면</span><span class="ib-t">'+escHtml(c.name)+'은 어디에 쓰일까요?</span></span><span class="ib-go">소개 읽기 →</span></button>';};
@@ -265,7 +264,7 @@
     if(dueCount())lines.push('오늘 다시 볼 오답이 '+dueCount()+'개 있어요. 짧게 복습하고 새 레슨으로 넘어가도 괜찮아요.');
     lines.push('보기에서 답을 고르는 데 익숙해졌다면, 직접 코드를 쓰거나 답을 설명해 보세요.');return lines;
   };
-  document.addEventListener('click',function(e){if(run&&!run.answered&&e.target.closest('#rc-skip,#ask-send,.ask-chip'))run.studyHinted=true;},true);
+  document.addEventListener('click',function(e){if(run&&!run.answered&&e.target.closest('#ask-send,.ask-chip'))run.studyHinted=true;},true);
   new MutationObserver(()=>{
     if(lessonTools&&run===lessonToolsRun&&run.i===lessonToolsIndex&&!$('qbody').querySelector('.theory,.study-lesson-tools'))$('qbody').prepend(lessonTools);
   }).observe($('qbody'),{childList:true});
@@ -312,6 +311,6 @@
   let smallScreen=innerWidth<=700;
   addEventListener('resize',()=>{const next=innerWidth<=700;if(next!==smallScreen){smallScreen=next;renderReco();}});
   const toolsTitle=home.querySelector('.section-eyebrow');if(toolsTitle)toolsTitle.textContent='가볍게 연습하기';
-  paintRecall();renderCourse();
+  renderCourse();
   if(!S.onboarded)openOnboard();
 })();

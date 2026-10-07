@@ -139,7 +139,7 @@
     const contracts = {
       1: 'validate(body) → 참 또는 거짓. body는 이름·시간·인원이 들어 있는 객체예요.',
       2: 'available(bookings, slot) → 남은 인원. bookings는 현재 예약 배열, slot은 확인할 시간이에요.',
-      11: 'page(ids, after, limit, read) → {items, next}. read(id)로 예약 하나를 읽어요.',
+      11: 'page(ids, after, limit, read) → {items, next}. read(id)로 예약 하나를 읽어요. 이 단계부터 GET /bookings도 body: {items, next}로 답해요. 목록은 응답.body.items에서 읽어요.',
       15: 'migrate(raw) → V2 객체. raw는 저장 객체 또는 JSON 문자열이며 원본은 바꾸지 않아요.',
       17: 'verify(factory) → 정상 코드에서는 종료, 결함 코드에서는 예외. factory(options)로 서버를 만들어요.'
     };
@@ -149,7 +149,8 @@
     concept.innerHTML = '<b>먼저 뜻을 이해해요</b><p>' + escHtml(d.concept) + '</p>';
     req.querySelector('h3').after(concept);
     if (window.ServiceBridges) ServiceBridges.mount(concept, d.n, r, save);
-    const help = req.querySelector('details');
+    if (window.ServicePractice) ServicePractice.mount(concept, d.n, r, save);
+    const help = req.querySelector('.bl-hint');
     help.addEventListener('toggle', () => { if (help.open) { r.helpUsed = true; save(); } });
     const quiz = document.createElement('section'); quiz.className = 'service-quiz';
     quiz.innerHTML = '<span class="home-kicker">개념 확인</span><h3>' + escHtml(d.quiz.question) + '</h3><div>' + d.quiz.options.map((option, i) => '<button data-service-answer="' + i + '" aria-pressed="' + (r.answer === i) + '">' + escHtml(option) + '</button>').join('') + '</div><p id="service-quiz-status" role="status">' + (r.answer === undefined ? '코드와 함께 확인해요. 정답을 골라야 다음 단계로 넘어갈 수 있어요.' : r.answer === d.quiz.answer ? '개념 확인 완료. ' + (checked ? '동작 검사도 통과했어요.' : '코드 동작도 검사해 주세요.') : '다시 생각해 보세요. 설명의 조건과 처리 순서를 비교해 보세요.') + '</p>';

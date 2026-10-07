@@ -1301,25 +1301,7 @@
   .loadbar button{margin-left:auto;padding:5px 11px;border-radius:8px;border:1px solid var(--line);
     background:var(--bg-soft);color:inherit;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
 
-  /* ===== 인출 모드 ===== */
-  .rc{margin-top:14px; padding:13px 14px; border:1px solid rgba(120,140,255,.34); border-radius:13px;
-    background:linear-gradient(135deg,rgba(59,125,216,.10),rgba(91,108,255,.10))}
-  .rc-h{font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:3px}
-  .rc-s{font-size:12px; color:var(--ink-soft); line-height:1.55; margin-bottom:9px}
-  .rc textarea{width:100%; min-height:74px; padding:10px 12px; border-radius:11px; border:1px solid var(--line);
-    background:var(--card); color:var(--ink); font:inherit; font-size:14px; line-height:1.6; resize:vertical}
-  .rc-row{display:flex; gap:7px; margin-top:8px; flex-wrap:wrap}
-  .rc-row button{flex:1; min-width:132px; padding:11px; border-radius:11px; border:1px solid var(--line);
-    background:var(--card); color:inherit; font:inherit; font-weight:600; font-size:13px; cursor:pointer}
-  .rc-row button.pri{background:var(--brand); color:#fff; border-color:var(--brand)}
-  .rc-row button:disabled{opacity:.5; cursor:default}
-  .rc-mine{margin-top:12px; padding:10px 12px; border-radius:11px; border:1px solid var(--line); background:var(--card)}
-  .rc-mine .k{font-size:11px; font-weight:600; color:var(--ink-soft); letter-spacing:.04em}
-  .rc-mine .v{font-size:13.5px; line-height:1.6; margin-top:3px; white-space:pre-wrap; overflow-wrap:anywhere}
-  .rc-mine.hit{border-color:var(--good); background:var(--good-soft)}
-  .rc-tag{display:inline-block; margin-left:6px; padding:1px 8px; border-radius:20px; font-size:10.5px; font-weight:600}
-  .rc-tag.on{background:var(--good); color:#fff}
-  .rc-tag.off{border:1px solid var(--line); color:var(--ink-soft)}
+
 
   /* ============================================================
      iOS 레이아웃 — 색만 바꾸면 애플처럼 보이지 않는다.
@@ -1385,8 +1367,8 @@
 </style>
 <link rel="stylesheet" href="data/study-design.css">
 <link rel="stylesheet" href="data/study-ui.css">
-<link rel="stylesheet" href="data/vibe-lab.css?v=18">
-<link rel="stylesheet" href="data/coderun-design.css?v=18">
+<link rel="stylesheet" href="data/vibe-lab.css?v=19">
+<link rel="stylesheet" href="data/coderun-design.css?v=19">
 
 <!-- ================= HOME ================= -->
 <div class="app" id="home">
@@ -1416,7 +1398,6 @@
     <button class="pbtn" id="random-btn">랜덤 20문제</button>
     <button class="pbtn wrong" id="review-btn">오답노트</button>
     <button class="pbtn ghost" id="free-btn" aria-pressed="false">자유 모드</button>
-    <button class="pbtn ghost" id="recall-btn" aria-pressed="true">인출 모드 켜짐</button>
   </div>
   <div class="foot-hint" id="reset-hint">진행상황은 이 브라우저에 자동 저장돼요 · <a href="#" id="backup-link" style="color:var(--brand)">백업</a> · <a href="#" id="restore-link" style="color:var(--brand)">복원</a> · <a href="#" id="reset-link" style="color:var(--brand)">전체 초기화</a></div>
   <input type="file" id="restore-file" accept="application/json,.json" hidden>
@@ -1509,7 +1490,7 @@ const COURSES = __expandCourses({"sysd":{"name":"시스템 설계","color":"#2f6
 
 /* ================= 상태 ================= */
 const MAX_HEARTS=5;
-const DEF={xp:0,doneV:0,recall:true,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,learning:null,studyResume:null,dayCount:0,dayDate:null,dailyTarget:10,proj:{},introSeen:{},git:{done:{}},build:{},trk:{},ax:{},axj:{},skillsLegacy:null,hist:{},ach:{},miss:null,qTotal:0,okTotal:0,lvN:{},lvOk:{},catN:{},catOk:{},trkN:{},skills:{},sims:{},diags:{},implByK:{},ai:{provider:"proxy",model:"gemini-2.0-flash",key:""}};
+const DEF={xp:0,doneV:0,recall:false,streak:0,lastDay:null,hearts:MAX_HEARTS,heartsDay:null,done:{},theme:null,freeMode:true,wrongs:[],goal:null,onboarded:false,learning:null,studyResume:null,dayCount:0,dayDate:null,dailyTarget:10,proj:{},introSeen:{},git:{done:{}},build:{},trk:{},ax:{},axj:{},skillsLegacy:null,hist:{},ach:{},miss:null,qTotal:0,okTotal:0,lvN:{},lvOk:{},catN:{},catOk:{},trkN:{},skills:{},sims:{},diags:{},implByK:{},ai:{provider:"proxy",model:"gemini-2.0-flash",key:""}};
 let S=load();
 function load(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("coderun")||"{}"))}catch(e){return Object.assign({},DEF)}}
 /* 저장은 실패할 수 있다 — 사파리 사생활 모드는 setItem 자체를 막고, 용량이 차면 던진다.
@@ -2033,7 +2014,7 @@ function ensureIntro(){ return __got.intro?Promise.resolve(true):loadChunk("intr
 function ensureSims(){ return __got.sims?Promise.resolve(true):loadChunk("sims.js"); }
 function ensureDiags(){ return __got.diags?Promise.resolve(true):loadChunk("diags.js"); }
 function ensureProjects(){ return __got.projects?Promise.resolve(true):loadChunk("projects.js"); }
-function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=18")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=18")); }
+function ensureBuild(){ return (__got.build?Promise.resolve(true):loadChunk("build.js?v=19")).then(()=>__got.servicebuild?true:loadChunk("service-project.js?v=19")); }
 /* TypeScript·JSX 변환기 (sucrase, 288KB). 파서만 필요하므로 부모 문서에서 돌린다. */
 function ensureSucrase(){
   if(typeof Sucrase!=="undefined" && Sucrase.transform) return Promise.resolve(true);
@@ -3050,13 +3031,6 @@ function logAnswer(ok,q){
   if(ok && (q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"||q.t==="wire")) hs.impl++;
   if(run&&run.lang) S.trkN[run.lang]=(S.trkN[run.lang]||0)+1;
   /* 근거 기록: 트랙별 + 9축별 */
-  /* 인출: 보기를 감춘 채 스스로 꺼냈는가 (선택형에만 해당) */
-  if(run && run.rcDone && recallOn(q)){
-    if(!S.rc) S.rc={n:0, ok:0};
-    S.rc.n++; if(run.rcHit) S.rc.ok++;
-    if(run.lang){ const tb=evBucket("trk", run.lang);
-      if(!tb.rc) tb.rc={n:0,ok:0}; tb.rc.n++; if(run.rcHit) tb.rc.ok++; }
-  }
   const isImpl = q&&(q.t==="code"||q.t==="py"||q.t==="sql"||q.t==="html"||q.t==="react"||q.t==="ts"||q.t==="sim"||q.t==="arch"||q.t==="wire");
   if(run&&run.lang) evRecord(evBucket("trk", run.lang), ok, lv, isImpl);
   const axT = (run&&run.lang&&TRACK_AXIS[run.lang]) || "coding";
@@ -3935,7 +3909,6 @@ function showQ(){
   $("l-hearts").textContent=run.free?"∞":run.hearts;
   run.answered=false; run.picked=null; run.lastOk=null; run.askLog=[]; run.askHtml=""; run.askOpen=false;
   run.tracePlan=null;   // 앞 문항의 추적 계획이 남으면 남의 코드를 내 코드라고 보여 주게 된다
-  run.rcDone=false; run.rcHit=false; run.rcText=""; run.rcTried=false;
   const foot=$("foot"); foot.className="foot"; $("foot-msg").innerHTML="";
   const chk=$("check"); chk.className="btn"; chk.textContent="확인"; chk.disabled=true;
   chk.onclick=onCheck;
@@ -4033,45 +4006,9 @@ function showQ(){
         el.classList.add("sel"); run.picked=+el.dataset.i; chk.disabled=false;
       };
     }); };
-    const mineHtml=()=>{
-      if(!run.rcText) return "";
-      return '<div class="rc-mine'+(run.rcHit?" hit":"")+'"><div class="k">내가 떠올린 답'+
-        (run.rcHit?'<span class="rc-tag on">인출 성공</span>':'<span class="rc-tag off">보기에서 다시</span>')+
-        '</div><div class="v">'+escHtml(run.rcText)+'</div></div>';
-    };
-    const showOpts=()=>{
-      body.innerHTML=html+mineHtml()+optsHtml;
-      body.scrollTop=0; wireOpts(); addAiAsk(q); afterRender();
-    };
-    if(recallOn(q) && !run.rcDone){
-      body.innerHTML=html+
-        '<div class="rc"><div class="rc-h"> 먼저 스스로 떠올려 보세요</div>'+
-        "<div class=\"rc-s\">보기를 보면 아는 것 같아도, 직접 꺼내는 건 다른 능력이에요. 핵심 단어만 적어도 돼요.</div>"+
-        '<textarea id="rc-in" spellcheck="false" placeholder="떠오른 답을 적어보세요"></textarea>'+
-        '<div class="rc-row"><button id="rc-skip">모르겠어요 · 보기 열기</button></div></div>';
-      body.scrollTop=0;
-      /* 제출은 하단 바의 기존 진행 버튼이 맡는다 — 화면에 확인 버튼이 둘이면 안 된다 */
-      const ta=$("rc-in");
-      chk.textContent="이 답으로 확인"; chk.disabled=true;
-      const submit=()=>{
-        run.rcText=ta.value.trim();
-        const g=gradeRecall(q, run.rcText);
-        run.rcHit=!!g.hit; run.rcDone=true; run.rcTried=true;
-        chk.textContent="확인"; chk.onclick=onCheck;
-        if(g.hit){ run.picked=q.a; showOpts();
-          body.querySelectorAll(".opt").forEach(x=>{ if(+x.dataset.i===q.a) x.classList.add("sel"); });
-          chk.disabled=false; onCheck(); }
-        else { showOpts(); chk.disabled=true; }
-      };
-      chk.onclick=submit;
-      ta.oninput=()=>{ chk.disabled=ta.value.trim()===""; };
-      ta.onkeydown=e=>{ if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)&&!chk.disabled) submit(); };
-      $("rc-skip").onclick=()=>{ run.rcText=""; run.rcHit=false; run.rcDone=true; run.rcTried=false;
-        chk.textContent="확인"; chk.onclick=onCheck; chk.disabled=true; showOpts(); };
-      setTimeout(()=>{ try{ta.focus();}catch(_){} },60);
-    } else {
-      showOpts();
-    }
+    body.innerHTML=html+optsHtml;
+    body.scrollTop=0; wireOpts();
+
   }
   if(q.live||q.t==="code"){ setupLive(q); mountMonaco("livecode", (q.rt&&q.rt.lang)||"javascript"); }
   if(q.t==="code"){ chk.disabled=false; }
@@ -5363,12 +5300,6 @@ $("review-btn").onclick=()=>startReview();
 function paintFree(){ const b=$("free-btn"); b.setAttribute("aria-pressed",S.freeMode?"true":"false");
   b.textContent=S.freeMode?"자유 모드 · 켜짐":"자유 모드"; }
 $("free-btn").onclick=()=>{ S.freeMode=!S.freeMode; save(); paintFree(); renderCourse(); };
-function paintRecall(){ const b=$("recall-btn"); if(!b) return;
-  const on=S.recall!==false;
-  b.setAttribute("aria-pressed", on);
-  b.textContent = on ? "인출 모드 켜짐" : "인출 모드 꺼짐"; }
-if($("recall-btn")) $("recall-btn").onclick=()=>{ S.recall=(S.recall===false); save(); paintRecall();
-  toast(S.recall!==false ? "보기를 감추고 먼저 떠올리게 해요." : "보기를 바로 보여줘요."); };
 
 /* ================= 시작 ================= */
 /* ================= 성장 시스템 (로드맵·레벨·일일목표·프로필) ================= */
@@ -5419,40 +5350,6 @@ function migrateDone(){
 }
 
 
-
-/* ===== 인출 모드 =====
-   재인(보기 중 고르기)과 인출(스스로 꺼내기)은 다른 능력이고, 실무에 쓰이는 쪽은 인출이다.
-   선택형 문항도 보기를 먼저 감추면 인출 훈련이 된다. 채점은 보수적으로만 인정한다 —
-   맞혔는데 못 알아보는 건 괜찮지만, 틀렸는데 맞다고 해주면 훈련이 망가진다. */
-function rcTokens(s){
-  return String(s==null?"":s).toLowerCase()
-    .replace(/<[^>]*>/g," ")
-    .replace(/[^0-9a-z가-힣_+#.]+/g," ")
-    .split(/\s+/).filter(t=>t.length>=2);
-}
-function rcCover(ans, opt){
-  const A=new Set(rcTokens(ans)), O=rcTokens(opt);
-  if(!O.length) return 0;
-  let hit=0; O.forEach(t=>{ if(A.has(t)) hit++; });
-  return hit/O.length;
-}
-function rcSim(ans, opt){                       // 대칭 유사도 — 짧은 오답이 부분집합이라고 이기지 못하게
-  const A=new Set(rcTokens(ans)), O=new Set(rcTokens(opt));
-  if(!A.size || !O.size) return 0;
-  let inter=0; O.forEach(t=>{ if(A.has(t)) inter++; });
-  return inter/(A.size+O.size-inter);
-}
-function gradeRecall(q, text){
-  if(!q || !Array.isArray(q.o) || typeof q.a!=="number") return {hit:false};
-  if(!rcTokens(text).length) return {hit:false};
-  const target=rcTokens(q.o[q.a]);
-  const cover=rcCover(text, q.o[q.a]);          // 정답의 핵심어를 얼마나 짚었나 (길게 써도 손해 없음)
-  const need = target.length<=3 ? 1 : 0.6;      // 짧은 답은 사실상 정확히 적어야 인정
-  const mine=rcSim(text, q.o[q.a]);
-  let rival=0; q.o.forEach((o,i)=>{ if(i!==q.a){ const v=rcSim(text,o); if(v>rival) rival=v; } });
-  return {hit: cover>=need && mine>rival+0.08, cover, sim:mine, rival};
-}
-function recallOn(q){ return S.recall!==false && (q.t||"choice")==="choice" && Array.isArray(q.o) && q.o.length>1; }
 
 /* ===== 역량 점수: 활동량이 아니라 '응답 근거'로 계산 =====
    이전 방식은 문제를 누를 때마다 점수가 오르기만 했다. 그러면 점수는 실력이 아니라
@@ -6623,7 +6520,7 @@ if($("bl-quit")) $("bl-quit").onclick=closeBuildLab;
 if($("bl-menu")) $("bl-menu").onclick=blRenderList;
 if($("gl-quit")) $("gl-quit").onclick=closeGitLab;
 if($("gl-menu")) $("gl-menu").onclick=glRenderList;
-refillHearts(); ensureSkills(); ensureWeek(); paintRecall(); checkAchv(true); applyTheme(S.theme); paintFree(); renderCats(); renderLangs(); renderCourse(); renderRole(); renderHero();
+refillHearts(); ensureSkills(); ensureWeek(); checkAchv(true); applyTheme(S.theme); paintFree(); renderCats(); renderLangs(); renderCourse(); renderRole(); renderHero();
 ensureTrack(curLang).then(function(){ renderCourse(); }).catch(function(){});
 prefetchRest();
 if(!S.onboarded) openOnboard();
@@ -6661,21 +6558,22 @@ if("serviceWorker" in navigator && location.protocol!=="file:"){ window.addEvent
 })();
 </script>
 
-<script src="data/learning-path.js?v=18"></script>
-<script src="data/reader-guide.js?v=18"></script>
-<script src="data/study-ui.js?v=18"></script>
+<script src="data/learning-path.js?v=19"></script>
+<script src="data/reader-guide.js?v=19"></script>
+<script src="data/study-ui.js?v=19"></script>
 <script src="data/build-worker.js"></script>
 <script src="data/practice-worker.js"></script>
 <script src="data/sql-practice.js"></script>
-<script src="data/study-quality.js?v=18"></script>
+<script src="data/study-quality.js?v=19"></script>
 <script src="vendor/acorn.js"></script>
 <script src="data/dom-practice.js"></script>
-<script src="data/code-literacy.js?v=18"></script>
-<script src="data/vibe-scenarios.js?v=18"></script>
-<script src="data/vibe-challenges.js?v=18"></script>
-<script src="data/vibe-projects.js?v=18"></script>
-<script src="data/vibe-journey.js?v=18"></script>
-<script src="data/vibe-lab.js?v=18"></script>
-<script src="data/service-export.js?v=18"></script>
-<script src="data/service-bridges.js?v=18"></script>
-<script src="data/service-path.js?v=18"></script>
+<script src="data/code-literacy.js?v=19"></script>
+<script src="data/vibe-scenarios.js?v=19"></script>
+<script src="data/vibe-challenges.js?v=19"></script>
+<script src="data/vibe-projects.js?v=19"></script>
+<script src="data/vibe-journey.js?v=19"></script>
+<script src="data/vibe-lab.js?v=19"></script>
+<script src="data/service-export.js?v=19"></script>
+<script src="data/service-bridges.js?v=19"></script>
+<script src="data/service-practice.js?v=19"></script>
+<script src="data/service-path.js?v=19"></script>

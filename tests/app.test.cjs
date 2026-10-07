@@ -1354,8 +1354,6 @@ function runBrowserLoopFixture(executablePath){
     const sawBadge=!!document.querySelector("#qbody .lvbadge");
     let g=0;
     while(document.getElementById("lesson").classList.contains("on") && g++<60){
-      const skip=document.getElementById("rc-skip");     // 인출 모드: 보기부터 연다
-      if(skip){ skip.click(); continue; }
       const o=document.querySelector("#opts .opt"), f=document.getElementById("fill");
       if(o){ o.click(); chk.click(); chk.click(); }
       else if(f){ f.value="x"; f.dispatchEvent(new Event("input")); chk.click(); chk.click(); }
@@ -1372,93 +1370,39 @@ function runBrowserLoopFixture(executablePath){
   await p.close();
  }
 
- /* ---------- 인출 모드 ---------- */
+ /* ---------- 객관식은 예전 설정과 관계없이 바로 고른다 ---------- */
  {
-  const p=await page(null,{all:true});
-  // 채점기: 오답을 정답으로 인정하는 일이 없어야 한다 (전 선택형 문항 전수)
-  const g=await p.evaluate(()=>{
-    const all=[];
-    for(const k in COURSES) COURSES[k].units.forEach(u=>u.lessons.forEach(l=>l.q.forEach(x=>{
-      if((x.t||"choice")==="choice" && Array.isArray(x.o) && typeof x.a==="number") all.push(x);
-    })));
-    let n=0, exact=0, partial=0, falsePos=0, noise=0;
-    all.forEach(x=>{
-      n++;
-      const correct=String(x.o[x.a]);
-      if(gradeRecall(x, correct).hit) exact++;
-      const toks=rcTokens(correct);
-      if(gradeRecall(x, toks.slice(0,Math.max(1,Math.ceil(toks.length*0.7))).join(" ")).hit) partial++;
-      if(gradeRecall(x, String(x.o[(x.a+1)%x.o.length])).hit) falsePos++;
-      if(gradeRecall(x, "잘 모르겠습니다 아마도 그것 같습니다").hit) noise++;
-    });
-    return {n, exact, partial, falsePos, noise};
-  });
-  check("오답을 인출 성공으로 인정하지 않는다", g.falsePos===0, g);
-  check("무관한 답을 인정하지 않는다", g.noise===0, g);
-  check("정답을 적으면 대체로 인정된다", g.exact/g.n>0.8, {rate:(g.exact/g.n).toFixed(3)});
-  check("핵심 단어만 적어도 대체로 인정된다", g.partial/g.n>0.8, {rate:(g.partial/g.n).toFixed(3)});
-
-  // 흐름: 성공 / 실패 / 건너뛰기 / 끄기
+  const p=await page({recall:true},{all:true});
   const flow=await p.evaluate(()=>{
-    const open=(ui,li)=>{ S.studyResume=null; startLesson("python",ui,li);
-      if(document.querySelector("#qbody .th-sum")) document.getElementById("check").click(); };
-    const out={};
-    S.rc=null; S.recall=true; S.freeMode=true; save();
-    /* 고정 좌표(0,0)를 믿지 않는다 — 문항이 늘거나 줄면 그 자리가 선택형이 아닐 수 있다.
-       첫 문항이 선택형인 레슨들을 먼저 찾고, 그중 인출로 채점 가능한 것을 성공 경로에 쓴다.
-       ("Hello" vs "\"Hello\"" 처럼 오답과 글자만 다른 문항은 인출로 구분할 수 없고, 거절하는 채점기가 옳다) */
-    const spots=[], hitSpots=[];
-    for(let ui=0; ui<COURSES.python.units.length && hitSpots.length<1; ui++){
-      for(let li=0; li<COURSES.python.units[ui].lessons.length; li++){
-        open(ui,li);
-        const q=run.les.q[run.i];
-        if(!q || (q.t||"choice")!=="choice" || !q.o) continue;
-        spots.push([ui,li]);
-        if(gradeRecall(q,String(q.o[q.a])).hit){ hitSpots.push([ui,li]); break; }
+    const open=(ui,li)=>{S.studyResume=null;startLesson("python",ui,li);
+      if(document.querySelector("#qbody .th-sum"))$("check").click();};
+    S.recall=true;S.freeMode=true;S.rc={n:4,ok:2};save();
+    let spot;
+    for(let ui=0;ui<COURSES.python.units.length&&!spot;ui++)
+      for(let li=0;li<COURSES.python.units[ui].lessons.length&&!spot;li++){
+        open(ui,li);const q=run.les.q[run.i];
+        if((q.t||"choice")==="choice"&&q.o)spot=[ui,li];
       }
-    }
-    out.spots=spots.length; out.hitSpots=hitSpots.length;
-    const pick=i=>spots[Math.min(i, spots.length-1)]||[0,0];
-
-    open(hitSpots[0][0], hitSpots[0][1]);
-    out.boxShown=!!document.getElementById("rc-in");
-    out.optsHiddenFirst=!document.getElementById("opts");
-    const q0=run.les.q[run.i];
-    const ta=document.getElementById("rc-in"); ta.value=String(q0.o[q0.a]);
-    ta.dispatchEvent(new Event("input")); document.getElementById("check").click();
-    out.hitGraded=run.answered && run.rcHit && document.getElementById("foot").className==="foot good";
-
-    open(pick(0)[0], pick(0)[1]);
-    document.getElementById("rc-in").value="전혀 관련 없는 대답";
-    document.getElementById("rc-in").dispatchEvent(new Event("input"));
-    document.getElementById("check").click();
-    out.missRevealsOptions=!!document.getElementById("opts") && !!document.querySelector(".rc-mine");
-    out.notAutoGraded=!run.answered;
-
-    open(pick(1)[0], pick(1)[1]);
-    document.getElementById("rc-skip").click();
-    out.skipRevealsOptions=!!document.getElementById("opts");
-
-    S.recall=false; save(); open(pick(0)[0], pick(0)[1]);
-    out.offShowsOptions=!document.getElementById("rc-in") && !!document.getElementById("opts");
-    S.recall=true; save();
-    document.getElementById("lesson").classList.remove("on"); document.body.style.overflow="";
-    return out;
+    const q=run.les.q[run.i],out={spot};
+    out.direct=!!$("opts")&&!$("rc-in")&&!$("rc-skip")&&!$("recall-btn");
+    out.unanswered=!run.answered&&$("check").disabled;
+    document.querySelector('.opt[data-i="'+q.a+'"]').click();$("check").click();
+    out.correct=run.answered&&$("foot").className==="foot good"&&!run.studyHinted;
+    open(...spot);const wrong=(run.les.q[run.i].a+1)%run.les.q[run.i].o.length;
+    document.querySelector('.opt[data-i="'+wrong+'"]').click();$("check").click();
+    out.wrong=run.answered&&$("foot").className==="foot bad";
+    out.history=S.rc.n===4&&S.rc.ok===2;
+    S.recall=false;save();open(...spot);out.off=!!$("opts")&&!$("rc-in");
+    S.recall=true;save();return out;
   });
-  check("보기를 먼저 감춘다", flow.boxShown && flow.optsHiddenFirst, flow);
-  check("인출에 성공하면 바로 정답 처리된다", flow.hitGraded, flow);
-  check("인출에 실패하면 보기가 열리고 자동 채점되지 않는다", flow.missRevealsOptions && flow.notAutoGraded, flow);
-  check("모르겠어요로 보기를 열 수 있다", flow.skipRevealsOptions, flow);
-  check("인출 모드를 끄면 보기가 바로 나온다", flow.offShowsOptions, flow);
-
-  // 근거 문장에 인출 비율이 들어간다
-  const ev=await p.evaluate(()=>{
-    S.trk={}; const b=evBucket("trk","python");
-    for(let i=0;i<120;i++) evRecord(b, i<96, i<60?2:4, false);
-    b.rc={n:80, ok:44};
-    return trackEvidence("python");
-  });
-  check("근거에 '보기 없이 답한 비율'이 표시된다", ev.some(x=>/보기 없이/.test(x)), ev);
+  check("객관식은 예전 켜짐·꺼짐 설정 모두 보기를 바로 표시한다",flow.direct&&flow.off,flow);
+  check("선택하기 전 자동 채점하지 않고 정답·오답을 실제 선택으로 처리한다",flow.unanswered&&flow.correct&&flow.wrong,flow);
+  check("이전 입력 풀이 기록을 지우거나 새 객관식 풀이에 섞지 않는다",flow.history,flow);
+  await p.reload();await p.waitForFunction(()=>typeof ServicePath!=="undefined");
+  const restored=await p.evaluate(spot=>{S.studyResume=null;startLesson("python",...spot);
+    if(document.querySelector("#qbody .th-sum"))$("check").click();
+    return S.recall===true&&!!$("opts")&&!$("rc-in")&&!$("rc-skip");},flow.spot);
+  check("예전 설정을 저장한 뒤 다시 열어도 입력 단계가 돌아오지 않는다",restored);
   await p.close();
  }
 
@@ -1595,7 +1539,6 @@ function runBrowserLoopFixture(executablePath){
     window.aiCall=(sys,user)=>{ calls.push({sys,user}); return Promise.resolve("힌트 응답"); };
     startLesson("python",0,0);
     if(document.querySelector("#qbody .th-sum")) document.getElementById("check").click();
-    const skip=document.getElementById("rc-skip"); if(skip) skip.click();
     const out={btn:!!document.getElementById("ask-open")};
     out.closedAtFirst=document.getElementById("ask-panel").style.display==="none";
     document.getElementById("ask-open").click();

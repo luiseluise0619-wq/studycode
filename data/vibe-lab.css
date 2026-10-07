@@ -128,3 +128,17 @@
 .service-bridge-panel .service-bridge-status{min-height:24px;margin:12px 0 8px;}
 .service-bridge-nav{display:flex;justify-content:space-between;gap:8px;margin:12px 0;}
 .service-bridge-panel small{display:block;color:var(--ink-soft);font-size:11px;line-height:1.7;}
+.service-practice{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden;color:var(--ink)}
+.service-practice>summary{padding:13px 14px;cursor:pointer;font-size:13px;font-weight:650;line-height:1.6;overflow-wrap:anywhere}
+.service-practice-body{padding:0 14px 14px;min-width:0;font-size:13px;line-height:1.8}
+.service-practice-body p{margin:10px 0}.service-practice-body ol{padding-left:22px}
+.service-practice-body pre{max-width:100%;overflow:auto;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:9px;font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.service-practice-body label{display:block;margin:14px 0 6px;font-weight:650}
+.service-practice-body textarea{display:block;box-sizing:border-box;width:100%;min-height:250px;resize:vertical;tab-size:2;padding:12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:12px/1.8 ui-monospace,Consolas,monospace}
+.service-practice-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.service-practice-actions button{padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.service-practice-actions [data-practice-run]{background:var(--brand);border-color:var(--brand);color:white}.service-practice-actions button:disabled{opacity:.5;cursor:wait}
+.service-practice-results{list-style:none;margin:0;padding:0}.service-practice-results li{padding:9px 0;border-bottom:1px solid var(--line)}
+.service-practice-results li b,.service-practice-results li span{display:block;overflow-wrap:anywhere;white-space:pre-wrap}.service-practice-results .passed b{color:var(--good)}
+.service-practice-results .failed span{font-size:12px;color:var(--ink-soft);margin-top:4px}
+.service-practice-body textarea:focus-visible,.service-practice-actions button:focus-visible,.service-practice>summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
