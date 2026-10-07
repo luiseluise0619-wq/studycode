@@ -148,6 +148,7 @@
     const concept = document.createElement('div'); concept.className = 'service-concept';
     concept.innerHTML = '<b>먼저 뜻을 이해해요</b><p>' + escHtml(d.concept) + '</p>';
     req.querySelector('h3').after(concept);
+    if (window.ServiceBridges) ServiceBridges.mount(concept, d.n, r, save);
     const help = req.querySelector('details');
     help.addEventListener('toggle', () => { if (help.open) { r.helpUsed = true; save(); } });
     const quiz = document.createElement('section'); quiz.className = 'service-quiz';

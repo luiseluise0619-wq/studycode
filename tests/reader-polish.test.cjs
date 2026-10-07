@@ -74,6 +74,15 @@ check('static accessibility labels and exported app instructions are extracted',
  const index=files.find(f=>f.name==='index.html');assert.ok(index.nodes.some(n=>n.n.type==='HTMLAttribute'));
  const exported=files.find(f=>f.name==='data/service-export.js');assert.ok(exported.nodes.some(n=>n.text.includes('저장 파일에서 예약을 다시 불러와요.')));
 });
+check('bridge explanations are extracted while executable examples and accepted answers stay protected',()=>{
+ const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../data/service-bridges.js'),'utf8'),context);
+ const selected=new Set(files.find(f=>f.name==='data/service-bridges.js').nodes.map(n=>n.text));
+ for(const lesson of Object.values(context.window.ServiceBridges.lessons).flat()){
+  for(const field of ['title','text','question','feedback'])assert.ok(selected.has(lesson[field]),field+' '+lesson.title);
+  if(/[가-힣]/.test(lesson.code))assert.ok(!selected.has(lesson.code),'code '+lesson.title);
+  for(const answer of lesson.answers)if(/[가-힣]/.test(answer))assert.ok(!selected.has(answer),'answer '+lesson.title);
+ }
+});
 check('reviewed conceptual corrections survive another prose pass',()=>{const edits=require('../tools/content/reader-reviewed-text.json');assert.ok(edits.length>=20);for(const row of edits){const after=prose(row.before);assert.equal(after,prose(row.after),row.reason);assert.equal(prose(after),after,row.reason+' stable');}});
 check('clause repairs never edit code literals',()=>{for(const s of ['<code>"같아요는"</code>','`const msg = "있어요는";`','<pre>console.log("값예요. 없어요는");</pre>',"<code>'같은 값' 다.</code>","`'같은 값' 다.`"])assert.equal(prose(s),s);});
 let questions=0,lessons=0,units=0;

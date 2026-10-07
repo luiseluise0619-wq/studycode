@@ -10,12 +10,12 @@ const server = http.createServer((req, res) => {
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) { res.writeHead(404); res.end(); return; }
   let body = fs.readFileSync(file);
   if (legacy && url.pathname === '/sw.js') body = body.toString()
-    .replaceAll('v17-learning-reviewed', 'v11-projects')
+    .replaceAll('v18-learning-bridges', 'v11-projects')
     .replace(/"\/data\/(?:service-[^"]+|build\.js)[^"]*",?\s*/g, '')
-    .replaceAll('?v=17', '?v=11');
+    .replaceAll('?v=18', '?v=11');
   if (legacy && (url.pathname === '/' || url.pathname === '/index.html')) body = body.toString()
-    .replace(/<script src="data\/(?:service-(?:path|export)|reader-guide)\.js\?v=17"><\/script>\s*/g, '')
-    .replaceAll('.js?v=17', '.js?v=11');
+    .replace(/<script src="data\/(?:service-(?:path|export|bridges)|reader-guide)\.js\?v=18"><\/script>\s*/g, '')
+    .replaceAll('.js?v=18', '.js?v=11');
   const types = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.png': 'image/png' };
   res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' }); res.end(body);
 });
@@ -60,15 +60,15 @@ async function waitVersion(page, expected) {
     assert.equal(await page.evaluate(() => S.vibeLab.cart.missions.quantity.passed), true); assert.deepEqual(errors, []);
     console.log('PASS old cached modules are bypassed and progress survives the update');
     await page.evaluate(async () => { const registration = await navigator.serviceWorker.getRegistration(); await registration.update(); });
-    await waitVersion(page, 'v17-learning-reviewed');
+    await waitVersion(page, 'v18-learning-bridges');
     await waitUntil(page, async () => {
-      const cache = await caches.open('coderun-shell-v17-learning-reviewed');
-      const names = ['vibe-lab', 'vibe-scenarios', 'vibe-challenges', 'vibe-projects', 'vibe-journey', 'service-path', 'service-export', 'service-project', 'build', 'reader-guide', 'study-ui', 'study-quality', 'code-literacy', 'learning-path'];
-      const found = await Promise.all(names.map(name => cache.match('/data/' + name + '.js?v=17')));
+      const cache = await caches.open('coderun-shell-v18-learning-bridges');
+      const names = ['vibe-lab', 'vibe-scenarios', 'vibe-challenges', 'vibe-projects', 'vibe-journey', 'service-path', 'service-bridges', 'service-export', 'service-project', 'build', 'reader-guide', 'study-ui', 'study-quality', 'code-literacy', 'learning-path'];
+      const found = await Promise.all(names.map(name => cache.match('/data/' + name + '.js?v=18')));
       return found.every(Boolean) && !!(await cache.match('/index.html'));
     }, null, 'all current modules in the offline cache');
     await context.setOffline(true); await page.reload();
-    await page.waitForFunction(() => typeof ServicePath !== 'undefined' && typeof ReaderGuide !== 'undefined');
+    await page.waitForFunction(() => typeof ServicePath !== 'undefined' && typeof ServiceBridges !== 'undefined' && typeof ReaderGuide !== 'undefined');
     assert.equal(await page.evaluate(() => S.vibeLab.cart.missions.quantity.passed), true);
     await page.evaluate(() => ServicePath.open());
     await page.waitForSelector('[data-service-day]');

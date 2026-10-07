@@ -223,6 +223,15 @@ function eligible(n,ancestors,options={}){
   if(ancestors.at(-1)?.type==='Property'&&ancestors.at(-1).key===n)return false;
   const s=n.type==='TemplateElement'?n.value.cooked:n.value;
   if(!/[가-힣]/.test(s||''))return false;
+  // Bridge cards use positional arguments: protect executable examples and accepted
+  // answers while still extracting descriptions that discuss module.exports.
+  const bridgeCall=[...ancestors].reverse().find(a=>a.type==='CallExpression'&&a.callee.type==='Identifier'&&a.callee.name==='item');
+  if(bridgeCall){
+    const position=bridgeCall.arguments.findIndex(argument=>argument===n||ancestors.includes(argument));
+    if([2,4].includes(position))return false;
+    if(position===6&&/^(?:return|assert)\b/.test(s)&&!s.includes('—'))return false;
+    if([0,1,3,5,6].includes(position))return true;
+  }
   for(const a of ancestors){
     if(a.type==='Property'&&PROTECTED.has(keyOf(a))&&!(keyOf(a)==='code'&&a.value.type==='ObjectExpression')&&!(['c','test'].includes(keyOf(a))&&a.value.type==='ObjectExpression'&&a.value.properties.some(p=>keyOf(p)==='what')))return false;
     if(a.type==='FunctionDeclaration'&&SKIP_FUNCTION.test(a.id?.name||''))return false;
