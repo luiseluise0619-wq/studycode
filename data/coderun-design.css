@@ -13,7 +13,7 @@ body{background:var(--bg)}
 .study-welcome h2{font-size:clamp(30px,3vw,43px);line-height:1.35;letter-spacing:-1.7px;font-weight:750;margin:20px 0}
 .study-welcome>p{font-size:14px;line-height:1.9;color:var(--ink-soft)}
 .study-next{border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:8px;background:var(--card);box-shadow:none}
-.study-next h3{font-size:23px;line-height:1.5;letter-spacing:-.8px}.study-tag{background:transparent;color:var(--brand);padding:0}
+.study-next h3{font-size:23px;line-height:1.5;letter-spacing:-.8px;word-break:keep-all;overflow-wrap:break-word}.study-tag{background:transparent;color:var(--brand);padding:0}
 .study-action{border-radius:6px;background:var(--brand);color:var(--card);font-weight:650;box-shadow:none!important}
 :root[data-theme=dark] .study-action{color:#22211e}
 .study-stats{border-top:1px solid var(--line);padding-top:18px;margin-top:30px}.study-stats b{font-size:22px;color:var(--ink)}

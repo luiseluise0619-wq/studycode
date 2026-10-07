@@ -1,5 +1,6 @@
 *.png
 !icons/*.png
 node_modules/
+dist/
 package-lock.json
 .pad/

@@ -1537,6 +1537,7 @@ function runBrowserLoopFixture(executablePath){
   const r=await p.evaluate(async()=>{
     const calls=[];
     window.aiCall=(sys,user)=>{ calls.push({sys,user}); return Promise.resolve("힌트 응답"); };
+    S.ai={provider:"proxy",model:"gemini-3.5-flash-lite",proxyToken:"test-only-connection-code",key:""};
     startLesson("python",0,0);
     if(document.querySelector("#qbody .th-sum")) document.getElementById("check").click();
     const out={btn:!!document.getElementById("ask-open")};

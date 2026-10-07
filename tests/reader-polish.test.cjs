@@ -8,6 +8,7 @@ const acorn=require('../vendor/acorn.js');
 let passed=0;
 function check(name,fn){fn();passed++;console.log('PASS '+name);}
 const cases=[
+ ['예제를 골랐아요.','예제를 골랐어요.'],
  ['값예요. 모델예요.','값이에요. 모델이에요.'],
  ['기다렸어요 다시 보내요.','기다린 뒤 다시 보내요.'],
  ['일대다 조인과 다대다 관계를 비교한다.','일대다 조인과 다대다 관계를 비교해요.'],

@@ -2,6 +2,7 @@
 const {sources}=require('./reader-copy.cjs'),{plain}=require('./reader-extract.cjs');
 function issues(text){
   const clean=plain(text),out=[];
+  if(/골랐아요/.test(clean))out.push({kind:'inflection',word:'골랐아요'});
   for(const m of clean.matchAll(/([가-힣]+)(이에요|예요)(?=$|[\s.!?…,:;）)\]”’])/g)){
     const jong=(m[1].at(-1).charCodeAt(0)-0xac00)%28;
     if((jong===0&&m[2]==='이에요')||(jong!==0&&m[2]==='예요'))out.push({kind:'copula',word:m[0]});
